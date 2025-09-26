@@ -6,7 +6,7 @@
     "description": """
         Module to manage Clinics
     """,
-    "author": "Rohan Mhase",
+    "author": "ResearchAyu",
     "depends": ["base"],
     "data": [],
     "assets": {},
