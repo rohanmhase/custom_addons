@@ -1,4 +1,4 @@
-             <odoo>
+<odoo>
     <!-- Security Category: Clinic Management -->
     <record id="module_category_clinic" model="ir.module.category">
         <field name="name">Clinic Management</field>
@@ -16,6 +16,28 @@
     <record id="group_clinic_user" model="res.groups">
         <field name="name">Clinic User</field>
         <field name="category_id" ref="clinic_management.module_category_clinic"/>
+    </record>
+
+    <!-- Clinic User: restricted -->
+    <record id="rule_clinic_user_filter" model="ir.rule">
+        <field name="name">Restrict Clinics by User</field>
+        <field name="model_id" ref="clinic_management.model_clinic_clinic"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/>
+        <field name="domain_force">['|',('id','=',False),('id','in',user.clinic_ids.ids)]</field>
+    </record>
+
+    <record id="rule_pos_config_clinic_filter" model="ir.rule">
+        <field name="name">POS Config - Restrict by Clinic</field>
+        <field name="model_id" ref="point_of_sale.model_pos_config"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/>
+        <field name="domain_force">[('clinic_id', 'in', user.clinic_ids.ids)]</field>
+    </record>
+
+    <record id="rule_warehouse_clinic_filter" model="ir.rule">
+        <field name="name">Warehouse - Restrict by Clinic</field>
+        <field name="model_id" ref="stock.model_stock_warehouse"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/>
+        <field name="domain_force">[('clinic_id', 'in', user.clinic_ids.ids)]</field>
     </record>
 
 
