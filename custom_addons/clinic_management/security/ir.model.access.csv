@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_clinic_clinic_administrator,access.clinic.clinic.administrator,model_clinic_clinic,group_clinic_administrator,1,1,1,1
+access_clinic_clinic_user,access.clinic.clinic.user,model_clinic_clinic,group_clinic_user,1,0,0,0

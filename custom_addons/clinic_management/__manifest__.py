@@ -7,8 +7,12 @@
         Module to manage Clinics
     """,
     "author": "ResearchAyu",
-    "depends": ["base"],
-    "data": [],
+    "depends": ["base", "stock", "point_of_sale"],
+    "data": [
+        'security/clinic_security.xml',
+        'security/ir.model.access.csv',
+        'views/clinics_views.xml',
+    ],
     "assets": {},
     "installable": True,
     "application": True,

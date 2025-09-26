@@ -1,0 +1,27 @@
+             <odoo>
+    <!-- Security Category: Clinic Management -->
+    <record id="module_category_clinic" model="ir.module.category">
+        <field name="name">Clinic Management</field>
+        <field name="description">Access rights for managing clinics, patients, warehouses, and POS per clinic</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- Clinic Administrator Group -->
+    <record id="group_clinic_administrator" model="res.groups">
+        <field name="name">Clinic Administrator</field>
+        <field name="category_id" ref="clinic_management.module_category_clinic"/>
+    </record>
+
+    <!-- Clinic User Group -->
+    <record id="group_clinic_user" model="res.groups">
+        <field name="name">Clinic User</field>
+        <field name="category_id" ref="clinic_management.module_category_clinic"/>
+    </record>
+
+
+    <!-- Apps -->
+    <record id="base.menu_apps" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('clinic_management.group_clinic_administrator'))]"/>
+    </record>
+
+</odoo>
