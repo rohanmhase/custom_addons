@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_res_users_form_inherit_clinic" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.clinic</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='preferences']" position="after">
+                <group string="Clinic Access">
+                    <field name="clinic_ids" widget="many2many_tags"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

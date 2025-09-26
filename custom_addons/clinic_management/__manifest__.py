@@ -12,6 +12,7 @@
         'security/clinic_security.xml',
         'security/ir.model.access.csv',
         'views/clinics_views.xml',
+        'views/res_users_views.xml',
     ],
     "assets": {},
     "installable": True,
