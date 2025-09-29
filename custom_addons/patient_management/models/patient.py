@@ -143,6 +143,16 @@ class Patient(models.Model):
             "context": {"default_patient_id": self.id},
         }
 
+    def action_open_diet_chart(self):
+        """Open Diet Chart related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Diet Chart",
+            "res_model": "patient.diet_chart",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
 
     def _ist_date(self):
 

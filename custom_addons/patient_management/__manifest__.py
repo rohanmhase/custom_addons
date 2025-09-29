@@ -17,6 +17,7 @@
         'views/blood_report_views.xml',
         'views/case_taking_views.xml',
         'views/daily_followup_views.xml',
+        'views/diet_chart_views.xml',
     ],
     'assets': {},
     "installable": True,
