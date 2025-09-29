@@ -110,6 +110,17 @@ class Patient(models.Model):
 
         return super(Patient, self).write(vals)
 
+    def action_open_blood_report(self):
+        """Open Blood Report related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Blood Report",
+            "res_model": "patient.blood_report",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
 
     def _ist_date(self):
 

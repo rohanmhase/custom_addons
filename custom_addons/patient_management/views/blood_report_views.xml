@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_blood_report" model="ir.ui.view">
+        <field name="name">clinic.patient.blood_report.tree</field>
+        <field name="model">patient.blood_report</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="blood_report_date"/>
+                <field name="blood_report_day"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_blood_report_form" model="ir.ui.view">
+        <field name="name">clinic.patient.blood_report.form</field>
+        <field name="model">patient.blood_report</field>
+        <field name="arch" type="xml">
+            <form string="Blood Report">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                            <field name="blood_report_date"/>
+                            <field name="blood_report_day"/>
+                        </group>
+                    </sheet>
+                    <sheet>
+                        <table class="o_group o_inner_table"
+                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2;">
+                                    <th style="border:1px solid #ccc; padding:8px;">Parameters</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Observation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Haemoglobin</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="haemoglobin"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">ESR</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="esr"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Platelet Count</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="platelet_count"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">BSL Fasting</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="bsl_fasting"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">BSL Post Prandial</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="bsl_post_prandial"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Hba1c</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="hba1c"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Sr. Uric Acid</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="sr_uric_acid"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Ra Factor/Titre</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="ra_factor_titre"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">CRP</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="crp"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">ANA</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="ana"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">T-Cholesterol</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="t_cholesterol"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">T-Triglyceride</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="t_triglyceride"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Sr. Creatinine</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="sr_creatinine"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">TSH</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="tsh"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine Sugar</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_sugar"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine pus cells/bacteria</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_pus_cells_bacteria"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine Protein</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_protein"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine blood/crystal</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_blood_crystal"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_blood_report" model="ir.actions.act_window">
+        <field name="name">Blood Report</field>
+        <field name="res_model">patient.blood_report</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

@@ -1,1 +1,1 @@
-from . import patient, clinic_extension
+from . import patient, clinic_extension, blood_report
