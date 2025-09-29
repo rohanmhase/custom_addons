@@ -26,6 +26,8 @@
                             groups="clinic_management.group_clinic_administrator"/>
                     <button name="action_open_blood_report" type="object" string="Blood Report"
                             groups="clinic_management.group_clinic_administrator"/>
+                    <button name="action_open_daily_followup" type="object" string="Daily Followup"
+                            groups="clinic_management.group_clinic_consulting_doctor_user, clinic_management.group_clinic_administrator"/>
                 </header>
                 <sheet>
                     <group>
