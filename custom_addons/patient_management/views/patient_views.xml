@@ -22,6 +22,8 @@
         <field name="arch" type="xml">
             <form string="Patient">
                 <header>
+                    <button name="action_open_case_taking" type="object" string="Case Taking"
+                            groups="clinic_management.group_clinic_administrator"/>
                     <button name="action_open_blood_report" type="object" string="Blood Report"
                             groups="clinic_management.group_clinic_administrator"/>
                 </header>

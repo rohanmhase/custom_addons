@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_case_taking" model="ir.ui.view">
+        <field name="name">clinic.patient.case_taking.tree</field>
+        <field name="model">patient.case_taking</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="case_taking_date"/>
+                <field name="doctor_id"/>
+                <field name="k_c_o"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_case_taking_form" model="ir.ui.view">
+        <field name="name">clinic.patient.case_taking.form</field>
+        <field name="model">patient.case_taking</field>
+        <field name="arch" type="xml">
+            <form string="Case Taking">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="case_taking_date"/>
+                            <field name="doctor_id"/>
+                            <field name="k_c_o"/>
+                            <field name="p_h_o"/>
+                            <field name="s_h"/>
+                            <field name="f_h"/>
+                            <field name="allergies"/>
+                            <field name="habits"/>
+                        </group>
+                    </sheet>
+
+                    <div style="font-size:20px; padding:1px 16px;">Bowel Habits</div>
+                    <sheet>
+                        <table class="o_group o_inner_table"
+                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2;">
+                                    <th style="border:1px solid #ccc; padding:8px;">Parameter</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Observation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Mal
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="mal"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Mutra
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="mutra"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Nakta
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="nakta"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Kshudha
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="kshudha"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Nidra
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="nidra"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Jivha
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="jivha"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </sheet>
+                    <div style="font-size:20px; padding:1px 16px;">Examination</div>
+                    <sheet>
+                        <table class="o_group o_inner_table"
+                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2;">
+                                    <th style="border:1px solid #ccc; padding:8px;">Observations</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Right</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Left</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Crepts
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="crepts_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="crepts_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Shin
+                                        Tenderness
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="shin_tenderness_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="shin_tenderness_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Swelling
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="swelling_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="swelling_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">ROM
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="rom_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="rom_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">SLR
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="slr_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="slr_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Pedal
+                                        Oedema
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pedal_oedema_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pedal_oedema_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Pain
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pain_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pain_lt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Deformity
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="deformity_rt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="deformity_lt"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </sheet>
+                    <sheet>
+                        <group>
+                            <field name="diet"/>
+                            <field name="diagnosis"/>
+                            <field name="adv_investigation"/>
+                            <field name="adv_treatment"/>
+                            <field name="adv_rx"/>
+                            <field name="treatment"/>
+                        </group>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_case_taking" model="ir.actions.act_window">
+        <field name="name">Case Taking</field>
+        <field name="res_model">patient.case_taking</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

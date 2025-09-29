@@ -15,6 +15,7 @@
         'security/ir.model.access.csv',
         'views/patient_views.xml',
         'views/blood_report_views.xml',
+        'views/case_taking_views.xml',
     ],
     'assets': {},
     "installable": True,
