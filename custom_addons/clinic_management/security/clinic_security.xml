@@ -18,6 +18,13 @@
         <field name="category_id" ref="clinic_management.module_category_clinic"/>
     </record>
 
+    <!-- Clinic Admin User Group -->
+    <record id="group_clinic_admin_user" model="res.groups">
+        <field name="name">Clinic Admin User</field>
+        <field name="implied_ids" eval="[(4, ref('clinic_management.group_clinic_user'))]"/>
+        <field name="category_id" ref="clinic_management.module_category_clinic"/>
+    </record>
+
 
     <!-- Clinic Administrator: full access -->
     <record id="rule_clinic_admin_all" model="ir.rule">

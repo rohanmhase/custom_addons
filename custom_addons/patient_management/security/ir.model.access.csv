@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+
+
+access_clinic_patient_administrator,access.clinic.patient.administrator,model_clinic_patient,clinic_management.group_clinic_administrator,1,1,1,1
+
+
+
+access_clinic_patient,access.clinic.patient,model_clinic_patient,clinic_management.group_clinic_admin_user,1,1,1,0
