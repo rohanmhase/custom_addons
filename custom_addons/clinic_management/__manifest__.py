@@ -14,8 +14,6 @@
         'views/clinics_views.xml',
         'views/res_users_views.xml',
     ],
-    "assets": {},
-    "installable": True,
     "application": True,
     "license": "LGPL-3",
 }
