@@ -1,0 +1,13 @@
+.o_form_label {
+    white-space: nowrap !important;
+}
+
+.o_field_radio .o_vertical {
+    height: 162px;
+    padding-left: 4px;
+    margin-top: 4px;
+}
+
+.o_field_radio .o_vertical .o_radio_item {
+    margin-bottom: 15px
+}

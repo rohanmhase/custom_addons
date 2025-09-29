@@ -18,8 +18,11 @@
         'views/case_taking_views.xml',
         'views/daily_followup_views.xml',
         'views/diet_chart_views.xml',
+        'views/followup_views.xml',
     ],
-    'assets': {},
+    'assets': {
+        'web.assets_backend': ['patient_management/static/src/css/form.css'],
+    },
     "installable": True,
     "application": False,
     "license": "LGPL-3",

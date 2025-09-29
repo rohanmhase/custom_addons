@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_followup" model="ir.ui.view">
+        <field name="name">clinic.patient.followup.tree</field>
+        <field name="model">patient.followup</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="weekly_followup_date"/>
+                <field name="weight"/>
+                <field name="diagnosis"/>
+                <field name="k_c_o"/>
+                <field name="investigation_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_followup_form" model="ir.ui.view">
+        <field name="name">clinic.patient.followup.form</field>
+        <field name="model">patient.followup</field>
+        <field name="arch" type="xml">
+            <form string="Follow Up">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                            <field name="weekly_followup_date"/>
+                            <field name="weight"/>
+                            <field name="diagnosis"/>
+                            <field name="k_c_o"/>
+                            <field name="investigation_status"/>
+                        </group>
+                    </sheet>
+                    <div style="margin: 10px 16px; font-size: 18px; color:black;}">
+                        <span style="text-decoration: underline;">
+                            <strong>
+                                <i>Shakhagata</i>
+                                Examinations
+                            </strong>
+                        </span>
+                    </div>
+                    <sheet>
+                        <table class="o_group o_inner_table"
+                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2; text-align:center;">
+                                    <th style="border:1px solid #ccc; padding:8px;">Observations</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Left</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Right</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Morning
+                                        stiffness with duration
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="morning_stiffness_with_duration_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="morning_stiffness_with_duration_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L
+                                        shin tenderness with gradation
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_tenderness_with_gradation_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_tenderness_with_gradation_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L
+                                        Knee tenderness with gradation and position
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_knee_tenderness_with_gradation_and_position_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_knee_tenderness_with_gradation_and_position_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L
+                                        shin oedema with gradation
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_oedema_with_gradation_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_oedema_with_gradation_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Pitting
+                                        oedema
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pitting_oedema_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pitting_oedema_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Non-Pitting oedema
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="non_pitting_oedema_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="non_pitting_oedema_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L
+                                        shin discoloration/rashes/itching/bruises
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Local
+                                        knee temperature
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="local_knee_temperature_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="local_knee_temperature_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Heavy /
+                                        Free
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="heavy_free_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="heavy_free_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Complete / Restricted with degree
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="complete_restricted_with_degree_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="complete_restricted_with_degree_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Incomplete extension in fingers
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="incomplete_extension_in_fingers_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="incomplete_extension_in_fingers_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Varus /
+                                        Valgus deformity
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="varus_valgus_deformity_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="varus_valgus_deformity_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L
+                                        knee Crept with Gradation
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_knee_crept_with_gradation_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_knee_crept_with_gradation_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Pain
+                                        Walking Reduced By %
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pain_while_walking_reduced_by_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="pain_while_walking_reduced_by_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">B/L SLR
+                                        with degree
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_slr_with_degree_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="b_l_slr_with_degree_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
+                                        Varicose veins gradation
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="varicose_veins_gradation_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="varicose_veins_gradation_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Burning
+                                        sensation in B/L Knee/Shin
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="burning_sensation_in_b_l_knee_shin_lt"/>
+                                    </td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="burning_sensation_in_b_l_knee_shin_rt"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Others
+                                    </td>
+                                    <td colspan="2" style="border:1px solid #ccc; padding:6px;">
+                                        <field name="others_s"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </sheet>
+                    <div style="margin: 10px 16px; font-size: 18px; color:black;}">
+                        <span style="text-decoration: underline;">
+                            <strong>
+                                <i>Koshthagata</i>
+                                Examinations
+                            </strong>
+                        </span>
+                    </div>
+                    <sheet>
+                        <group>
+                            <field name="jivha"/>
+                            <field name="jwaranubhuti"/>
+                            <field name="kshudha"/>
+                            <field name="kantha"/>
+                            <field name="tiktamlodgar"/>
+                            <field name="mala_aadhman_malabaddhata_sticky_drava"/>
+                            <field name="mutra_naktamutrata_mutradaha"/>
+                            <field name="rasa_dhatu_dushti_lakshane"/>
+                            <field name="nidra"/>
+                            <field name="sweda"/>
+                            <field name="others_k" widget="char"/>
+                        </group>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_followup" model="ir.actions.act_window">
+        <field name="name">Followup</field>
+        <field name="res_model">patient.followup</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

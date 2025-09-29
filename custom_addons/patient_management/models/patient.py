@@ -154,6 +154,17 @@ class Patient(models.Model):
             "context": {"default_patient_id": self.id},
         }
 
+    def action_open_followup(self):
+        """Open Weekly Followup related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Followup",
+            "res_model": "patient.followup",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
     def _ist_date(self):
 
         utc = (datetime.now())
