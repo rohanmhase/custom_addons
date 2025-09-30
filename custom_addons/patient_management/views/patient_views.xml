@@ -24,6 +24,8 @@
                 <header>
                     <button name="action_open_case_taking" type="object" string="Case Taking"
                             groups="clinic_management.group_clinic_administrator"/>
+                    <button name="action_open_enrollment" type="object" string="Enrollment"
+                                groups="clinic_management.group_clinic_administrator"/>
                     <button name="action_open_blood_report" type="object" string="Blood Report"
                             groups="clinic_management.group_clinic_administrator"/>
                     <button name="action_open_daily_followup" type="object" string="Daily Followup"

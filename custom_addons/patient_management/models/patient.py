@@ -43,9 +43,25 @@ class Patient(models.Model):
 
     partner_id = fields.Many2one("res.partner", string="Customer", help="Link patient to POS/Invoices")
 
-    # -------------------------------
-    # Create Override
-    # -------------------------------
+    enrollment_ids = fields.One2many(
+        "patient.enrollment",
+        "patient_id",
+        string="Enrollment",
+    )
+
+    active_enrollment_id = fields.Many2one(
+        "patient.enrollment",
+        string="Active Enrollment",
+        compute="_compute_active_enrollment_id",
+        store=True,
+    )
+
+    @api.depends("enrollment_ids.state")
+    def _compute_active_enrollment_id(self):
+        for patient in self:
+            active = patient.enrollment_ids.filtered(lambda r: r.state == "active")
+            patient.active_enrollment_id = active[:1] if active else False
+
 
     @api.constrains('phone')
     def _check_phone_number(self):
@@ -160,6 +176,17 @@ class Patient(models.Model):
             "type": "ir.actions.act_window",
             "name": "Followup",
             "res_model": "patient.followup",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
+    def action_open_enrollment(self):
+        """Open Enrollment related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Enrollment",
+            "res_model": "patient.enrollment",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
             "context": {"default_patient_id": self.id},
