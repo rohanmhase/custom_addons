@@ -56,6 +56,17 @@ class Patient(models.Model):
         store=True,
     )
 
+    remaining_sessions = fields.Integer(
+        string="Remaining Sessions",
+        compute="_compute_remaining_sessions",
+        store=False
+    )
+
+    def _compute_remaining_sessions(self):
+        for rec in self:
+            enrollment = rec.active_enrollment_id
+            rec.remaining_sessions = enrollment.remaining_sessions if enrollment else 0
+
     @api.depends("enrollment_ids.state")
     def _compute_active_enrollment_id(self):
         for patient in self:
@@ -187,6 +198,17 @@ class Patient(models.Model):
             "type": "ir.actions.act_window",
             "name": "Enrollment",
             "res_model": "patient.enrollment",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
+    def action_open_session(self):
+        """Open Daily Session related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Therapy Session",
+            "res_model": "patient.session",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
             "context": {"default_patient_id": self.id},
