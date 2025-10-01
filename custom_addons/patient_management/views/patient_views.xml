@@ -23,22 +23,15 @@
         <field name="arch" type="xml">
             <form string="Patient">
                 <header>
-                    <button name="action_open_case_taking" type="object" string="Case Taking"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_enrollment" type="object" string="Enrollment"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_blood_report" type="object" string="Blood Report"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_daily_followup" type="object" string="Daily Followup"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_diet_chart" type="object" string="Diet Chart"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_followup" type="object" string="Weekly Followup"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_session" type="object" string="Therapy Session"
-                            groups="clinic_management.group_clinic_administrator"/>
-                    <button name="action_open_xray" type="object" string="X-Ray"
-                            groups="clinic_management.group_clinic_administrator"/>
+                    <button name="action_open_case_taking" type="object" string="Case Taking"/>
+                    <button name="action_open_enrollment" type="object" string="Enrollment"/>
+                    <button name="action_open_blood_report" type="object" string="Blood Report"/>
+                    <button name="action_open_daily_followup" type="object" string="Daily Followup"/>
+                    <button name="action_open_diet_chart" type="object" string="Diet Chart"/>
+                    <button name="action_open_followup" type="object" string="Weekly Followup"/>
+                    <button name="action_open_prescription" type="object" string="Prescription"/>
+                    <button name="action_open_session" type="object" string="Therapy Session"/>
+                    <button name="action_open_xray" type="object" string="X-Ray"/>
                 </header>
                 <sheet>
                     <group>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_prescription" model="ir.ui.view">
+        <field name="name">clinic.patient.prescription.tree</field>
+        <field name="model">patient.prescription</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="prescription_date"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_prescription_form" model="ir.ui.view">
+        <field name="name">clinic.patient.prescription.form</field>
+        <field name="model">patient.prescription</field>
+        <field name="arch" type="xml">
+            <form string="Prescription">
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="patient_id"/>
+                        <field name="doctor_id"/>
+                        <field name="prescription_date"/>
+                        <field name="clinic_id"/>
+                    </group>
+                    <notebook>
+                        <page string="Medicines">
+                            <field name="line_ids">
+                                <tree editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="qty"/>
+                                    <field name="instructions"/>
+                                    <field name="qty_available"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                    <group>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_prescription" model="ir.actions.act_window">
+        <field name="name">Prescriptions</field>
+        <field name="res_model">patient.prescription</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

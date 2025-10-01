@@ -34,7 +34,7 @@ class Patient(models.Model):
 
     _sql_constraints = [
         ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'),
-    ]
+    ]                                                                   # Prevent creating records for same registered phone numbers
 
     admin_id = fields.Many2one("res.users", string="Admin / BM",
                                 required=True,
@@ -220,6 +220,17 @@ class Patient(models.Model):
             "type": "ir.actions.act_window",
             "name": "X-Rays",
             "res_model": "patient.xray",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
+    def action_open_prescription(self):
+        """Open Prescription related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Prescription",
+            "res_model": "patient.prescription",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
             "context": {"default_patient_id": self.id},
