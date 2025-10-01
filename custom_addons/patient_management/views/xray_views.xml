@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_xray" model="ir.ui.view">
+        <field name="name">clinic.patient.xray.tree</field>
+        <field name="model">patient.xray</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="date_taken"/>
+                <field name="x_ray_day"/>
+                <field name="grade"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_xray_form" model="ir.ui.view">
+        <field name="name">clinic.patient.xray.form</field>
+        <field name="model">patient.xray</field>
+        <field name="arch" type="xml">
+            <form string="X-Rays">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                            <field name="date_taken"/>
+                            <field name="x_ray_day"/>
+                        </group>
+                    </sheet>
+                    <sheet>
+                        <table class="o_group o_inner_table"
+                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2; text-align:center;">
+                                    <th style="border:1px solid #ccc; padding:8px; width:100px;">Grade</th>
+                                    <th style="border:1px solid #ccc; padding:8px; width:500px;">Radiological Findings</th>
+                                    <th style="border:1px solid #ccc; padding:8px; width:20px">Observation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; text-align:center;">0</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">Normal</td>
+                                    <td rowspan="5" style="border:1px solid #ccc; padding:6px;">
+                                        <field name="grade" widget="radio"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; text-align:center;">1</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">Doubtful Joint space narrowing and
+                                        possible osteophytic lipping.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; text-align:center;">2</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">Definite osteophytes and possible
+                                        joint
+                                        space narrowing.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; text-align:center;">3</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">Moderate multiple osteophytes,
+                                        definite narrowing of joint space and
+                                        some sclerosis and possible deformity
+                                        of bone ends.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; text-align:center;">4</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">Large osteophytes, marked narrowing
+                                        of joint space, severe sclerosis and
+                                        definite deformity of bone ends.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_xray" model="ir.actions.act_window">
+        <field name="name">X-Rays</field>
+        <field name="res_model">patient.xray</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

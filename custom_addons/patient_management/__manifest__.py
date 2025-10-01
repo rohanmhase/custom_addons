@@ -21,6 +21,7 @@
         'views/followup_views.xml',
         'views/enrollment_views.xml',
         'views/session_views.xml',
+        'views/xray_views.xml',
     ],
     'assets': {
         'web.assets_backend': ['patient_management/static/src/css/form.css'],

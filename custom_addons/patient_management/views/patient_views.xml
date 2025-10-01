@@ -37,6 +37,8 @@
                             groups="clinic_management.group_clinic_administrator"/>
                     <button name="action_open_session" type="object" string="Therapy Session"
                             groups="clinic_management.group_clinic_administrator"/>
+                    <button name="action_open_xray" type="object" string="X-Ray"
+                            groups="clinic_management.group_clinic_administrator"/>
                 </header>
                 <sheet>
                     <group>

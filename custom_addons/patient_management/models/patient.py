@@ -204,11 +204,22 @@ class Patient(models.Model):
         }
 
     def action_open_session(self):
-        """Open Daily Session related to this patient"""
+        """Open Daily Therapy Session related to this patient"""
         return {
             "type": "ir.actions.act_window",
             "name": "Therapy Session",
             "res_model": "patient.session",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id},
+        }
+
+    def action_open_xray(self):
+        """Open X-Rays related to this patient"""
+        return {
+            "type": "ir.actions.act_window",
+            "name": "X-Rays",
+            "res_model": "patient.xray",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
             "context": {"default_patient_id": self.id},

@@ -9,6 +9,7 @@ access_patient_diet_chart_administrator,access.patient.diet_chart.administrator,
 access_patient_followup_administrator,access.patient.followup.administrator,model_patient_followup,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_enrollment_administrator,access.patient.enrollment.administrator,model_patient_enrollment,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_session_administrator,access.patient.session.administrator,model_patient_session,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_xray_administrator,access.patient.xray.administrator,model_patient_xray,clinic_management.group_clinic_administrator,1,1,1,1
 
 
 access_clinic_patient,access.clinic.patient,model_clinic_patient,clinic_management.group_clinic_admin_user,1,1,1,0

@@ -1,1 +1,1 @@
-from . import patient, clinic_extension, blood_report, case_taking, daily_followup, diet_chart, followup, enrollment, session
+from . import patient, clinic_extension, blood_report, case_taking, daily_followup, diet_chart, followup, enrollment, session, xray
