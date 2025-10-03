@@ -9,7 +9,7 @@
         - Store patient details
     """,
     "author": "Researchayu",
-    "depends": ["base", "clinic_management"],
+    "depends": ["base", "clinic_management", "product", "stock"],
     'data': [
         'security/patient_security.xml',
         'security/ir.model.access.csv',
@@ -25,7 +25,12 @@
         'views/prescription_views.xml',
     ],
     'assets': {
-        'web.assets_backend': ['patient_management/static/src/css/form.css'],
+        'web.assets_backend': [
+            'patient_management/static/src/css/form.css'
+        ],
+        'point_of_sale._assets_pos': [
+            "patient_management/static/src/js/autoload_prescription.js",
+        ],
     },
     "installable": True,
     "application": False,
