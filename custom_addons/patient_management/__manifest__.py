@@ -11,6 +11,7 @@
     "author": "Researchayu",
     "depends": ["base", "clinic_management", "product", "stock"],
     'data': [
+        'data/ir_sequence_data.xml',
         'security/patient_security.xml',
         'security/ir.model.access.csv',
         'views/patient_views.xml',

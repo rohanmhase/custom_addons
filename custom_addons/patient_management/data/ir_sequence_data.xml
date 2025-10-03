@@ -1,0 +1,10 @@
+<odoo>
+    <record id="seq_clinic_patient_mrn" model="ir.sequence">
+        <field name="name">Patient MRN</field>
+        <field name="code">clinic.patient.mrn</field>
+        <field name="padding">6</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+        <field name="use_date_range">True</field>
+    </record>
+</odoo>

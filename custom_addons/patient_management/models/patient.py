@@ -15,7 +15,7 @@ class Patient(models.Model):
         ("female", "Female"),
         ("other", "Other"),
     ], string="Gender", required=True)                                  # Gender of patient
-    phone = fields.Char(string="Phone", required=True, maxlength=10)    # Phone number of patient which cannot be duplicate
+    phone = fields.Char(string="Phone", required=True, size=10)    # Phone number of patient which cannot be duplicate
     email = fields.Char(string="Email")                                 # Email of patient if any
     address = fields.Text(string="Address", required=True)              # Address of patient
 
@@ -90,6 +90,7 @@ class Patient(models.Model):
             partner = self.env["res.partner"].create({
                 "name": vals["name"],
                 "phone": vals.get("phone"),
+                "clinic_id": vals.get("clinic_id"),  # link clinic
             })
             vals["partner_id"] = partner.id
 
@@ -103,20 +104,9 @@ class Patient(models.Model):
             current_year = datetime.today().year
             prefix = f"{clinic.code}-{current_year}"
 
-            # Find last MRN only for this clinic and this year
-            last_patient = self.env["clinic.patient"].search(
-                [("clinic_id", "=", clinic_id), ("mrn", "like", prefix + "-")],
-                order="mrn desc",
-                limit=1,
-            )
+            seq = self.env["ir.sequence"].next_by_code("clinic.patient.mrn") or "000001"
+            vals["mrn"] = f"{prefix}-{seq.zfill(6)}"
 
-            if last_patient and last_patient.mrn:
-                match = re.search(rf"{prefix}-(\d+)", last_patient.mrn)
-                next_num = int(match.group(1)) + 1 if match else 1
-            else:
-                next_num = 1
-
-            vals["mrn"] = f"{prefix}-{str(next_num).zfill(3)}"
 
         return super(Patient, self).create(vals)
 
