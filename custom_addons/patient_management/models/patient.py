@@ -129,101 +129,120 @@ class Patient(models.Model):
 
     def action_open_blood_report(self):
         """Open Blood Report related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
+
         return {
             "type": "ir.actions.act_window",
             "name": "Blood Report",
             "res_model": "patient.blood_report",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_case_taking(self):
         """Open Case Taking related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Case Taking",
             "res_model": "patient.case_taking",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_daily_followup(self):
         """Open Daily Followup related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Daily Followup",
             "res_model": "patient.daily_followup",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_diet_chart(self):
         """Open Diet Chart related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Diet Chart",
             "res_model": "patient.diet_chart",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_followup(self):
         """Open Weekly Followup related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Followup",
             "res_model": "patient.followup",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_enrollment(self):
         """Open Enrollment related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Enrollment",
             "res_model": "patient.enrollment",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_session(self):
         """Open Daily Therapy Session related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Therapy Session",
             "res_model": "patient.session",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_xray(self):
         """Open X-Rays related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "X-Rays",
             "res_model": "patient.xray",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def action_open_prescription(self):
         """Open Prescription related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
             "name": "Prescription",
             "res_model": "patient.prescription",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id},
+            "context": {"default_patient_id": self.id, "active_test": not show_all,},
         }
 
     def _ist_date(self):

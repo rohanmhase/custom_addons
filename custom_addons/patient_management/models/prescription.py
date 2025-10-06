@@ -38,6 +38,8 @@ class Prescription(models.Model):
         default="draft",
     )
 
+    active = fields.Boolean(default=True)
+
     def _check_stock(self):
         """Check all lines against available stock"""
         error_msgs = []
@@ -137,6 +139,12 @@ class Prescription(models.Model):
         ist_date = utc + td
         return ist_date.date()
 
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True
+
 
 class PrescriptionLine(models.Model):
     _name = "patient.prescription.line"
@@ -156,6 +164,8 @@ class PrescriptionLine(models.Model):
         string="Available Qty", compute="_compute_qty_available", readonly=True
     )
 
+    active = fields.Boolean(default=True)
+
     @api.depends("product_id", "prescription_id.clinic_id")
     def _compute_qty_available(self):
         for line in self:
@@ -167,3 +177,9 @@ class PrescriptionLine(models.Model):
                         location=warehouse.lot_stock_id.id
                     ).qty_available
             line.qty_available = qty
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

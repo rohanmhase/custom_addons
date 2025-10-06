@@ -16,4 +16,148 @@
         <field name="domain_force">[('clinic_id','in',user.clinic_ids.ids)]</field>
     </record>
 
+    <!-- Rule 1: Normal users see only active=True Blood Reports -->
+    <record id="rule_blood_report_active_only" model="ir.rule">
+        <field name="name">Blood Report Active Only</field>
+        <field name="model_id" ref="model_patient_blood_report"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 2: Special group can see ALL (active or inactive) Blood Reports -->
+    <record id="rule_blood_report_all_records" model="ir.rule">
+        <field name="name">Blood Report All Records</field>
+        <field name="model_id" ref="model_patient_blood_report"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 3: Normal users see only active=True Case Taking -->
+    <record id="rule_case_taking_active_only" model="ir.rule">
+        <field name="name">Case Taking Active Only</field>
+        <field name="model_id" ref="model_patient_case_taking"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 4: Special group can see ALL (active or inactive) Case Taking -->
+    <record id="rule_case_taking_all_records" model="ir.rule">
+        <field name="name">Case Taking All Records</field>
+        <field name="model_id" ref="model_patient_case_taking"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 5: Normal users see only active=True Daily Followup -->
+    <record id="rule_daily_followup_active_only" model="ir.rule">
+        <field name="name">Daily Followup Active Only</field>
+        <field name="model_id" ref="model_patient_daily_followup"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 6: Special group can see ALL (active or inactive) Daily Followup -->
+    <record id="rule_daily_followup_all_records" model="ir.rule">
+        <field name="name">Daily Followup All Records</field>
+        <field name="model_id" ref="model_patient_daily_followup"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 7: Normal users see only active=True Diet Chart -->
+    <record id="rule_diet_chart_active_only" model="ir.rule">
+        <field name="name">Diet Chart Active Only</field>
+        <field name="model_id" ref="model_patient_diet_chart"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 8: Special group can see ALL (active or inactive) Diet Chart -->
+    <record id="rule_diet_chart_all_records" model="ir.rule">
+        <field name="name">Diet Chart All Records</field>
+        <field name="model_id" ref="model_patient_diet_chart"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 9: Normal users see only active=True Enrollment -->
+    <record id="rule_enrollment_active_only" model="ir.rule">
+        <field name="name">Enrollment Active Only</field>
+        <field name="model_id" ref="model_patient_enrollment"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 10: Special group can see ALL (active or inactive) Enrollment -->
+    <record id="rule_enrollment_all_records" model="ir.rule">
+        <field name="name">Enrollment All Records</field>
+        <field name="model_id" ref="model_patient_enrollment"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 11: Normal users see only active=True Followup -->
+    <record id="rule_followup_active_only" model="ir.rule">
+        <field name="name">Followup Active Only</field>
+        <field name="model_id" ref="model_patient_followup"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 12: Special group can see ALL (active or inactive) Followup -->
+    <record id="rule_followup_all_records" model="ir.rule">
+        <field name="name">Followup All Records</field>
+        <field name="model_id" ref="model_patient_followup"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 13: Normal users see only active=True Xray -->
+    <record id="rule_xray_active_only" model="ir.rule">
+        <field name="name">Xray Active Only</field>
+        <field name="model_id" ref="model_patient_xray"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 14: Special group can see ALL (active or inactive) Xray -->
+    <record id="rule_xray_all_records" model="ir.rule">
+        <field name="name">Xray All Records</field>
+        <field name="model_id" ref="model_patient_xray"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 15: Normal users see only active=True Prescription -->
+    <record id="rule_prescription_active_only" model="ir.rule">
+        <field name="name">Prescription Active Only</field>
+        <field name="model_id" ref="model_patient_prescription"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 16: Special group can see ALL (active or inactive) Prescription -->
+    <record id="rule_prescription_all_records" model="ir.rule">
+        <field name="name">Prescription All Records</field>
+        <field name="model_id" ref="model_patient_prescription"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Rule 17: Normal users see only active=True Session -->
+    <record id="rule_session_active_only" model="ir.rule">
+        <field name="name">Session Active Only</field>
+        <field name="model_id" ref="model_patient_session"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_clinic_user'))]"/> <!-- applies to normal users -->
+        <field name="domain_force">[('active', '=', True)]</field>
+    </record>
+
+    <!-- Rule 18: Special group can see ALL (active or inactive) Session -->
+    <record id="rule_session_all_records" model="ir.rule">
+        <field name="name">Session All Records</field>
+        <field name="model_id" ref="model_patient_session"/>
+        <field name="groups" eval="[(4, ref('clinic_management.group_show_inactive_reports'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
 </odoo>

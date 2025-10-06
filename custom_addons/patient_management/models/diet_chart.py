@@ -16,6 +16,7 @@ class DietChart(models.Model):
     evening_with_time = fields.Char(string="Evening With Time")
     dinner_with_time = fields.Char(string="Dinner With Time")
     comments = fields.Char(string="Comments")
+    active = fields.Boolean(default=True)
 
 
     def _ist_date(self):
@@ -24,3 +25,9 @@ class DietChart(models.Model):
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
         return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

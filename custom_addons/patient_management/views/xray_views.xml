@@ -11,6 +11,7 @@
                 <field name="grade"/>
                 <field name="doctor_id" string="Doctor Name"/>
                 <field name="write_uid" string="Modified By"/>
+                <field name="active"/>
             </tree>
         </field>
     </record>

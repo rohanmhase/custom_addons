@@ -70,10 +70,17 @@ class Followup(models.Model):
     nidra = fields.Char(string="Nidra (Ati/Alpa/Nasha):", required=True)
     sweda = fields.Char(string="Sweda (Alpa/Ati/foul):", required=True)
     others_k = fields.Text(string="Others:")
+    active = fields.Boolean(default=True)
 
     def _ist_date(self):
 
         utc = (datetime.now())
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
-        return ist_date
+        return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

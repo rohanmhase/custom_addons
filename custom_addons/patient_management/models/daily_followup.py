@@ -37,12 +37,19 @@ class DailyFollowup(models.Model):
     jivha = fields.Char(string="Jivha")
 
     notes = fields.Text(string="Notes")
+    active = fields.Boolean(default=True)
 
     def _ist_date(self):
 
         utc = (datetime.now())
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
-        return ist_date
+        return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True
 
 

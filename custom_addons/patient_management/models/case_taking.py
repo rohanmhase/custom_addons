@@ -45,6 +45,7 @@ class CaseTaking(models.Model):
     adv_rx = fields.Char(string="Advise Rx", required=True)
     treatment = fields.Char(string="Treatment", required=True)
     notes = fields.Char(string="Notes")
+    active = fields.Boolean(default=True)
 
     _sql_constraints = [("unique_patient_case_taking", "unique(patient_id)", "⚠️ A patient can only have one case taking!")]
 
@@ -53,4 +54,10 @@ class CaseTaking(models.Model):
         utc = (datetime.now())
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
-        return ist_date
+        return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

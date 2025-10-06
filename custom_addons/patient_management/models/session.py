@@ -24,6 +24,7 @@ class Session(models.Model):
     before_and_after_therapy_comment = fields.Char(string="Before & After Therapy Comment", required=True)
     therapist_name = fields.Char(string="Therapist Name", required=True)
     state = fields.Selection([("draft", "Draft"), ("done", "Done")], default="draft")
+    active = fields.Boolean(default=True)
 
     @api.model
     def default_get(self, fields_list):
@@ -77,3 +78,9 @@ class Session(models.Model):
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
         return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

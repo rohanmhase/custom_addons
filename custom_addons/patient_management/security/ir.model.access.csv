@@ -15,13 +15,13 @@ access_patient_prescription_line_administrator,access.patient.prescription.line.
 
 
 access_clinic_patient_user,access.clinic.patient.user,model_clinic_patient,clinic_management.group_clinic_user,1,1,1,0
-access_patient_blood_report_user,access.patient.blood_report.user,model_patient_blood_report,clinic_management.group_clinic_user,1,1,1,0
-access_patient_case_taking_user,access.patient.case_taking.user,model_patient_case_taking,clinic_management.group_clinic_user,1,1,1,0
-access_patient_daily_followup_user,access.patient.daily_followup.user,model_patient_daily_followup,clinic_management.group_clinic_user,1,1,1,0
-access_patient_diet_chart_user,access.patient.diet_chart.user,model_patient_diet_chart,clinic_management.group_clinic_user,1,1,1,0
-access_patient_followup_user,access.patient.followup.user,model_patient_followup,clinic_management.group_clinic_user,1,1,1,0
-access_patient_enrollment_user,access.patient.enrollment.user,model_patient_enrollment,clinic_management.group_clinic_user,1,1,1,0
-access_patient_session_user,access.patient.session.user,model_patient_session,clinic_management.group_clinic_user,1,1,1,0
-access_patient_xray_user,access.patient.xray.user,model_patient_xray,clinic_management.group_clinic_user,1,1,1,0
-access_patient_prescription_user,access.patient.prescription.user,model_patient_prescription,clinic_management.group_clinic_user,1,1,1,0
-access_patient_prescription_line_user,access.patient.prescription.line.user,model_patient_prescription_line,clinic_management.group_clinic_user,1,1,1,0
+access_patient_blood_report_user,access.patient.blood_report.user,model_patient_blood_report,clinic_management.group_clinic_user,1,1,1,1
+access_patient_case_taking_user,access.patient.case_taking.user,model_patient_case_taking,clinic_management.group_clinic_user,1,1,1,1
+access_patient_daily_followup_user,access.patient.daily_followup.user,model_patient_daily_followup,clinic_management.group_clinic_user,1,1,1,1
+access_patient_diet_chart_user,access.patient.diet_chart.user,model_patient_diet_chart,clinic_management.group_clinic_user,1,1,1,1
+access_patient_followup_user,access.patient.followup.user,model_patient_followup,clinic_management.group_clinic_user,1,1,1,1
+access_patient_enrollment_user,access.patient.enrollment.user,model_patient_enrollment,clinic_management.group_clinic_user,1,1,1,1
+access_patient_session_user,access.patient.session.user,model_patient_session,clinic_management.group_clinic_user,1,1,1,1
+access_patient_xray_user,access.patient.xray.user,model_patient_xray,clinic_management.group_clinic_user,1,1,1,1
+access_patient_prescription_user,access.patient.prescription.user,model_patient_prescription,clinic_management.group_clinic_user,1,1,1,1
+access_patient_prescription_line_user,access.patient.prescription.line.user,model_patient_prescription_line,clinic_management.group_clinic_user,1,1,1,1

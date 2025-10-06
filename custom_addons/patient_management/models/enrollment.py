@@ -22,6 +22,7 @@ class Enrollment(models.Model):
         ('active', 'Active'),
         ('completed', 'Completed'),
     ], string="Status", default='active')
+    active = fields.Boolean(default=True)
 
 
     @api.depends('total_sessions', 'used_sessions')
@@ -38,3 +39,9 @@ class Enrollment(models.Model):
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
         return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True

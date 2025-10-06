@@ -13,6 +13,7 @@
                 <field name="investigation_status"/>
                 <field name="doctor_id" string="Doctor Name"/>
                 <field name="write_uid" string="Modified By"/>
+                <field name="active"/>
             </tree>
         </field>
     </record>
