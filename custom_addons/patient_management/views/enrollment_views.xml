@@ -6,12 +6,13 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="patient_id"/>
-                <field name="doctor_id"/>
                 <field name="enrollment_date"/>
                 <field name="total_sessions"/>
                 <field name="remaining_sessions"/>
                 <field name="used_sessions"/>
                 <field name="state"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>
@@ -35,6 +36,7 @@
                         <field name="first_cons_charges"/>
                         <field name="therapy_medicine"/>
                         <field name="total_sessions"/>
+                        <field name="notes"/>
                     </group>
                 </sheet>
             </form>

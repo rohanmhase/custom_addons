@@ -6,12 +6,13 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="patient_id"/>
-                <field name="doctor_id"/>
                 <field name="weekly_followup_date"/>
                 <field name="weight"/>
                 <field name="diagnosis"/>
                 <field name="k_c_o"/>
                 <field name="investigation_status"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>

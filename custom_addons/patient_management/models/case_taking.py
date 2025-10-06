@@ -44,6 +44,7 @@ class CaseTaking(models.Model):
     adv_treatment = fields.Char(string="Adv Treatment", required=True)
     adv_rx = fields.Char(string="Advise Rx", required=True)
     treatment = fields.Char(string="Treatment", required=True)
+    notes = fields.Char(string="Notes")
 
     _sql_constraints = [("unique_patient_case_taking", "unique(patient_id)", "⚠️ A patient can only have one case taking!")]
 

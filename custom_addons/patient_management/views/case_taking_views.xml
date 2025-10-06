@@ -7,8 +7,9 @@
             <tree>
                 <field name="patient_id"/>
                 <field name="case_taking_date"/>
-                <field name="doctor_id"/>
                 <field name="k_c_o"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>
@@ -198,6 +199,7 @@
                             <field name="adv_treatment"/>
                             <field name="adv_rx"/>
                             <field name="treatment"/>
+                            <field name="notes"/>
                         </group>
                     </sheet>
                 </sheet>

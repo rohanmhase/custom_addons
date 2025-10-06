@@ -11,8 +11,9 @@
                 <field name="phone"/>
                 <field name="mrn"/>
                 <field name="enroll_date" string="Date(MM/DD/YYYY)"/>
-                <field name="admin_id"/>
                 <field name="remaining_sessions"/>
+                <field name="admin_id" string="Admin Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>

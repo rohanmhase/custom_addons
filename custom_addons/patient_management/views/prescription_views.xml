@@ -6,9 +6,10 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="patient_id"/>
-                <field name="doctor_id"/>
                 <field name="prescription_date"/>
                 <field name="state"/>
+                <field name="doctor_id" string="Doctor/Admin Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>

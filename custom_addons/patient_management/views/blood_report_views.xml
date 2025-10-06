@@ -6,9 +6,10 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="patient_id"/>
-                <field name="doctor_id"/>
                 <field name="blood_report_date"/>
                 <field name="blood_report_day"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>
@@ -143,6 +144,96 @@
                                     <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine blood/crystal</td>
                                     <td style="border:1px solid #ccc; padding:6px;">
                                         <field name="urine_blood_crystal"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">CBC</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="cbc"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">LFT</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="lft"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">RFT</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="rft"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Lipid Profile</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="lipid_profile"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">T3</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="t3"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">T4</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="t4"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Uric Acid</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="uric_acid"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">RA</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="ra"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Anti-CCP</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="anti_ccp"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">HOMA-IR</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="homa_ir"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">C-Peptide</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="c_peptide"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">La/Ma Test</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="la_ma_test"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine Routine</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_routine"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Urine Microscopic</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="urine_microscopic"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Notes</td>
+                                    <td style="border:1px solid #ccc; padding:6px;">
+                                        <field name="notes"/>
                                     </td>
                                 </tr>
                             </tbody>

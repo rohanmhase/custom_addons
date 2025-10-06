@@ -7,8 +7,9 @@
             <tree>
                 <field name="patient_id"/>
                 <field name="diet_taken_date"/>
-                <field name="doctor_id"/>
                 <field name="therapy_day"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
             </tree>
         </field>
     </record>
