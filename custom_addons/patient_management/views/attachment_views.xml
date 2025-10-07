@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_attachment" model="ir.ui.view">
+        <field name="name">clinic.patient.attachment.tree</field>
+        <field name="model">patient.attachment</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="attachment_date"/>
+                <field name="name"/>
+                <field name="file_type"/>
+                <field name="admin" string="Admin Name"/>
+                <field name="write_uid" string="Modified By"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_attachment_form" model="ir.ui.view">
+        <field name="name">clinic.patient.attachment.from</field>
+        <field name="model">patient.attachment</field>
+        <field name="arch" type="xml">
+            <form string="Patient Attachment">
+                <sheet>
+                    <group>
+                        <field name="patient_id"/>
+                        <field name="admin" string="Admin Name"/>
+                        <field name="attachment_date"/>
+                        <field name="name"/>
+                        <field name="file_type"/>
+                        <field name="file_data" filename="name"/>
+                        <field name="s3_url" readonly="1"/>
+                        <button name="action_upload_to_s3"
+                                type="object"
+                                string="Upload"
+                                class="btn-primary"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_attachment" model="ir.actions.act_window">
+        <field name="name">Attachment</field>
+        <field name="res_model">patient.attachment</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

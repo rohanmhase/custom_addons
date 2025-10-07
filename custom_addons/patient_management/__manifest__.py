@@ -24,6 +24,7 @@
         'views/session_views.xml',
         'views/xray_views.xml',
         'views/prescription_views.xml',
+        'views/attachment_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

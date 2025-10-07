@@ -12,6 +12,7 @@ access_patient_session_administrator,access.patient.session.administrator,model_
 access_patient_xray_administrator,access.patient.xray.administrator,model_patient_xray,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_prescription_administrator,access.patient.prescription.administrator,model_patient_prescription,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_prescription_line_administrator,access.patient.prescription.line.administrator,model_patient_prescription_line,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_attachment_administrator,access.patient.attachment.administrator,model_patient_attachment,clinic_management.group_clinic_administrator,1,1,1,1
 
 
 access_clinic_patient_user,access.clinic.patient.user,model_clinic_patient,clinic_management.group_clinic_user,1,1,1,0
@@ -25,3 +26,4 @@ access_patient_session_user,access.patient.session.user,model_patient_session,cl
 access_patient_xray_user,access.patient.xray.user,model_patient_xray,clinic_management.group_clinic_user,1,1,1,1
 access_patient_prescription_user,access.patient.prescription.user,model_patient_prescription,clinic_management.group_clinic_user,1,1,1,1
 access_patient_prescription_line_user,access.patient.prescription.line.user,model_patient_prescription_line,clinic_management.group_clinic_user,1,1,1,1
+access_patient_attachment_user,access.patient.attachment.user,model_patient_attachment,clinic_management.group_clinic_user,1,1,1,1

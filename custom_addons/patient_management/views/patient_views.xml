@@ -33,6 +33,7 @@
                     <button name="action_open_prescription" type="object" string="Prescription"/>
                     <button name="action_open_session" type="object" string="Therapy Session"/>
                     <button name="action_open_xray" type="object" string="X-Ray"/>
+                    <button name="action_open_attachment" type="object" string="Attachment"/>
                 </header>
                 <sheet>
                     <group>
