@@ -32,6 +32,14 @@ class Patient(models.Model):
         required=True,
     )                                                                   # Clinic name
 
+    pain_types = fields.Char(string="Paint Types")
+
+    pain_diabetes = fields.Boolean(string="Diabetes")
+    pain_knee = fields.Boolean(string="Knee Pain")
+    pain_spine = fields.Boolean(string="Spine Pain")
+    pain_ra = fields.Boolean(string="RA")
+    pain_ana = fields.Boolean(string="ANA")
+
     _sql_constraints = [
         ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'),
     ]                                                                   # Prevent creating records for same registered phone numbers
@@ -62,6 +70,32 @@ class Patient(models.Model):
         store=False
     )
 
+    @api.model
+    def _get_pain_options(self):
+        return [
+            ('knee', 'Knee Pain'),
+            ('spine', 'Spine Pain'),
+            ('diabetes', 'Diabetes'),
+            ('ra', 'RA'),
+            ('ana', 'ANA')
+        ]
+
+    @api.onchange('pain_diabetes', 'pain_knee', 'pain_spine', 'pain_ra', 'pain_ana')
+    def _onchange_pain_types(self):
+        selected = []
+        if self.pain_knee:
+            selected.append("Knee Pain")
+        if self.pain_spine:
+            selected.append("Spine Pain")
+        if self.pain_diabetes:
+            selected.append("Diabetes")
+        if self.pain_ra:
+            selected.append("RA")
+        if self.pain_ana:
+            selected.append("ANA")
+        self.pain_types = ", ".join(selected)
+
+
     def _compute_remaining_sessions(self):
         for rec in self:
             enrollment = rec.active_enrollment_id
@@ -77,7 +111,7 @@ class Patient(models.Model):
     @api.constrains('phone')
     def _check_phone_number(self):
         for rec in self:
-            if rec.phone:
+            if rec.phone.isdigit():
                 # Only allow exactly 10 digits
                 if not re.match(r'^\d{10}$', rec.phone):
                     raise ValidationError("Phone number must be exactly 10 digits.")
@@ -256,6 +290,16 @@ class Patient(models.Model):
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
             "context": {"default_patient_id": self.id, "active_test": not show_all,},
+        }
+
+    def action_open_patient_case_paper(self):
+        self.ensure_one()
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        url = f"{base_url}/patient/{self.id}"
+        return {
+            "type": "ir.actions.act_url",
+            "target": "new",  # opens in new browser tab
+            "url": url,
         }
 
     def _ist_date(self):
