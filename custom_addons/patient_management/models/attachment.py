@@ -24,6 +24,7 @@ class PatientAttachment(models.Model):
     admin = fields.Many2one("res.users", string="Admin/BM", required=True, default=lambda self: self.env.user, readonly=True)
     attachment_date = fields.Date(string="Attachment Date", required=True, readonly=True,
                                   default=lambda self: self._ist_date())
+    other_description = fields.Char(string="Please specify (if Other)")
     active = fields.Boolean(default=True)
 
     @api.model
@@ -74,6 +75,16 @@ class PatientAttachment(models.Model):
             # Clear local file data to save space
             rec.file_data = False
 
+    @api.onchange('file_type')
+    def _onchange_file_type(self):
+        if self.file_type != 'other':
+            self.other_description = False  # clear if not "Other"
+
+    @api.constrains('file_type', 'other_description')
+    def _check_other_description(self):
+        for rec in self:
+            if rec.file_type == 'other' and not rec.other_description:
+                raise UserError("Please specify the description for 'Other' file type.")
 
     def _ist_date(self):
         utc = (datetime.now())
