@@ -2,6 +2,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import re
 from datetime import datetime, timedelta
+import uuid
 
 class Patient(models.Model):
     _name = "clinic.patient"
@@ -21,6 +22,7 @@ class Patient(models.Model):
 
     mrn = fields.Char(string="Medical Record Number",
                       readonly=True, copy=False, index=True)            # Medical record number
+    uuid = fields.Char(string="UUID", readonly=True, copy=False, index=True, default=lambda self: str(uuid.uuid4()))
     enroll_date = fields.Date(string="Enrollment Date",
                               readonly=True,
                               default=lambda self: self._ist_date(),
@@ -42,6 +44,7 @@ class Patient(models.Model):
 
     _sql_constraints = [
         ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'),
+        ('unique_uuid', 'unique(uuid)', '⚠️ UUID must be unique!'),
     ]                                                                   # Prevent creating records for same registered phone numbers
 
     admin_id = fields.Many2one("res.users", string="Admin / BM",
@@ -111,11 +114,10 @@ class Patient(models.Model):
     @api.constrains('phone')
     def _check_phone_number(self):
         for rec in self:
-            if rec.phone.isdigit():
+            if rec.phone:
                 # Only allow exactly 10 digits
                 if not re.match(r'^\d{10}$', rec.phone):
-                    raise ValidationError("Phone number must be exactly 10 digits.")
-
+                    raise ValidationError("Phone number must be exactly 10 digits and contain only numbers.")
 
     @api.model
     def create(self, vals):
@@ -124,6 +126,8 @@ class Patient(models.Model):
             partner = self.env["res.partner"].create({
                 "name": vals["name"],
                 "phone": vals.get("phone"),
+                "email": vals.get("email"),
+                "street": vals.get("address"),
                 "clinic_id": vals.get("clinic_id"),  # link clinic
             })
             vals["partner_id"] = partner.id
@@ -158,6 +162,11 @@ class Patient(models.Model):
         }
         if any(field in vals for field in restricted_fields):
             raise ValidationError("⚠️ You cannot update patient details once saved!")
+
+        if "clinic_id" in vals:
+            for rec in self:
+                if rec.partner_id:
+                    rec.partner_id.clinic_id = rec.clinic_id.id
 
         return super(Patient, self).write(vals)
 
@@ -295,7 +304,7 @@ class Patient(models.Model):
     def action_open_patient_case_paper(self):
         self.ensure_one()
         base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
-        url = f"{base_url}/patient/{self.id}"
+        url = f"{base_url}/patient/{self.uuid}"
         return {
             "type": "ir.actions.act_url",
             "target": "new",  # opens in new browser tab
