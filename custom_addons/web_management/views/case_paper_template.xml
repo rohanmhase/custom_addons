@@ -1,0 +1,1485 @@
+<odoo>
+    <template id="custom_qweb_template" name="Custom QWeb Template">
+        <t t-call="web.layout">
+            <link rel="stylesheet" type="text/css" href="/web_management/static/src/css/custom_style.css"/>
+            <div class="container">
+                <div class="header">
+                    <h1>Case Paper</h1>
+                </div>
+                <div class="patient-details">
+                    <div class="patient-header">
+                        <div class="patient-basic-info">
+                            <div class="patient-avatar">👤</div>
+                            <div class="patient-info-header">
+                                <div class="patient-name">
+                                    <t t-esc="patient.name"/>
+                                </div>
+                                <div class="patient-id">Patient ID:
+                                    <t t-esc="patient.mrn"/>
+                                </div>
+                                <div class="patient-basic-details">
+                                    <t t-if="patient.age">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Age</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.age"/>
+                                                years
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <div class="basic-detail">
+                                        <span class="basic-label">Gender</span>
+                                        <span class="basic-value">
+                                            <t t-if="patient.gender == 'male'">Male</t>
+                                            <t t-if="patient.gender == 'female'">Female</t>
+                                            <t t-if="patient.gender == 'other'">Other</t>
+                                        </span>
+                                    </div>
+                                    <t t-if="patient.phone">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Phone</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.phone"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.address">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Address</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.address"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.email">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Email</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.email"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.enroll_date">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Date</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.enroll_date"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.pain_types">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Registered For</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.pain_types"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.admin_id">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Created By</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.admin_id.name"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.write_uid">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Modified By</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.write_uid.name"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <t t-foreach="case_papers" t-as="cp" t-key="cp['date']">
+                        <div class="card shadow-sm mb-4">
+                            <div class="timeline-date">
+                                <p>
+                                    <strong>Date:</strong>
+                                    <t t-esc="cp['date']"/>
+                                </p>
+                            </div>
+                            <div class="card-body">
+                                <!-- Case Taking -->
+                                <t t-if="cp['case_taking']">
+                                    <h5>Case Taking</h5>
+                                    <t t-foreach="cp['case_taking']" t-as="ct" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="ct['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="ct['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>K/C/O:</strong>
+                                                <t t-esc="ct['k_c_o']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>P/H/O:</strong>
+                                                <t t-esc="ct['p_h_o']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Sx/H:</strong>
+                                                <t t-esc="ct['s_h']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>F/H:</strong>
+                                                <t t-esc="ct['f_h']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Allergies:</strong>
+                                                <t t-esc="ct['allergies']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Habits:</strong>
+                                                <t t-esc="ct['habits']"/>
+                                            </div>
+                                            <div class="row">
+                                                <span>
+                                                    <strong>Bowel Habits</strong>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Parameters</th>
+                                                            <th>Observation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Mal</td>
+                                                            <td>
+                                                                <t t-esc="ct['mal']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mutra</td>
+                                                            <td>
+                                                                <t t-esc="ct['mutra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nakta</td>
+                                                            <td>
+                                                                <t t-esc="ct['nakta']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Kshudha</td>
+                                                            <td>
+                                                                <t t-esc="ct['kshudha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nidra</td>
+                                                            <td>
+                                                                <t t-esc="ct['nidra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Jivha</td>
+                                                            <td>
+                                                                <t t-esc="ct['jivha']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <span>
+                                                    <strong>Examination</strong>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Observations</th>
+                                                            <th>Right</th>
+                                                            <th>Left</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Crepts</td>
+                                                            <td>
+                                                                <t t-esc="ct['crepts_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['crepts_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Shin Tenderness</td>
+                                                            <td>
+                                                                <t t-esc="ct['shin_tenderness_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['shin_tenderness_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Swelling</td>
+                                                            <td>
+                                                                <t t-esc="ct['swelling_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['swelling_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>ROM</td>
+                                                            <td>
+                                                                <t t-esc="ct['rom_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['rom_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>SLR</td>
+                                                            <td>
+                                                                <t t-esc="ct['slr_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['slr_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pedal Oedema</td>
+                                                            <td>
+                                                                <t t-esc="ct['pedal_oedema_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['pedal_oedema_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pain</td>
+                                                            <td>
+                                                                <t t-esc="ct['pain_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['pain_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Deformity</td>
+                                                            <td>
+                                                                <t t-esc="ct['deformity_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="ct['deformity_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Diet:</strong>
+                                                <t t-esc="ct['diet']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Diagnosis:</strong>
+                                                <t t-esc="ct['diagnosis']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Adv Investigation:</strong>
+                                                <t t-esc="ct['adv_investigation']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Adv Treatment:</strong>
+                                                <t t-esc="ct['adv_treatment']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Advise Rx:</strong>
+                                                <t t-esc="ct['adv_rx']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Treatment:</strong>
+                                                <t t-esc="ct['treatment']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Notes:</strong>
+                                                <t t-esc="ct['notes']"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Enrollment -->
+                                <t t-if="cp['enrollment']">
+                                    <h5>Enrollment</h5>
+                                    <t t-foreach="cp['enrollment']" t-as="en" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="en['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="en['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Status:</strong>
+                                                <t t-if="en['state'] == 'active'">Active</t>
+                                                <t t-if="en['state'] == 'completed'">Completed</t>
+                                            </div>
+                                            <div class="row">
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Daily Sheet Reference</th>
+                                                            <th>Total Amount</th>
+                                                            <th>Therapy Amount</th>
+                                                            <th>First Consultation Charges</th>
+                                                            <th>Therapy + Medicine</th>
+                                                            <th>Total Sessions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>
+                                                                <t t-esc="en['daily_sheet_ref']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['total_amount']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['therapy_amount']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['first_cons_charges']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['therapy_medicine']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['total_sessions']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Notes:</strong>
+                                                <t t-esc="en['notes']"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Weekly Followup -->
+                                <t t-if="cp['followup']">
+                                    <h5>Weekly Followup</h5>
+                                    <t t-foreach="cp['followup']" t-as="fl" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="fl['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="fl['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Weight:</strong>
+                                                <t t-esc="fl['weight']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Diagnosis:</strong>
+                                                <t t-esc="fl['diagnosis']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>K/C/O:</strong>
+                                                <t t-esc="fl['k_c_o']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Investigation Status:</strong>
+                                                <t t-esc="fl['investigation_status']"/>
+                                            </div>
+                                            <div class="row">
+                                                <span>
+                                                    <i>Shakhagata Examinations</i>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Observations</th>
+                                                            <th>Right</th>
+                                                            <th>Left</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Morning stiffness with duration</td>
+                                                            <td>
+                                                                <t t-esc="fl['morning_stiffness_with_duration_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['morning_stiffness_with_duration_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L shin tenderness with gradation</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_tenderness_with_gradation_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_tenderness_with_gradation_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L Knee tenderness with gradation and position</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_knee_tenderness_with_gradation_and_position_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_knee_tenderness_with_gradation_and_position_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L shin oedema with gradation</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_oedema_with_gradation_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_oedema_with_gradation_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pitting oedema</td>
+                                                            <td>
+                                                                <t t-esc="fl['pitting_oedema_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['pitting_oedema_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Non-Pitting oedema</td>
+                                                            <td>
+                                                                <t t-esc="fl['non_pitting_oedema_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['non_pitting_oedema_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L shin discoloration/rashes/itching/bruises</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_discoloration_rashes_itching_bruises_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_shin_discoloration_rashes_itching_bruises_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Local knee temperature</td>
+                                                            <td>
+                                                                <t t-esc="fl['local_knee_temperature_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['local_knee_temperature_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Heavy / Free</td>
+                                                            <td>
+                                                                <t t-esc="fl['heavy_free_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['heavy_free_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Complete / Restricted with degree</td>
+                                                            <td>
+                                                                <t t-esc="fl['complete_restricted_with_degree_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['complete_restricted_with_degree_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Incomplete extension in fingers</td>
+                                                            <td>
+                                                                <t t-esc="fl['incomplete_extension_in_fingers_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['incomplete_extension_in_fingers_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Varus / Valgus deformity</td>
+                                                            <td>
+                                                                <t t-esc="fl['varus_valgus_deformity_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['varus_valgus_deformity_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L knee Crept with Gradation</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_knee_crept_with_gradation_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_knee_crept_with_gradation_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pain Walking Reduced By %</td>
+                                                            <td>
+                                                                <t t-esc="fl['pain_while_walking_reduced_by_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['pain_while_walking_reduced_by_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>B/L SLR with degree</td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_slr_with_degree_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['b_l_slr_with_degree_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Varicose veins gradation</td>
+                                                            <td>
+                                                                <t t-esc="fl['varicose_veins_gradation_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['varicose_veins_gradation_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Burning sensation in B/L Knee/Shin</td>
+                                                            <td>
+                                                                <t t-esc="fl['burning_sensation_in_b_l_knee_shin_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="fl['burning_sensation_in_b_l_knee_shin_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Others</td>
+                                                            <td colspan="2">
+                                                                <t t-esc="fl['others_s']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <span>
+                                                    <i>Koshthagata Examinations</i>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Parameters</th>
+                                                            <th>Observation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Jivha</td>
+                                                            <td>
+                                                                <t t-esc="fl['jivha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Jwaranubhuti</td>
+                                                            <td>
+                                                                <t t-esc="fl['jwaranubhuti']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Kshudha (manda/vishama/tikshna)</td>
+                                                            <td>
+                                                                <t t-esc="fl['kshudha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Kantha-Uro-Udar Daha</td>
+                                                            <td>
+                                                                <t t-esc="fl['kantha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Tiktamlodgar</td>
+                                                            <td>
+                                                                <t t-esc="fl['tiktamlodgar']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mala/Aadhman/Malabaddhata/sticky/Drava/IBS</td>
+                                                            <td>
+                                                                <t t-esc="fl['mala_aadhman_malabaddhata_sticky_drava']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mutra/Naktamutrata/Mutradaha</td>
+                                                            <td>
+                                                                <t t-esc="fl['mutra_naktamutrata_mutradaha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Rasa Dhatu Dushi Lakshane</td>
+                                                            <td>
+                                                                <t t-esc="fl['rasa_dhatu_dushti_lakshane']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nidra (Ati/Alpa/Nasha)</td>
+                                                            <td>
+                                                                <t t-esc="fl['nidra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Sweda (Alpa/Ati/foul)</td>
+                                                            <td>
+                                                                <t t-esc="fl['sweda']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Others</td>
+                                                            <td>
+                                                                <t t-esc="fl['others_k']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Prescriptions -->
+                                <t t-if="cp['prescriptions']">
+                                    <h5>Prescriptions</h5>
+                                    <t t-foreach="cp['prescriptions']" t-as="presc" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="presc['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="presc['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Status:</strong>
+                                                <t t-if="presc['state'] == 'confirmed'">Confirmed</t>
+                                                <t t-if="presc['state'] == 'done'">Done</t>
+                                            </div>
+                                            <div class="row">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Medicine</th>
+                                                            <th>Qty</th>
+                                                            <th>Instructions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="presc['meds']" t-as="med" t-key="loop.index0">
+                                                            <tr>
+                                                                <td>
+                                                                    <t t-esc="med['medicine']"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="med['qty']"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="med['instructions']"/>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Notes:</strong>
+                                                <t t-esc="presc['notes']"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Therapy Session -->
+                                <t t-if="cp['session']">
+                                    <h5>Therapy Session</h5>
+                                    <t t-foreach="cp['session']" t-as="sess" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="sess['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="sess['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Session Day:</strong>
+                                                <t t-esc="sess['session_day']"/>
+                                            </div>
+                                            <div class="row">
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Symptoms</th>
+                                                            <th>Results</th>
+                                                            <th>Detox Therapy</th>
+                                                            <th>Regeneration Therapy</th>
+                                                            <th>Right</th>
+                                                            <th>Left</th>
+                                                            <th>Before and After Therapy Comment</th>
+                                                            <th>Therapist Name</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Jivha</td>
+                                                            <td>
+                                                                <t t-esc="sess['jivha']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['detox_therapy']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['regeneration_therapy']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['right_knee']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['left_knee']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['before_and_after_therapy_comment']"/>
+                                                            </td>
+                                                            <td rowspan="4">
+                                                                <t t-esc="sess['therapist_name']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Swelling</td>
+                                                            <td>
+                                                                <t t-esc="sess['swelling']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Digestion</td>
+                                                            <td>
+                                                                <t t-esc="sess['digestion']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Motion</td>
+                                                            <td>
+                                                                <t t-esc="sess['motion']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Daily Followup -->
+                                <t t-if="cp['daily_followup']">
+                                    <h5>Daily Followup</h5>
+                                    <t t-foreach="cp['daily_followup']" t-as="df" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="df['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="df['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>C/O:</strong>
+                                                <t t-esc="df['c_o']"/>
+                                            </div>
+                                            <div class="row">
+                                                <span>
+                                                    <strong>Examination</strong>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Observations</th>
+                                                            <th>Right</th>
+                                                            <th>Left</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Crepts</td>
+                                                            <td>
+                                                                <t t-esc="df['crepts_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['crepts_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Shin Tenderness</td>
+                                                            <td>
+                                                                <t t-esc="df['shin_tenderness_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['shin_tenderness_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Swelling</td>
+                                                            <td>
+                                                                <t t-esc="df['swelling_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['swelling_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>ROM</td>
+                                                            <td>
+                                                                <t t-esc="df['rom_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['rom_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>SLR</td>
+                                                            <td>
+                                                                <t t-esc="df['slr_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['slr_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pedal Oedema</td>
+                                                            <td>
+                                                                <t t-esc="df['pedal_oedema_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['pedal_oedema_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Pain</td>
+                                                            <td>
+                                                                <t t-esc="df['pain_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['pain_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Deformity</td>
+                                                            <td>
+                                                                <t t-esc="df['deformity_rt']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="df['deformity_lt']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <span>
+                                                    <strong>Bowel Habits</strong>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Parameters</th>
+                                                            <th>Observation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Mal</td>
+                                                            <td>
+                                                                <t t-esc="df['mal']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mutra</td>
+                                                            <td>
+                                                                <t t-esc="df['mutra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nakta</td>
+                                                            <td>
+                                                                <t t-esc="df['nakta']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Kshudha</td>
+                                                            <td>
+                                                                <t t-esc="df['kshudha']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nidra</td>
+                                                            <td>
+                                                                <t t-esc="df['nidra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Jivha</td>
+                                                            <td>
+                                                                <t t-esc="df['jivha']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Notes:</strong>
+                                                <t t-esc="df['notes']"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Diet Chart -->
+                                <t t-if="cp['diet_chart']">
+                                    <h5>Diet Chart</h5>
+                                    <t t-foreach="cp['diet_chart']" t-as="dc" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="dc['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="dc['modified_by']"/>
+                                            </div>
+                                            <div class="row">
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Therapy Day</th>
+                                                            <th>Morning With Time</th>
+                                                            <th>Lunch with Time</th>
+                                                            <th>Evening With Time</th>
+                                                            <th>Dinner With Time</th>
+                                                            <th>Comments</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>
+                                                                <t t-esc="dc['therapy_day']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dc['morning_with_time']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dc['lunch_with_time']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dc['evening_with_time']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dc['dinner_with_time']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dc['comments']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- X-Ray -->
+                                <t t-if="cp['xray']">
+                                    <h5>X-Ray Grade</h5>
+                                    <t t-foreach="cp['xray']" t-as="xr" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="xr['doctor_id']"/>
+                                            </div>
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="xr['modified_by']"/>
+                                            </div>
+                                            <div class="row">
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Grade</th>
+                                                            <th>Radiological Findings</th>
+                                                            <th>5<sup>th</sup> Day
+                                                            </th>
+                                                            <th>20<sup>th</sup> Day
+                                                            </th>
+                                                            <th>40<sup>th</sup> Day
+                                                            </th>
+                                                            <th>60<sup>th</sup> Day
+                                                            </th>
+                                                            <th>80<sup>th</sup> Day
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>0</td>
+                                                            <td>Normal</td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '5'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '20'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '40'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '60'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '80'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>1</td>
+                                                            <td>Doubtful Joint space narrowing and possible osteophytic
+                                                                lipping.
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '5'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '20'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '40'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '60'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '80'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>2</td>
+                                                            <td>Definite osteophytes and possible joint space narrowing.
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '5'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '20'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '40'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '60'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '80'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>3</td>
+                                                            <td>Moderate multiple osteophytes, definite narrowing of
+                                                                joint
+                                                                space and some sclerosis and possible deformity of bone
+                                                                ends.
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '5'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '20'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '40'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '60'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '80'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>4</td>
+                                                            <td>Large osteophytes, marked narrowing of joint space,
+                                                                severe
+                                                                sclerosis and definite deformity of bone ends.
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '5'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '20'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '40'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '60'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '80'">
+                                                                    ✔
+                                                                </t>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Attachment -->
+                                <t t-if="cp['attachment']">
+                                    <h5>Attachment</h5>
+                                    <t t-foreach="cp['attachment']" t-as="att" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="att['admin']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="att['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>File Type:</strong>
+                                                <t t-if="att['file_type'] == 'xray'">X-Ray</t>
+                                                <t t-if="att['file_type'] == 'consent'">Consent Form</t>
+                                                <t t-if="att['file_type'] == 'mri'">MRI</t>
+                                                <t t-if="att['file_type'] == 'blood_report'">Blood Report</t>
+                                                <t t-if="att['file_type'] == 'other'">
+                                                    <t t-esc="att['other_description']"/>
+                                                </t>
+                                            </div>
+                                            <div class="info-text">
+                                                <t t-if="att['s3_url'] and ('.jpg' in att['s3_url'] or '.jpeg' in att['s3_url'] or '.png' in att['s3_url'])">
+                                                    <img t-att-src="att['s3_url']"
+                                                         alt="Attachment Image"
+                                                         class="img-fluid rounded shadow-sm"
+                                                         style="object-fit: contain;"/>
+                                                </t>
+                                                <t t-if="att['s3_url'] and (att['s3_url'].endswith('.pdf'))">
+                                                    <iframe t-att-src="att['s3_url']"
+                                                            width="100%"
+                                                            height="600px"
+                                                            style="border: 1px solid #ddd; border-radius: 8px;">
+                                                    </iframe>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <!-- Blood Report -->
+                                <t t-if="cp['blood_report']">
+                                    <h5>Blood Report</h5>
+                                    <t t-foreach="cp['blood_report']" t-as="br" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="br['doctor_id']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="br['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Day of Blood Report:</strong>
+                                                <t t-if="br['blood_report_day'] == '1'">1
+                                                    <sup>st</sup>
+                                                </t>
+                                                <t t-if="br['blood_report_day'] == '30'">30
+                                                    <sup>th</sup>
+                                                </t>
+                                                <t t-if="br['blood_report_day'] == '60'">60
+                                                    <sup>th</sup>
+                                                </t>
+                                                <t t-if="br['blood_report_day'] == '80'">80
+                                                    <sup>th</sup>
+                                                </t>
+                                            </div>
+                                            <div class="row">
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Parameters</th>
+                                                            <th>Observation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Haemoglobin</td>
+                                                            <td>
+                                                                <t t-esc="br['haemoglobin']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>ESR</td>
+                                                            <td>
+                                                                <t t-esc="br['esr']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Platelet Count</td>
+                                                            <td>
+                                                                <t t-esc="br['platelet_count']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>BSL Fasting</td>
+                                                            <td>
+                                                                <t t-esc="br['bsl_fasting']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>BSL Post Prandial</td>
+                                                            <td>
+                                                                <t t-esc="br['bsl_post_prandial']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>HBA1c</td>
+                                                            <td>
+                                                                <t t-esc="br['hba1c']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Sr. Uric Acid</td>
+                                                            <td>
+                                                                <t t-esc="br['sr_uric_acid']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Ra Factor/Titre</td>
+                                                            <td>
+                                                                <t t-esc="br['ra_factor_titre']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>CRP</td>
+                                                            <td>
+                                                                <t t-esc="br['crp']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>ANA</td>
+                                                            <td>
+                                                                <t t-esc="br['ana']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>T-Cholesterol</td>
+                                                            <td>
+                                                                <t t-esc="br['t_cholesterol']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>T-Triglyceride</td>
+                                                            <td>
+                                                                <t t-esc="br['t_triglyceride']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Sr. Creatinine</td>
+                                                            <td>
+                                                                <t t-esc="br['sr_creatinine']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>TSH</td>
+                                                            <td>
+                                                                <t t-esc="br['tsh']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine Sugar</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_sugar']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine pus cells/bacteria</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_pus_cells_bacteria']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine Protein</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_protein']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine blood/crystal</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_blood_crystal']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>CBC</td>
+                                                            <td>
+                                                                <t t-esc="br['cbc']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>LFT</td>
+                                                            <td>
+                                                                <t t-esc="br['lft']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>RFT</td>
+                                                            <td>
+                                                                <t t-esc="br['rft']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Lipid Profile</td>
+                                                            <td>
+                                                                <t t-esc="br['lipid_profile']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>T3</td>
+                                                            <td>
+                                                                <t t-esc="br['t3']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>T4</td>
+                                                            <td>
+                                                                <t t-esc="br['t4']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Uric Acid</td>
+                                                            <td>
+                                                                <t t-esc="br['uric_acid']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Ra Factor</td>
+                                                            <td>
+                                                                <t t-esc="br['ra']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Anti-CCP</td>
+                                                            <td>
+                                                                <t t-esc="br['anti_ccp']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>HOMA-IR</td>
+                                                            <td>
+                                                                <t t-esc="br['homa_ir']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>C-Peptide</td>
+                                                            <td>
+                                                                <t t-esc="br['c_peptide']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>La/Ma Test</td>
+                                                            <td>
+                                                                <t t-esc="br['la_ma_test']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine Routine</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_routine']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Urine Microscopic</td>
+                                                            <td>
+                                                                <t t-esc="br['urine_microscopic']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Notes</td>
+                                                            <td>
+                                                                <t t-esc="br['notes']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
