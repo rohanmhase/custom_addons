@@ -49,8 +49,8 @@
                             <thead>
                                 <tr style="background-color:#f2f2f2; text-align:center;">
                                     <th style="border:1px solid #ccc; padding:8px;">Observations</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Left</th>
                                     <th style="border:1px solid #ccc; padding:8px;">Right</th>
+                                    <th style="border:1px solid #ccc; padding:8px;">Left</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -59,10 +59,10 @@
                                         stiffness with duration
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="morning_stiffness_with_duration_lt"/>
+                                        <field name="morning_stiffness_with_duration_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="morning_stiffness_with_duration_rt"/>
+                                        <field name="morning_stiffness_with_duration_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -70,10 +70,10 @@
                                         shin tenderness with gradation
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_tenderness_with_gradation_lt"/>
+                                        <field name="b_l_shin_tenderness_with_gradation_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_tenderness_with_gradation_rt"/>
+                                        <field name="b_l_shin_tenderness_with_gradation_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -81,10 +81,10 @@
                                         Knee tenderness with gradation and position
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_knee_tenderness_with_gradation_and_position_lt"/>
+                                        <field name="b_l_knee_tenderness_with_gradation_and_position_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_knee_tenderness_with_gradation_and_position_rt"/>
+                                        <field name="b_l_knee_tenderness_with_gradation_and_position_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -92,10 +92,10 @@
                                         shin oedema with gradation
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_oedema_with_gradation_lt"/>
+                                        <field name="b_l_shin_oedema_with_gradation_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_oedema_with_gradation_rt"/>
+                                        <field name="b_l_shin_oedema_with_gradation_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -103,10 +103,10 @@
                                         oedema
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="pitting_oedema_lt"/>
+                                        <field name="pitting_oedema_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="pitting_oedema_rt"/>
+                                        <field name="pitting_oedema_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -114,10 +114,10 @@
                                         Non-Pitting oedema
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="non_pitting_oedema_lt"/>
+                                        <field name="non_pitting_oedema_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="non_pitting_oedema_rt"/>
+                                        <field name="non_pitting_oedema_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -125,10 +125,10 @@
                                         shin discoloration/rashes/itching/bruises
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_lt"/>
+                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_rt"/>
+                                        <field name="b_l_shin_discoloration_rashes_itching_bruises_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -136,10 +136,10 @@
                                         knee temperature
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="local_knee_temperature_lt"/>
+                                        <field name="local_knee_temperature_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="local_knee_temperature_rt"/>
+                                        <field name="local_knee_temperature_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -147,10 +147,10 @@
                                         Free
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="heavy_free_lt"/>
+                                        <field name="heavy_free_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="heavy_free_rt"/>
+                                        <field name="heavy_free_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -158,10 +158,10 @@
                                         Complete / Restricted with degree
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="complete_restricted_with_degree_lt"/>
+                                        <field name="complete_restricted_with_degree_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="complete_restricted_with_degree_rt"/>
+                                        <field name="complete_restricted_with_degree_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -169,10 +169,10 @@
                                         Incomplete extension in fingers
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="incomplete_extension_in_fingers_lt"/>
+                                        <field name="incomplete_extension_in_fingers_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="incomplete_extension_in_fingers_rt"/>
+                                        <field name="incomplete_extension_in_fingers_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -180,10 +180,10 @@
                                         Valgus deformity
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="varus_valgus_deformity_lt"/>
+                                        <field name="varus_valgus_deformity_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="varus_valgus_deformity_rt"/>
+                                        <field name="varus_valgus_deformity_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -191,10 +191,10 @@
                                         knee Crept with Gradation
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_knee_crept_with_gradation_lt"/>
+                                        <field name="b_l_knee_crept_with_gradation_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_knee_crept_with_gradation_rt"/>
+                                        <field name="b_l_knee_crept_with_gradation_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -202,10 +202,10 @@
                                         Walking Reduced By %
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="pain_while_walking_reduced_by_lt"/>
+                                        <field name="pain_while_walking_reduced_by_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="pain_while_walking_reduced_by_rt"/>
+                                        <field name="pain_while_walking_reduced_by_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -213,10 +213,10 @@
                                         with degree
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_slr_with_degree_lt"/>
+                                        <field name="b_l_slr_with_degree_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="b_l_slr_with_degree_rt"/>
+                                        <field name="b_l_slr_with_degree_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -224,10 +224,10 @@
                                         Varicose veins gradation
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="varicose_veins_gradation_lt"/>
+                                        <field name="varicose_veins_gradation_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="varicose_veins_gradation_rt"/>
+                                        <field name="varicose_veins_gradation_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
@@ -235,10 +235,10 @@
                                         sensation in B/L Knee/Shin
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="burning_sensation_in_b_l_knee_shin_lt"/>
+                                        <field name="burning_sensation_in_b_l_knee_shin_rt"/>
                                     </td>
                                     <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="burning_sensation_in_b_l_knee_shin_rt"/>
+                                        <field name="burning_sensation_in_b_l_knee_shin_lt"/>
                                     </td>
                                 </tr>
                                 <tr>
