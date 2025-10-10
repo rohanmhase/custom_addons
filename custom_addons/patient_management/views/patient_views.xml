@@ -67,6 +67,7 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="mrn"/>
                 <field name="enroll_date"/>
 
                 <!-- Custom filter for today's patients -->
