@@ -9,7 +9,7 @@
                 <field name="attachment_date"/>
                 <field name="name"/>
                 <field name="file_type"/>
-                <field name="other_description"/>
+                <field name="other_description" string="Other Description"/>
                 <field name="admin" string="Admin Name"/>
                 <field name="write_uid" string="Modified By"/>
                 <field name="active"/>

@@ -60,19 +60,35 @@ class PatientAttachment(models.Model):
             file_name = f"{uuid.uuid4()}_{rec.name}"
             file_content = base64.b64decode(rec.file_data)
 
-            # Upload file to S3
+            # Detect content type
+            content_type = "application/octet-stream"
+            content_disp = "inline"
+            lower_name = rec.name.lower()
+
+            if lower_name.endswith(".pdf"):
+                content_type = "application/pdf"
+            elif lower_name.endswith(".jpg") or lower_name.endswith(".jpeg"):
+                content_type = "image/jpeg"
+            elif lower_name.endswith(".png"):
+                content_type = "image/png"
+            elif lower_name.endswith(".txt"):
+                content_type = "text/plain"
+
+            # Upload file to S3 with correct headers
             s3.put_object(
                 Bucket=bucket,
                 Key=file_name,
                 Body=file_content,
-                ACL='private',  # recommended for medical data
-                ContentType='application/octet-stream'
+                ACL='private',  # recommended for sensitive files
+                ContentType=content_type,
+                ContentDisposition=content_disp
             )
 
-            # Generate the URL (you can use presigned URL if private)
-            rec.s3_url = f"https://{bucket}.s3.{rec._get_s3_client().meta.region_name}.amazonaws.com/{file_name}"
+            # Generate URL (you may use presigned URL for restricted access)
+            region = s3.meta.region_name
+            rec.s3_url = f"https://{bucket}.s3.{region}.amazonaws.com/{file_name}"
 
-            # Clear local file data to save space
+            # Clear local file data
             rec.file_data = False
 
     @api.onchange('file_type')
