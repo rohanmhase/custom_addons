@@ -6,7 +6,8 @@
     "category": "Healthcare",
     "depends": ["base", "web",],
     "data": [
-        "views/case_paper_template.xml"
+        "views/case_paper_template.xml",
+        "views/x_ray_template.xml",
     ],
     "installable": True,
     "application": False,

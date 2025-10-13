@@ -453,3 +453,51 @@ class PatientController(http.Controller):
             "patient": patient,
             "case_papers": case_papers,
         })
+
+    @http.route('/patient/xray/<string:uuid>', type='http', auth='user', website=True)
+    def patient_xray_details(self, uuid, **kwargs):
+        patient = request.env['clinic.patient'].sudo().search([("uuid", "=", uuid)], limit=1)
+        if not patient:
+            return request.not_found()
+
+        attachment = request.env["patient.attachment"].sudo().search(
+            [("patient_id", "=", patient.id), ("file_type", "=", "xray")],
+            order="attachment_date desc"
+        )
+
+        grouped_data = defaultdict(lambda: {"attachment": []})
+
+        for att in attachment:
+            if not att.attachment_date:
+                continue
+
+            if isinstance(att.attachment_date, datetime):
+                date_key = att.attachment_date.date()
+
+            else:
+                date_key = att.attachment_date
+
+            grouped_data[date_key]["attachment"].append({
+                "admin": att.admin.name,
+                "modified_by": att.write_uid.name,
+                "file_type": att.file_type,
+                "s3_url": att.s3_url,
+                "other_description": att.other_description,
+            })
+
+        x_rays_data = []
+        for date, details in grouped_data.items():
+            x_rays_data.append({
+                "date": date,
+                "attachment": details["attachment"]
+            })
+
+        x_rays_data = sorted(x_rays_data, key=lambda x: x["date"], reverse=True)
+
+        for xrd in x_rays_data:
+            xrd["date"] = xrd["date"].strftime("%d-%m-%Y")
+
+        return request.render("web_management.custom_qweb_xray_template", {
+            "patient": patient,
+            "x_rays_data": x_rays_data,
+        })

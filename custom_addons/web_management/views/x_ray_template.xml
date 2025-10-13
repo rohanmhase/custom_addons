@@ -1,0 +1,147 @@
+<odoo>
+    <template id="custom_qweb_xray_template" name="Custom QWeb X-Ray Template">
+        <t t-call="web.layout">
+            <link rel="stylesheet" type="text/css" href="/web_management/static/src/css/custom_style.css"/>
+            <div class="container">
+                <div class="header">
+                    <h1>X-Rays</h1>
+                </div>
+                <div class="patient-details">
+                    <div class="patient-header">
+                        <div class="patient-basic-info">
+                            <div class="patient-avatar">👤</div>
+                            <div class="patient-info-header">
+                                <div class="patient-name">
+                                    <t t-esc="patient.name"/>
+                                </div>
+                                <div class="patient-id">Patient ID:
+                                    <t t-esc="patient.mrn"/>
+                                </div>
+                                <div class="patient-basic-details">
+                                    <t t-if="patient.age">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Age</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.age"/>
+                                                years
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <div class="basic-detail">
+                                        <span class="basic-label">Gender</span>
+                                        <span class="basic-value">
+                                            <t t-if="patient.gender == 'male'">Male</t>
+                                            <t t-if="patient.gender == 'female'">Female</t>
+                                            <t t-if="patient.gender == 'other'">Other</t>
+                                        </span>
+                                    </div>
+                                    <t t-if="patient.phone">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Phone</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.phone"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.address">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Address</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.address"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.email">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Email</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.email"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.enroll_date">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Date</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.enroll_date"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.pain_types">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Registered For</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.pain_types"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.admin_id">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Created By</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.admin_id.name"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                    <t t-if="patient.write_uid">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Modified By</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.write_uid.name"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <t t-foreach="x_rays_data" t-as="xrd" t-key="xrd['date']">
+                        <div class="card shadow-sm mb-4">
+                            <div class="timeline-date">
+                                <p>
+                                    <strong>Date:</strong>
+                                    <t t-esc="xrd['date']"/>
+                                </p>
+                            </div>
+                            <div class="card-body">
+                                <!-- Attachment -->
+                                <t t-if="xrd['attachment']">
+                                    <h5>Attachment</h5>
+                                    <t t-foreach="xrd['attachment']" t-as="att" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="att['admin']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="att['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>File Type:</strong>
+                                                <t t-if="att['file_type'] == 'xray'">X-Ray</t>
+                                                <t t-if="att['s3_url'] and ('.jpg' in att['s3_url'] or '.jpeg' in att['s3_url'] or '.png' in att['s3_url'])">
+                                                    <img t-att-src="att['s3_url']"
+                                                         alt="Attachment Image"
+                                                         class="img-fluid rounded shadow-sm"
+                                                         style="object-fit: contain;"/>
+                                                </t>
+                                                <t t-if="att['s3_url'] and (att['s3_url'].endswith('.pdf'))">
+                                                    <iframe t-att-src="att['s3_url']"
+                                                            width="100%"
+                                                            height="600px"
+                                                            style="border: 1px solid #ddd; border-radius: 8px;">
+                                                    </iframe>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

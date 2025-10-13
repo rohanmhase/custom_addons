@@ -311,6 +311,16 @@ class Patient(models.Model):
             "url": url,
         }
 
+    def action_open_patient_xray(self):
+        self.ensure_one()
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        url = f"{base_url}/patient/xray/{self.uuid}"
+        return {
+            "type": "ir.actions.act_url",
+            "target": "new",  # opens in new browser tab
+            "url": url,
+        }
+
     def _ist_date(self):
 
         utc = (datetime.now())

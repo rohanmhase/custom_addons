@@ -35,6 +35,7 @@
                     <button name="action_open_xray" type="object" string="X-Ray"/>
                     <button name="action_open_attachment" type="object" string="Attachment"/>
                     <button name="action_open_patient_case_paper" type="object" string="Case Paper"/>
+                    <button name="action_open_patient_xray" type="object" string="View X-Rays"/>
                 </header>
                 <sheet>
                     <group>
