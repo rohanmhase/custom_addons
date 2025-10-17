@@ -14,7 +14,10 @@
         'views/clinics_views.xml',
         'views/res_users_views.xml',
     ],
-    "assets": {},
+    "assets": {
+        'point_of_sale._assets_pos': [
+            "clinic_management/static/src/js/product_screen.js",]
+    },
     "installable": True,
     "application": True,
     "license": "LGPL-3",

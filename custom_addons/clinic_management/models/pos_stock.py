@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import UserError, ValidationError
 
 class StockWarehouse(models.Model):
     _inherit = "stock.warehouse"
@@ -48,3 +49,25 @@ class PosSession(models.Model):
             result['search_params']['fields'].append('clinic_id')
 
         return result
+
+class PosOrder(models.Model):
+    _inherit = 'pos.order'
+
+    @api.constrains('partner_id')
+    def check_partner_id(self):
+        """Ensure customer is selected before validating order"""
+        for order in self:
+            if not order.partner_id:
+                raise ValidationError(_('Please select the customer before validating the order'))
+
+
+    def _process_order(self, order, draft, existing_order):
+
+        """Override to add customer validation"""
+        if not order.get('data', {}).get('partner_id'):
+            raise UserError(_('Customer is required. Please select a customer before validating the order'))
+
+        if'l10n_es_tbai_refund_reason' in order['data']:
+            return super(PosOrder, self.with_context(l10n_es_tbai_refund_reason=order['data']['l10n_es_tbai_refund_reason']))._process_order(order, draft, existing_order)
+        else:
+            return super()._process_order(order, draft, existing_order)
