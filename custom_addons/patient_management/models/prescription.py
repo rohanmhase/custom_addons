@@ -40,6 +40,14 @@ class Prescription(models.Model):
 
     active = fields.Boolean(default=True)
 
+
+    def _check_has_lines(self):
+        """Raise error if no lines exist."""
+        for rec in self:
+            if not rec.line_ids:
+                raise UserError(_("⚠️ You cannot update a prescription without medicines."))
+
+
     @api.model
     def get_available_medicines(self, clinic_id):
         """Get all available medicines with stock for the clinic's warehouse"""
@@ -71,6 +79,7 @@ class Prescription(models.Model):
 
     def _check_stock(self):
         """Check all lines against available stock"""
+        self._check_has_lines()
         error_msgs = []
         for line in self.line_ids:
             product = line.product_id
@@ -104,6 +113,7 @@ class Prescription(models.Model):
     # ------------------ CONFIRM ACTION ------------------ #
     def action_confirm(self):
         for rec in self:
+            rec._check_has_lines()
             if rec.state == "done":
                 raise UserError(_("⚠️ You cannot reconfirm a prescription that is already %s.") % rec.state)
             if not rec.line_ids:
