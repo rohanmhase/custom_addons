@@ -24,27 +24,48 @@
                     <button name="action_confirm" type="object" string="Confirm"/>
                 </header>
                 <sheet>
-                    <group>
-                        <field name="patient_id"/>
-                        <field name="doctor_id"/>
-                        <field name="prescription_date"/>
-                        <field name="clinic_id"/>
-                    </group>
-                    <notebook>
-                        <page string="Medicines">
-                            <field name="line_ids">
-                                <tree editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="qty"/>
-                                    <field name="instructions"/>
-                                    <field name="qty_available"/>
-                                </tree>
-                            </field>
-                        </page>
-                    </notebook>
-                    <group>
-                        <field name="notes"/>
-                    </group>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                            <field name="prescription_date"/>
+                            <field name="clinic_id"/>
+                        </group>
+                        <div class="row mt-3">
+                            <!-- Left Side -->
+                            <div class="col-md-6">
+                                <span class="o_form_label">Prescribed Medicines</span>
+                                <field name="line_ids" nolabel="1">
+                                    <tree string="Prescription Lines" editable="bottom">
+                                        <field name="product_id"
+                                               domain="[('type', '=', 'product'), ('sale_ok', '=', True)]"
+                                               options="{'no_create': True, 'no_open': True}"/>
+                                        <field name="qty"/>
+                                        <field name="instructions"/>
+                                    </tree>
+                                </field>
+                            </div>
+
+                            <!-- Right Side -->
+                            <div class="col-md-6">
+                                <div class="o_medicine_tiles_container">
+                                    <div class="mb-2">
+                                        <span class="o_form_label">Available Medicines</span>
+                                        <input type="text" class="form-control form-control-sm mt-2"
+                                               placeholder="Search medicines..." id="medicine_search"/>
+                                    </div>
+                                    <div class="o_medicine_tiles" id="medicine_tiles_area">
+                                        <!-- Medicine tiles rendered via JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </sheet>
+                    <sheet>
+                        <group>
+                            <field name="notes"/>
+                        </group>
+                    </sheet>
                 </sheet>
             </form>
         </field>

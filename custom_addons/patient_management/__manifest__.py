@@ -28,7 +28,10 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'patient_management/static/src/css/form.css'
+            'patient_management/static/src/css/form.css',
+            'patient_management/static/src/js/prescription_form_controller.js',
+            'patient_management/static/src/css/prescription_styles.css',
+
         ],
         'point_of_sale._assets_pos': [
             "patient_management/static/src/js/autoload_prescription.js",

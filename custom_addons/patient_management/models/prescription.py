@@ -40,6 +40,35 @@ class Prescription(models.Model):
 
     active = fields.Boolean(default=True)
 
+    @api.model
+    def get_available_medicines(self, clinic_id):
+        """Get all available medicines with stock for the clinic's warehouse"""
+        clinic = self.env['clinic.clinic'].browse(clinic_id)
+        if not clinic or not clinic.warehouse_id:
+            return []
+
+        warehouse = clinic.warehouse_id
+        products = self.env['product.product'].search([
+            ('type', '=', 'product'),
+            ('sale_ok', '=', True),
+            ('active', '=', True)
+        ])
+
+        medicine_data = []
+        for product in products:
+            qty_available = product.with_context(
+                location=warehouse.lot_stock_id.id
+            ).qty_available if warehouse.lot_stock_id else product.qty_available
+
+            medicine_data.append({
+                'id': product.id,
+                'name': product.display_name,
+                'qty_available': qty_available,
+                'image': product.image_128,
+            })
+
+        return medicine_data
+
     def _check_stock(self):
         """Check all lines against available stock"""
         error_msgs = []
@@ -178,8 +207,3 @@ class PrescriptionLine(models.Model):
                     ).qty_available
             line.qty_available = qty
 
-    def unlink(self):
-        for record in self:
-            record.active = False
-        # Do not call super() → prevents actual deletion
-        return True
