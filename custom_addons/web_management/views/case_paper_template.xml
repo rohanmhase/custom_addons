@@ -673,6 +673,7 @@
                                                 <strong>Status:</strong>
                                                 <t t-if="presc['state'] == 'confirmed'">Confirmed</t>
                                                 <t t-if="presc['state'] == 'done'">Done</t>
+                                                <t t-if="presc['state'] == 'draft'">Draft</t>
                                             </div>
                                             <div class="row">
                                                 <table class="table table-bordered">
