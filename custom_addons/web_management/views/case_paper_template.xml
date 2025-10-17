@@ -1036,27 +1036,27 @@
                                                         <tr>
                                                             <td>0</td>
                                                             <td>Normal</td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '5'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '20'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '40'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '60'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_0' and xr['x_ray_day'] == '80'">
                                                                     ✔
                                                                 </t>
@@ -1067,27 +1067,27 @@
                                                             <td>Doubtful Joint space narrowing and possible osteophytic
                                                                 lipping.
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '5'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '20'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '40'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '60'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_1' and xr['x_ray_day'] == '80'">
                                                                     ✔
                                                                 </t>
@@ -1097,27 +1097,27 @@
                                                             <td>2</td>
                                                             <td>Definite osteophytes and possible joint space narrowing.
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '5'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '20'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '40'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '60'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_2' and xr['x_ray_day'] == '80'">
                                                                     ✔
                                                                 </t>
@@ -1130,27 +1130,27 @@
                                                                 space and some sclerosis and possible deformity of bone
                                                                 ends.
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '5'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '20'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '40'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '60'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_3' and xr['x_ray_day'] == '80'">
                                                                     ✔
                                                                 </t>
@@ -1162,27 +1162,27 @@
                                                                 severe
                                                                 sclerosis and definite deformity of bone ends.
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '5'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '20'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '40'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '60'">
                                                                     ✔
                                                                 </t>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-if="xr['grade'] == 'grade_4' and xr['x_ray_day'] == '80'">
                                                                     ✔
                                                                 </t>

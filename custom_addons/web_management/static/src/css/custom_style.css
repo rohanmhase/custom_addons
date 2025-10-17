@@ -97,7 +97,7 @@ body {
 }
 
 .basic-detail {
-    background: rgba(255, 255, 255, 0.15);
+    background: #039a83;
     padding: 12px 16px;
     border-radius: 8px;
     backdrop-filter: blur(10px);
@@ -123,6 +123,14 @@ body {
     border-radius: 12px;
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:nth-child(odd) {
+    background: #82c5be;
+}
+
+.card:nth-child(even) {
+    background: #faf8f1;
 }
 
 .shadow-sm {
@@ -280,6 +288,10 @@ img {
     margin: 15px 0;
     display: block;
     max-height: 500px;
+}
+
+.td_t_c {
+    text-align: center;
 }
 
 /* Responsive Design */
