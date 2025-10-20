@@ -72,9 +72,14 @@
                 <field name="enroll_date"/>
 
                 <!-- Custom filter for today's patients -->
-                <filter string="Today's Enrolled Patients"
+                <filter string="Today's Registered Patients"
                         name="today_patients"
                         domain="[('enroll_date', '=', context_today())]"/>
+
+                <filter string="Has Active Enrollment"
+                    name="has_active_enrollment"
+                    domain="[('enrollment_ids.state', '=', 'active')]"/>
+
             </search>
         </field>
     </record>
