@@ -28,9 +28,16 @@ class Enrollment(models.Model):
     @api.depends('total_sessions', 'used_sessions')
     def _compute_remaining_sessions(self):
         for rec in self:
-            rec.remaining_sessions = rec.total_sessions - rec.used_sessions
-            if rec.remaining_sessions == 0:
+            new_remaining = rec.total_sessions - rec.used_sessions
+            # Only update if value actually changed
+            if rec.remaining_sessions != new_remaining:
+                rec.remaining_sessions = new_remaining
+
+            # Update state only if needed
+            if new_remaining == 0 and rec.state != 'completed':
                 rec.state = 'completed'
+            elif new_remaining > 0 and rec.state != 'active':
+                rec.state = 'active'
 
 
     def _ist_date(self):
