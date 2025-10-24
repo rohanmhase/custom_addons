@@ -7,6 +7,7 @@
             <tree>
                 <field name="patient_id"/>
                 <field name="case_taking_date"/>
+                <field name="c_o"/>
                 <field name="k_c_o"/>
                 <field name="doctor_id" string="Doctor Name"/>
                 <field name="write_uid" string="Modified By"/>
@@ -26,11 +27,13 @@
                             <field name="patient_id"/>
                             <field name="case_taking_date"/>
                             <field name="doctor_id"/>
+                            <field name="c_o"/>
                             <field name="k_c_o"/>
                             <field name="p_h_o"/>
                             <field name="s_h"/>
                             <field name="f_h"/>
                             <field name="allergies"/>
+                            <field name="medications"/>
                             <field name="habits"/>
                         </group>
                     </sheet>

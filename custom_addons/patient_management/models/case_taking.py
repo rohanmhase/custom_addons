@@ -14,6 +14,8 @@ class CaseTaking(models.Model):
     s_h = fields.Char(string="Sx/H", required=True) # Surgical history
     f_h = fields.Char(string="F/H", required=True) # Family history
     allergies = fields.Char(string="Allergies", required=True)
+    c_o = fields.Char(string="C/O", required=True)
+    medications = fields.Char(string="Medications", required=True)
 
     habits = fields.Char(string="Habits", required=True)
     mal = fields.Char(string="Mal", required=True)

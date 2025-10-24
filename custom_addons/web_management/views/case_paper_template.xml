@@ -118,6 +118,10 @@
                                                 <t t-esc="ct['modified_by']"/>
                                             </div>
                                             <div class="info-text">
+                                                <strong>C/O:</strong>
+                                                <t t-esc="ct['c_o']"/>
+                                            </div>
+                                            <div class="info-text">
                                                 <strong>K/C/O:</strong>
                                                 <t t-esc="ct['k_c_o']"/>
                                             </div>
@@ -136,6 +140,10 @@
                                             <div class="info-text">
                                                 <strong>Allergies:</strong>
                                                 <t t-esc="ct['allergies']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Medications:</strong>
+                                                <t t-esc="ct['medications']"/>
                                             </div>
                                             <div class="info-text">
                                                 <strong>Habits:</strong>

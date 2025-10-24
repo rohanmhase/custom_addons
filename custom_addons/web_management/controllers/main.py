@@ -115,10 +115,12 @@ class PatientController(http.Controller):
             grouped_data[date_key]["case_taking"].append({
                 "doctor": ct.doctor_id.name,
                 "modified_by": ct.write_uid.name,
+                "c_o": ct.c_o,
                 "k_c_o": ct.k_c_o,
                 "p_h_o": ct.p_h_o,
                 "s_h": ct.s_h,
                 "f_h": ct.f_h,
+                "medications": ct.medications,
                 "allergies": ct.allergies,
                 "habits": ct.habits,
                 "mal": ct.mal,
