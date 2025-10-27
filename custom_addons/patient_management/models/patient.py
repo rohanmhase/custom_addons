@@ -16,7 +16,7 @@ class Patient(models.Model):
         ("female", "Female"),
         ("other", "Other"),
     ], string="Gender", required=True)                                  # Gender of patient
-    phone = fields.Char(string="Phone", required=True, size=10)    # Phone number of patient which cannot be duplicate
+    phone = fields.Char(string="Phone", required=True, size=10)         # Phone number of patient which cannot be duplicate
     email = fields.Char(string="Email")                                 # Email of patient if any
     address = fields.Text(string="Address", required=True)              # Address of patient
 
@@ -43,9 +43,9 @@ class Patient(models.Model):
     pain_ana = fields.Boolean(string="ANA")
 
     _sql_constraints = [
-        ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'),
+        # ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'), # Prevent creating records for same registered phone numbers
         ('unique_uuid', 'unique(uuid)', '⚠️ UUID must be unique!'),
-    ]                                                                   # Prevent creating records for same registered phone numbers
+    ]
 
     admin_id = fields.Many2one("res.users", string="Admin / BM",
                                 required=True,

@@ -59,10 +59,10 @@ class Session(models.Model):
         ], limit=1, order="id asc")
 
         if not enrollment:
-            raise UserError("This patient has no active enrollment. Cannot create session.")
+            raise UserError("This patient has no active enrollment. Kindly contact with BM / Admin for further extension.")
 
         if enrollment.remaining_sessions <= 0:
-            raise UserError("Cannot create session. No remaining sessions left for this patient.")
+            raise UserError("This patient has no active enrollment. Kindly contact with BM / Admin for further extension.")
 
         # Create the session
         session = super().create(vals)
