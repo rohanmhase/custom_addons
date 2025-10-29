@@ -13,17 +13,24 @@ class PosConfig(models.Model):
         """Override to filter partner IDs by clinic"""
         result = super().get_limited_partners_loading()
 
-        if self.clinic_id:
-            # Get the original partner IDs (list of tuples [(id,), (id,), ...])
-            partner_ids = [res[0] for res in result] if result else []
+        # Get the original partner IDs (list of tuples [(id,), (id,), ...])
+        partner_ids = [res[0] for res in result] if result else []
 
-            if partner_ids:
+        if partner_ids:
+            if self.clinic_id:
                 # Search partners that are in the list AND belong to this clinic
                 filtered_partners = self.env['res.partner'].search([
                     ('id', 'in', partner_ids),
                     ('clinic_id', '=', self.clinic_id.id)
                 ])
-                result = [(partner.id,) for partner in filtered_partners]
+            else:
+                # For main POS: only show partners WITHOUT any clinic
+                filtered_partners = self.env['res.partner'].search([
+                    ('id', 'in', partner_ids),
+                    ('clinic_id', '=', False)
+                ])
+
+            result = [(partner.id,) for partner in filtered_partners]
 
         return result
 
@@ -38,6 +45,9 @@ class PosSession(models.Model):
         # Add clinic filter if POS has a clinic assigned
         if self.config_id.clinic_id:
             domain.append(('clinic_id', '=', self.config_id.clinic_id.id))
+        else:
+            # For main POS: only partners without clinic
+            domain.append(('clinic_id', '=', False))
         return domain
 
 
@@ -47,7 +57,16 @@ class PosSession(models.Model):
         # Add clinic_id to the fields that will be loaded
         if 'clinic_id' not in result['search_params']['fields']:
             result['search_params']['fields'].append('clinic_id')
+        # Add clinic filter to the domain
+        if 'domain' not in result['search_params']:
+            result['search_params']['domain'] = []
 
+        if self.config_id.clinic_id:
+            # For clinic POS: filter by clinic
+            result['search_params']['domain'].append(('clinic_id', '=', self.config_id.clinic_id.id))
+        else:
+            # For main POS: only partners without clinic
+            result['search_params']['domain'].append(('clinic_id', '=', False))
         return result
 
 class PosOrder(models.Model):
