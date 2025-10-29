@@ -42,6 +42,7 @@
                                                options="{'no_create': True, 'no_open': True}"/>
                                         <field name="qty"/>
                                         <field name="instructions"/>
+                                        <field name="dosage"/>
                                     </tree>
                                 </field>
                             </div>

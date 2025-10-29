@@ -199,6 +199,19 @@ class PrescriptionLine(models.Model):
                                      ('10am_6pm', '10 am to 6 pm'),
                                      ('local_application', 'Local Application'),
                                      ], string="Instructions")
+    dosage = fields.Selection([('2 - 0 - 2', '2 - 0 - 2'),
+                               ('2 - 2 - 2', '2 - 2 - 2'),
+                               ('3 - 0 - 3', '3 - 0 - 3'),
+                               ('3 - 3 - 3', '3 - 3 - 3'),
+                               ('1 - 0 - 1', '1 - 0 - 1'),
+                               ('1 - 1 - 1', '1 - 1 - 1'),
+                               ('0 - 1 - 0', '0 - 1 - 0'),
+                               ('0 - 2 - 0', '0 - 2 - 0'),
+                               ('0 - 0 - 1', '0 - 0 - 1'),
+                               ('0 - 0 - 2', '0 - 0 - 2'),
+                               ('0 - 0 - 3', '0 - 0 - 3'),
+                               ('0 - 0 - 4', '0 - 0 - 4'), ],
+                              string="Dosage")
     qty_available = fields.Float(
         string="Available Qty", compute="_compute_qty_available", readonly=True
     )
