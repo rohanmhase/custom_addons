@@ -152,23 +152,31 @@ class Patient(models.Model):
     # Write Override
     # -------------------------------
     def write(self, vals):
-        # MRN should never be modified
         if "mrn" in vals:
             raise ValidationError("⚠️ MRN cannot be modified!")
 
-        # Restrict changes to core patient info after creation
-        restricted_fields = {
-            "name", "age", "gender", "phone", "address", "clinic_id"
-        }
-        if any(field in vals for field in restricted_fields):
-            raise ValidationError("⚠️ You cannot update patient details once saved!")
+        res = super(Patient, self).write(vals)
 
-        if "clinic_id" in vals:
-            for rec in self:
-                if rec.partner_id:
-                    rec.partner_id.clinic_id = rec.clinic_id.id
+        # Sync changes with the linked partner record
+        for rec in self:
+            if rec.partner_id:
+                partner_vals = {}
+                if "name" in vals:
+                    partner_vals["name"] = rec.name
+                if "phone" in vals:
+                    partner_vals["phone"] = rec.phone
+                if "email" in vals:
+                    partner_vals["email"] = rec.email
+                if "address" in vals:
+                    # assuming address in patient is stored in partner.street
+                    partner_vals["street"] = rec.address
+                if "clinic_id" in vals:
+                    partner_vals["clinic_id"] = rec.clinic_id.id
 
-        return super(Patient, self).write(vals)
+                if partner_vals:
+                    rec.partner_id.write(partner_vals)
+
+        return res
 
     def action_open_blood_report(self):
         """Open Blood Report related to this patient"""
