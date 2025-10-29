@@ -690,6 +690,7 @@
                                                             <th>Medicine</th>
                                                             <th>Qty</th>
                                                             <th>Instructions</th>
+                                                            <th>Dosage</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -702,7 +703,17 @@
                                                                     <t t-esc="med['qty']"/>
                                                                 </td>
                                                                 <td>
-                                                                    <t t-esc="med['instructions']"/>
+                                                                    <t t-set="inst_labels" t-value="{
+                                                                        'before_food': 'Before Food',
+                                                                        'after_food': 'After Food',
+                                                                        'at_night_time': 'At Night Time',
+                                                                        '10am_6pm': '10 am to 6 pm',
+                                                                        'local_application': 'Local Application'
+                                                                    }"/>
+                                                                    <t t-esc="inst_labels.get(med['instructions'])"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="med['dosage']"/>
                                                                 </td>
                                                             </tr>
                                                         </t>

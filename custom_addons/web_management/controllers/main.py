@@ -90,7 +90,8 @@ class PatientController(http.Controller):
             meds = [{
                 "medicine": line.product_id.display_name,
                 "qty": line.qty,
-                "instructions": line.instructions or ""
+                "instructions": line.instructions or "",
+                "dosage": line.dosage or ""
             } for line in pres.line_ids]
 
             grouped_data[date_key]["prescriptions"].append({
