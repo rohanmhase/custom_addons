@@ -7,7 +7,7 @@
         Module to manage Clinics
     """,
     "author": "ResearchAyu",
-    "depends": ["base", "stock", "point_of_sale"],
+    "depends": ["base", "stock", "point_of_sale", "bus"],
     "data": [
         'security/clinic_security.xml',
         'security/ir.model.access.csv',

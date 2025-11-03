@@ -99,6 +99,50 @@ class Prescription(models.Model):
         if error_msgs:
             raise UserError("\n".join(error_msgs))
 
+    def _notify_pos_prescription_created(self):
+        """Send real-time notification to active POS sessions when a prescription is confirmed."""
+        bus = self.env['bus.bus']
+        message_data = {
+            'prescription_id': self.id,
+            'patient_id': self.patient_id.id,
+            'partner_id': self.patient_id.partner_id.id,
+            'patient_name': self.patient_id.name,
+            'doctor_name': self.doctor_id.name,
+            'clinic_id': self.clinic_id.id,
+            'clinic_name': self.clinic_id.name,
+            'line_count': len(self.line_ids),
+            'prescription_date': self.prescription_date.strftime('%Y-%m-%d') if self.prescription_date else False,
+            'message': _("🩺 New Prescription for %s by Dr. %s") % (self.patient_id.name, self.doctor_id.name),
+        }
+
+        # ✅ Find active POS sessions (cashiers currently logged in)
+        domain = [('state', '=', 'opened')]
+        if self.clinic_id:
+            domain.append(('config_id.clinic_id', '=', self.clinic_id.id))
+
+        print(domain)
+        active_sessions = self.env['pos.session'].search(domain)
+
+        # ✅ Extract the user (cashier) from each session
+        pos_users = active_sessions.mapped('user_id')
+
+        # print(pos_users)
+        # if not pos_users:
+        #     # Fallback: notify all POS users in case there are no open sessions
+        #     pos_users = self.env['res.users'].search([
+        #         ('groups_id', 'in', self.env.ref('point_of_sale.group_pos_user').id)
+        #     ])
+
+        # ✅ Send message to each POS user's partner channel
+        for user in pos_users:
+            print(user.partner_id)
+            print(message_data)
+            if user.partner_id:
+                bus._sendone(
+                    user.partner_id,
+                    'pos_prescription_notification',
+                    message_data
+                )
 
     # ------------------ OVERRIDE CREATE ------------------ #
     @api.model
@@ -121,6 +165,7 @@ class Prescription(models.Model):
 
             rec._check_stock()  # Reuse same stock validation
             rec.state = "confirmed"
+            rec._notify_pos_prescription_created()
 
         return {
             'type': 'ir.actions.client',
