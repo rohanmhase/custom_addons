@@ -64,6 +64,21 @@ class PatientController(http.Controller):
             order="blood_report_date desc"
         )
 
+        query = """
+                    SELECT pol.id, pol.product_id, pol.qty, pol.price_unit, pol.write_date, 
+                           po.name as order_name, rp.name as customer_name, po.create_uid
+                    FROM pos_order_line pol
+                    JOIN pos_order po ON po.id = pol.order_id
+                    JOIN res_partner rp ON rp.id = po.partner_id
+                    WHERE po.partner_id IN (
+                        SELECT partner_id FROM clinic_patient WHERE uuid = %s
+                    )
+                    ORDER BY pol.write_date DESC;
+                """
+
+        request.env.cr.execute(query, (uuid,))
+        pos_order_lines = request.env.cr.dictfetchall()
+
         grouped_data = defaultdict(lambda: {"prescriptions": [],
                                             "case_taking": [],
                                             "session": [],
@@ -74,6 +89,7 @@ class PatientController(http.Controller):
                                             "attachment": [],
                                             "xray": [],
                                             "blood_report": [],
+                                            "pos_orders": [],
                                             })
 
         # Group prescriptions by date
@@ -101,6 +117,28 @@ class PatientController(http.Controller):
                 "notes": pres.notes,
                 "meds": meds
             })
+
+        # Group POS orders by date and order_name
+        pos_order_group = defaultdict(lambda: {"admin": "", "ordered": []})
+
+        for order_line in pos_order_lines:
+            if isinstance(order_line["write_date"], datetime):
+                date_key = order_line["write_date"].date()
+            else:
+                date_key = order_line["write_date"]
+
+            key = (date_key, order_line["order_name"])  # group by order name and date
+
+            product = request.env["product.product"].sudo().browse(order_line["product_id"])
+            pos_order_group[key]["admin"] = request.env["res.users"].sudo().browse(order_line["create_uid"]).name
+            pos_order_group[key]["ordered"].append({
+                "med": product.display_name,
+                "qty": order_line["qty"],
+            })
+
+        # Now push grouped POS orders into grouped_data
+        for (date_key, _order_name), pos_data in pos_order_group.items():
+            grouped_data[date_key]["pos_orders"].append(pos_data)
 
         # Group Case Taking by date
         for ct in case_taking:
@@ -445,6 +483,7 @@ class PatientController(http.Controller):
                 "attachment": details["attachment"],
                 "xray": details["xray"],
                 "blood_report": details["blood_report"],
+                "pos_orders": details["pos_orders"],
             })
 
         case_papers = sorted(case_papers, key=lambda x: x["date"], reverse=True)

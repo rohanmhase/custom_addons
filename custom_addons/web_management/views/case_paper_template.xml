@@ -727,6 +727,40 @@
                                         </div>
                                     </t>
                                 </t>
+                                <!-- POS Order -->
+                                <t t-if="cp['pos_orders']">
+                                    <h5>Prescription Taken</h5>
+                                    <t t-foreach="cp['pos_orders']" t-as="pord" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="pord['admin']"/>
+                                            </div>
+                                            <div class="row">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Medicine</th>
+                                                            <th>Qty</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="pord['ordered']" t-as="por" t-key="loop.index0">
+                                                            <tr>
+                                                                <td>
+                                                                    <t t-esc="por['med']"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="por['qty']"/>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
                                 <!-- Therapy Session -->
                                 <t t-if="cp['session']">
                                     <h5>Therapy Session</h5>
