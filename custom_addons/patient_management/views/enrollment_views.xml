@@ -31,7 +31,7 @@
                         <field name="patient_id"/>
                         <field name="doctor_id"/>
                         <field name="enrollment_date"/>
-                        <field name="daily_sheet_ref"/>
+                        <field name="daily_sheet_ref" widget="char"/>
                         <field name="total_amount"/>
                         <field name="therapy_amount"/>
                         <field name="first_cons_charges"/>

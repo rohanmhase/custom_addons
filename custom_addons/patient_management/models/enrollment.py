@@ -1,5 +1,6 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from datetime import datetime, timedelta
+from odoo.exceptions import UserError
 
 
 class Enrollment(models.Model):
@@ -39,6 +40,11 @@ class Enrollment(models.Model):
             elif new_remaining > 0 and rec.state != 'active':
                 rec.state = 'active'
 
+    def write(self, vals):
+        for rec in self:
+            if rec.state == 'completed':
+                raise UserError(_('You cannot modify an enrollment that is already completed'))
+            return super(Enrollment, self).write(vals)
 
     def _ist_date(self):
 
