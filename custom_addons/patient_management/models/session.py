@@ -55,7 +55,8 @@ class Session(models.Model):
         # Re-fetch the enrollment from DB to get latest values
         enrollment = self.env["patient.enrollment"].sudo().search([
             ("id", "=", patient.active_enrollment_id.id),
-            ("state", "=", "active")
+            ("state", "=", "active"),
+            ("active", "=", "true")
         ], limit=1, order="id asc")
 
         if not enrollment:
