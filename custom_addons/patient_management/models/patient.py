@@ -34,7 +34,7 @@ class Patient(models.Model):
         required=True,
     )                                                                   # Clinic name
 
-    pain_types = fields.Char(string="Paint Types")
+    pain_types = fields.Char(string="Pain Types")
 
     pain_diabetes = fields.Boolean(string="Diabetes")
     pain_knee = fields.Boolean(string="Knee Pain")
@@ -71,6 +71,12 @@ class Patient(models.Model):
         string="Remaining Sessions",
         compute="_compute_remaining_sessions",
         store=False
+    )
+
+    session_ids = fields.One2many(
+        "patient.session",
+        "patient_id",
+        string="Therapy Sessions",
     )
 
     @api.model
