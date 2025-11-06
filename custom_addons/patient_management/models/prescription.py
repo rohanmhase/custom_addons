@@ -102,6 +102,7 @@ class Prescription(models.Model):
     def _notify_pos_prescription_created(self):
         """Send real-time notification to active POS sessions when a prescription is confirmed."""
         bus = self.env['bus.bus']
+        channel = f"pos_prescription_notification_{self.clinic_id.id}"
         message_data = {
             'prescription_id': self.id,
             'patient_id': self.patient_id.id,
@@ -140,7 +141,7 @@ class Prescription(models.Model):
             if user.partner_id:
                 bus._sendone(
                     user.partner_id,
-                    'pos_prescription_notification',
+                    channel,
                     message_data
                 )
 

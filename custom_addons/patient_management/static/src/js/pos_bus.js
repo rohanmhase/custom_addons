@@ -5,7 +5,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 export const prescriptionNotificationService = {
-    dependencies: ["bus_service", "notification"],
+    dependencies: ["bus_service", "notification", "pos"],
 
     start(env, { bus_service, notification }) {
         console.log("🚀 Prescription Notification Service Started");
@@ -14,20 +14,33 @@ export const prescriptionNotificationService = {
         self.env = env;
         self.notification = notification;
 
-        // Re-display any pending notifications from localStorage
-        self.restorePendingNotifications();
+        // ✅ Get POS Current Clinic ID
+        const pos = env.services.pos;
+        const clinicId = pos?.config?.clinic_id?.[0];
 
-        // Subscribe to the bus channel
-        bus_service.addChannel("pos_prescription_notification");
+        if (!clinicId) {
+            console.warn("⚠️ No clinic ID found in POS config. Notifications disabled.");
+            return;
+        }
+
+        const channel = `pos_prescription_notification_${clinicId}`;
+        console.log("✅ Clinic Notification Channel:", channel);
+
+        // ✅ Restore pending notifications (per clinic)
+//        self.restorePendingNotifications();
+
+        // ✅ Subscribe only to this clinic's channel
+        bus_service.addChannel(channel);
+
         bus_service.addEventListener("notification", ({ detail: notifications }) => {
             for (const { type, payload } of notifications) {
-                if (type === "pos_prescription_notification") {
+                if (type === channel) {
                     self.handlePrescriptionNotification(payload, notification);
                 }
             }
         });
 
-        console.log("✅ Subscribed to channel: pos_prescription_notification");
+        console.log("✅ Subscribed only to:", channel);
     },
 
     handlePrescriptionNotification(data, notification) {
@@ -38,11 +51,11 @@ export const prescriptionNotificationService = {
             `Patient: ${data.patient_name}`,
             `Doctor: ${data.doctor_name}`,
             `Clinic: ${data.clinic_name}`,
-            `Date: ${data.prescription_date || 'Today'}`,
+            `Date: ${data.prescription_date || "Today"}`,
         ].join("\n");
 
-        // Save notification in localStorage if not loaded yet
-        this.savePendingNotification(data);
+        // ✅ Save per clinic
+//        this.savePendingNotification(data);
 
         notification.add(message, {
             title: "🩺 New Prescription",
@@ -51,7 +64,6 @@ export const prescriptionNotificationService = {
             buttons: [
                 {
                     name: "View Details",
-                    primary: false,
                     onClick: () => {
                         notification.add(details, {
                             title: `Prescription #${data.prescription_id}`,
@@ -80,15 +92,20 @@ export const prescriptionNotificationService = {
 
                             const partner = pos.db.get_partner_by_id(partnerId);
                             if (!partner) {
-                                notification.add(`❌ Customer not found for ID ${partnerId}`, { type: "danger" });
+                                notification.add(
+                                    `❌ Customer not found for ID ${partnerId}`,
+                                    { type: "danger" }
+                                );
                                 return;
                             }
 
                             await order.set_partner(partner);
-                            notification.add(`✅ Prescription loaded for ${partner.name}`, { type: "success" });
+                            notification.add(
+                                `✅ Prescription loaded for ${partner.name}`,
+                                { type: "success" }
+                            );
 
-                            // Remove from pending notifications after loading
-                            this.removePendingNotification(data.prescription_id);
+//                            this.removePendingNotification(data.prescription_id);
                         } catch (error) {
                             console.error("❌ Error in Load button:", error);
                             notification.add("❌ Failed to load prescription", { type: "danger" });
@@ -103,42 +120,73 @@ export const prescriptionNotificationService = {
 
     playNotificationSound() {
         try {
-            const audio = new Audio("/point_of_sale/static/src/sounds/notification.wav");
+            const audio = new Audio(
+                "/point_of_sale/static/src/sounds/notification.wav"
+            );
             audio.volume = 1;
-            audio.play().catch(err => console.warn("⚠️ Sound play blocked:", err));
+            audio.play().catch((err) =>
+                console.warn("⚠️ Sound blocked:", err)
+            );
         } catch (error) {
             console.warn("❌ Sound not available:", error);
         }
     },
 
-    // --- 🔒 Persistence Handling ---
+    // --- Persistence handling (unchanged) ---
 
-    savePendingNotification(data) {
-        const stored = JSON.parse(localStorage.getItem("pending_prescriptions") || "[]");
-        const exists = stored.some(n => n.prescription_id === data.prescription_id);
-        if (!exists) {
-            stored.push(data);
-            localStorage.setItem("pending_prescriptions", JSON.stringify(stored));
-            console.log("💾 Saved pending prescription:", data.prescription_id);
-        }
-    },
+//    savePendingNotification(data) {
+//        const stored =
+//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
+//            [];
+//
+//        const exists = stored.some(
+//            (n) => n.prescription_id === data.prescription_id
+//        );
+//
+//        if (!exists) {
+//            stored.push(data);
+//            localStorage.setItem(
+//                "pending_prescriptions",
+//                JSON.stringify(stored)
+//            );
+//            console.log("💾 Saved pending prescription:", data.prescription_id);
+//        }
+//    },
 
-    removePendingNotification(prescriptionId) {
-        let stored = JSON.parse(localStorage.getItem("pending_prescriptions") || "[]");
-        stored = stored.filter(n => n.prescription_id !== prescriptionId);
-        localStorage.setItem("pending_prescriptions", JSON.stringify(stored));
-        console.log("🗑️ Removed prescription from pending list:", prescriptionId);
-    },
+//    removePendingNotification(prescriptionId) {
+//        let stored =
+//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
+//            [];
+//
+//        stored = stored.filter(
+//            (n) => n.prescription_id !== prescriptionId
+//        );
+//
+//        localStorage.setItem(
+//            "pending_prescriptions",
+//            JSON.stringify(stored)
+//        );
+//
+//        console.log(
+//            "🗑️ Removed prescription from pending list:",
+//            prescriptionId
+//        );
+//    },
 
-    restorePendingNotifications() {
-        const stored = JSON.parse(localStorage.getItem("pending_prescriptions") || "[]");
-        if (stored.length) {
-            console.log("♻️ Restoring pending prescriptions:", stored);
-            for (const data of stored) {
-                this.handlePrescriptionNotification(data, this.notification);
-            }
-        }
-    },
+//    restorePendingNotifications() {
+//        const stored =
+//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
+//            [];
+//
+//        if (stored.length) {
+//            console.log("♻️ Restoring pending prescriptions:", stored);
+//            for (const data of stored) {
+//                this.handlePrescriptionNotification(data, this.notification);
+//            }
+//        }
+//    },
 };
 
-registry.category("services").add("prescription_notification", prescriptionNotificationService);
+registry
+    .category("services")
+    .add("prescription_notification", prescriptionNotificationService);
