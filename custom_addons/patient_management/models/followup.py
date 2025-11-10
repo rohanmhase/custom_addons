@@ -13,6 +13,7 @@ class Followup(models.Model):
     diagnosis = fields.Char(string="Diagnosis", required=True)
     k_c_o = fields.Char(string="K/C/O", required=True) # Known case of
     investigation_status = fields.Char(string="Investigation Status", required=True)
+    case_under_discussion_with = fields.Char(string="Case Under Discussion With")
 
     # Shakhagata Examinations
 

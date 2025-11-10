@@ -27,6 +27,8 @@
                             <field name="doctor_id"/>
                             <field name="blood_report_date"/>
                             <field name="blood_report_day"/>
+                            <field name="blood_report_actual_date"/>
+                            <field name="lab_name"/>
                         </group>
                     </sheet>
                     <sheet>

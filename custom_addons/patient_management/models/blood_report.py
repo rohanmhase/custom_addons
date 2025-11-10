@@ -14,6 +14,8 @@ class BloodReport(models.Model):
                                          ("60", "60th Day"),
                                          ("80", "80th Day")],
                                         string="Day of Blood Report", required=True)
+    blood_report_actual_date = fields.Date(string='Date', required=True)
+    lab_name = fields.Char('Lab Name', required=True)
 
     haemoglobin = fields.Char(string="Haemoglobin")
     esr = fields.Char(string="ESR")

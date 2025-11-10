@@ -33,6 +33,7 @@
                             <field name="diagnosis"/>
                             <field name="k_c_o"/>
                             <field name="investigation_status"/>
+                            <field name="case_under_discussion_with"/>
                         </group>
                     </sheet>
                     <div style="margin: 10px 16px; font-size: 18px; color:black;}">

@@ -28,6 +28,7 @@
                             <field name="doctor_id"/>
                             <field name="date_taken"/>
                             <field name="x_ray_day"/>
+                            <field name="x_ray_actual_date"/>
                         </group>
                     </sheet>
                     <sheet>

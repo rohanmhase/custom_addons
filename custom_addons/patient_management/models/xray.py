@@ -16,6 +16,7 @@ class PatientXRay(models.Model):
                                   ("60", "60th Day"),
                                   ("80", "80th Day")],
                                  string="Day of X-Ray", required=True)
+    x_ray_actual_date = fields.Date(string="Date", required=True)
 
     grade = fields.Selection([
         ('grade_0', 'Grade 0'),
@@ -23,7 +24,7 @@ class PatientXRay(models.Model):
         ('grade_2', 'Grade 2'),
         ('grade_3', 'Grade 3'),
         ('grade_4', 'Grade 4'),
-    ], string="Grade")
+    ], string="Grade", required=True)
 
     active = fields.Boolean(default=True)
 
