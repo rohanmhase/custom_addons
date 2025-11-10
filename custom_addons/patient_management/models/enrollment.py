@@ -19,6 +19,11 @@ class Enrollment(models.Model):
     remaining_sessions = fields.Integer(string="Remaining Sessions", required=True, compute='_compute_remaining_sessions')
     used_sessions = fields.Integer(string="Used Sessions", readonly=True, required=True, default=0)
     notes = fields.Char(string="Notes")
+    enrollment_type = fields.Selection([
+        ('clinic', 'Clinic'),
+        ('home', 'Home'),
+        ('self', 'Self'),
+    ], string="Enrollment Type", required=True)
     state = fields.Selection([
         ('active', 'Active'),
         ('completed', 'Completed'),

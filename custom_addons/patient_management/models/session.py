@@ -24,6 +24,11 @@ class Session(models.Model):
     before_and_after_therapy_comment = fields.Char(string="Before & After Therapy Comment", required=True)
     therapist_name = fields.Char(string="Therapist Name", required=True)
     state = fields.Selection([("draft", "Draft"), ("done", "Done")], default="draft")
+    session_type = fields.Selection([
+        ('clinic', 'Clinic'),
+        ('home', 'Home'),
+        ('self', 'Self'),
+    ], string="Therapy Location", required=True)
     active = fields.Boolean(default=True)
 
     @api.model

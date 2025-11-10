@@ -31,6 +31,7 @@
                             <group>
                                 <field name="session_date"/>
                                 <field name="session_day"/>
+                                <field name="session_type"/>
                             </group>
                         </group>
                     </sheet>
