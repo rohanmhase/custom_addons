@@ -407,6 +407,10 @@
                                                 <strong>Investigation Status:</strong>
                                                 <t t-esc="fl['investigation_status']"/>
                                             </div>
+                                            <div class="info-text">
+                                                <strong>Case Under Discussion With:</strong>
+                                                <t t-esc="fl['case_under_discussion_with']"/>
+                                            </div>
                                             <div class="row">
                                                 <span>
                                                     <i>Shakhagata Examinations</i>
@@ -1067,6 +1071,10 @@
                                                 <strong>Modified By:</strong>
                                                 <t t-esc="xr['modified_by']"/>
                                             </div>
+                                            <div class="info-text">
+                                                <strong>Date:</strong>
+                                                <t t-esc="xr['x_ray_actual_date']"/>
+                                            </div>
                                             <div class="row">
                                                 <table class="session-table">
                                                     <thead>
@@ -1315,6 +1323,14 @@
                                                 <t t-if="br['blood_report_day'] == '80'">80
                                                     <sup>th</sup>
                                                 </t>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Date:</strong>
+                                                <t t-esc="br['blood_report_actual_date']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Lab Name:</strong>
+                                                <t t-esc="br['lab_name']"/>
                                             </div>
                                             <div class="row">
                                                 <table class="session-table">

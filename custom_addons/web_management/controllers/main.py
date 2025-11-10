@@ -334,6 +334,7 @@ class PatientController(http.Controller):
                 "diagnosis": fl.diagnosis,
                 "k_c_o": fl.k_c_o,
                 "investigation_status": fl.investigation_status,
+                "case_under_discussion_with": fl.case_under_discussion_with,
                 "morning_stiffness_with_duration_lt": fl.morning_stiffness_with_duration_lt,
                 "b_l_shin_tenderness_with_gradation_lt": fl.b_l_shin_tenderness_with_gradation_lt,
                 "b_l_knee_tenderness_with_gradation_and_position_lt": fl.b_l_knee_tenderness_with_gradation_and_position_lt,
@@ -415,6 +416,7 @@ class PatientController(http.Controller):
             grouped_data[date_key]["xray"].append({
                 "doctor_id": xr.doctor_id.name,
                 "modified_by": xr.write_uid.name,
+                "x_ray_actual_date": xr.x_ray_actual_date,
                 "x_ray_day": xr.x_ray_day,
                 "grade": xr.grade,
             })
@@ -433,6 +435,8 @@ class PatientController(http.Controller):
                 "doctor_id": br.doctor_id.name,
                 "modified_by": br.write_uid.name,
                 "blood_report_day": br.blood_report_day,
+                "blood_report_actual_date": br.blood_report_actual_date,
+                "lab_name": br.lab_name,
                 "haemoglobin": br.haemoglobin,
                 "esr": br.esr,
                 "platelet_count": br.platelet_count,
