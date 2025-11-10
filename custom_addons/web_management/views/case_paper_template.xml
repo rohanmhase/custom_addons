@@ -331,6 +331,12 @@
                                                 <t t-esc="en['modified_by']"/>
                                             </div>
                                             <div class="info-text">
+                                                <strong>Enrollment Type:</strong>
+                                                <t t-if="en['enrollment_type'] == 'clinic'">Clinic</t>
+                                                <t t-if="en['enrollment_type'] == 'home'">Home</t>
+                                                <t t-if="en['enrollment_type'] == 'self'">Self</t>
+                                            </div>
+                                            <div class="info-text">
                                                 <strong>Status:</strong>
                                                 <t t-if="en['state'] == 'active'">Active</t>
                                                 <t t-if="en['state'] == 'completed'">Completed</t>
@@ -781,6 +787,12 @@
                                             <div class="info-text">
                                                 <strong>Session Day:</strong>
                                                 <t t-esc="sess['session_day']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Therapy Location:</strong>
+                                                <t t-if="sess['session_type'] == 'clinic'">Clinic</t>
+                                                <t t-if="sess['session_type'] == 'home'">Home</t>
+                                                <t t-if="sess['session_type'] == 'self'">Self</t>
                                             </div>
                                             <div class="row">
                                                 <table class="session-table">
