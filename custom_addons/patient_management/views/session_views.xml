@@ -9,6 +9,7 @@
                 <field name="session_date"/>
                 <field name="therapist_name"/>
                 <field name="session_day"/>
+                <field name="session_type"/>
                 <field name="doctor_id" string="Doctor Name"/>
                 <field name="write_uid" string="Modified By"/>
                 <field name="active"/>
