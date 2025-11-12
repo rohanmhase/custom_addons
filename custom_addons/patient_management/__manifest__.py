@@ -9,7 +9,7 @@
         - Store patient details
     """,
     "author": "Researchayu",
-    "depends": ["base", "clinic_management", "product", "stock", "point_of_sale", "bus"],
+    "depends": ["base", "clinic_management", "product", "stock", "point_of_sale", "bus", "mail"],
     'data': [
         'data/ir_sequence_data.xml',
         'security/patient_security.xml',

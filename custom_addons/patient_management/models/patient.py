@@ -7,18 +7,19 @@ import uuid
 class Patient(models.Model):
     _name = "clinic.patient"
     _description = "Clinic Patient"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
 
-    name = fields.Char(string="Full Name", required=True)               # Full name of patient
-    age = fields.Integer(string="Age", required=True)                   # Age of patient
+    name = fields.Char(string="Full Name", required=True, tracking=True)               # Full name of patient
+    age = fields.Integer(string="Age", required=True, tracking=True)                   # Age of patient
     gender = fields.Selection([
         ("male", "Male"),
         ("female", "Female"),
         ("other", "Other"),
-    ], string="Gender", required=True)                                  # Gender of patient
-    phone = fields.Char(string="Phone", required=True, size=10)         # Phone number of patient which cannot be duplicate
-    email = fields.Char(string="Email")                                 # Email of patient if any
-    address = fields.Text(string="Address", required=True)              # Address of patient
+    ], string="Gender", required=True, tracking=True)                                  # Gender of patient
+    phone = fields.Char(string="Phone", required=True, size=10, tracking=True)         # Phone number of patient which cannot be duplicate
+    email = fields.Char(string="Email", tracking=True)                                 # Email of patient if any
+    address = fields.Text(string="Address", required=True, tracking=True)              # Address of patient
 
     mrn = fields.Char(string="Medical Record Number",
                       readonly=True, copy=False, index=True)            # Medical record number
@@ -31,10 +32,10 @@ class Patient(models.Model):
     clinic_id = fields.Many2one(
         "clinic.clinic",
         string="Clinic",
-        required=True,
+        required=True, tracking=True
     )                                                                   # Clinic name
 
-    pain_types = fields.Char(string="Pain Types")
+    pain_types = fields.Char(string="Pain Types", tracking=True)
 
     pain_diabetes = fields.Boolean(string="Diabetes")
     pain_knee = fields.Boolean(string="Knee Pain")

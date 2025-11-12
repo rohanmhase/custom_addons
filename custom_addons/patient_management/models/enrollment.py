@@ -6,28 +6,29 @@ from odoo.exceptions import UserError
 class Enrollment(models.Model):
     _name = 'patient.enrollment'
     _description = 'Patient Enrollment'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, readonly=True)
     doctor_id = fields.Many2one('res.users', string="Doctor", required=True, readonly=True, default=lambda self: self.env.user)
     enrollment_date = fields.Date(string="Enrollment Date", required=True, readonly=True, default=lambda self: self._ist_date())
-    daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", required=True)
-    total_amount = fields.Integer(string="Total Amount", required=True)
-    therapy_amount = fields.Integer(string="Therapy Amount", required=True)
-    first_cons_charges = fields.Integer(string="First Consultation Charges", required=True)
-    therapy_medicine = fields.Integer(string="Therapy + Medicine", required=True)
-    total_sessions = fields.Integer(string="Total Sessions", required=True)
+    daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", required=True, tracking=True)
+    total_amount = fields.Integer(string="Total Amount", required=True, tracking=True)
+    therapy_amount = fields.Integer(string="Therapy Amount", required=True, tracking=True)
+    first_cons_charges = fields.Integer(string="First Consultation Charges", required=True, tracking=True)
+    therapy_medicine = fields.Integer(string="Therapy + Medicine", required=True, tracking=True)
+    total_sessions = fields.Integer(string="Total Sessions", required=True, tracking=True)
     remaining_sessions = fields.Integer(string="Remaining Sessions", required=True, compute='_compute_remaining_sessions')
     used_sessions = fields.Integer(string="Used Sessions", readonly=True, required=True, default=0)
-    notes = fields.Char(string="Notes")
+    notes = fields.Char(string="Notes", tracking=True)
     enrollment_type = fields.Selection([
         ('clinic', 'Clinic'),
         ('home', 'Home'),
         ('self', 'Self'),
-    ], string="Enrollment Type", required=True)
+    ], string="Enrollment Type", required=True, tracking=True)
     state = fields.Selection([
         ('active', 'Active'),
         ('completed', 'Completed'),
-    ], string="Status", default='active')
+    ], string="Status", default='active', tracking=True)
     active = fields.Boolean(default=True)
 
 
