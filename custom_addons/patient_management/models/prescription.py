@@ -242,7 +242,11 @@ class PrescriptionLine(models.Model):
     instructions = fields.Selection([('before_food', 'Before Food'),
                                      ('after_food', 'After Food'),
                                      ('at_night_time', 'At Night Time'),
-                                     ('10am_6pm', '10 am to 6 pm'),
+                                     ('along_with_milk', 'Along With Milk'),
+                                     ('along_with_milk_rock_sugar', 'Along With Milk + Rock Sugar'),
+                                     ('along_with_lukewarm_water', 'Along With Lukewarm Water'),
+                                     ('10am_6pm', '10 am - 6 pm'),
+                                     ('8am_5pm', '8 am - 5 pm'),
                                      ('local_application', 'Local Application'),
                                      ], string="Instructions")
     dosage = fields.Selection([('2 - 0 - 2', '2 - 0 - 2'),

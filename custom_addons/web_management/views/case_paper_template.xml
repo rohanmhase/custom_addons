@@ -417,6 +417,16 @@
                                                 <strong>Case Under Discussion With:</strong>
                                                 <t t-esc="fl['case_under_discussion_with']"/>
                                             </div>
+                                            <div class="info-text">
+                                                <strong>Day of Therapy:</strong>
+                                                <t t-esc="fl['day_of_therapy']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Type of Therapy:</strong>
+                                                <t t-if="fl['type_of_therapy'] == 'detox'">Detox</t>
+                                                <t t-if="fl['type_of_therapy'] == 'regeneration'">Regeneration</t>
+                                                <t t-if="fl['type_of_therapy'] == 'transition'">Transition</t>
+                                            </div>
                                             <div class="row">
                                                 <span>
                                                     <i>Shakhagata Examinations</i>
@@ -605,7 +615,9 @@
                                                         <tr>
                                                             <td>Jivha</td>
                                                             <td>
-                                                                <t t-esc="fl['jivha']"/>
+                                                                <t t-if="fl['jivha'] == 'saam'">Saam</t>
+                                                                <t t-if="fl['jivha'] == 'ishat_saam'">Ishat Saam</t>
+                                                                <t t-if="fl['jivha'] == 'niram'">Niram</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -615,9 +627,12 @@
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td>Kshudha (manda/vishama/tikshna)</td>
+                                                            <td>Kshudha</td>
                                                             <td>
-                                                                <t t-esc="fl['kshudha']"/>
+                                                                <t t-if="fl['kshudha'] == 'samyak'">Samyak</t>
+                                                                <t t-if="fl['kshudha'] == 'manda'">Manda</t>
+                                                                <t t-if="fl['kshudha'] == 'vishama'">Vishama</t>
+                                                                <t t-if="fl['kshudha'] == 'tikshna'">Tikshna</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -651,15 +666,19 @@
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td>Nidra (Ati/Alpa/Nasha)</td>
+                                                            <td>Nidra</td>
                                                             <td>
-                                                                <t t-esc="fl['nidra']"/>
+                                                                <t t-if="fl['nidra'] == 'ati'">Ati</t>
+                                                                <t t-if="fl['nidra'] == 'alpa'">Alpa</t>
+                                                                <t t-if="fl['nidra'] == 'nasha'">Nasha</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td>Sweda (Alpa/Ati/foul)</td>
+                                                            <td>Sweda</td>
                                                             <td>
-                                                                <t t-esc="fl['sweda']"/>
+                                                                <t t-if="fl['sweda'] == 'alpa'">Alpa</t>
+                                                                <t t-if="fl['sweda'] == 'ati'">Ati</t>
+                                                                <t t-if="fl['sweda'] == 'foul'">Foul</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -717,8 +736,12 @@
                                                                         'before_food': 'Before Food',
                                                                         'after_food': 'After Food',
                                                                         'at_night_time': 'At Night Time',
-                                                                        '10am_6pm': '10 am to 6 pm',
-                                                                        'local_application': 'Local Application'
+                                                                        '10am_6pm': '10 am - 6 pm',
+                                                                        'local_application': 'Local Application',
+                                                                        'along_with_milk': 'Along With Milk',
+                                                                        'along_with_milk_rock_sugar': 'Along With Milk + Rock Sugar',
+                                                                        'along_with_lukewarm_water': 'Along With Lukewarm Water',
+                                                                        '8am_5pm': '8 am - 5 pm'
                                                                     }"/>
                                                                     <t t-esc="inst_labels.get(med['instructions'])"/>
                                                                 </td>

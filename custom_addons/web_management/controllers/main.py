@@ -336,6 +336,8 @@ class PatientController(http.Controller):
                 "diagnosis": fl.diagnosis,
                 "k_c_o": fl.k_c_o,
                 "investigation_status": fl.investigation_status,
+                "day_of_therapy": fl.day_of_therapy,
+                "type_of_therapy": fl.type_of_therapy,
                 "case_under_discussion_with": fl.case_under_discussion_with,
                 "morning_stiffness_with_duration_lt": fl.morning_stiffness_with_duration_lt,
                 "b_l_shin_tenderness_with_gradation_lt": fl.b_l_shin_tenderness_with_gradation_lt,

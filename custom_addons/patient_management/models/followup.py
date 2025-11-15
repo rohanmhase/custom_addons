@@ -14,6 +14,10 @@ class Followup(models.Model):
     k_c_o = fields.Char(string="K/C/O", required=True) # Known case of
     investigation_status = fields.Char(string="Investigation Status", required=True)
     case_under_discussion_with = fields.Char(string="Case Under Discussion With")
+    day_of_therapy = fields.Integer(string="Day Of Therapy", compute="_compute_day_of_therapy", store=True, readonly=True)
+    type_of_therapy = fields.Selection([("detox", "Detox"),
+                                        ("regeneration", "Regeneration"),
+                                        ("transition", "Transition"),], string="Type of Therapy", required=True)
 
     # Shakhagata Examinations
 
@@ -60,18 +64,40 @@ class Followup(models.Model):
     others_s = fields.Text(string="Others:")
 
     # Koshthagata Examination
-    jivha = fields.Char(string="Jivha:", required=True)
+    jivha = fields.Selection([("saam", "Saam"),
+                              ("ishat_saam", "Ishat Saam"),
+                              ("niram", "Niram")], string="Jivha:", required=True)
     jwaranubhuti = fields.Char(string="Jwaranubhuti:", required=True)
-    kshudha = fields.Char(string="Kshudha (manda/vishama/tikshna):", required=True)
+    kshudha = fields.Selection([("samyak", "Samyak"),
+                                ("manda", "Manda"),
+                                ("vishama", "Vishama"),
+                                ("tikshna", "Tikshna")], string="Kshudha:", required=True)
     kantha = fields.Char(string="Kantha-Uro-Udar Daha:", required=True)
     tiktamlodgar = fields.Char(string="Tiktamlodgar:", required=True)
     mala_aadhman_malabaddhata_sticky_drava = fields.Char(string="Mala/Aadhman/Malabaddhata/sticky/Drava/IBS:", required=True)
     mutra_naktamutrata_mutradaha = fields.Char(string="Mutra/Naktamutrata/Mutradaha:", required=True)
     rasa_dhatu_dushti_lakshane = fields.Char(string="Rasa Dhatu Dushi Lakshane:", required=True)
-    nidra = fields.Char(string="Nidra (Ati/Alpa/Nasha):", required=True)
-    sweda = fields.Char(string="Sweda (Alpa/Ati/foul):", required=True)
+    nidra = fields.Selection([("ati", "Ati"),
+                              ("alpa", "Alpa"),
+                              ("nasha", "Nasha")], string="Nidra:", required=True)
+    sweda = fields.Selection([("alpa", "Alpa"),
+                              ("ati", "Ati"),
+                              ("foul", "Foul")], string="Sweda:", required=True)
     others_k = fields.Text(string="Others:")
     active = fields.Boolean(default=True)
+
+    @api.depends('patient_id')
+    def _compute_day_of_therapy(self):
+        for record in self:
+            if record.patient_id:
+                last_session = record.env['patient.session'].search(
+                    [('patient_id', '=', record.patient_id.id)],
+                    order='session_day desc',
+                    limit=1
+                )
+                record.day_of_therapy = (last_session.session_day + 1) if last_session else 1
+            else:
+                record.day_of_therapy = 1
 
     def _ist_date(self):
 
