@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-        <record id="view_patient_enrollment_tree" model="ir.ui.view">
+    <record id="view_patient_enrollment_tree" model="ir.ui.view">
         <field name="name">clinic.patient.enrollment.tree</field>
         <field name="model">patient.enrollment</field>
         <field name="arch" type="xml">
@@ -8,6 +8,7 @@
                 <field name="patient_id"/>
                 <field name="enrollment_date"/>
                 <field name="enrollment_type"/>
+                <field name="enrolled_for"/>
                 <field name="total_sessions"/>
                 <field name="remaining_sessions"/>
                 <field name="used_sessions"/>
@@ -28,19 +29,32 @@
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
-                    <group>
-                        <field name="patient_id"/>
-                        <field name="doctor_id"/>
-                        <field name="enrollment_date"/>
-                        <field name="enrollment_type" widget="radio"/>
-                        <field name="daily_sheet_ref" widget="char"/>
-                        <field name="total_amount"/>
-                        <field name="therapy_amount"/>
-                        <field name="first_cons_charges"/>
-                        <field name="therapy_medicine"/>
-                        <field name="total_sessions"/>
-                        <field name="notes"/>
-                    </group>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="patient_id"/>
+                                <field name="doctor_id"/>
+                                <field name="enrollment_date"/>
+                                <field name="enrollment_type" widget="radio"/>
+                            </group>
+                            <group string="Enrollment For">
+                                <field name="pain_knee"/>
+                                <field name="pain_spine"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <sheet>
+                        <group>
+                            <field name="daily_sheet_ref" widget="char"/>
+                            <field name="total_amount"/>
+                            <field name="therapy_amount"/>
+                            <field name="first_cons_charges"/>
+                            <field name="therapy_medicine"/>
+                            <field name="total_sessions"/>
+                            <field name="used_sessions"/>
+                            <field name="notes"/>
+                        </group>
+                    </sheet>
                 </sheet>
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
