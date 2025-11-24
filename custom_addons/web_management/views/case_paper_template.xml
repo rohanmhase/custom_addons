@@ -91,6 +91,14 @@
                                             </span>
                                         </div>
                                     </t>
+                                    <t t-if="patient.is_existing">
+                                        <div class="basic-detail">
+                                            <span class="basic-label">Is Existing</span>
+                                            <span class="basic-value">
+                                                <t t-esc="patient.is_existing"/>
+                                            </span>
+                                        </div>
+                                    </t>
                                 </div>
                             </div>
                         </div>
@@ -337,6 +345,10 @@
                                                 <t t-if="en['enrollment_type'] == 'self'">Self</t>
                                             </div>
                                             <div class="info-text">
+                                                <strong>Enrolled For:</strong>
+                                                <t t-esc="en['enrolled_for']"/>
+                                            </div>
+                                            <div class="info-text">
                                                 <strong>Status:</strong>
                                                 <t t-if="en['state'] == 'active'">Active</t>
                                                 <t t-if="en['state'] == 'completed'">Completed</t>
@@ -351,6 +363,7 @@
                                                             <th>First Consultation Charges</th>
                                                             <th>Therapy + Medicine</th>
                                                             <th>Total Sessions</th>
+                                                            <th>Used Sessions</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -372,6 +385,9 @@
                                                             </td>
                                                             <td>
                                                                 <t t-esc="en['total_sessions']"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="en['used_sessions']"/>
                                                             </td>
                                                         </tr>
                                                     </tbody>

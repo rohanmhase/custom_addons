@@ -249,6 +249,7 @@ class PatientController(http.Controller):
                 "used_sessions": en.used_sessions,
                 "notes": en.notes,
                 "state": en.state,
+                "enrolled_for": en.enrolled_for,
             })
 
         # Group Daily Followup by date
