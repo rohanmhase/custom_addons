@@ -49,7 +49,6 @@ class CaseTaking(models.Model):
     notes = fields.Char(string="Notes")
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [("unique_patient_case_taking", "unique(patient_id)", "⚠️ A patient can only have one case taking!")]
 
     def _ist_date(self):
 
