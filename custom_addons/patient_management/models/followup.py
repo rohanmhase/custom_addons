@@ -90,12 +90,17 @@ class Followup(models.Model):
     def _compute_day_of_therapy(self):
         for record in self:
             if record.patient_id:
-                last_session = record.env['patient.session'].search(
-                    [('patient_id', '=', record.patient_id.id)],
-                    order='session_day desc',
-                    limit=1
-                )
-                record.day_of_therapy = (last_session.session_day + 1) if last_session else 1
+                # Fetch all enrollments of this patient
+                enrollments = record.env["patient.enrollment"].sudo().search([
+                    ("patient_id", "=", record.patient_id.id),
+                    ("active", "=", True)
+                ])
+
+                # Total used sessions across all enrollments
+                total_used = sum(enrollments.mapped("used_sessions"))
+
+                # Day of therapy = total used + 1
+                record.day_of_therapy = total_used + 1
             else:
                 record.day_of_therapy = 1
 
