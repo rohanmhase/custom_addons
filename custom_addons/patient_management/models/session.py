@@ -37,14 +37,19 @@ class Session(models.Model):
 
         patient_id = self.env.context.get("default_patient_id")
         if patient_id:
-            last_session = self.env['patient.session'].search(
-                [('patient_id', '=', patient_id)],
-                order='session_day desc',
-                limit=1
-            )
-            res['session_day'] = (last_session.session_day + 1) if last_session else 1
+            # Fetch all enrollments of the patient
+            enrollments = self.env["patient.enrollment"].sudo().search([
+                ("patient_id", "=", patient_id),
+                ("active", "=", True)  # or remove this to include old deleted ones too
+            ])
+
+            # Sum used sessions from all enrollments
+            total_used = sum(enrollments.mapped("used_sessions"))
+
+            # New session day = total used sessions + 1
+            res["session_day"] = total_used + 1
         else:
-            res['session_day'] = 1
+            res["session_day"] = 1
 
         return res
 
