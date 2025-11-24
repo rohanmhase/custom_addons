@@ -25,7 +25,6 @@ class Patient(models.Model):
                       readonly=True, copy=False, index=True)            # Medical record number
     uuid = fields.Char(string="UUID", readonly=True, copy=False, index=True, default=lambda self: str(uuid.uuid4()))
     enroll_date = fields.Date(string="Enrollment Date",
-                              readonly=True,
                               default=lambda self: self._ist_date(),
                               copy=False, required=True)                # Enroll Date of patient
 
@@ -42,6 +41,8 @@ class Patient(models.Model):
     pain_spine = fields.Boolean(string="Spine Pain")
     pain_ra = fields.Boolean(string="RA")
     pain_ana = fields.Boolean(string="ANA")
+
+    is_existing = fields.Boolean(string="Is Existing", tracking=True)
 
     _sql_constraints = [
         # ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'), # Prevent creating records for same registered phone numbers

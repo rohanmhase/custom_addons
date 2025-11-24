@@ -11,7 +11,6 @@
                 <field name="phone"/>
                 <field name="mrn"/>
                 <field name="enroll_date" string="Date(MM/DD/YYYY)"/>
-                <field name="remaining_sessions"/>
                 <field name="admin_id" string="Admin Name"/>
                 <field name="write_uid" string="Modified By"/>
             </tree>
@@ -45,9 +44,11 @@
                         <field name="phone" maxlength="10"/>
                         <field name="email"/>
                         <field name="address"/>
+                        <field name="enroll_date"/>
                         <field name="mrn"/>
                         <field name="clinic_id"/>
                         <field name="admin_id"/>
+                        <field name="is_existing"/>
                     </group>
                     <field name="pain_types" invisible="1"/>
                     <group string="Registered For">
