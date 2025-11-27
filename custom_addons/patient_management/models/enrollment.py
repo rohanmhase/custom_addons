@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from datetime import datetime, timedelta
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class Enrollment(models.Model):
@@ -64,6 +64,12 @@ class Enrollment(models.Model):
             if rec.pain_spine:
                 selected.append("Spine Pain")
             rec.enrolled_for = ", ".join(selected)
+
+    @api.constrains('used_sessions', 'total_sessions')
+    def _check_used_sessions(self):
+        for rec in self:
+            if rec.used_sessions > rec.total_sessions:
+                raise ValidationError(_("Used Sessions cannot be greater than Total Sessions."))
 
     def _ist_date(self):
 
