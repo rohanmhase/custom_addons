@@ -37,72 +37,18 @@
                         </group>
                     </sheet>
                     <sheet>
-                        <table class="o_group o_inner_table"
-                               style="width:100%; border:1px solid #ccc; border-collapse: collapse; text-align: center;">
-                            <thead>
-                                <tr style="background-color:#f2f2f2;">
-                                    <th colspan="2" style="border:1px solid #ccc; padding:8px;">Symptoms</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Detox Therapy</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Regeneration Therapy</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Right Knee</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Left Knee</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Before &amp; After Therapy Comment
-                                    </th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Therapist Name</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">Jivha
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="jivha"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="detox_therapy"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="regeneration_therapy"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="right_knee"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="left_knee"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="before_and_after_therapy_comment"/>
-                                    </td>
-                                    <td rowspan="4" style="border:1px solid #ccc; padding:8px;">
-                                        <field name="therapist_name"/>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
-                                        Swelling
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="swelling"/>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
-                                        Digestion
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="digestion"/>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border:1px solid #ccc; padding:6px; color:black; font-weight:500">
-                                        Motion
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="motion"/>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <group>
+                            <field name="jivha"/>
+                            <field name="swelling"/>
+                            <field name="digestion"/>
+                            <field name="motion"/>
+                            <field name="detox_therapy"/>
+                            <field name="regeneration_therapy"/>
+                            <field name="right_knee"/>
+                            <field name="left_knee"/>
+                            <field name="before_and_after_therapy_comment" string="Comment"/>
+                            <field name="therapist_name"/>
+                        </group>
                     </sheet>
                 </sheet>
             </form>
