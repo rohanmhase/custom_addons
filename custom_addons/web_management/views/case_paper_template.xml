@@ -687,6 +687,7 @@
                                                                 <t t-if="fl['nidra'] == 'ati'">Ati</t>
                                                                 <t t-if="fl['nidra'] == 'alpa'">Alpa</t>
                                                                 <t t-if="fl['nidra'] == 'nasha'">Nasha</t>
+                                                                <t t-if="fl['nidra'] == 'samyak'">Samyak</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -695,6 +696,7 @@
                                                                 <t t-if="fl['sweda'] == 'alpa'">Alpa</t>
                                                                 <t t-if="fl['sweda'] == 'ati'">Ati</t>
                                                                 <t t-if="fl['sweda'] == 'foul'">Foul</t>
+                                                                <t t-if="fl['sweda'] == 'samyak'">Samyak</t>
                                                             </td>
                                                         </tr>
                                                         <tr>

@@ -79,10 +79,12 @@ class Followup(models.Model):
     rasa_dhatu_dushti_lakshane = fields.Char(string="Rasa Dhatu Dushi Lakshane:", required=True)
     nidra = fields.Selection([("ati", "Ati"),
                               ("alpa", "Alpa"),
-                              ("nasha", "Nasha")], string="Nidra:", required=True)
+                              ("nasha", "Nasha"),
+                              ("samyak", "Samyak")], string="Nidra:", required=True)
     sweda = fields.Selection([("alpa", "Alpa"),
                               ("ati", "Ati"),
-                              ("foul", "Foul")], string="Sweda:", required=True)
+                              ("foul", "Foul"),
+                              ("samyak", "Samyak")], string="Sweda:", required=True)
     others_k = fields.Text(string="Others:")
     active = fields.Boolean(default=True)
 
