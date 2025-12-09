@@ -17,7 +17,8 @@ class Followup(models.Model):
     day_of_therapy = fields.Integer(string="Day Of Therapy", compute="_compute_day_of_therapy", store=True, readonly=True)
     type_of_therapy = fields.Selection([("detox", "Detox"),
                                         ("regeneration", "Regeneration"),
-                                        ("transition", "Transition"),], string="Type of Therapy", required=True)
+                                        ("transition", "Transition"),
+                                        ("nil", "Nil")], string="Type of Therapy", required=True)
 
     # Shakhagata Examinations
 

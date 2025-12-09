@@ -442,6 +442,7 @@
                                                 <t t-if="fl['type_of_therapy'] == 'detox'">Detox</t>
                                                 <t t-if="fl['type_of_therapy'] == 'regeneration'">Regeneration</t>
                                                 <t t-if="fl['type_of_therapy'] == 'transition'">Transition</t>
+                                                <t t-if="fl['type_of_therapy'] == 'nil'">Nil</t>
                                             </div>
                                             <div class="row">
                                                 <span>
