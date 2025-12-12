@@ -29,41 +29,14 @@
                         </group>
                     </sheet>
                     <sheet>
-                        <table class="o_group o_inner_table"
-                               style="width:100%; border:1px solid #ccc; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background-color:#f2f2f2; text-align:center;">
-                                    <th style="border:1px solid #ccc; padding:8px;">Therapy Day</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Morning with time</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Lunch with time</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Evening with time</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Dinner with time</th>
-                                    <th style="border:1px solid #ccc; padding:8px;">Comments</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="therapy_day"/>
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="morning_with_time"/>
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="lunch_with_time"/>
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="evening_with_time"/>
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="dinner_with_time"/>
-                                    </td>
-                                    <td style="border:1px solid #ccc; padding:6px;">
-                                        <field name="comments"/>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <group>
+                            <field name="therapy_day"/>
+                            <field name="morning_with_time"/>
+                            <field name="lunch_with_time"/>
+                            <field name="evening_with_time"/>
+                            <field name="dinner_with_time"/>
+                            <field name="comments"/>
+                        </group>
                     </sheet>
                 </sheet>
             </form>
