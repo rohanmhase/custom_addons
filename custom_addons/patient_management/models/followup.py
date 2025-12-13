@@ -107,6 +107,37 @@ class Followup(models.Model):
             else:
                 record.day_of_therapy = 1
 
+    @api.onchange('patient_id')
+    def _onchange_patient_id_autofill_previous(self):
+        if not self.patient_id:
+            return
+
+        domain = [('patient_id', '=', self.patient_id.id)]
+
+        # exclude current record ONLY if it already exists
+        if self._origin and self._origin.id:
+            domain.append(('id', '!=', self._origin.id))
+
+        last_followup = self.env['patient.followup'].search(
+            domain,
+            order='weekly_followup_date desc',
+            limit=1
+        )
+
+        if not last_followup:
+            return
+
+        fields_to_copy = [
+            'diagnosis',
+            'k_c_o',
+            'investigation_status',
+            'case_under_discussion_with',
+            'type_of_therapy',
+        ]
+
+        for field in fields_to_copy:
+            self[field] = last_followup[field]
+
     def _ist_date(self):
 
         utc = (datetime.now())
