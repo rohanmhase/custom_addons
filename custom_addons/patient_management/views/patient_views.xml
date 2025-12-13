@@ -8,6 +8,7 @@
             <kanban class="o_kanban_view">
                 <field name="name"/>
                 <field name="age"/>
+                <field name="gender"/>
                 <field name="phone"/>
                 <field name="mrn"/>
 
@@ -18,6 +19,9 @@
                                 <strong>
                                     <field name="name"/>
                                 </strong>
+                            </div>
+                            <div>
+                                <field name="age"/>/<field name="gender"/>
                             </div>
                             <div>
                                 <field name="phone"/>
