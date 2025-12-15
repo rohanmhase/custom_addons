@@ -13,9 +13,14 @@ class Session(models.Model):
                                 readonly=True)
     session_day = fields.Integer(
         string="Session Day", compute="default_get", store=True)
-    jivha = fields.Char(string="Jivha", required=True)
+    jivha = fields.Selection([("saam", "Saam"),
+                              ("ishat_saam", "Ishat Saam"),
+                              ("niram", "Niram")], string="Jivha:", required=True)
     swelling = fields.Char(string="Swelling", required=True)
-    digestion = fields.Char(string="Digestion", required=True)
+    digestion = fields.Selection([("samyak", "Samyak"),
+                                ("manda", "Manda"),
+                                ("vishama", "Vishama"),
+                                ("tikshna", "Tikshna")], string="Digestion:", required=True)
     motion = fields.Char(string="Motion", required=True)
     detox_therapy = fields.Char(string="Detox Therapy", required=True)
     regeneration_therapy = fields.Char(string="Regeneration Therapy", required=True)
