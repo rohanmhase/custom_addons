@@ -854,7 +854,9 @@
                                                         <tr>
                                                             <td>Jivha</td>
                                                             <td>
-                                                                <t t-esc="sess['jivha']"/>
+                                                                <t t-if="sess['jivha'] == 'saam'">Saam</t>
+                                                                <t t-if="sess['jivha'] == 'ishat_saam'">Ishat Saam</t>
+                                                                <t t-if="sess['jivha'] == 'niram'">Niram</t>
                                                             </td>
                                                             <td rowspan="4">
                                                                 <t t-esc="sess['detox_therapy']"/>
@@ -884,7 +886,10 @@
                                                         <tr>
                                                             <td>Digestion</td>
                                                             <td>
-                                                                <t t-esc="sess['digestion']"/>
+                                                                <t t-if="sess['digestion'] == 'samyak'">Samyak</t>
+                                                                <t t-if="sess['digestion'] == 'manda'">Manda</t>
+                                                                <t t-if="sess['digestion'] == 'vishama'">Vishama</t>
+                                                                <t t-if="sess['digestion'] == 'tikshna'">Tikshna</t>
                                                             </td>
                                                         </tr>
                                                         <tr>
