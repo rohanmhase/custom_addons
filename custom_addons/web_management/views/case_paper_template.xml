@@ -708,6 +708,55 @@
                                                         </tr>
                                                     </tbody>
                                                 </table>
+                                                <span>
+                                                    <i>Daily Routine</i>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Parameters</th>
+                                                            <th>Observation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Wake Up Time</td>
+                                                            <td>
+                                                                <t t-esc="fl['wake_up_time']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Breakfast</td>
+                                                            <td>
+                                                                <t t-esc="fl['breakfast']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Lunch</td>
+                                                            <td>
+                                                                <t t-esc="fl['lunch']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Dinner</td>
+                                                            <td>
+                                                                <t t-esc="fl['dinner']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Sleep Time</td>
+                                                            <td>
+                                                                <t t-esc="fl['sleep_time']"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Divastap</td>
+                                                            <td>
+                                                                <t t-esc="fl['divastap']"/>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </t>

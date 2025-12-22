@@ -386,6 +386,12 @@ class PatientController(http.Controller):
                 "nidra": fl.nidra,
                 "sweda": fl.sweda,
                 "others_k": fl.others_k,
+                "wake_up_time": fl.wake_up_time,
+                "breakfast": fl.breakfast,
+                "lunch": fl.lunch,
+                "dinner": fl.dinner,
+                "sleep_time": fl.sleep_time,
+                "divastap": fl.divastap,
             })
 
         # Group Attachment by date
