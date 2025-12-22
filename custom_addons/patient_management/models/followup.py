@@ -87,6 +87,12 @@ class Followup(models.Model):
                               ("foul", "Foul"),
                               ("samyak", "Samyak")], string="Sweda:", required=True)
     others_k = fields.Text(string="Others:")
+    wake_up_time = fields.Char(string="Wake up time:")
+    breakfast = fields.Char(string="Breakfast:")
+    lunch = fields.Char(string="Lunch:")
+    dinner = fields.Char(string="Dinner:")
+    sleep_time= fields.Char(string="Sleep Time:")
+    divastap = fields.Char(string="Divastap:")
     active = fields.Boolean(default=True)
 
     @api.depends('patient_id')

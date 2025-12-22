@@ -278,6 +278,23 @@
                             <field name="others_k" widget="char"/>
                         </group>
                     </sheet>
+                    <div style="margin: 10px 16px; font-size: 18px; color:black;}">
+                        <span style="text-decoration: underline;">
+                            <strong>
+                                <i>Daily Routine</i>
+                            </strong>
+                        </span>
+                    </div>
+                    <sheet>
+                        <group>
+                            <field name="wake_up_time"/>
+                            <field name="breakfast"/>
+                            <field name="lunch"/>
+                            <field name="dinner"/>
+                            <field name="sleep_time"/>
+                            <field name="divastap"/>
+                        </group>
+                    </sheet>
                 </sheet>
             </form>
         </field>
