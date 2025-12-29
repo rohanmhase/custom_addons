@@ -1,0 +1,73 @@
+<odoo>
+    <record id="view_clinic_dashboard_form" model="ir.ui.view">
+        <field name="name">clinic.dashboard.form</field>
+        <field name="model">clinic.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Clinic Dashboard">
+                <sheet>
+                    <!-- Header with filters -->
+                    <group>
+                        <group>
+                            <field name="clinic_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="from_date"/>
+                            <field name="to_date"/>
+                        </group>
+                    </group>
+
+                    <!-- Statistics Card -->
+                    <group>
+                        <group>
+                            <field name="total_patients" readonly="1"/>
+                            <field name="today_registered_patients" readonly="1"/>
+                            <field name="total_enrollment"/>
+                        </group>
+                        <group>
+                            <field name="total_therapies" readonly="1"/>
+                            <field name="total_followups" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Therapy Patients Table -->
+                    <notebook>
+                        <page string="Therapy Sessions">
+                            <field name="line_ids" nolabel="1">
+                                <tree create="false" edit="false" delete="false">
+                                    <field name="patient_name" string="Patient Name"/>
+                                    <field name="session_day" string="Session Day"/>
+                                    <field name="doctor_name" string="Doctor"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="New Registered Patients">
+                            <field name="patient_line_ids" nolabel="1">
+                                <tree create="false" edit="false" delete="false">
+                                    <field name="patient_name" string="Patient Name"/>
+                                    <field name="mobile" string="Mobile"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Followups">
+                            <field name="followup_line_ids" nolabel="1">
+                                <tree create="false" edit="false" delete="false">
+                                    <field name="patient_name" string="Patient Name"/>
+                                    <field name="doctor_name" string="Doctor Name"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Enrollment">
+                            <field name="enrollment_line_ids" nolabel="1">
+                                <tree create="false" edit="false" delete="false">
+                                    <field name="patient_name" string="Patient Name"/>
+                                    <field name="enrolled_for" string="Enrolled For"/>
+                                    <field name="total_sessions" string="Total Session"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

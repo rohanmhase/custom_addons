@@ -50,3 +50,16 @@ class Clinic(models.Model):
         clinic.pos_config_id = pos_config.id
 
         return clinic
+
+    def action_open_clinic_dashboard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Clinic Dashboard',
+            'res_model': 'clinic.dashboard',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_clinic_id': self.id,
+            }
+        }

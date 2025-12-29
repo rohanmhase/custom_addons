@@ -57,6 +57,10 @@
         <field name="model">clinic.clinic</field>
         <field name="arch" type="xml">
             <form>
+                <header><button name="action_open_clinic_dashboard"
+        type="object"
+        string="Clinic Dashboard"
+        class="oe_highlight"/></header>
                 <sheet>
                     <group>
                         <field name="name"/>
