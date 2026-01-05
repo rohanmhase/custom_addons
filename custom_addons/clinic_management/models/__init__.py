@@ -1,1 +1,1 @@
-from . import clinic, pos_stock, res_users, clinic_dashboard, clinic_dashboard_session_line, clinic_dashboard_patient_line, clinic_dashboard_followup_line, clinic_dashboard_enrollment_line
+from . import clinic, pos_stock, res_users, clinic_dashboard, clinic_dashboard_session_line, clinic_dashboard_patient_line, clinic_dashboard_followup_line, clinic_dashboard_enrollment_line, clinic_dashboard_daily_followup_line

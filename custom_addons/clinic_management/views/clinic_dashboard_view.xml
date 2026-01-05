@@ -26,6 +26,7 @@
                         <group>
                             <field name="total_therapies" readonly="1"/>
                             <field name="total_followups" readonly="1"/>
+                            <field name="total_daily_followups" readonly="1"/>
                         </group>
                     </group>
 
@@ -62,6 +63,14 @@
                                     <field name="patient_name" string="Patient Name"/>
                                     <field name="enrolled_for" string="Enrolled For"/>
                                     <field name="total_sessions" string="Total Session"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Daily Followups">
+                            <field name="daily_followup_line_ids" nolabel="1">
+                                <tree create="false" edit="false" delete="false">
+                                    <field name="patient_name" string="Patient Name"/>
+                                    <field name="doctor_name" string="Doctor Name"/>
                                 </tree>
                             </field>
                         </page>

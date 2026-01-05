@@ -43,6 +43,11 @@ class ClinicDashboard(models.TransientModel):
         string="Therapy List"
     )
 
+    total_daily_followups = fields.Integer(
+        string="Total Daily Followups",
+        compute="_compute_total_daily_followups"
+    )
+
     patient_line_ids = fields.One2many(
         'clinic.dashboard.patient.line',
         'dashboard_id',
@@ -59,6 +64,12 @@ class ClinicDashboard(models.TransientModel):
         'clinic.dashboard.enrollment.line',
         'dashboard_id',
         string="Enrollments"
+    )
+
+    daily_followup_line_ids = fields.One2many(
+        'clinic.dashboard.daily.followup.line',
+        'dashboard_id',
+        string="Daily Followups"
     )
 
     @api.constrains('from_date', 'to_date')
@@ -105,6 +116,11 @@ class ClinicDashboard(models.TransientModel):
         for rec in self:
             rec.total_enrollment = len(rec.enrollment_line_ids)
 
+    @api.depends('daily_followup_line_ids')
+    def _compute_total_daily_followups(self):
+        for rec in self:
+            rec.total_daily_followups = len(rec.daily_followup_line_ids)
+
     # --------------------------------------------------
     # ONCHANGE LOAD DASHBOARD (DATE RANGE)
     # --------------------------------------------------
@@ -115,6 +131,7 @@ class ClinicDashboard(models.TransientModel):
         self.patient_line_ids = [(5, 0, 0)]
         self.followup_line_ids = [(5, 0, 0)]
         self.enrollment_line_ids = [(5, 0, 0)]
+        self.daily_followup_line_ids = [(5, 0, 0)]
 
         if not self.clinic_id or not self.from_date or not self.to_date:
             return
@@ -161,6 +178,8 @@ class ClinicDashboard(models.TransientModel):
             'doctor_name': f.doctor_id.name,
         }) for f in followups]
 
+        # Enrollments
+
         enrollments = self.env['patient.enrollment'].search([
             ('patient_id.clinic_id', '=', self.clinic_id.id),
             ('enrollment_date', '>=', self.from_date),
@@ -171,3 +190,15 @@ class ClinicDashboard(models.TransientModel):
             'total_sessions': e.total_sessions,
             'enrolled_for': e.enrolled_for,
         }) for e in enrollments]
+
+        # Daily Followups
+
+        daily_followups = self.env['patient.daily_followup'].search([
+            ('patient_id.clinic_id', '=', self.clinic_id.id),
+            ('followup_date', '>=', self.from_date),
+            ('followup_date', '<=', self.to_date),
+        ])
+        self.daily_followup_line_ids = [(0, 0, {
+            'patient_name':d.patient_id.name,
+            'doctor_name':d.doctor_id.name,
+        }) for d in daily_followups]
