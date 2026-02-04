@@ -69,7 +69,7 @@
                     <button name="action_open_enrollment" type="object" string="Enrollment"/>
                     <button name="action_open_blood_report" type="object" string="Blood Report"/>
                     <button name="action_open_daily_followup" type="object" string="Daily Followup"/>
-                    <button name="action_open_diet_chart" type="object" string="Diet Chart"/>
+<!--                    <button name="action_open_diet_chart" type="object" string="Diet Chart"/>-->
                     <button name="action_open_followup" type="object" string="Weekly Followup"/>
                     <button name="action_open_prescription" type="object" string="Prescription"/>
                     <button name="action_open_session" type="object" string="Therapy Session"/>

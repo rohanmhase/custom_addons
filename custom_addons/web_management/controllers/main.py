@@ -220,6 +220,11 @@ class PatientController(http.Controller):
                 "before_and_after_therapy_comment": sess.before_and_after_therapy_comment,
                 "therapist_name": sess.therapist_name,
                 "state": sess.state,
+                "morning_with_time": sess.morning_with_time,
+                "lunch_with_time": sess.lunch_with_time,
+                "evening_with_time": sess.evening_with_time,
+                "dinner_with_time": sess.dinner_with_time,
+                "comments": sess.comments,
             })
 
         # Group Enrollment by date

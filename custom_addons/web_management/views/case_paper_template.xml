@@ -886,6 +886,9 @@
                                                 <t t-if="sess['session_type'] == 'self'">Self</t>
                                             </div>
                                             <div class="row">
+                                                <span><i>Therapy Information</i></span>
+                                            </div>
+                                            <div class="row">
                                                 <table class="session-table">
                                                     <thead>
                                                         <tr>
@@ -949,6 +952,29 @@
                                                         </tr>
                                                     </tbody>
                                                 </table>
+                                            </div>
+                                            <div class="row">
+                                                <span><i>Diet Information</i></span>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>7 AM - 9 AM:</strong>
+                                                <t t-esc="sess['morning_with_time']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>10 AM - 1 PM:</strong>
+                                                <t t-esc="sess['lunch_with_time']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>4 PM - 6 PM:</strong>
+                                                <t t-esc="sess['evening_with_time']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>7 PM - 10 PM:</strong>
+                                                <t t-esc="sess['dinner_with_time']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Comments:</strong>
+                                                <t t-esc="sess['comments']"/>
                                             </div>
                                         </div>
                                     </t>

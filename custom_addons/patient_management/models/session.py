@@ -15,12 +15,12 @@ class Session(models.Model):
         string="Session Day", compute="default_get", store=True)
     jivha = fields.Selection([("saam", "Saam"),
                               ("ishat_saam", "Ishat Saam"),
-                              ("niram", "Niram")], string="Jivha:", required=True)
+                              ("niram", "Niram")], string="Jivha", required=True)
     swelling = fields.Char(string="Swelling", required=True)
     digestion = fields.Selection([("samyak", "Samyak"),
                                 ("manda", "Manda"),
                                 ("vishama", "Vishama"),
-                                ("tikshna", "Tikshna")], string="Digestion:", required=True)
+                                ("tikshna", "Tikshna")], string="Digestion", required=True)
     motion = fields.Char(string="Motion", required=True)
     detox_therapy = fields.Char(string="Detox Therapy", required=True)
     regeneration_therapy = fields.Char(string="Regeneration Therapy", required=True)
@@ -34,6 +34,11 @@ class Session(models.Model):
         ('home', 'Home'),
         ('self', 'Self'),
     ], string="Therapy Location", required=True)
+    morning_with_time = fields.Char(string="7 AM - 9 AM", required=True)
+    lunch_with_time = fields.Char(string="10 AM - 1 PM", required=True)
+    evening_with_time = fields.Char(string="4 PM - 6 PM", required=True)
+    dinner_with_time = fields.Char(string="7 PM - 10 PM", required=True)
+    comments = fields.Char(string="Comments")
     active = fields.Boolean(default=True)
 
     @api.model

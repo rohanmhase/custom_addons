@@ -36,6 +36,7 @@
                             </group>
                         </group>
                     </sheet>
+                    <div style="font-size:20px; padding:1px 16px;">Therapy Session</div>
                     <sheet>
                         <group>
                             <field name="jivha"/>
@@ -48,6 +49,16 @@
                             <field name="left_knee"/>
                             <field name="before_and_after_therapy_comment" string="Comment"/>
                             <field name="therapist_name"/>
+                        </group>
+                    </sheet>
+                    <div style="font-size:20px; padding:1px 16px;">Diet Information</div>
+                    <sheet>
+                        <group>
+                            <field name="morning_with_time"/>
+                            <field name="lunch_with_time"/>
+                            <field name="evening_with_time"/>
+                            <field name="dinner_with_time"/>
+                            <field name="comments"/>
                         </group>
                     </sheet>
                 </sheet>
