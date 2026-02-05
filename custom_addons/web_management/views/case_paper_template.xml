@@ -357,36 +357,36 @@
                                                 <table class="session-table">
                                                     <thead>
                                                         <tr>
-                                                            <th>Daily Sheet Reference</th>
-                                                            <th>Total Amount</th>
-                                                            <th>Therapy Amount</th>
-                                                            <th>First Consultation Charges</th>
-                                                            <th>Therapy + Medicine</th>
-                                                            <th>Total Sessions</th>
-                                                            <th>Used Sessions</th>
+<!--                                                            <th>Daily Sheet Reference</th>-->
+                                                            <th>Total Therapy Charges</th>
+<!--                                                            <th>Therapy Amount</th>-->
+<!--                                                            <th>First Consultation Charges</th>-->
+<!--                                                            <th>Therapy + Medicine</th>-->
+                                                            <th>Number of Therapy Sessions for which Patient has Enrolled</th>
+                                                            <th>Number of Therapy Sessions Patient has already Completed</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr>
-                                                            <td>
-                                                                <t t-esc="en['daily_sheet_ref']"/>
-                                                            </td>
-                                                            <td>
+<!--                                                            <td>-->
+<!--                                                                <t t-esc="en['daily_sheet_ref']"/>-->
+<!--                                                            </td>-->
+                                                            <td class="td_t_c">
                                                                 <t t-esc="en['total_amount']"/>
                                                             </td>
-                                                            <td>
-                                                                <t t-esc="en['therapy_amount']"/>
-                                                            </td>
-                                                            <td>
-                                                                <t t-esc="en['first_cons_charges']"/>
-                                                            </td>
-                                                            <td>
-                                                                <t t-esc="en['therapy_medicine']"/>
-                                                            </td>
-                                                            <td>
+<!--                                                            <td>-->
+<!--                                                                <t t-esc="en['therapy_amount']"/>-->
+<!--                                                            </td>-->
+<!--                                                            <td>-->
+<!--                                                                <t t-esc="en['first_cons_charges']"/>-->
+<!--                                                            </td>-->
+<!--                                                            <td>-->
+<!--                                                                <t t-esc="en['therapy_medicine']"/>-->
+<!--                                                            </td>-->
+                                                            <td class="td_t_c">
                                                                 <t t-esc="en['total_sessions']"/>
                                                             </td>
-                                                            <td>
+                                                            <td class="td_t_c">
                                                                 <t t-esc="en['used_sessions']"/>
                                                             </td>
                                                         </tr>

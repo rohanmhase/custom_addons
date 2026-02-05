@@ -9,16 +9,16 @@ class Enrollment(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, readonly=True)
-    doctor_id = fields.Many2one('res.users', string="Doctor", required=True, readonly=True, default=lambda self: self.env.user)
+    doctor_id = fields.Many2one('res.users', string="BM", required=True, readonly=True, default=lambda self: self.env.user)
     enrollment_date = fields.Date(string="Enrollment Date", required=True, default=lambda self: self._ist_date(), tracking=True)
-    daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", required=True, tracking=True)
-    total_amount = fields.Integer(string="Total Amount", required=True, tracking=True)
-    therapy_amount = fields.Integer(string="Therapy Amount", required=True, tracking=True)
-    first_cons_charges = fields.Integer(string="First Consultation Charges", required=True, tracking=True)
-    therapy_medicine = fields.Integer(string="Therapy + Medicine", required=True, tracking=True)
-    total_sessions = fields.Integer(string="Total Sessions", required=True, tracking=True)
-    remaining_sessions = fields.Integer(string="Remaining Sessions", required=True, compute='_compute_remaining_sessions')
-    used_sessions = fields.Integer(string="Used Sessions", required=True, default=0, tracking=True)
+    daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", tracking=True)
+    total_amount = fields.Integer(string="Total Therapy Charges", required=True, tracking=True)
+    therapy_amount = fields.Integer(string="Therapy Amount", tracking=True)
+    first_cons_charges = fields.Integer(string="First Consultation Charges", tracking=True)
+    therapy_medicine = fields.Integer(string="Therapy + Medicine", tracking=True)
+    total_sessions = fields.Integer(string="Number of Therapy Sessions for which Patient has Enrolled", tracking=True)
+    remaining_sessions = fields.Integer(string="Remaining Sessions", compute='_compute_remaining_sessions')
+    used_sessions = fields.Integer(string="Number of Therapy Sessions Patient has already Completed", required=True, default=0, tracking=True)
     notes = fields.Char(string="Notes", tracking=True)
     enrollment_type = fields.Selection([
         ('clinic', 'Clinic'),
@@ -70,6 +70,18 @@ class Enrollment(models.Model):
         for rec in self:
             if rec.used_sessions > rec.total_sessions:
                 raise ValidationError(_("Used Sessions cannot be greater than Total Sessions."))
+
+    @api.constrains('total_sessions')
+    def _check_total_sessions_zero(self):
+        for rec in self:
+            if rec.total_sessions == 0:
+                raise ValidationError(_("Number of Therapy Sessions for which Patient has Enrolled Cannot be 0."))
+
+    @api.constrains('total_amount')
+    def _check_total_amount_zero(self):
+        for rec in self:
+            if rec.total_amount == 0:
+                raise ValidationError(_("Total Therapy Charges Cannot be 0."))
 
     def _ist_date(self):
 
