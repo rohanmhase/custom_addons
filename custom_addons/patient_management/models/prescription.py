@@ -38,6 +38,46 @@ class Prescription(models.Model):
         default="draft",
     )
 
+    latest_followup_id = fields.Many2one(
+        'patient.followup',
+        string='Latest Follow Up',
+        compute='_compute_latest_followup',
+        store=False
+    )
+
+    latest_blood_report_id = fields.Many2one(
+        'patient.blood_report',
+        string='Latest Blood Report',
+        compute='_compute_latest_blood_report',
+        store=False
+    )
+
+    @api.depends('patient_id')
+    def _compute_latest_followup(self):
+        Followup = self.env['patient.followup']
+        for rec in self:
+            if rec.patient_id:
+                rec.latest_followup_id = Followup.search(
+                    [('patient_id', '=', rec.patient_id.id), ('active', '=', 'true')],
+                    order='weekly_followup_date desc',
+                    limit=1
+                )
+            else:
+                rec.latest_followup_id = False
+
+    @api.depends('patient_id')
+    def _compute_latest_blood_report(self):
+        Blood_Report = self.env['patient.blood_report']
+        for rec in self:
+            if rec.patient_id:
+                rec.latest_blood_report_id = Blood_Report.search(
+                    [('patient_id', '=', rec.patient_id.id), ('active', '=', 'true')],
+                    order='blood_report_date desc',
+                    limit=1
+                )
+            else:
+                rec.latest_blood_report_id = False
+
     active = fields.Boolean(default=True)
 
 
@@ -230,6 +270,12 @@ class Prescription(models.Model):
         # Do not call super() → prevents actual deletion
         return True
 
+    def action_print_prescription(self):
+        """Print Prescription PDF"""
+        if self.state == "draft":
+            raise UserError(_("⚠️ Please confirm the prescription before printing."))
+
+        return self.env.ref('patient_management.report_prescription').report_action(self)
 
 class PrescriptionLine(models.Model):
     _name = "patient.prescription.line"

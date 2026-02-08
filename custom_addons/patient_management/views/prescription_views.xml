@@ -22,6 +22,11 @@
             <form string="Prescription">
                 <header>
                     <button name="action_confirm" type="object" string="Confirm"/>
+<!--                    <button name="action_print_prescription"-->
+<!--                            type="object"-->
+<!--                            string="Print Prescription"-->
+<!--                            class="btn-primary"-->
+<!--                            groups="clinic_management.group_print_prescription"/>-->
                 </header>
                 <sheet>
                     <sheet>
@@ -66,6 +71,30 @@
                         <group>
                             <field name="notes"/>
                         </group>
+                    </sheet>
+                    <sheet>
+                        <notebook>
+                            <page string="Patient Follow-Ups (View Only)">
+                                <field name="latest_followup_id"
+                                       nolabel="1"
+                                       readonly="1"
+                                       domain="[('patient_id', '=', patient_id)]"
+                                       options="{'no_create': True, 'no_edit': True, 'no_delete': True}">
+                                    <form create="0" edit="0" delete="0">
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Patient Blood Report (View Only)">
+                                <field name="latest_blood_report_id"
+                                       nolabel="1"
+                                       readonly="1"
+                                       domain="[('patient_id', '=', patient_id)]"
+                                       options="{'no_create': True, 'no_edit': True, 'no_delete': True}">
+                                    <form create="0" edit="0" delete="0">
+                                    </form>
+                                </field>
+                            </page>
+                        </notebook>
                     </sheet>
                 </sheet>
             </form>
