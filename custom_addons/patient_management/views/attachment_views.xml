@@ -30,11 +30,16 @@
                         <field name="file_type"/>
                         <field name="other_description"/>
                         <field name="file_data" filename="name"/>
-                        <field name="s3_url" readonly="1"/>
+                        <field name="preview_url" invisible="1"/>
                         <button name="action_upload_to_s3"
                                 type="object"
                                 string="Upload"
                                 class="btn-primary"/>
+                    </group>
+
+                    <group string="File Preview"
+                           invisible="not preview_url">
+                        <field name="preview_html" readonly="1"/>
                     </group>
                 </sheet>
             </form>

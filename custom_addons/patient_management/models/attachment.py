@@ -18,13 +18,22 @@ class PatientAttachment(models.Model):
         ('mri', 'MRI'),
         ('blood_report', 'Blood Report'),
         ('other', 'Other')
-    ], string="File Type", required=True)
+    ], string="Type of Report", required=True)
     s3_url = fields.Char(string="S3 URL", readonly=True)
     file_data = fields.Binary(string="Upload File")
     admin = fields.Many2one("res.users", string="Admin/BM", required=True, default=lambda self: self.env.user, readonly=True)
     attachment_date = fields.Date(string="Attachment Date", required=True, readonly=True,
                                   default=lambda self: self._ist_date())
     other_description = fields.Char(string="Please specify (if Other)")
+
+    preview_url = fields.Char(string="Preview URL", compute="_compute_preview_url")
+
+    preview_html = fields.Html(
+        string="Preview",
+        compute="_compute_preview_html",
+        sanitize=False
+    )
+
     active = fields.Boolean(default=True)
 
     @api.model
@@ -101,6 +110,38 @@ class PatientAttachment(models.Model):
         for rec in self:
             if rec.file_type == 'other' and not rec.other_description:
                 raise UserError("Please specify the description for 'Other' file type.")
+
+    def _compute_preview_url(self):
+        for rec in self:
+            rec.preview_url = False
+            if rec.s3_url:
+                s3 = rec._get_s3_client()
+                bucket = self.env['ir.config_parameter'].sudo().get_param('aws_s3_bucket_name')
+
+                # Extract S3 key from URL
+                key = rec.s3_url.split('/')[-1]
+
+                rec.preview_url = s3.generate_presigned_url(
+                    ClientMethod='get_object',
+                    Params={
+                        'Bucket': bucket,
+                        'Key': key
+                    },
+                    ExpiresIn=300  # 5 minutes
+                )
+
+    def _compute_preview_html(self):
+        for rec in self:
+            rec.preview_html = False
+            if rec.preview_url:
+                rec.preview_html = f"""
+                    <iframe src="{rec.preview_url}"
+                            width="100%"
+                            height="600px"
+                            style="border:1px solid #ddd;"
+                            allowfullscreen>
+                    </iframe>
+                """
 
     def _ist_date(self):
         utc = (datetime.now())
