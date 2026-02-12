@@ -8,6 +8,7 @@
             <kanban class="o_kanban_view">
                 <field name="name"/>
                 <field name="mrn"/>
+                <field name="enroll_date"/>
                 <field name="total_sessions"/>
                 <field name="remaining_sessions"/>
                 <field name="latest_xray_grade"/>
@@ -24,6 +25,10 @@
                             <div>
                                 <strong>MRN - </strong>
                                 <field name="mrn"/>
+                            </div>
+                            <div>
+                                <strong>Date - </strong>
+                                <field name="enroll_date"/>
                             </div>
                             <div>
                                 <strong>Total Sessions - </strong>
@@ -64,15 +69,17 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
-                <field name="age"/>
-                <field name="gender"/>
-                <field name="phone"/>
+<!--                <field name="age"/>-->
+<!--                <field name="gender"/>-->
+<!--                <field name="phone"/>-->
                 <field name="mrn"/>
                 <field name="enroll_date" string="Date(MM/DD/YYYY)"/>
-                <field name="admin_id" string="Admin Name"/>
-                <field name="write_uid" string="Modified By"/>
+<!--                <field name="admin_id" string="Admin Name"/>-->
+<!--                <field name="write_uid" string="Modified By"/>-->
                 <field name="total_sessions"/>
                 <field name="remaining_sessions"/>
+                <field name="latest_xray_grade"/>
+                <field name="latest_xray_status"/>
             </tree>
         </field>
     </record>
