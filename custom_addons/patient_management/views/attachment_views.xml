@@ -21,7 +21,7 @@
         <field name="name">clinic.patient.attachment.from</field>
         <field name="model">patient.attachment</field>
         <field name="arch" type="xml">
-            <form string="Patient Attachment">
+            <form string="Patient Attachment" edit="false">
                 <sheet>
                     <group>
                         <field name="patient_id"/>
@@ -33,12 +33,14 @@
                         <field name="x_ray_grade" invisible="file_type != 'xray'" required="1"/>
                         <field name="x_ray_status" invisible="file_type != 'xray'" required="1"/>
                         <field name="other_description"/>
+                        <field name="preview_url" invisible="1"/>
+                    </group>
+                    <group invisible="preview_url">
                         <field name="file_data"
                                filename="name"
                                widget="binary"
                                string="Select File"
                                placeholder="Click to browse..."/>
-                        <field name="preview_url" invisible="1"/>
                         <button name="action_upload_to_s3"
                                 type="object"
                                 string="Upload"

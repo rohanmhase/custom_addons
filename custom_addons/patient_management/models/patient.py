@@ -119,6 +119,12 @@ class Patient(models.Model):
         string="Grade"
     )
 
+    attachment_ids = fields.One2many(
+        "patient.attachment",
+        "patient_id",
+        string="Attachments"
+    )
+
     latest_xray_grade = fields.Selection(
         [
             ('grade_0', 'Grade 0'),
@@ -143,16 +149,22 @@ class Patient(models.Model):
         store=True
     )
 
-    @api.depends("xray_ids.grade", "xray_ids.date_taken", "xray_ids.x_ray_status", "xray_ids.create_date")
+    @api.depends("attachment_ids.file_type", "attachment_ids.active", "attachment_ids.create_date", "attachment_ids.x_ray_grade", "attachment_ids.x_ray_status")
     def _compute_latest_xray_grade(self):
         for rec in self:
-            if rec.xray_ids:
-                latest = rec.xray_ids.sorted(
-                    key=lambda x: x.create_date,
-                    reverse=True
-                )[:1]
+            # Filter only active X-Ray attachments
+            xray_attachments = rec.attachment_ids.filtered(
+                lambda a: a.file_type == 'xray' and a.active
+            )
 
-                rec.latest_xray_grade = latest.grade
+            if xray_attachments:
+                # Pick latest by create_date
+                latest = xray_attachments.sorted(
+                    key=lambda a: a.create_date or fields.Datetime.now(),
+                    reverse=True
+                )[0]
+
+                rec.latest_xray_grade = latest.x_ray_grade
                 rec.latest_xray_status = latest.x_ray_status
             else:
                 rec.latest_xray_grade = False
