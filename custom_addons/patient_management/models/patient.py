@@ -121,6 +121,7 @@ class Patient(models.Model):
 
     latest_xray_grade = fields.Selection(
         [
+            ('grade_0', 'Grade 0'),
             ('grade_1', 'Grade 1'),
             ('grade_2', 'Grade 2'),
             ('grade_3', 'Grade 3'),
