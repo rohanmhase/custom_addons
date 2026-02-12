@@ -11,3 +11,14 @@
 .o_field_radio .o_vertical .o_radio_item {
     margin-bottom: 15px
 }
+
+/* Hide the default "Upload your file" text */
+.o_field_binary .o_select_file_button span[style*="display:contents"] {
+    display: none !important;
+}
+
+/* Add your custom text */
+.o_field_binary .o_select_file_button::after {
+    content: "Choose File";
+    color: inherit;
+}

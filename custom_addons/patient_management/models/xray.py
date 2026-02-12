@@ -26,6 +26,11 @@ class PatientXRay(models.Model):
         ('grade_4', 'Grade 4'),
     ], string="Grade", required=True)
 
+    x_ray_status = fields.Selection([("significant_positive", "Significant Positive"),
+                                     ("mild_positive", "Mild Positive"),
+                                     ("no_change", "No Change"),
+                                     ("negative", "Negative"),], string="X-Ray Status", required=True)
+
     active = fields.Boolean(default=True)
 
     def _ist_date(self):

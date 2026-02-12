@@ -69,10 +69,16 @@ class Patient(models.Model):
         store=True,
     )
 
+    total_sessions = fields.Integer(
+        string="Total Sessions",
+        compute="_compute_total_sessions",
+        store=True
+    )
+
     remaining_sessions = fields.Integer(
         string="Remaining Sessions",
         compute="_compute_remaining_sessions",
-        store=False
+        store=True
     )
 
     session_ids = fields.One2many(
@@ -107,10 +113,63 @@ class Patient(models.Model):
         self.pain_types = ", ".join(selected)
 
 
+    xray_ids = fields.One2many(
+        'patient.xray',
+        "patient_id",
+        string="Grade"
+    )
+
+    latest_xray_grade = fields.Selection(
+        [
+            ('grade_1', 'Grade 1'),
+            ('grade_2', 'Grade 2'),
+            ('grade_3', 'Grade 3'),
+            ('grade_4', 'Grade 4'),
+        ],
+        string="Latest X-Ray Status",
+        compute="_compute_latest_xray",
+        store=True
+    )
+
+    latest_xray_status = fields.Selection(
+        [
+            ("significant_positive", "Significant Positive"),
+            ("mild_positive", "Mild Positive"),
+            ("no_change", "No Change"),
+            ("negative", "Negative"),],
+        string="Latest X-Ray Status",
+        compute="_compute_latest_xray_grade",
+        store=True
+    )
+
+    @api.depends("xray_ids.grade", "xray_ids.date_taken", "xray_ids.x_ray_status", "xray_ids.create_date")
+    def _compute_latest_xray_grade(self):
+        for rec in self:
+            if rec.xray_ids:
+                latest = rec.xray_ids.sorted(
+                    key=lambda x: x.create_date,
+                    reverse=True
+                )[:1]
+
+                rec.latest_xray_grade = latest.grade
+                rec.latest_xray_status = latest.x_ray_status
+            else:
+                rec.latest_xray_grade = False
+                rec.latest_xray_status = False
+
+
+
+    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state")
+    def _compute_total_sessions(self):
+        for rec in self:
+            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
+            rec.total_sessions = sum(enrollments.mapped('total_sessions'))
+
+    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state")
     def _compute_remaining_sessions(self):
         for rec in self:
-            enrollment = rec.active_enrollment_id
-            rec.remaining_sessions = enrollment.remaining_sessions if enrollment else 0
+            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
+            rec.remaining_sessions = sum(enrollments.mapped('remaining_sessions'))
 
     @api.depends("enrollment_ids.state")
     def _compute_active_enrollment_id(self):

@@ -34,7 +34,80 @@ class PatientAttachment(models.Model):
         sanitize=False
     )
 
+    x_ray_id = fields.Many2one('patient.xray', string="Related X-Ray Record", readonly=True)
+
+    x_ray_day = fields.Selection([("5", "5th Day"),
+                                  ("20", "20th Day"),
+                                  ("40", "40th Day"),
+                                  ("60", "60th Day"),
+                                  ("80", "80th Day")],
+                                 string="Day of X-Ray", store=True)
+
+    x_ray_actual_date = fields.Date(string="Date", store=True)
+
+    x_ray_grade = fields.Selection([
+        ('grade_0', 'Grade 0 - Normal'),
+        ('grade_1', 'Grade 1 - Doubtful Joint space narrowing and possible osteophytic lipping.'),
+        ('grade_2', 'Grade 2 - Definite osteophytes and possible joint space narrowing.'),
+        ('grade_3', 'Grade 3 - Moderate multiple osteophytes, definite narrowing of joint space and some sclerosis and possible deformity of bone ends.'),
+        ('grade_4', 'Grade 4 - Large osteophytes, marked narrowing of joint space, severe sclerosis and definite deformity of bone ends.'),
+    ], string="Grade", store=True)
+
+    x_ray_status = fields.Selection([("significant_positive", "Significant Positive"),
+                                     ("mild_positive", "Mild Positive"),
+                                     ("no_change", "No Change"),
+                                     ("negative", "Negative"), ], string="X-Ray Status", required=True)
+
     active = fields.Boolean(default=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Create attachment records
+        records = super(PatientAttachment, self).create(vals_list)
+
+        # Create X-Ray records for x-ray attachments
+        for record in records:
+            if record.file_type == 'xray':
+                xray_data = {
+                    'patient_id': record.patient_id.id,
+                    'doctor_id': record.admin.id,
+                    'x_ray_day': record.x_ray_day,
+                    'x_ray_actual_date': record.x_ray_actual_date,
+                    'x_ray_status': record.x_ray_status,
+                    'grade': record.x_ray_grade,
+                }
+
+                print(xray_data)
+
+                # Create X-Ray record and link it
+                xray_record = self.env['patient.xray'].create(xray_data)
+                record.x_ray_id = xray_record.id
+
+        return records
+
+    def write(self, vals):
+        # Call super first
+        result = super(PatientAttachment, self).write(vals)
+
+        # Handle X-Ray updates
+        for record in self:
+            if record.file_type == 'xray' and record.x_ray_id:
+                # Prepare X-Ray data
+                xray_data = {}
+                if 'x_ray_day' in vals:
+                    xray_data['x_ray_day'] = vals['x_ray_day']
+                if 'x_ray_actual_date' in vals:
+                    xray_data['x_ray_actual_date'] = vals['x_ray_actual_date']
+                if 'x_ray_grade' in vals:
+                    xray_data['grade'] = vals['x_ray_grade']
+                if 'x_ray_status' in vals:
+                    xray_data['x_ray_status'] = vals['x_ray_status']
+
+                if xray_data:
+                    # Update the linked X-Ray record directly
+                    record.x_ray_id.write(xray_data)
+
+        return result
 
     @api.model
     def _get_s3_client(self):

@@ -28,8 +28,16 @@
                         <field name="admin" string="Admin Name"/>
                         <field name="attachment_date"/>
                         <field name="file_type"/>
+                        <field name="x_ray_day" invisible="file_type != 'xray'" required="1"/>
+                        <field name="x_ray_actual_date" invisible="file_type != 'xray'" required="1"/>
+                        <field name="x_ray_grade" invisible="file_type != 'xray'" required="1"/>
+                        <field name="x_ray_status" invisible="file_type != 'xray'" required="1"/>
                         <field name="other_description"/>
-                        <field name="file_data" filename="name"/>
+                        <field name="file_data"
+                               filename="name"
+                               widget="binary"
+                               string="Select File"
+                               placeholder="Click to browse..."/>
                         <field name="preview_url" invisible="1"/>
                         <button name="action_upload_to_s3"
                                 type="object"
