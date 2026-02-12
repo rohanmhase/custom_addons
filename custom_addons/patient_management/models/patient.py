@@ -127,7 +127,7 @@ class Patient(models.Model):
             ('grade_4', 'Grade 4'),
         ],
         string="Latest X-Ray Status",
-        compute="_compute_latest_xray",
+        compute="_compute_latest_xray_grade",
         store=True
     )
 
