@@ -29,7 +29,8 @@ class PatientXRay(models.Model):
     x_ray_status = fields.Selection([("significant_positive", "Significant Positive"),
                                      ("mild_positive", "Mild Positive"),
                                      ("no_change", "No Change"),
-                                     ("negative", "Negative"),], string="X-Ray Status", required=True)
+                                     ("negative", "Negative"),
+                                     ("baseline", "Baseline"),], string="X-Ray Status", required=True)
 
     active = fields.Boolean(default=True)
 

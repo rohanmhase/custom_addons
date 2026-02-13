@@ -56,6 +56,8 @@ class Patient(models.Model):
 
     partner_id = fields.Many2one("res.partner", string="Customer", help="Link patient to POS/Invoices")
 
+    active = fields.Boolean(default=True)
+
     enrollment_ids = fields.One2many(
         "patient.enrollment",
         "patient_id",
@@ -143,7 +145,8 @@ class Patient(models.Model):
             ("significant_positive", "Significant Positive"),
             ("mild_positive", "Mild Positive"),
             ("no_change", "No Change"),
-            ("negative", "Negative"),],
+            ("negative", "Negative"),
+            ("baseline", "Baseline"),],
         string="Latest X-Ray Status",
         compute="_compute_latest_xray_grade",
         store=True
@@ -415,3 +418,9 @@ class Patient(models.Model):
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
         return ist_date.date()
+
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True
