@@ -1,9 +1,10 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 import boto3
 from odoo.exceptions import UserError
 import base64
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from odoo.exceptions import ValidationError
 
 
 class PatientAttachment(models.Model):
@@ -184,6 +185,15 @@ class PatientAttachment(models.Model):
         for rec in self:
             if rec.file_type == 'other' and not rec.other_description:
                 raise UserError("Please specify the description for 'Other' file type.")
+
+    @api.constrains('x_ray_actual_date')
+    def _check_visit_date(self):
+        today = date.today()
+        for record in self:
+            if record.x_ray_actual_date and record.x_ray_actual_date > today:
+                raise ValidationError(
+                    _("The date of X-Ray must be today or earlier.")
+                )
 
     def _compute_preview_url(self):
         for rec in self:

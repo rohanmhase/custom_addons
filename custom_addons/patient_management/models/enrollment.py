@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from odoo.exceptions import UserError, ValidationError
 
 
@@ -82,6 +82,15 @@ class Enrollment(models.Model):
         for rec in self:
             if rec.total_amount == 0:
                 raise ValidationError(_("Total Therapy Charges Cannot be 0."))
+
+    @api.constrains('enrollment_date')
+    def _check_enrollment_date(self):
+        today = date.today()
+        for record in self:
+            if record.enrollment_date and record.enrollment_date > today:
+                raise ValidationError(
+                    _("The enrollment date must be today or earlier.")
+                )
 
     def _ist_date(self):
 

@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import uuid
 
 class Patient(models.Model):
@@ -55,6 +55,9 @@ class Patient(models.Model):
                                 readonly=True)
 
     partner_id = fields.Many2one("res.partner", string="Customer", help="Link patient to POS/Invoices")
+
+    pain_others = fields.Boolean(string="Other")
+    others = fields.Char(string="Specify if Other", required=True, tracking=True)
 
     active = fields.Boolean(default=True)
 
@@ -135,7 +138,7 @@ class Patient(models.Model):
             ('grade_3', 'Grade 3'),
             ('grade_4', 'Grade 4'),
         ],
-        string="Latest X-Ray Status",
+        string="Latest X-Ray Grade",
         compute="_compute_latest_xray_grade",
         store=True
     )
@@ -152,7 +155,52 @@ class Patient(models.Model):
         store=True
     )
 
-    @api.depends("attachment_ids.file_type", "attachment_ids.active", "attachment_ids.create_date", "attachment_ids.x_ray_grade", "attachment_ids.x_ray_status")
+    first_xray_grade = fields.Selection(
+        [
+            ('grade_0', 'Grade 0'),
+            ('grade_1', 'Grade 1'),
+            ('grade_2', 'Grade 2'),
+            ('grade_3', 'Grade 3'),
+            ('grade_4', 'Grade 4'),
+        ],
+        string="First X-Ray Grade",
+        compute="_compute_first_xray_grade",
+        store=True
+    )
+
+    first_xray_day = fields.Selection(
+        [
+            ("5", "5th Day"),
+            ("20", "20th Day"),
+            ("40", "40th Day"),
+            ("60", "60th Day"),
+            ("80", "80th Day"),
+        ],
+        string="First X-Ray Day",
+        compute="_compute_first_xray_grade",
+        store=True
+    )
+
+    latest_xray_day  = fields.Selection(
+        [
+            ("5", "5th Day"),
+            ("20", "20th Day"),
+            ("40", "40th Day"),
+            ("60", "60th Day"),
+            ("80", "80th Day"),
+        ],
+        string="First X-Ray Day",
+        compute="_compute_latest_xray_grade",
+        store=True
+    )
+
+    @api.depends("attachment_ids.file_type",
+                 "attachment_ids.active",
+                 "attachment_ids.create_date",
+                 "attachment_ids.x_ray_grade",
+                 "attachment_ids.x_ray_status",
+                 "attachment_ids.x_ray_day",)
+
     def _compute_latest_xray_grade(self):
         for rec in self:
             # Filter only active X-Ray attachments
@@ -169,11 +217,36 @@ class Patient(models.Model):
 
                 rec.latest_xray_grade = latest.x_ray_grade
                 rec.latest_xray_status = latest.x_ray_status
+                rec.latest_xray_day = latest.x_ray_day
             else:
                 rec.latest_xray_grade = False
                 rec.latest_xray_status = False
+                rec.latest_xray_day = False
 
+    @api.depends("attachment_ids.file_type",
+                 "attachment_ids.active",
+                 "attachment_ids.create_date",
+                 "attachment_ids.x_ray_grade",
+                 "attachment_ids.x_ray_status",
+                 "attachment_ids.x_ray_day")
+    def _compute_first_xray_grade(self):
+        for rec in self:
+            xray_attachments = rec.attachment_ids.filtered(
+                lambda a: a.file_type == 'xray' and a.active
+            )
 
+            if xray_attachments:
+                # Pick earliest by create_date (ascending)
+                first = xray_attachments.sorted(
+                    key=lambda a: a.create_date or fields.Datetime.now(),
+                    reverse=False
+                )[0]
+
+                rec.first_xray_grade = first.x_ray_grade
+                rec.first_xray_day = first.x_ray_day
+            else:
+                rec.first_xray_grade = False
+                rec.first_xray_day = False
 
     @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state")
     def _compute_total_sessions(self):
@@ -260,6 +333,15 @@ class Patient(models.Model):
                     rec.partner_id.write(partner_vals)
 
         return res
+
+    @api.constrains('enroll_date')
+    def _check_visit_date(self):
+        today = date.today()
+        for record in self:
+            if record.enroll_date and record.enroll_date > today:
+                raise ValidationError(
+                    _("The visit date must be today or earlier.")
+                )
 
     def action_open_blood_report(self):
         """Open Blood Report related to this patient"""

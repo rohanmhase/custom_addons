@@ -7,48 +7,54 @@
         <field name="arch" type="xml">
             <kanban class="o_kanban_view">
                 <field name="name"/>
-                <field name="mrn"/>
                 <field name="enroll_date"/>
                 <field name="total_sessions"/>
                 <field name="remaining_sessions"/>
+                <field name="first_xray_grade"/>
                 <field name="latest_xray_grade"/>
                 <field name="latest_xray_status"/>
 
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="o_kanban_card" t-attf-class="oe_kanban_global_click">
+                        <div class="o_kanban_card"
+                             t-attf-class="oe_kanban_global_click {{ record.first_xray_grade.raw_value and record.latest_xray_grade.raw_value and record.first_xray_grade.raw_value == record.latest_xray_grade.raw_value ? 'border border-warning' : '' }}">
                             <div>
                                 <strong>
                                     <field name="name"/>
                                 </strong>
                             </div>
                             <div>
-                                <strong>MRN - </strong>
-                                <field name="mrn"/>
-                            </div>
-                            <div>
-                                <strong>Date - </strong>
+                                <strong>Date -</strong>
                                 <field name="enroll_date"/>
                             </div>
                             <div>
-                                <strong>Total Sessions - </strong>
+                                <strong>Enrolled Sessions -</strong>
                                 <field name="total_sessions"/>
                             </div>
                             <div>
-                                <strong>Remaining Sessions - </strong>
+                                <strong>Remaining Sessions -</strong>
                                 <field name="remaining_sessions"/>
                             </div>
                             <div>
-                                <strong>Latest X-Ray Grade - </strong>
-                                <t t-if="record.latest_xray_grade.raw_value">
-                                    <field name="latest_xray_grade"/>
+                                <strong>First X-Ray Grade -</strong>
+                                <t t-if="record.first_xray_grade.raw_value">
+                                    <field name="first_xray_grade"/> <span>(<field name="first_xray_day"/>)</span>
                                 </t>
                                 <t t-else="">
                                     <span class="text-muted">Not Available</span>
                                 </t>
                             </div>
                             <div>
-                                <strong>Latest X-Ray Status - </strong>
+                                <strong>Latest X-Ray Grade -</strong>
+                                <t t-if="record.latest_xray_grade.raw_value">
+                                    <field name="latest_xray_grade"/> <span>(<field name="latest_xray_day"/>)</span>
+                                </t>
+                                <t t-else="">
+                                    <span class="text-muted">Not Available</span>
+                                </t>
+                            </div>
+                            <div>
+                                <strong>Latest X-Ray Status -</strong>
                                 <t t-if="record.latest_xray_status.raw_value">
                                     <field name="latest_xray_status"/>
                                 </t>
@@ -69,15 +75,16 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
-<!--                <field name="age"/>-->
-<!--                <field name="gender"/>-->
-<!--                <field name="phone"/>-->
+                <!--                <field name="age"/>-->
+                <!--                <field name="gender"/>-->
+                <!--                <field name="phone"/>-->
                 <field name="mrn"/>
                 <field name="enroll_date" string="Date(MM/DD/YYYY)"/>
-<!--                <field name="admin_id" string="Admin Name"/>-->
-<!--                <field name="write_uid" string="Modified By"/>-->
-                <field name="total_sessions"/>
+                <!--                <field name="admin_id" string="Admin Name"/>-->
+                <!--                <field name="write_uid" string="Modified By"/>-->
+                <field name="total_sessions" string="Enrolled Sessions"/>
                 <field name="remaining_sessions"/>
+                <field name="first_xray_grade"/>
                 <field name="latest_xray_grade"/>
                 <field name="latest_xray_status"/>
             </tree>
@@ -124,6 +131,8 @@
                         <field name="pain_diabetes"/>
                         <field name="pain_ra"/>
                         <field name="pain_ana"/>
+                        <field name="pain_others"/>
+                        <field name="others" invisible="not pain_others"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter">
