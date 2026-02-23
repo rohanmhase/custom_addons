@@ -1,0 +1,40 @@
+<odoo>
+    <data>
+
+        <!-- ============================================================
+             Clinic Stock Replenishment - Security Groups
+             Shown in Settings > Users & Companies as a dropdown:
+             "Clinic Stock Replenishment" → View / User / Administrator
+        ============================================================ -->
+
+        <record id="module_clinic_stock_replenishment" model="ir.module.category">
+            <field name="name">Clinic Stock Replenishment</field>
+            <field name="description">Manage clinic stock replenishment access levels.</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <!-- Level 1: View Only (read-only) -->
+        <record id="group_clinic_stock_viewer" model="res.groups">
+            <field name="name">View</field>
+            <field name="category_id" ref="module_clinic_stock_replenishment"/>
+            <field name="comment">Can only view replenishment records. No create, edit, or delete.</field>
+        </record>
+
+        <!-- Level 2: User (read + write on replenishments, formula view only) -->
+        <record id="group_clinic_stock_user" model="res.groups">
+            <field name="name">User</field>
+            <field name="category_id" ref="module_clinic_stock_replenishment"/>
+            <field name="implied_ids" eval="[(4, ref('group_clinic_stock_viewer'))]"/>
+            <field name="comment">Can create/edit replenishment records and generate transfers. Formula is read-only.</field>
+        </record>
+
+        <!-- Level 3: Administrator (full access) -->
+        <record id="group_clinic_stock_admin" model="res.groups">
+            <field name="name">Administrator</field>
+            <field name="category_id" ref="module_clinic_stock_replenishment"/>
+            <field name="implied_ids" eval="[(4, ref('group_clinic_stock_user'))]"/>
+            <field name="comment">Full access including formula management, regions, and configuration.</field>
+        </record>
+
+    </data>
+</odoo>
