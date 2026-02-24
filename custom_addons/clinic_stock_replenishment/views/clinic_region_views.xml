@@ -1,0 +1,60 @@
+<odoo>
+
+    <record id="view_clinic_stock_region_form" model="ir.ui.view">
+        <field name="name">clinic.stock.region.form</field>
+        <field name="model">clinic.stock.region</field>
+        <field name="arch" type="xml">
+            <form string="Clinic Region">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive"
+                                string="Archived"
+                                invisible="active == True"/>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
+                    <field name="active" invisible="1"/>
+                    <group>
+                        <field name="name"/>
+                        <field name="warehouse_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_stock_region_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.region.tree</field>
+        <field name="model">clinic.stock.region</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_stock_region"
+            model="ir.actions.act_window">
+        <field name="name">Clinic Regions</field>
+        <field name="res_model">clinic.stock.region</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_clinic_stock_configuration"
+              name="Configuration"
+              parent="menu_clinic_stock_root"
+              sequence="20"
+              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
+
+    <menuitem id="menu_clinic_stock_region"
+              name="Clinic Regions"
+              parent="menu_clinic_stock_configuration"
+              action="action_clinic_stock_region"
+              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
+
+</odoo>

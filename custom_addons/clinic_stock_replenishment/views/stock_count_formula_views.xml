@@ -1,0 +1,105 @@
+<odoo>
+
+    <record id="view_stock_count_formula_form" model="ir.ui.view">
+        <field name="name">stock.count.formula.form</field>
+        <field name="model">stock.count.formula</field>
+        <field name="arch" type="xml">
+            <form string="stock count formula">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive"
+                                string="Archived"
+                                invisible="active == True"/>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
+                    <field name="active" invisible="1"/>
+
+                    <group string="Clinic &amp; Product">
+                        <field name="clinic_id"/>
+                        <field name="product_id"/>
+                    </group>
+
+                    <group string="Base Calculation">
+                        <field name="multiplier"/>
+                    </group>
+
+                    <group string="Starting Round Up">
+                        <field name="starting_round_up"/>
+                    </group>
+
+                    <group string="Weekend Factor">
+                        <field name="weekend_factor"/>
+                    </group>
+
+                    <group string="Buffer">
+                        <field name="buffer"/>
+                    </group>
+
+                    <group string="Ending Round Up">
+                        <field name="ending_round_up"/>
+                    </group>
+
+                    <group string="Constraints">
+                        <field name="minimum_value"/>
+                        <field name="maximum_value"/>
+                    </group>
+
+                    <group string="Override">
+                        <field name="fixed_value"/>
+                    </group>
+
+                    <group string="Live Preview">
+                        <field name="preview_therapy_count"/>
+                        <field name="preview_base" readonly="1"/>
+                        <field name="preview_after_start_round" readonly="1"/>
+                        <field name="preview_after_weekend" readonly="1"/>
+                        <field name="preview_after_buffer" readonly="1"/>
+                        <field name="preview_after_end_round" readonly="1"/>
+                        <field name="preview_final" readonly="1"/>
+                    </group>
+
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_count_formula_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.formula.tree</field>
+        <field name="model">stock.count.formula</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="clinic_id"/>
+                <field name="product_id"/>
+                <field name="multiplier"/>
+                <field name="starting_round_up"/>
+                <field name="weekend_factor"/>
+                <field name="buffer"/>
+                <field name="ending_round_up"/>
+                <field name="minimum_value"/>
+                <field name="maximum_value"/>
+                <field name="fixed_value"/>
+            </tree>
+        </field>
+    </record>
+
+
+    <record id="action_stock_count_formula"
+            model="ir.actions.act_window">
+        <field name="name">stock count formula</field>
+        <field name="res_model">stock.count.formula</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_stock_count_formula"
+              name="stock count formula"
+              parent="menu_clinic_stock_configuration"
+              action="action_stock_count_formula"
+              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
+
+</odoo>

@@ -1,0 +1,84 @@
+<odoo>
+
+    <record id="view_clinic_stock_replenishment_form" model="ir.ui.view">
+        <field name="name">clinic.stock.replenishment.form</field>
+        <field name="model">clinic.stock.replenishment</field>
+        <field name="arch" type="xml">
+            <form string="Clinic Stock Replenishment">
+
+                <header>
+                    <field name="state" widget="statusbar"/>
+
+                    <button name="action_generate_transfers"
+                            type="object"
+                            string="Generate Transfers"
+                            class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="clinic_stock_replenishment.group_clinic_stock_user"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive"
+                                string="Archived"
+                                invisible="active == True"/>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
+                    <field name="active" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date"/>
+                        </group>
+
+                        <group>
+                            <field name="source_warehouse_id"/>
+                            <field name="region_id"/>
+                            <field name="destination_warehouse_ids"
+                                   widget="many2many_tags"/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_stock_replenishment_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.replenishment.tree</field>
+        <field name="model">clinic.stock.replenishment</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_stock_replenishment"
+            model="ir.actions.act_window">
+        <field name="name">Clinic Stock Replenishments</field>
+        <field name="res_model">clinic.stock.replenishment</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_clinic_stock_root"
+              name="Clinic Stock Replenishment"
+              parent="stock.menu_stock_root"
+              groups="clinic_stock_replenishment.group_clinic_stock_viewer"/>
+
+    <menuitem id="menu_clinic_stock_replenishment"
+              name="Stock Replenishment"
+              parent="menu_clinic_stock_root"
+              action="action_clinic_stock_replenishment"
+              groups="clinic_stock_replenishment.group_clinic_stock_viewer"/>
+
+</odoo>
