@@ -77,6 +77,9 @@ class Enrollment(models.Model):
             if rec.total_sessions == 0:
                 raise ValidationError(_("Number of Therapy Sessions for which Patient has Enrolled Cannot be 0."))
 
+            elif rec.total_sessions > 100:
+                raise ValidationError(_("You can enter a maximum of 100 therapy sessions."))
+
     @api.constrains('total_amount')
     def _check_total_amount_zero(self):
         for rec in self:
