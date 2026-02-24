@@ -28,15 +28,19 @@
                     <field name="active" invisible="1"/>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1"/>
                             <field name="date"/>
                         </group>
 
                         <group>
-                            <field name="source_warehouse_id"/>
+                            <field name="source_warehouse_id"
+                                   domain="[('id', 'not in', destination_warehouse_ids)]"/>
+
                             <field name="region_id"/>
+
                             <field name="destination_warehouse_ids"
-                                   widget="many2many_tags"/>
+                                   widget="many2many_tags"
+                                   domain="[('id', '!=', source_warehouse_id)]"/>
                         </group>
                     </group>
                 </sheet>

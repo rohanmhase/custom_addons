@@ -7,8 +7,13 @@ class ClinicStockReplenishment(models.Model):
     _description = 'Clinic Stock Replenishment'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    name = fields.Char(required=True, default="New", tracking=True)
-    date = fields.Date(default=fields.Date.today, tracking=True)
+    name = fields.Char(
+        string="Reference",
+        required=True,
+        copy=False,
+        readonly=True,
+        default="New")
+    date = fields.Date(default=lambda self: self._ist_date(), tracking=True, readonly=True)
 
     active = fields.Boolean(default=True, tracking=True)
 
@@ -42,18 +47,18 @@ class ClinicStockReplenishment(models.Model):
     # -------------------------------
 
     def unlink(self):
-        # If record is active, archive it instead (send to recycle bin)
-        active_records = self.filtered('active')
+        active_records = self.filtered(lambda r: r.active)
+        archived_records = self - active_records
+
+        # Archive active ones
         if active_records:
             active_records.write({'active': False})
 
-        # If record is already archived, hard delete it
-        inactive_records = self.filtered(lambda r: not r.active)
-        if inactive_records:
-            return super(StockCountFormula, inactive_records).unlink()
+        # Permanently delete already archived ones
+        if archived_records:
+            super(type(self), archived_records).unlink()
 
         return True
-
     # -------------------------------
     # CORE SHORTAGE CALCULATION
     # -------------------------------
@@ -156,3 +161,18 @@ class ClinicStockReplenishment(models.Model):
     def _onchange_region_id(self):
         if self.region_id:
             self.destination_warehouse_ids = self.region_id.warehouse_ids
+
+    @api.model
+    def create(self, vals):
+        if vals.get('name', 'New') == 'New':
+            vals['name'] = self.env['ir.sequence'].next_by_code(
+                'clinic.stock.replenishment'
+            ) or 'New'
+        return super().create(vals)
+
+    def _ist_date(self):
+
+        utc = (datetime.now())
+        td = timedelta(hours=5, minutes=30)
+        ist_date = utc + td
+        return ist_date.date()

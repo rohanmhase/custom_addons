@@ -5,6 +5,7 @@
     'data': [
         'security/access_views.xml',
         'security/ir.model.access.csv',
+        'data/ir_sequence_data.xml',
         'views/clinic_stock_replenishment_views.xml',
         'views/clinic_region_views.xml',
         'views/stock_count_formula_views.xml'

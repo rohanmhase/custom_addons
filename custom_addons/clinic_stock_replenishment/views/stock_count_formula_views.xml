@@ -97,7 +97,7 @@
     </record>
 
     <menuitem id="menu_stock_count_formula"
-              name="stock count formula"
+              name="Stock Count Formula"
               parent="menu_clinic_stock_configuration"
               action="action_stock_count_formula"
               groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
