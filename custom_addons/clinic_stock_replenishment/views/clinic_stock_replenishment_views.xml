@@ -21,7 +21,11 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="toggle_active" type="object"
                                 class="oe_stat_button" icon="fa-archive"
-                                string="Archived"
+                                string="Archive"
+                                invisible="active == False"/>
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive"
+                                string="Unarchive"
                                 invisible="active == True"/>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
