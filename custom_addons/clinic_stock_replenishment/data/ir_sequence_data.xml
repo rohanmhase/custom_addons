@@ -1,0 +1,10 @@
+<odoo>
+    <record id="seq_clinic_stock_replenishment" model="ir.sequence">
+        <field name="name">Clinic Stock Replenishment</field>
+        <field name="code">clinic.stock.replenishment</field>
+        <field name="prefix">CSR/%(year)s/%(month)s/</field>
+        <field name="padding">5</field>
+        <field name="use_date_range">True</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>
