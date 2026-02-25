@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
-
+from datetime import datetime, timedelta, date
 
 class ClinicStockReplenishment(models.Model):
     _name = 'clinic.stock.replenishment'
@@ -53,10 +53,11 @@ class ClinicStockReplenishment(models.Model):
         # Archive active ones
         if active_records:
             active_records.write({'active': False})
+            return True
 
         # Permanently delete already archived ones
         if archived_records:
-            super(type(self), archived_records).unlink()
+            super(ClinicStockReplenishment, archived_records).unlink()
 
         return True
     # -------------------------------

@@ -21,10 +21,11 @@ class ClinicStockRegion(models.Model):
         active_records = self.filtered('active')
         if active_records:
             active_records.write({'active': False})
+            return True
 
         # If record is already archived, hard delete it
         inactive_records = self.filtered(lambda r: not r.active)
         if inactive_records:
-            return super(StockCountFormula, inactive_records).unlink()
+            return super(ClinicStockRegion, inactive_records).unlink()
 
         return True

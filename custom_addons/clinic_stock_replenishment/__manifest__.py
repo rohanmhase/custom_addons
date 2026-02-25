@@ -1,7 +1,7 @@
 {
     'name': 'Clinic Stock Replenishment',
     'version': '1.0',
-    'depends': ['stock', 'product'],
+    'depends': ['stock', 'product','mail'],
     'data': [
         'security/access_views.xml',
         'security/ir.model.access.csv',
