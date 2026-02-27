@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_gradation" model="ir.ui.view">
+        <field name="name">clinic.patient.gradation.tree</field>
+        <field name="model">patient.gradation</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="write_uid" string="Modified By"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_gradation_form" model="ir.ui.view">
+        <field name="name">clinic.patient.gradation.form</field>
+        <field name="model">patient.gradation</field>
+        <field name="arch" type="xml">
+            <form string="Gradation">
+                <sheet>
+
+                    <!-- BASIC INFO -->
+                    <group>
+                        <field name="patient_id"/>
+                        <field name="doctor_id"/>
+                    </group>
+
+                    <!-- KNEE SECTION -->
+                    <div class="knee-container">
+
+                        <!-- LEFT COLUMN : TOGGLES -->
+                        <div class="knee-left">
+                            <div class="knee-toggle-row">
+                                <field name="is_left_knee" widget="left_knee_toggle"/>
+                                <label for="is_left_knee"/>
+                            </div>
+
+                            <div class="knee-toggle-row">
+                                <field name="is_right_knee" widget="left_knee_toggle"/>
+                                <label for="is_right_knee"/>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN : PARAMETERS -->
+                        <div class="knee-right">
+
+                            <!-- LEFT KNEE -->
+                            <div invisible="not is_left_knee">
+                                <div class="knee-param">
+                                    <div class="knee-label">Tenderness</div>
+                                    <field name="left_knee_tenderness" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+
+                                <div class="knee-param">
+                                    <div class="knee-label">Morning Stiffness</div>
+                                    <field name="left_knee_morning_stiffness" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+
+                                <div class="knee-param">
+                                    <div class="knee-label">Swelling</div>
+                                    <field name="left_knee_swelling" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT KNEE -->
+                            <div invisible="not is_right_knee">
+                                <div class="knee-param">
+                                    <div class="knee-label">Tenderness</div>
+                                    <field name="right_knee_tenderness" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+
+                                <div class="knee-param">
+                                    <div class="knee-label">Morning Stiffness</div>
+                                    <field name="right_knee_morning_stiffness" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+
+                                <div class="knee-param">
+                                    <div class="knee-label">Swelling</div>
+                                    <field name="right_knee_swelling" widget="radio"
+                                           options="{'horizontal': true}"/>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <record id="action_gradation" model="ir.actions.act_window">
+        <field name="name">Gradation</field>
+        <field name="res_model">patient.gradation</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

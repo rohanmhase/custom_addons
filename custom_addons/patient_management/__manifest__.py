@@ -25,12 +25,15 @@
         'views/xray_views.xml',
         'views/prescription_views.xml',
         'views/attachment_views.xml',
+        'views/gradation_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'patient_management/static/src/css/form.css',
             'patient_management/static/src/js/prescription_form_controller.js',
             'patient_management/static/src/css/prescription_styles.css',
+            'patient_management/static/src/css/gradation.css',
+            'patient_management/static/src/js/knee_toggle.js'
 
         ],
         'point_of_sale._assets_pos': [

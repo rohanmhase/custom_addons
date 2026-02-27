@@ -1,1 +1,1 @@
-from . import patient, clinic_extension, blood_report, case_taking, daily_followup, diet_chart, followup, enrollment, session, xray, prescription, pos_order_inherit, res_partner_inherit, attachment
+from . import patient, clinic_extension, blood_report, case_taking, daily_followup, diet_chart, followup, enrollment, session, xray, prescription, pos_order_inherit, res_partner_inherit, attachment, gradation

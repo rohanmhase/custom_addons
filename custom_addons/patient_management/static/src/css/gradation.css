@@ -1,0 +1,49 @@
+@media (max-width: 768px) {
+
+    .knee-container {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+    }
+
+    /* LEFT TOGGLES */
+    .knee-left {
+        flex: 0 0 32%;
+    }
+
+    .knee-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 14px;
+        font-weight: 600;
+    }
+
+    /* RIGHT PARAMETERS */
+    .knee-right {
+        flex: 1;
+    }
+
+    .knee-param {
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 8px;
+    }
+
+    .knee-label {
+        min-width: 90px;   /* 🔑 KEY FIX */
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    /* Radio buttons in one row */
+    .knee-param .o_radio_group {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .knee-param .o_radio_item {
+        margin: 0;
+    }
+}
