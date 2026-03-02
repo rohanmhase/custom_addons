@@ -117,6 +117,31 @@ class Patient(models.Model):
             selected.append("ANA")
         self.pain_types = ", ".join(selected)
 
+    @api.onchange('phone')
+    def _onchange_phone_duplicate_check(self):
+        """Warn user if phone number is already registered to other patients."""
+        if self.phone and len(self.phone) == 10:
+            domain = [('phone', '=', self.phone)]
+            if self._origin.id:
+                domain += [('id', '!=', self._origin.id)]
+
+            duplicates = self.env['clinic.patient'].search(domain)
+            if duplicates:
+                lines = []
+                for i, p in enumerate(duplicates, 1):
+                    clinic_name = p.clinic_id.name or "Unknown Clinic"
+                    lines.append(f"{i}. 👤 {p.name}  |  🏥 {clinic_name}")
+
+                return {
+                    'warning': {
+                        'title': f'⚠️ Duplicate Phone Number ({len(duplicates)} found)',
+                        'message': (
+                                f"This phone number is already registered to:\n\n"
+                                + "\n".join(lines)
+                                + "\n\nPlease verify before proceeding."
+                        ),
+                    }
+                }
 
     xray_ids = fields.One2many(
         'patient.xray',
