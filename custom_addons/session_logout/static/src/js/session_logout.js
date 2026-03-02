@@ -7,7 +7,7 @@ const AUTO_LOGOUT_SERVICE = {
     dependencies: ["rpc"],
 
     start(env, { rpc }) {
-        const TIMEOUT_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+        const TIMEOUT_DURATION = 8 * 60 * 60 * 1000; // 1 hour in milliseconds
         const WARNING_DURATION = 5 * 60 * 1000; // 5 minutes warning
 
         let timeoutId = null;
