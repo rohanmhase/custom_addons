@@ -273,16 +273,20 @@ class Patient(models.Model):
                 rec.first_xray_grade = False
                 rec.first_xray_day = False
 
-    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state")
+    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state", "enrollment_ids.active")
     def _compute_total_sessions(self):
         for rec in self:
-            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
+            enrollments = rec.enrollment_ids.filtered(
+                lambda e: e.state in ["active", "completed"] and e.active
+            )
             rec.total_sessions = sum(enrollments.mapped('total_sessions'))
 
-    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state")
+    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state", "enrollment_ids.active")
     def _compute_remaining_sessions(self):
         for rec in self:
-            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
+            enrollments = rec.enrollment_ids.filtered(
+                lambda e: e.state in ["active", "completed"] and e.active
+            )
             rec.remaining_sessions = sum(enrollments.mapped('remaining_sessions'))
 
     @api.depends("enrollment_ids.state")
