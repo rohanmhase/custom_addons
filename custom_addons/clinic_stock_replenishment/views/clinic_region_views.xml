@@ -53,7 +53,7 @@
               name="Configuration"
               parent="menu_clinic_stock_root"
               sequence="20"
-              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
+              groups="clinic_stock_replenishment.group_clinic_stock_admin,clinic_stock_replenishment.group_clinic_stock_user"/>
 
     <menuitem id="menu_clinic_stock_region"
               name="Clinic Regions"
