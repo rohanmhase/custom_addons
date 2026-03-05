@@ -59,6 +59,6 @@
               name="Clinic Regions"
               parent="menu_clinic_stock_configuration"
               action="action_clinic_stock_region"
-              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
+              groups="clinic_stock_replenishment.group_clinic_stock_admin,clinic_stock_replenishment.group_clinic_stock_user"/>
 
 </odoo>
