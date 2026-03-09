@@ -59,6 +59,12 @@ class Patient(models.Model):
     pain_others = fields.Boolean(string="Other")
     others = fields.Char(string="Specify if Other", required=True, tracking=True)
 
+    patient_status = fields.Selection([
+        ('visit', 'Visit'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive')
+    ], string="Patient Status", default='visit', tracking=True)
+
     active = fields.Boolean(default=True)
 
     enrollment_ids = fields.One2many(
@@ -335,6 +341,13 @@ class Patient(models.Model):
     def write(self, vals):
         if "mrn" in vals:
             raise ValidationError("⚠️ MRN cannot be modified!")
+
+        if 'patient_status' in vals:
+            for rec in self:
+                # Prevent changing back to 'Visit'
+                if rec.patient_status in ['active', 'inactive'] and vals.get('patient_status') == 'visit':
+                    raise ValidationError(
+                        _("Patient status cannot be changed back to 'Visit' once it is Active or Inactive."))
 
         res = super(Patient, self).write(vals)
 

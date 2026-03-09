@@ -34,6 +34,14 @@ class Enrollment(models.Model):
     enrolled_for = fields.Char(string="Enrolled For", compute="_compute_enrolled_for", store=True, tracking=True)
     active = fields.Boolean(default=True)
 
+    @api.model
+    def create(self, vals):
+        rec = super().create(vals)
+
+        if rec.patient_id and rec.total_sessions > 0:
+            rec.patient_id.patient_status = 'active'
+
+        return rec
 
     @api.depends('total_sessions', 'used_sessions')
     def _compute_remaining_sessions(self):
