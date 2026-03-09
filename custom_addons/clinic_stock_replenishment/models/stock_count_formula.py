@@ -71,8 +71,6 @@ class StockCountFormula(models.Model):
     # -------------------------------------------------
 
     multiplier = fields.Float(
-        required=True,
-        default=1.0,
         tracking=True
     )
 
@@ -82,13 +80,10 @@ class StockCountFormula(models.Model):
     )
 
     weekend_factor = fields.Float(
-        required=True,
-        default=1.0,
         tracking=True
     )
 
     buffer = fields.Float(
-        default=0.0,
         tracking=True
     )
 
@@ -108,7 +103,7 @@ class StockCountFormula(models.Model):
     # -------------------------------------------------
     # Preview Fields
     # -------------------------------------------------
-
+    #
     preview_therapy_count = fields.Integer(
         default=20,
         string="Preview Therapy Count"
@@ -153,6 +148,7 @@ class StockCountFormula(models.Model):
 
     # -------------------------------------------------
     # Core Calculation Engine
+    # Empty field = skip that phase
     # -------------------------------------------------
 
     def calculate_price(self, therapy_count):
@@ -161,13 +157,17 @@ class StockCountFormula(models.Model):
         if self.fixed_value:
             return self.fixed_value
 
-        result = therapy_count * self.multiplier
+        result = therapy_count
+
+        if self.multiplier:
+            result = therapy_count * self.multiplier
 
         if self.starting_round_up:
             result = ceil(result)
-
-        result = result * self.weekend_factor
-        result = result + self.buffer
+        if self.weekend_factor:
+            result = result * self.weekend_factor
+        if self.buffer:
+            result = result + self.buffer
 
         if self.ending_round_up:
             result = ceil(result)
@@ -209,16 +209,16 @@ class StockCountFormula(models.Model):
                 record.preview_final = record.fixed_value
                 continue
 
-            base = tc * record.multiplier
+            base = (tc * record.multiplier) if record.multiplier else float(tc)
             record.preview_base = base
 
             after_start = ceil(base) if record.starting_round_up else base
             record.preview_after_start_round = after_start
 
-            after_weekend = after_start * record.weekend_factor
+            after_weekend = (after_start * record.weekend_factor) if record.weekend_factor else after_start
             record.preview_after_weekend = after_weekend
 
-            after_buffer = after_weekend + record.buffer
+            after_buffer = (after_weekend + record.buffer) if record.buffer else after_weekend
             record.preview_after_buffer = after_buffer
 
             after_end = ceil(after_buffer) if record.ending_round_up else after_buffer
