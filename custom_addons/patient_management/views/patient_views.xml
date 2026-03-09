@@ -13,15 +13,21 @@
                 <field name="first_xray_grade"/>
                 <field name="latest_xray_grade"/>
                 <field name="latest_xray_status"/>
+                <field name="patient_status"/>
 
                 <templates>
                     <t t-name="kanban-box">
                         <div class="o_kanban_card"
                              t-attf-class="oe_kanban_global_click {{ record.first_xray_grade.raw_value and record.latest_xray_grade.raw_value and record.first_xray_grade.raw_value == record.latest_xray_grade.raw_value ? 'border border-warning' : '' }}">
-                            <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
                                 <strong>
                                     <field name="name"/>
                                 </strong>
+
+                                <span t-attf-class="badge rounded-pill {{ record.patient_status.raw_value === 'active' ? 'text-bg-success' : record.patient_status.raw_value === 'inactive' ? 'text-bg-danger' : 'text-bg-secondary' }}">
+                                    <t t-esc="record.patient_status.value || 'visit'"/>
+                                </span>
+
                             </div>
                             <div>
                                 <strong>Date -</strong>
@@ -123,6 +129,11 @@
                         <field name="clinic_id"/>
                         <field name="admin_id"/>
                         <field name="is_existing"/>
+                        <field name="patient_status"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               selection="[('active','Active'),('inactive','Inactive')]"
+                               invisible="patient_status == 'visit'"/>
                     </group>
                     <field name="pain_types" invisible="1"/>
                     <group string="Registered For">
