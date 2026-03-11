@@ -61,7 +61,20 @@ class Enrollment(models.Model):
         for rec in self:
             if rec.state == 'completed':
                 raise UserError(_('You cannot modify an enrollment that is already completed'))
-        return super(Enrollment, self).write(vals)
+        res = super(Enrollment, self).write(vals)
+
+        for rec in self:
+            if rec.patient_id:
+                active_enrollments = self.search([
+                    ('patient_id', '=', rec.patient_id.id),
+                    ('state', '=', 'active'),
+                    ('active', '=', True),
+                ])
+
+                if not active_enrollments:
+                    rec.patient_id.patient_status = 'inactive'
+
+        return res
 
     @api.depends('pain_knee', 'pain_spine')
     def _compute_enrolled_for(self):
