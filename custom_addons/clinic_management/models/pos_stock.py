@@ -69,6 +69,21 @@ class PosSession(models.Model):
             result['search_params']['domain'].append(('clinic_id', '=', False))
         return result
 
+    def get_pos_ui_res_partner_by_params(self, search_params):
+        """
+        This is the exact method POS 'Search More' calls in Odoo 17.
+        Inject clinic filter here before passing to super().
+        """
+        if 'domain' not in search_params:
+            search_params['domain'] = []
+
+        if self.config_id.clinic_id:
+            search_params['domain'].append(('clinic_id', '=', self.config_id.clinic_id.id))
+        else:
+            search_params['domain'].append(('clinic_id', '=', False))
+
+        return super().get_pos_ui_res_partner_by_params(search_params)
+
 class PosOrder(models.Model):
     _inherit = 'pos.order'
 
