@@ -279,24 +279,36 @@ class Patient(models.Model):
                 rec.first_xray_grade = False
                 rec.first_xray_day = False
 
-    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state")
+    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state", "enrollment_ids.active")
     def _compute_total_sessions(self):
         for rec in self:
-            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
-            rec.total_sessions = sum(enrollments.mapped('total_sessions'))
+            # Use active_test=False to include archived enrollments explicitly, then filter manually
+            all_enrollments = self.env['patient.enrollment'].with_context(active_test=False).search([
+                ('patient_id', '=', rec.id),
+                ('active', '=', True),
+                ('state', 'in', ['active', 'completed']),
+            ])
+            rec.total_sessions = sum(all_enrollments.mapped('total_sessions'))
 
-    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state")
+    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state", "enrollment_ids.active")
     def _compute_remaining_sessions(self):
         for rec in self:
-            enrollments = rec.enrollment_ids.filtered(lambda e: e.state in ["active", "completed"])
-            rec.remaining_sessions = sum(enrollments.mapped('remaining_sessions'))
+            all_enrollments = self.env['patient.enrollment'].with_context(active_test=False).search([
+                ('patient_id', '=', rec.id),
+                ('active', '=', True),
+                ('state', 'in', ['active', 'completed']),
+            ])
+            rec.remaining_sessions = sum(all_enrollments.mapped('remaining_sessions'))
 
-    @api.depends("enrollment_ids.state")
+    @api.depends("enrollment_ids.state", "enrollment_ids.active")
     def _compute_active_enrollment_id(self):
         for patient in self:
-            active = patient.enrollment_ids.filtered(lambda r: r.state == "active")
-            patient.active_enrollment_id = active[:1] if active else False
-
+            all_enrollments = self.env['patient.enrollment'].with_context(active_test=False).search([
+                ('patient_id', '=', patient.id),
+                ('active', '=', True),
+                ('state', '=', 'active'),
+            ])
+            patient.active_enrollment_id = all_enrollments[:1] if all_enrollments else False
 
     @api.constrains('phone')
     def _check_phone_number(self):
