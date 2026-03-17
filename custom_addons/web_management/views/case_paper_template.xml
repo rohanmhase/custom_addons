@@ -830,7 +830,7 @@
                                 </t>
                                 <!-- POS Order -->
                                 <t t-if="cp['pos_orders']">
-                                    <h5>Prescription Taken</h5>
+                                    <h5>Stock Dispatched</h5>
                                     <t t-foreach="cp['pos_orders']" t-as="pord" t-key="loop.index0">
                                         <div class="mb-2">
                                             <div class="info-tag created-by-tag">
