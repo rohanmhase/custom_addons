@@ -1,0 +1,19 @@
+<odoo>
+    <data>
+
+        <record id="ir_cron_check_patient_inactive" model="ir.cron">
+            <field name="name">Check Inactive Patients</field>
+
+            <field name="model_id" ref="model_clinic_patient"/>
+
+            <field name="state">code</field>
+            <field name="code">model._cron_check_inactive_patients()</field>
+
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+
+            <field name="active">True</field>
+        </record>
+
+    </data>
+</odoo>
