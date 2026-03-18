@@ -11,6 +11,16 @@ class DailyFollowup(models.Model):
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, default=lambda self: self.env.user,
                                 readonly=True)
     c_o = fields.Text(string="C/O", required=True)
+    happiness = fields.Selection([('3', '3- Excellent- Highly Satisfied'),
+                                  ('2', '2- Good- Satisfied'),
+                                  ('1', '1- Average- Neutral'),
+                                  ('0', '0- Unhappy')], string="Happiness")
+
+    recovery = fields.Selection([('4', '4- Excellent- Pain almost gone/ Negative'),
+                                 ('3', '3- Good- Significant pain reduction'),
+                                 ('2', '2- Moderate- Pain reduced but still present'),
+                                 ('1', '1- Mild- Pain persist with slight relief'),
+                                 ('0', '0- Poor- No Significant improvement')], string="Recovery")
 
     crepts_rt = fields.Char(string="Crepts Right")
     crepts_lt = fields.Char(string="Crepts Left")

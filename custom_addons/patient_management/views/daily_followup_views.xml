@@ -166,8 +166,14 @@
                             </tbody>
                         </table>
                     </sheet>
-                    <div style="font-size:20px; padding:1px 16px;">Notes</div>
-                    <field name="notes"/>
+                    <div style="font-size:20px; padding:1px 16px;">Patient Feedback</div>
+                    <sheet>
+                        <group>
+                            <field name="happiness" required="1"/>
+                            <field name="recovery" required="1"/>
+                            <field name="notes"/>
+                        </group>
+                    </sheet>
                 </sheet>
             </form>
         </field>
