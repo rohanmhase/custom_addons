@@ -356,6 +356,11 @@ class Patient(models.Model):
 
         if 'patient_status' in vals:
             for rec in self:
+                if not self.env.su and not self.env.context.get('from_cron'):
+                    if rec.patient_status == 'active' and vals.get('patient_status') == 'inactive':
+                        raise ValidationError(
+                            _("You cannot manually set patient to Inactive. It is system controlled.")
+                        )
                 # Prevent changing back to 'Visit'
                 if rec.patient_status in ['active', 'inactive'] and vals.get('patient_status') == 'visit':
                     raise ValidationError(
@@ -383,6 +388,22 @@ class Patient(models.Model):
                     rec.partner_id.write(partner_vals)
 
         return res
+
+    def _cron_check_inactive_patients(self):
+        today = fields.Date.today()
+        patients = self.search([('patient_status', '=', 'active')])
+
+        for patient in patients:
+            last_session = self.env['patient.session'].search([
+                ('patient_id', '=', patient.id),
+                ('active', '=', True)
+            ], order='session_date desc', limit=1)
+
+            if last_session:
+                diff_days = (today - last_session.session_date).days
+
+                if diff_days > 5:
+                    patient.sudo().write({'patient_status': 'inactive'})
 
     @api.constrains('enroll_date')
     def _check_visit_date(self):

@@ -12,6 +12,7 @@
     "depends": ["base", "clinic_management", "product", "stock", "point_of_sale", "bus", "mail"],
     'data': [
         'data/ir_sequence_data.xml',
+        'data/cron.xml',
         'security/patient_security.xml',
         'security/ir.model.access.csv',
         'views/patient_views.xml',
