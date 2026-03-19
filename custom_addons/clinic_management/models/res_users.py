@@ -10,3 +10,13 @@ class ResUsers(models.Model):
         'clinic_id',
         string="Clinics"
     )
+
+    def write(self, vals):
+        res = super().write(vals)
+
+        if 'clinic_ids' in vals:
+            # 🔥 CRITICAL FIX
+            self.env['ir.rule'].clear_caches()
+            self.clear_caches()
+
+        return res
