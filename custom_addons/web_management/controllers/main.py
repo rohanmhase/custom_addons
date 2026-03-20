@@ -219,6 +219,7 @@ class PatientController(http.Controller):
                 "right_knee": sess.right_knee,
                 "before_and_after_therapy_comment": sess.before_and_after_therapy_comment,
                 "therapist_name": sess.therapist_name,
+                "therapist_id": sess.therapist_id,
                 "state": sess.state,
                 "morning_with_time": sess.morning_with_time,
                 "lunch_with_time": sess.lunch_with_time,
