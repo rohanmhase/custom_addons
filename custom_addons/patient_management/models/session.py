@@ -27,7 +27,7 @@ class Session(models.Model):
     left_knee = fields.Char(string="Left Knee", required=True)
     right_knee = fields.Char(string="Right Knee", required=True)
     before_and_after_therapy_comment = fields.Char(string="Before & After Therapy Comment", required=True)
-    therapist_name = fields.Char(string="Therapist Name", required=True)
+    therapist_name = fields.Char(string="Therapist Name")
     therapist_id = fields.Many2one('clinic.therapist', string="Therapist Name", required=True)
     state = fields.Selection([("draft", "Draft"), ("done", "Done")], default="draft")
     session_type = fields.Selection([
