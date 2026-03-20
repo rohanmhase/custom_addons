@@ -926,7 +926,12 @@
                                                                 <t t-esc="sess['before_and_after_therapy_comment']"/>
                                                             </td>
                                                             <td rowspan="4">
-                                                                <t t-esc="sess['therapist_name']"/>
+                                                                <t t-if="sess.get('therapist_id')">
+                                                                    <t t-esc="sess['therapist_id'][1] if isinstance(sess['therapist_id'], list) else sess['therapist_id'].name"/>
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <t t-esc="sess.get('therapist_name', '')"/>
+                                                                </t>
                                                             </td>
                                                         </tr>
                                                         <tr>

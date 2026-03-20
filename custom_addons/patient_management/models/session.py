@@ -28,12 +28,18 @@ class Session(models.Model):
     right_knee = fields.Char(string="Right Knee", required=True)
     before_and_after_therapy_comment = fields.Char(string="Before & After Therapy Comment", required=True)
     therapist_name = fields.Char(string="Therapist Name", required=True)
+    therapist_id = fields.Many2one('clinic.therapist', string="Therapist Name", required=True)
     state = fields.Selection([("draft", "Draft"), ("done", "Done")], default="draft")
     session_type = fields.Selection([
         ('clinic', 'Clinic'),
         ('home', 'Home'),
         ('self', 'Self'),
     ], string="Therapy Location", required=True)
+    clinic_id = fields.Many2one(
+        'clinic.clinic',
+        related='patient_id.clinic_id',
+        string="Clinic Context"
+    )
     morning_with_time = fields.Char(string="7 AM - 9 AM", required=True)
     lunch_with_time = fields.Char(string="10 AM - 1 PM", required=True)
     evening_with_time = fields.Char(string="4 PM - 6 PM", required=True)
