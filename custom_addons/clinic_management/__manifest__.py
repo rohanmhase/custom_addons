@@ -17,7 +17,10 @@
     ],
     "assets": {
         'point_of_sale._assets_pos': [
-            "clinic_management/static/src/js/product_screen.js",]
+            "clinic_management/static/src/js/product_screen.js",
+            "clinic_management/static/src/js/pos_cc_validation.js",
+            "clinic_management/static/src/css/pos_custom.css",
+        ]
     },
     "installable": True,
     "application": True,
