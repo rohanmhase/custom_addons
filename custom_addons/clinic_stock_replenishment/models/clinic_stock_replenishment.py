@@ -75,12 +75,12 @@ class ClinicStockReplenishment(models.Model):
 
         if rule:
             therapy_count = rule.get_yesterday_therapy_count()
-            print("DEBUG → Clinic:", warehouse.name)
-            print("DEBUG → Product:", product.display_name)
-            print("DEBUG → Therapy Count:", therapy_count)
+            # print("DEBUG → Clinic:", warehouse.name)
+            # print("DEBUG → Product:", product.display_name)
+            # print("DEBUG → Therapy Count:", therapy_count)
 
             target_qty = rule.calculate_price(therapy_count)
-            print("DEBUG → Target Qty:", target_qty)
+            # print("DEBUG → Target Qty:", target_qty)
         else:
             target_qty = 0.0
 
@@ -91,10 +91,10 @@ class ClinicStockReplenishment(models.Model):
         ])
 
         available_qty = sum(q.quantity - q.reserved_quantity for q in quants)
-        print("DEBUG → Available Qty:", available_qty)
+        # print("DEBUG → Available Qty:", available_qty)
 
         shortage = target_qty - available_qty
-        print("DEBUG → Shortage:", shortage)
+        # print("DEBUG → Shortage:", shortage)
 
         return shortage if shortage > 0 else 0.0
 
