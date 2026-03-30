@@ -50,14 +50,29 @@ class StockCountFormula(models.Model):
     def get_yesterday_therapy_count(self):
         self.ensure_one()
 
-        yesterday = date.today() - timedelta(days=1)
+        today = date.today()
+        daily_counts = []
+        for i in range(1, 4):
+            count = self.env['patient.session'].search_count([
+                ('session_date', '=', today - timedelta(days=i)),
+                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+            ])
+            # print(f"DEBUG → Therapy Count Day -{i} ({today - timedelta(days=i)}): {count}")
+            daily_counts.append(count)
 
-        therapy_count = self.env['patient.session'].search_count([
-            ('session_date', '=', yesterday),
-            ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
-        ])
+        therapy_count = max(daily_counts)
+        # print(f"DEBUG → Final Therapy Count (max of 3 days): {therapy_count}")
 
         return therapy_count
+
+        # yesterday = date.today() - timedelta(days=1)
+        #
+        # therapy_count = self.env['patient.session'].search_count([
+        #     ('session_date', '=', yesterday),
+        #     ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+        # ])
+        #
+        # return therapy_count
 
     def calculate_from_yesterday(self):
         self.ensure_one()
