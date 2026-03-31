@@ -57,11 +57,11 @@ class StockCountFormula(models.Model):
                 ('session_date', '=', today - timedelta(days=i)),
                 ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
             ])
-            print(f"DEBUG → Day -{i} ({today - timedelta(days=i)}): {count} sessions")
+            # print(f"DEBUG → Day -{i} ({today - timedelta(days=i)}): {count} sessions")
             daily_counts.append(count)
 
         therapy_count = max(daily_counts)
-        print(f"DEBUG → Max therapy count selected: {therapy_count}")
+        # print(f"DEBUG → Max therapy count selected: {therapy_count}")
 
         return therapy_count
 
