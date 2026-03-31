@@ -95,6 +95,7 @@ class ClinicStockReplenishment(models.Model):
 
         shortage = target_qty - available_qty
         # print("DEBUG → Shortage:", shortage)
+        # print(f"DEBUG → [{warehouse.name}] [{product.display_name}] Target: {target_qty} | Stock: {available_qty} | Shortage: {shortage}")
 
         return shortage if shortage > 0 else 0.0
 
