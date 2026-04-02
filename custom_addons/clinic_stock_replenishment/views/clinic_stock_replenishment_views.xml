@@ -47,6 +47,28 @@
                                    domain="[('id', '!=', source_warehouse_id)]"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Snapshot Log" name="snapshot_log">
+                            <button name="action_open_log"
+                                    type="object"
+                                    string="Open Full Log"
+                                    class="btn-secondary mb-2"/>
+                            <field name="log_ids" readonly="1"
+                                   context="{'search_view_ref': 'clinic_stock_replenishment.view_clinic_stock_replenishment_log_search'}">
+                                <tree>
+                                    <field name="destination_warehouse_id" string="Destination Clinic"/>
+                                    <field name="product_id" string="Medicine"/>
+                                    <field name="day_1_count" string="Day -1"/>
+                                    <field name="day_2_count" string="Day -2"/>
+                                    <field name="day_3_count" string="Day -3"/>
+                                    <field name="max_therapy_count" string="Max Count"/>
+                                    <field name="target_qty" string="Target"/>
+                                    <field name="current_stock" string="Stock"/>
+                                    <field name="shortage_qty" string="Shortage"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
 
                 <div class="oe_chatter">
@@ -71,11 +93,50 @@
         </field>
     </record>
 
+
     <record id="action_clinic_stock_replenishment"
             model="ir.actions.act_window">
         <field name="name">Clinic Stock Replenishments</field>
         <field name="res_model">clinic.stock.replenishment</field>
         <field name="view_mode">tree,form</field>
+    </record>
+    <record id="view_clinic_stock_replenishment_log_search" model="ir.ui.view">
+        <field name="name">clinic.stock.replenishment.log.search</field>
+        <field name="model">clinic.stock.replenishment.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="destination_warehouse_id" string="Destination Clinic"
+                       filter_domain="[('destination_warehouse_id', 'ilike', self)]"/>
+                <field name="product_id" string="Medicine"
+                       filter_domain="[('product_id', 'ilike', self)]"/>
+                <field name="source_warehouse_id" string="Source Warehouse"
+                       filter_domain="[('source_warehouse_id', 'ilike', self)]"/>
+                <filter string="Has Shortage" name="has_shortage" domain="[('shortage_qty', '>', 0)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Destination Clinic" name="group_destination"
+                            context="{'group_by': 'destination_warehouse_id'}"/>
+                    <filter string="Medicine" name="group_product" context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_clinic_stock_replenishment_log_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.replenishment.log.tree</field>
+        <field name="model">clinic.stock.replenishment.log</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="destination_warehouse_id" string="Destination Clinic"/>
+                <field name="product_id" string="Medicine"/>
+                <field name="day_1_count" string="Day -1"/>
+                <field name="day_2_count" string="Day -2"/>
+                <field name="day_3_count" string="Day -3"/>
+                <field name="max_therapy_count" string="Max Count"/>
+                <field name="target_qty" string="Target"/>
+                <field name="current_stock" string="Stock"/>
+                <field name="shortage_qty" string="Shortage"/>
+            </tree>
+        </field>
     </record>
 
     <menuitem id="menu_clinic_stock_root"
