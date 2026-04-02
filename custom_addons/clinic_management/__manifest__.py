@@ -13,7 +13,8 @@
         'security/ir.model.access.csv',
         'views/clinics_views.xml',
         'views/res_users_views.xml',
-        'views/clinic_dashboard_view.xml'
+        'views/clinic_dashboard_view.xml',
+        'views/clinic_transfer_views.xml',
     ],
     "assets": {
         'point_of_sale._assets_pos': [
