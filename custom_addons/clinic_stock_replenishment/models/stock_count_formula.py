@@ -59,6 +59,7 @@ class StockCountFormula(models.Model):
             ])
             # print(f"DEBUG → Day -{i} ({today - timedelta(days=i)}): {count} sessions")
             daily_counts.append(count)
+        return daily_counts
 
         therapy_count = max(daily_counts)
         # print(f"DEBUG → Max therapy count selected: {therapy_count}")
@@ -176,7 +177,7 @@ class StockCountFormula(models.Model):
         if not has_any_config:
             return 0.0
 
-        result = therapy_count
+        result = float(therapy_count)
 
         if self.multiplier:
             result = therapy_count * self.multiplier
@@ -227,23 +228,7 @@ class StockCountFormula(models.Model):
                 record.preview_after_end_round = 0
                 record.preview_final = record.fixed_value
                 continue
-            has_any_config = any([
-                record.multiplier,
-                record.starting_round_up,
-                record.weekend_factor,
-                record.buffer,
-                record.ending_round_up,
-                record.minimum_value,
-                record.maximum_value,
-            ])
-            if not has_any_config:
-                record.preview_base = 0
-                record.preview_after_start_round = 0
-                record.preview_after_weekend = 0
-                record.preview_after_buffer = 0
-                record.preview_after_end_round = 0
-                record.preview_final = 0
-                continue
+
             base = (tc * record.multiplier) if record.multiplier else float(tc)
             record.preview_base = base
 
