@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_move_tree_clinic_log_final" model="ir.ui.view">
+            <field name="name">stock.move.tree.clinic.log.final</field>
+            <field name="model">stock.move</field>
+            <field name="arch" type="xml">
+                <tree string="Internal Transfer Log" create="false" edit="false" delete="false"
+                      decoration-success="state == 'done'" default_order="date desc" expand="1">
+                    <field name="date" string="Date" widget="date"/>
+                    <field name="picking_id" string="Transfer Number" decoration-bf="1"/>
+                    <field name="product_id" string="Product Name"/>
+                    <field name="product_uom_qty" string="Qty Received" sum="Total Qty"/>
+                    <field name="state" widget="badge" decoration-success="state == 'done'"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_move_search_clinic_log_final" model="ir.ui.view">
+            <field name="name">stock.move.search.clinic.log.final</field>
+            <field name="model">stock.move</field>
+            <field name="arch" type="xml">
+                <search>
+                    <filter string="Today" name="today"
+                            domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                    ('date', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Transfer Number" name="groupby_picking" context="{'group_by': 'picking_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_clinic_internal_transfers_log" model="ir.actions.act_window">
+            <field name="name">Internal Transfer Log</field>
+            <field name="res_model">stock.move</field>
+            <field name="view_mode">tree</field>
+            <field name="domain">[('picking_id.picking_type_code', '=', 'internal')]</field>
+            <field name="search_view_id" ref="view_move_search_clinic_log_final"/>
+            <field name="context">{'search_default_today': 1, 'search_default_groupby_picking': 1}</field>
+        </record>
+
+        <menuitem id="menu_clinic_transfer_log_final"
+                  name="Internal Transfer Log"
+                  parent="stock.menu_stock_root"
+                  action="action_clinic_internal_transfers_log"
+                  sequence="12"/>
+    </data>
+</odoo>
