@@ -60,4 +60,13 @@
         <field name="groups_id" eval="[(4, ref('clinic_management.group_clinic_administrator'))]"/>
     </record>
 
+    <record id="rule_stock_move_clinic_filter_global" model="ir.rule">
+        <field name="name">Stock Move - Global Clinic Restriction</field>
+        <field name="model_id" ref="stock.model_stock_move"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [(1, '=', 1)] if user.has_group('clinic_management.group_clinic_administrator') else [('picking_type_id.warehouse_id.clinic_id', 'in', user.clinic_ids.ids)]
+        </field>
+    </record>
+
 </odoo>
