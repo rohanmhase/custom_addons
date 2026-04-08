@@ -44,6 +44,41 @@ class Patient(models.Model):
 
     is_existing = fields.Boolean(string="Is Existing", tracking=True)
 
+    non_enrollment_reason = fields.Selection([
+        ('ligament_tear', '1. Complete ligament tear'),
+        ('hiv_aids_hep', '2. HIV/AIDS/Hepatitis B and C'),
+        ('cancer_tb', '3. Active Cancer/Active Tuberculosis'),
+        ('dialysis', '4. Dialysis'),
+        ('fracture', '5. Fracture'),
+        ('congenital_deformity', '6. Congenital bone deformity'),
+        ('pregnant_lactating', '7. Pregnant/Lactating females'),
+        ('chronic_cva', '8. Chronic CVA'),
+        ('local_skin_issues', '9. Local skin issues (Acute Psoriasis, Gangrene, Open wounds)'),
+        ('liver_cirrhosis', '10. Liver cirrhosis'),
+        ('ascites', '11. Ascites'),
+        ('renal_failure', '12. Renal failure'),
+        ('patient_not_present', '13. Patient not present'),
+        ('long_distance', '14. Long distance'),
+        ('recent_paralysis', '15. Recent history of paralysis'),
+        ('bed_ridden', '16. Bed ridden patient'),
+        ('surgical_implants', '17. Surgical implants'),
+        ('dvt', '18. DVT'),
+        ('no_knee_spine_concern', '19. No knee /spine related concern'),
+        ('others', '20. Others'),
+    ], string="Non-Enrollment Reason: ", tracking=True)
+    other_reason = fields.Char(string="Specify Other Reason", tracking=True)
+    non_enrollment_reason_updated_by =fields.Many2one('res.users', string="Updated by", readonly=True)
+
+
+    @api.onchange('non_enrollment_reason')
+    def _onchange_non_enrollment_reason(self):
+        for record in self:
+            if record.non_enrollment_reason:
+                record.non_enrollment_reason_updated_by = self.env.user
+            else:
+                record.non_enrollment_reason_updated_by = False
+
+
     _sql_constraints = [
         # ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'), # Prevent creating records for same registered phone numbers
         ('unique_uuid', 'unique(uuid)', '⚠️ UUID must be unique!'),
