@@ -129,6 +129,9 @@
                         <field name="clinic_id"/>
                         <field name="admin_id"/>
                         <field name="is_existing"/>
+                        <field name="non_enrollment_reason"/>
+                        <field name="other_reason" invisible="non_enrollment_reason != 'others'" required="1" />
+                        <field name="non_enrollment_reason_updated_by" force_save="1"/>
                         <field name="patient_status"
                                widget="radio"
                                options="{'horizontal': true}"
