@@ -1,0 +1,94 @@
+<odoo>
+    <record id="organ_left_knee" model="gradation.organ">
+        <field name="name">Left Knee</field>
+        <field name="category">knee</field>
+    </record>
+    <record id="organ_right_knee" model="gradation.organ">
+        <field name="name">Right Knee</field>
+        <field name="category">knee</field>
+    </record>
+    <record id="organ_left_shoulder" model="gradation.organ">
+        <field name="name">Left Shoulder</field>
+        <field name="category">shoulder</field>
+    </record>
+    <record id="organ_right_shoulder" model="gradation.organ">
+        <field name="name">Right Shoulder</field>
+        <field name="category">shoulder</field>
+    </record>
+    <record id="organ_right_tibia" model="gradation.organ">
+        <field name="name">Right Tibia</field>
+        <field name="category">tibia</field>
+    </record>
+    <record id="organ_left_tibia" model="gradation.organ">
+        <field name="name">Left Tibia</field>
+        <field name="category">tibia</field>
+    </record>
+    <record id="organ_right_ankle" model="gradation.organ">
+        <field name="name">Right Ankle</field>
+        <field name="category">ankle</field>
+    </record>
+    <record id="organ_left_ankle" model="gradation.organ">
+        <field name="name">Left Ankle</field>
+        <field name="category">ankle</field>
+    </record>
+    <record id="organ_right_thigh" model="gradation.organ">
+        <field name="name">Right Thigh</field>
+        <field name="category">thigh</field>
+    </record>
+    <record id="organ_left_thigh" model="gradation.organ">
+        <field name="name">Left Thigh</field>
+        <field name="category">thigh</field>
+    </record>
+    <record id="organ_right_toes" model="gradation.organ">
+        <field name="name">Right Toes</field>
+        <field name="category">toes</field>
+    </record>
+    <record id="organ_left_toes" model="gradation.organ">
+        <field name="name">Left Toes</field>
+        <field name="category">toes</field>
+    </record>
+    <record id="organ_right_upper_arm" model="gradation.organ">
+        <field name="name">Right Upper Arm</field>
+        <field name="category">upper arm</field>
+    </record>
+    <record id="organ_left_upper_arm" model="gradation.organ">
+        <field name="name">Left Upper Arm</field>
+        <field name="category">upper arm</field>
+    </record>
+    <record id="organ_right_forearm" model="gradation.organ">
+        <field name="name">Right Forearm</field>
+        <field name="category">forearm</field>
+    </record>
+    <record id="organ_left_forearm" model="gradation.organ">
+        <field name="name">Left Forearm</field>
+        <field name="category">forearm</field>
+    </record>
+    <record id="organ_right_wrist" model="gradation.organ">
+        <field name="name">Right Wrist</field>
+        <field name="category">wrist</field>
+    </record>
+    <record id="organ_left_wrist" model="gradation.organ">
+        <field name="name">Left Wrist</field>
+        <field name="category">wrist</field>
+    </record>
+    <record id="organ_left_fingers" model="gradation.organ">
+        <field name="name">Left Fingers</field>
+        <field name="category">fingers</field>
+    </record>
+    <record id="organ_right_fingers" model="gradation.organ">
+        <field name="name">Right Fingers</field>
+        <field name="category">fingers</field>
+    </record>
+    <record id="organ_left_cervical_spine" model="gradation.organ">
+        <field name="name">Cervical spine</field>
+        <field name="category">cervical spine</field>
+    </record>
+    <record id="organ_left_thoracic_spine" model="gradation.organ">
+        <field name="name">Thoracic Spine</field>
+        <field name="category">thoracic spine</field>
+    </record>
+    <record id="organ_right_lumbar_spine" model="gradation.organ">
+        <field name="name">Lumbar Spine</field>
+        <field name="category">lumbar spine</field>
+    </record>
+</odoo>

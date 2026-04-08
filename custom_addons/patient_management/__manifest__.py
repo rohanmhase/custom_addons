@@ -12,6 +12,7 @@
     "depends": ["base", "clinic_management", "product", "stock", "point_of_sale", "bus", "mail"],
     'data': [
         'data/ir_sequence_data.xml',
+        'data/gradation_organ_data.xml',
         'data/cron.xml',
         'security/patient_security.xml',
         'security/ir.model.access.csv',
@@ -26,6 +27,7 @@
         'views/xray_views.xml',
         'views/prescription_views.xml',
         'views/attachment_views.xml',
+        'views/rs_followup_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

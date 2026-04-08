@@ -27,3 +27,13 @@ access_patient_xray_user,access.patient.xray.user,model_patient_xray,clinic_mana
 access_patient_prescription_user,access.patient.prescription.user,model_patient_prescription,clinic_management.group_clinic_user,1,1,1,1
 access_patient_prescription_line_user,access.patient.prescription.line.user,model_patient_prescription_line,clinic_management.group_clinic_user,1,1,1,1
 access_patient_attachment_user,access.patient.attachment.user,model_patient_attachment,clinic_management.group_clinic_user,1,1,1,1
+
+access_gradation_organ_admin,access.gradation.organ.admin,model_gradation_organ,clinic_management.group_clinic_administrator,1,1,1,1
+access_gradation_organ_user,access.gradation.organ.user,model_gradation_organ,clinic_management.group_clinic_user,1,1,1,1
+access_gradation_followup_line_admin,access.gradation.followup.line.admin,model_gradation_followup_line,clinic_management.group_clinic_administrator,1,1,1,1
+access_gradation_followup_line_user,access.gradation.followup.line.user,model_gradation_followup_line,clinic_management.group_clinic_user,1,1,1,1
+
+access_patient_assessment_admin,access.patient.assessment.admin,model_patient_assessment,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_assessment_user,access.patient.assessment.user,model_patient_assessment,clinic_management.group_clinic_user,1,1,1,1
+access_patient_assessment_line_admin,access.patient.assessment.line.admin,model_patient_assessment_line,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_assessment_line_user,access.patient.assessment.line.user,model_patient_assessment_line,clinic_management.group_clinic_user,1,1,1,1
