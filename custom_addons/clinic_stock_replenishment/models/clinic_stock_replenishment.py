@@ -41,6 +41,11 @@ class ClinicStockReplenishment(models.Model):
         string="Region",
         tracking=True
     )
+    log_ids = fields.One2many(
+        'clinic.stock.replenishment.log',
+        'replenishment_id',
+        string="Snapshot Log"
+    )
 
     # -------------------------------
     # ARCHIVE INSTEAD OF DELETE
@@ -74,13 +79,13 @@ class ClinicStockReplenishment(models.Model):
         ], limit=1)
 
         if rule:
-            therapy_count = rule.get_yesterday_therapy_count()
-            print("DEBUG → Clinic:", warehouse.name)
-            print("DEBUG → Product:", product.display_name)
-            print("DEBUG → Therapy Count:", therapy_count)
+            therapy_count = max(rule.get_yesterday_therapy_count())
+            # print("DEBUG → Clinic:", warehouse.name)
+            # print("DEBUG → Product:", product.display_name)
+            # print("DEBUG → Therapy Count:", therapy_count)
 
             target_qty = rule.calculate_price(therapy_count)
-            print("DEBUG → Target Qty:", target_qty)
+            # print("DEBUG → Target Qty:", target_qty)
         else:
             target_qty = 0.0
 
@@ -91,10 +96,11 @@ class ClinicStockReplenishment(models.Model):
         ])
 
         available_qty = sum(q.quantity - q.reserved_quantity for q in quants)
-        print("DEBUG → Available Qty:", available_qty)
+        # print("DEBUG → Available Qty:", available_qty)
 
         shortage = target_qty - available_qty
-        print("DEBUG → Shortage:", shortage)
+        # print("DEBUG → Shortage:", shortage)
+        # print(f"DEBUG → [{warehouse.name}] [{product.display_name}] Target: {target_qty} | Stock: {available_qty} | Shortage: {shortage}")
 
         return shortage if shortage > 0 else 0.0
 
@@ -118,6 +124,36 @@ class ClinicStockReplenishment(models.Model):
 
             for product in products:
                 shortage = self._compute_shortage(product, warehouse)
+
+                # --- SNAPSHOT LOG ---
+                rule = self.env['stock.count.formula'].search([
+                    ('clinic_id', '=', warehouse.id),
+                    ('product_id', '=', product.id),
+                ], limit=1)
+
+                therapy_data = rule.get_yesterday_therapy_count() if rule else [0, 0, 0]
+                max_count = max(therapy_data) if therapy_data else 0
+
+                quants = self.env['stock.quant'].search([
+                    ('product_id', '=', product.id),
+                    ('location_id', 'child_of', warehouse.lot_stock_id.id),
+                ])
+                current_stock = sum(q.quantity - q.reserved_quantity for q in quants)
+
+                self.env['clinic.stock.replenishment.log'].create({
+                    'replenishment_id': self.id,
+                    'source_warehouse_id': self.source_warehouse_id.id,
+                    'destination_warehouse_id': warehouse.id,
+                    'product_id': product.id,
+                    'day_1_count': therapy_data[0] if len(therapy_data) > 0 else 0,
+                    'day_2_count': therapy_data[1] if len(therapy_data) > 1 else 0,
+                    'day_3_count': therapy_data[2] if len(therapy_data) > 2 else 0,
+                    'max_therapy_count': max_count,
+                    'target_qty': (current_stock + shortage) if shortage > 0 else current_stock,
+                    'current_stock': current_stock,
+                    'shortage_qty': shortage,
+                })
+                # --- SNAPSHOT LOG END ---
 
                 if shortage > 0:
                     move_lines.append((0, 0, {
@@ -153,6 +189,17 @@ class ClinicStockReplenishment(models.Model):
 
         # Update state AFTER processing all warehouses
         self.state = 'generated'
+
+    def action_open_log(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Snapshot Log',
+            'res_model': 'clinic.stock.replenishment.log',
+            'view_mode': 'tree',
+            'domain': [('replenishment_id', '=', self.id)],
+            'context': {'search_default_has_shortage': 0},
+        }
 
     # -------------------------------
     # REGION AUTO-FILL

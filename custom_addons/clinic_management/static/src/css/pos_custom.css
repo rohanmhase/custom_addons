@@ -1,0 +1,29 @@
+/* If Cart is SERVICE, disable PRODUCT and CONSU */
+body[data-cart-type="service"] article[data-product-type="product"],
+body[data-cart-type="service"] article[data-product-type="consu"] {
+    opacity: 0.3 !important;
+    filter: grayscale(100%) !important;
+    pointer-events: none !important;
+    background-color: #ffe6e6 !important;
+    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+}
+
+/* If Cart is PRODUCT, disable SERVICE and CONSU */
+body[data-cart-type="product"] article[data-product-type="service"],
+body[data-cart-type="product"] article[data-product-type="consu"] {
+    opacity: 0.3 !important;
+    filter: grayscale(100%) !important;
+    pointer-events: none !important;
+    background-color: #ffe6e6 !important;
+    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+}
+
+/* If Cart is CONSU, disable SERVICE and PRODUCT */
+body[data-cart-type="consu"] article[data-product-type="service"],
+body[data-cart-type="consu"] article[data-product-type="product"] {
+    opacity: 0.3 !important;
+    filter: grayscale(100%) !important;
+    pointer-events: none !important;
+    background-color: #ffe6e6 !important;
+    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+}

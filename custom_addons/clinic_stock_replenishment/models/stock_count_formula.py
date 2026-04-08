@@ -50,12 +50,19 @@ class StockCountFormula(models.Model):
     def get_yesterday_therapy_count(self):
         self.ensure_one()
 
-        yesterday = date.today() - timedelta(days=1)
+        today = date.today()
+        daily_counts = []
+        for i in range(1, 4):
+            count = self.env['patient.session'].search_count([
+                ('session_date', '=', today - timedelta(days=i)),
+                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+            ])
+            # print(f"DEBUG → Day -{i} ({today - timedelta(days=i)}): {count} sessions")
+            daily_counts.append(count)
+        return daily_counts
 
-        therapy_count = self.env['patient.session'].search_count([
-            ('session_date', '=', yesterday),
-            ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
-        ])
+        therapy_count = max(daily_counts)
+        # print(f"DEBUG → Max therapy count selected: {therapy_count}")
 
         return therapy_count
 
@@ -103,7 +110,7 @@ class StockCountFormula(models.Model):
     # -------------------------------------------------
     # Preview Fields
     # -------------------------------------------------
-    #
+
     preview_therapy_count = fields.Integer(
         default=20,
         string="Preview Therapy Count"
@@ -157,7 +164,20 @@ class StockCountFormula(models.Model):
         if self.fixed_value:
             return self.fixed_value
 
-        result = therapy_count
+        # If all fields are 0/False, no formula is configured → return 0
+        has_any_config = any([
+            self.multiplier,
+            self.starting_round_up,
+            self.weekend_factor,
+            self.buffer,
+            self.ending_round_up,
+            self.minimum_value,
+            self.maximum_value,
+        ])
+        if not has_any_config:
+            return 0.0
+
+        result = float(therapy_count)
 
         if self.multiplier:
             result = therapy_count * self.multiplier

@@ -7,7 +7,9 @@
             <tree>
                 <field name="patient_id"/>
                 <field name="session_date"/>
-                <field name="therapist_name"/>
+                <!--                <field name="therapist_name"/>-->
+                <field name="clinic_id" invisible="1"/>
+                <field name="therapist_id"/>
                 <field name="session_day"/>
                 <field name="session_type"/>
                 <field name="doctor_id" string="Doctor Name"/>
@@ -48,7 +50,12 @@
                             <field name="right_knee"/>
                             <field name="left_knee"/>
                             <field name="before_and_after_therapy_comment" string="Comment"/>
-                            <field name="therapist_name"/>
+                            <!--                            <field name="therapist_name"/>-->
+                            <field name="clinic_id" invisible="1"/>
+                            <field name="therapist_id"
+                                   domain="[('clinic_id', '=', clinic_id)]"
+                                   context="{'default_clinic_id': clinic_id}"
+                                   options="{'no_open': True, 'no_quick_create': True, 'no_create_edit': False}"/>
                         </group>
                     </sheet>
                     <div style="font-size:20px; padding:1px 16px;">Diet Information</div>

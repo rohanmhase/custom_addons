@@ -105,5 +105,4 @@
               parent="menu_clinic_stock_configuration"
               action="action_stock_count_formula"
               groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
-
 </odoo>
