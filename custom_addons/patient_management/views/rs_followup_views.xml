@@ -21,121 +21,115 @@
             <form string="Patient Assessment">
                 <sheet>
                     <group>
-                        <group>
-                            <field name="patient_id"/>
-                            <field name="doctor_id"/>
-                            <field name="assessment_date"/>
-                        </group>
-                        <group>
-                            <field name="weight"/>
-                            <field name="type_of_therapy"/>
-                            <field name="day_of_therapy"/>
-                        </group>
-                    </group>
-
-                    <group string="Clinical Details">
+                        <field name="patient_id"/>
+                        <field name="doctor_id"/>
+                        <field name="assessment_date"/>
+                        <field name="weight"/>
+                        <field name="type_of_therapy"/>
+                        <field name="day_of_therapy"/>
                         <field name="diagnosis"/>
                         <field name="k_c_o"/>
                         <field name="investigation_status"/>
                         <field name="case_under_discussion_with"/>
                     </group>
 
-                    <div style="font-size:20px; padding:1px 16px;">Gradation Assessment</div>
-                    <sheet>
-                        <field name="gradation_line_ids" context="{'default_session_id': active_id}">
-                            <tree string="Gradation Lines">
-                                <field name="organ_id"/>
-                                <field name="organ_category" column_invisible="True"/>
-                                <field name="pain_grade" column_invisible="True"/>
-                                <field name="tenderness" column_invisible="True"/>
-                                <field name="stiffness" column_invisible="True"/>
-                                <field name="edema" column_invisible="True"/>
-                                <field name="crepitus" column_invisible="True"/>
-                            </tree>
-                            <form string="Gradation Line">
-                                <sheet>
-                                    <group string="Organ">
-                                        <field name="available_organ_ids" invisible="1"/>
-                                        <field name="organ_id"
-                                               options="{'no_create': True, 'no_open': True}"
-                                               domain="[('id', 'in', available_organ_ids)]"/>
-                                        <field name="organ_category" invisible="1"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="tenderness"/>
-                                        <field name="tenderness" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="stiffness"/>
-                                        <field name="stiffness" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="pain_grade"/>
-                                        <field name="pain_grade" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="swelling"/>
-                                        <field name="swelling" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="edema"/>
-                                        <field name="edema" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="rom"/>
-                                        <field name="rom" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="discoloration"/>
-                                        <field name="discoloration" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="crepitus"/>
-                                        <field name="crepitus" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="slr"/>
-                                        <field name="slr" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="burning"/>
-                                        <field name="burning" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="rashes"/>
-                                        <field name="rashes" widget="radio" nolabel="1"
-                                               options="{'horizontal': true}"/>
-                                    </group>
-                                    <group col="2"
-                                           invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
-                                        <label for="pain_relief"/>
-                                        <field name="pain_relief" nolabel="1"/>
-                                    </group>
-                                </sheet>
-                            </form>
-                        </field>
-                    </sheet>
+                    <div style="font-size:14px; padding:1px 1px;">Gradation Assessment</div>
+                    <!--                    <sheet>-->
+                    <field name="gradation_line_ids" context="{'default_session_id': active_id}">
+                        <tree string="Gradation Lines">
+                            <field name="organ_id"/>
+                            <field name="summary_display" class="text-wrap"/>
+                            <field name="organ_category" column_invisible="True"/>
+                            <field name="pain_grade" column_invisible="True"/>
+                            <field name="tenderness" column_invisible="True"/>
+                            <field name="stiffness" column_invisible="True"/>
+                            <field name="edema" column_invisible="True"/>
+                            <field name="crepitus" column_invisible="True"/>
+                        </tree>
+                        <form string="Gradation Line">
+                            <sheet>
+                                <group string="Organ">
+                                    <field name="available_organ_ids" invisible="1"/>
+                                    <field name="organ_id"
+                                           options="{'no_create': True, 'no_open': True}"
+                                           domain="[('id', 'in', available_organ_ids)]"/>
+                                    <field name="organ_category" invisible="1"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="tenderness"/>
+                                    <field name="tenderness" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="stiffness"/>
+                                    <field name="stiffness" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="pain_grade"/>
+                                    <field name="pain_grade" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="swelling"/>
+                                    <field name="swelling" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="edema"/>
+                                    <field name="edema" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="rom"/>
+                                    <field name="rom" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="discoloration"/>
+                                    <field name="discoloration" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="crepitus"/>
+                                    <field name="crepitus" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="slr"/>
+                                    <field name="slr" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="burning"/>
+                                    <field name="burning" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="rashes"/>
+                                    <field name="rashes" widget="radio" nolabel="1"
+                                           options="{'horizontal': true}"/>
+                                </group>
+                                <group col="2"
+                                       invisible="organ_category not in ['knee', 'tibia', 'ankle', 'thigh', 'toes', 'shoulder', 'upper arm', 'forearm', 'wrist', 'fingers', 'cervical spine', 'thoracic spine', 'lumbar spine']">
+                                    <label for="pain_relief"/>
+                                    <field name="pain_relief" nolabel="1"/>
+                                </group>
+                            </sheet>
+                        </form>
+                    </field>
+                    <!--                    </sheet>-->
 
                     <notebook>
                         <page string="Symptom Scores" name="symptoms">
@@ -146,7 +140,7 @@
 
                                     <field name="name" widget="section_and_note_text" readonly="1" force_save="1"/>
 
-                                    <field name="key" width="1" readonly="1" force_save="1"
+                                    <field name="key" class="text-wrap" width="1" readonly="1" force_save="1"
                                            invisible="display_type == 'line_section'"/>
 
                                     <field name="value" string="Score (0-5)"

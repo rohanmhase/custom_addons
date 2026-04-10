@@ -32,8 +32,8 @@ class GradationFollowupLine(models.Model):
     followup_id = fields.Many2one("patient.assessment", string="Follow-Up Reference", ondelete="cascade")
     organ_id = fields.Many2one("gradation.organ", string="Organ", required=True)
     organ_category = fields.Selection(related="organ_id.category", string="Organ Category", readonly=True)
+    summary_display = fields.Char(string="Grade Summary", compute="_compute_summary_display", store=True)
     grade_1 = [('0', '0'), ('1', '1'), ('2', '2'), ('3', '3'), ('4', '4')]
-
     grade_2 = [('0', '0'), ('1', '1'), ('2', '2'), ('3', '3'), ('4', '4'), ('5', '5'), ]
 
     # Parameters with Gradation (0-4)
@@ -81,3 +81,33 @@ class GradationFollowupLine(models.Model):
     @api.onchange('followup_id')
     def _onchange_parent(self):
         self._compute_available_organs()
+
+    @api.depends('tenderness', 'stiffness', 'pain_grade', 'swelling', 'edema',
+                 'rom', 'discoloration', 'crepitus', 'slr', 'burning', 'rashes', 'pain_relief')
+
+    def _compute_summary_display(self):
+        grade_fields = [
+            ('tenderness', 'Tenderness'),
+            ('stiffness', 'Stiffness'),
+            ('pain_grade', 'Pain Grade'),
+            ('swelling', 'Swelling'),
+            ('edema', 'Edema'),
+            ('rom', 'Rom'),
+            ('discoloration', 'Discoloration'),
+            ('crepitus', 'Crepitus'),
+            ('slr', 'SLR'),
+            ('burning', 'Burning'),
+            ('rashes', 'Rashes'),
+            ('pain_relief', 'Pain Relief'),
+        ]
+
+        for record in self:
+            summary_parts = []
+            for field_name, label in grade_fields:
+                value = getattr(record, field_name)
+                # We check if value is not False (Odoo returns False for empty selection)
+                if value:
+                    summary_parts.append(f"{label} - {value}")
+
+            # Join the parts with a comma or semicolon
+            record.summary_display = ", ".join(summary_parts) if summary_parts else "No grades recorded"
