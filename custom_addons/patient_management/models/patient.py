@@ -44,31 +44,80 @@ class Patient(models.Model):
 
     is_existing = fields.Boolean(string="Is Existing", tracking=True)
 
-    non_enrollment_reason = fields.Selection([
-        ('ligament_tear', '1. Complete ligament tear'),
-        ('hiv_aids_hep', '2. HIV/AIDS/Hepatitis B and C'),
-        ('cancer_tb', '3. Active Cancer/Active Tuberculosis'),
-        ('dialysis', '4. Dialysis'),
-        ('fracture', '5. Fracture'),
-        ('congenital_deformity', '6. Congenital bone deformity'),
-        ('pregnant_lactating', '7. Pregnant/Lactating females'),
-        ('chronic_cva', '8. Chronic CVA'),
-        ('local_skin_issues', '9. Local skin issues (Acute Psoriasis, Gangrene, Open wounds)'),
-        ('liver_cirrhosis', '10. Liver cirrhosis'),
-        ('ascites', '11. Ascites'),
-        ('renal_failure', '12. Renal failure'),
-        ('patient_not_present', '13. Patient not present'),
-        ('long_distance', '14. Long distance'),
-        ('recent_paralysis', '15. Recent history of paralysis'),
-        ('bed_ridden', '16. Bed ridden patient'),
-        ('surgical_implants', '17. Surgical implants'),
-        ('dvt', '18. DVT'),
-        ('no_knee_spine_concern', '19. No knee /spine related concern'),
-        ('others', '20. Others'),
-    ], string="Non-Enrollment Reason: ", tracking=True)
-    other_reason = fields.Char(string="Specify Other Reason", tracking=True)
-    non_enrollment_reason_updated_by =fields.Many2one('res.users', string="Updated by", readonly=True)
+    treatment_status = fields.Selection([
+        ('accepted', 'Accepted'),
+        ('not_accepted', 'Not Accepted'),
+        ('not_applicable', 'Not Applicable'),
+    ], string="Treatment Status", tracking=True)
 
+    not_accepted_reasons = fields.Selection([
+        ('cost_issue', 'Cost Issue'),
+        ('wants_time_to_think', 'Wants Time to Think'),
+        ('wants_second_opinion', 'Wants Second Opinion'),
+        ('wants_to_discuss_at_home', 'Wants to Discuss at Home'),
+        ('not_interested', 'Not Interested'),
+        ('personal_reasons', 'Personal Reasons'),
+        ('emi_rejected', 'EMI Rejected'),
+        ('not_feasible', 'Not Feasible'),
+        ('busy_schedule', 'Busy Schedule'),
+        ('travel_issue', 'Travel Issue'),
+        ('decision_maker_absent', 'Decision Maker Absent'),
+        ('patient_absent', 'Patient absent'),
+        ('time_issue', 'Time Issue'),
+        ('left_without_consultation_due_to_more_waiting_time', 'Left Without Consultation Due To Waiting Time'),
+        ('was_getting_late_didnt_wait_for_closure', "Was getting late, didn't wait for closure"),
+        ('others', 'Others'),
+    ], string="Not Accepting Reasons", tracking=True)
+
+    not_applicable_reasons = fields.Selection([
+        ('ligament_tear', 'Complete ligament tear'),
+        ('hiv_aids_hep', 'HIV/AIDS/Hepatitis B and C'),
+        ('cancer_tb', 'Active Cancer/Active Tuberculosis'),
+        ('dialysis', 'Dialysis'),
+        ('fracture', 'Fracture'),
+        ('congenital_deformity', 'Congenital bone deformity'),
+        ('pregnant_lactating', 'Pregnant/Lactating females'),
+        ('chronic_cva', 'Chronic CVA'),
+        ('local_skin_issues', 'Local skin issues (Acute Psoriasis, Gangrene, Open wounds)'),
+        ('liver_cirrhosis', 'Liver cirrhosis'),
+        ('ascites', 'Ascites'),
+        ('renal_failure', 'Renal failure'),
+        ('patient_not_present', 'Patient not present'),
+        ('long_distance', 'Long distance'),
+        ('recent_paralysis', 'Recent history of paralysis'),
+        ('bed_ridden', 'Bed ridden patient'),
+        ('surgical_implants', 'Surgical implants'),
+        ('dvt', 'DVT'),
+        ('no_knee_spine_concern', 'No knee/spine related concern'),
+        ('others', 'Others'),
+    ], string="Not Applicable Reasons", tracking=True)
+
+    other_reason = fields.Char(string="Specify Other Reason", tracking=True)
+    treatment_updated_by = fields.Many2one('res.users', string="Updated by", readonly=True)
+
+
+    @api.onchange('treatment_status')
+    def _onchange_treatment_status(self):
+        for record in self:
+            if record.treatment_status:     #update the tracker
+                record.treatment_updated_by = self.env.user
+            else:
+                record.treatment_updated_by = False
+
+            if record.treatment_status == 'accepted':
+                record.not_accepted_reasons = False
+                record.not_applicable_reasons = False
+                record.other_reason = False
+
+            elif record.treatment_status == 'not_accepted':
+                # Wipe the medical reasons and custom text box
+                record.not_applicable_reasons = False
+                record.other_reason = False
+
+            elif record.treatment_status == 'not_applicable':
+                # Wipe the sales reasons and custom text box
+                record.not_accepted_reasons = False
+                record.other_reason = False
 
     @api.onchange('non_enrollment_reason')
     def _onchange_non_enrollment_reason(self):
