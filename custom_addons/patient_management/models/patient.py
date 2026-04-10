@@ -437,7 +437,7 @@ class Patient(models.Model):
             if last_session:
                 diff_days = (today - last_session.session_date).days
 
-                if diff_days > 5:
+                if diff_days > 7:
                     patient.sudo().write({'patient_status': 'inactive'})
 
     @api.constrains('enroll_date')
