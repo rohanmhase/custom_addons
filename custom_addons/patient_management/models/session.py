@@ -28,7 +28,7 @@ class Session(models.Model):
     right_knee = fields.Char(string="Right Knee", required=True)
     before_and_after_therapy_comment = fields.Char(string="Before & After Therapy Comment", required=True)
     therapist_name = fields.Char(string="Therapist Name")
-    therapist_id = fields.Many2one('clinic.therapist', string="Therapist Name", required=True)
+    therapist_id = fields.Many2one('clinic.therapist', string="Therapist Name")
     state = fields.Selection([("draft", "Draft"), ("done", "Done")], default="draft")
     session_type = fields.Selection([
         ('clinic', 'Clinic'),
@@ -98,6 +98,18 @@ class Session(models.Model):
         enrollment.sudo().write({"used_sessions": enrollment.used_sessions + 1})
 
         return session
+
+    @api.onchange('session_type')
+    def _onchange_session_type(self):
+        if self.session_type == 'self':
+            # Ensure the name matches exactly what is in the clinic.therapist table
+            self_therapist = self.env['clinic.therapist'].search([('name', '=ilike', 'Self')], limit=1)
+            if self_therapist:
+                self.therapist_id = self_therapist.id
+            else:
+                self.therapist_id = False
+        else:
+            self.therapist_id = False
 
     def _ist_date(self):
 
