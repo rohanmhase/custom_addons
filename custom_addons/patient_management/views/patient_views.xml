@@ -131,9 +131,9 @@
                         <field name="is_existing"/>
 
                         <field name="treatment_status" widget="radio" options="{'horizontal': true}"/>
-                        <field name="not_accepted_reasons" invisible="treatment_status != 'not_accepted'"/>
-                        <field name="not_applicable_reasons" invisible="treatment_status != 'not_applicable' "/>
-                        <field name="other_reason" invisible="not_accepted_reasons != 'others' and not_applicable_reasons != 'others'" required="1"/>
+                        <field name="not_converted_reasons" invisible="treatment_status != 'not_converted'" required="1"/>
+                        <field name="not_applicable_reasons" invisible="treatment_status != 'not_applicable'" required="1"/>
+                        <field name="other_reason" invisible="not_converted_reasons != 'others' and not_applicable_reasons != 'others'" required="1"/>
                         <field name="treatment_updated_by" force_save="1"/>
 
                         <field name="patient_status"
@@ -150,7 +150,7 @@
                         <field name="pain_ra"/>
                         <field name="pain_ana"/>
                         <field name="pain_others"/>
-                        <field name="others" invisible="not pain_others"/>
+                        <field name="others" invisible="not pain_others" required="1"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter">

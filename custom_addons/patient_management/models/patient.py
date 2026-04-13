@@ -45,12 +45,12 @@ class Patient(models.Model):
     is_existing = fields.Boolean(string="Is Existing", tracking=True)
 
     treatment_status = fields.Selection([
-        ('accepted', 'Accepted'),
-        ('not_accepted', 'Not Accepted'),
+        ('converted', 'Converted'),
+        ('not_converted', 'Not Converted'),
         ('not_applicable', 'Not Applicable'),
     ], string="Treatment Status", tracking=True)
 
-    not_accepted_reasons = fields.Selection([
+    not_converted_reasons = fields.Selection([
         ('cost_issue', 'Cost Issue'),
         ('wants_time_to_think', 'Wants Time to Think'),
         ('wants_second_opinion', 'Wants Second Opinion'),
@@ -67,7 +67,7 @@ class Patient(models.Model):
         ('left_without_consultation_due_to_more_waiting_time', 'Left Without Consultation Due To Waiting Time'),
         ('was_getting_late_didnt_wait_for_closure', "Was getting late, didn't wait for closure"),
         ('others', 'Others'),
-    ], string="Not Accepting Reasons", tracking=True)
+    ], string="Not Converted Reasons", tracking=True)
 
     not_applicable_reasons = fields.Selection([
         ('ligament_tear', 'Complete ligament tear'),
@@ -105,27 +105,20 @@ class Patient(models.Model):
                 record.treatment_updated_by = False
 
             if record.treatment_status == 'accepted':
-                record.not_accepted_reasons = False
+                record.not_converted_reasons = False
                 record.not_applicable_reasons = False
                 record.other_reason = False
 
-            elif record.treatment_status == 'not_accepted':
+            elif record.treatment_status == 'not_converted':
                 # Wipe the medical reasons and custom text box
                 record.not_applicable_reasons = False
                 record.other_reason = False
 
             elif record.treatment_status == 'not_applicable':
                 # Wipe the sales reasons and custom text box
-                record.not_accepted_reasons = False
+                record.not_converted_reasons = False
                 record.other_reason = False
 
-    @api.onchange('non_enrollment_reason')
-    def _onchange_non_enrollment_reason(self):
-        for record in self:
-            if record.non_enrollment_reason:
-                record.non_enrollment_reason_updated_by = self.env.user
-            else:
-                record.non_enrollment_reason_updated_by = False
 
 
     _sql_constraints = [
@@ -141,7 +134,7 @@ class Patient(models.Model):
     partner_id = fields.Many2one("res.partner", string="Customer", help="Link patient to POS/Invoices")
 
     pain_others = fields.Boolean(string="Other")
-    others = fields.Char(string="Specify if Other", required=True, tracking=True)
+    others = fields.Char(string="Specify if Other", tracking=True)
 
     patient_status = fields.Selection([
         ('visit', 'Visit'),
