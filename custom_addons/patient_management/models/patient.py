@@ -104,7 +104,7 @@ class Patient(models.Model):
             else:
                 record.treatment_updated_by = False
 
-            if record.treatment_status == 'accepted':
+            if record.treatment_status == 'converted':
                 record.not_converted_reasons = False
                 record.not_applicable_reasons = False
                 record.other_reason = False
