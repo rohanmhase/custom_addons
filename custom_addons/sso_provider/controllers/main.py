@@ -2,7 +2,7 @@ import json
 import logging
 import urllib.parse  # <--- THE MAGIC FIX
 from odoo import http, fields
-from odoo.http import request
+from odoo.http import request, Response
 
 _logger = logging.getLogger(__name__)
 
@@ -71,8 +71,7 @@ class OAuthProvider(http.Controller):
         ], limit=1)
 
         if not client:
-            return request.make_response(json.dumps({'error': 'invalid_client'}),
-                                         headers=[('Content-Type', 'application/json')])
+            return Response(json.dumps({'error': 'invalid_client'}), content_type='application/json')
 
         auth_code = request.env['oauth.code'].sudo().search([
             ('code', '=', code),
@@ -80,16 +79,16 @@ class OAuthProvider(http.Controller):
         ], limit=1)
 
         if not auth_code:
-            return request.make_response(json.dumps({'error': 'invalid_grant'}),
-                                         headers=[('Content-Type', 'application/json')])
+            return Response(json.dumps({'error': 'invalid_grant'}), content_type='application/json')
 
         response_data = {
             "access_token": auth_code.code,
             "token_type": "Bearer",
             "expires_in": 3600
         }
-        return request.make_response(json.dumps(response_data),
-                                     headers=[('Content-Type', 'application/json')])
+
+        # THE FIX: Ensure raw JSON response without Odoo RPC wrapping
+        return Response(json.dumps(response_data), content_type='application/json')
 
     @http.route('/oauth2/userinfo', type='http', auth='none', methods=['GET', 'POST'], csrf=False)
     def userinfo(self, **kwargs):
@@ -110,8 +109,7 @@ class OAuthProvider(http.Controller):
 
         if not auth_code:
             _logger.error("OAuth: Userinfo failed - Invalid Token")
-            return request.make_response(json.dumps({'error': 'invalid_token'}),
-                                         headers=[('Content-Type', 'application/json')])
+            return Response(json.dumps({'error': 'invalid_token'}), content_type='application/json')
 
         user = auth_code.user_id
 
@@ -126,5 +124,5 @@ class OAuthProvider(http.Controller):
 
         _logger.info(f"OAuth: Successfully returning userinfo for {user.login}: {response_data}")
 
-        return request.make_response(json.dumps(response_data),
-                                     headers=[('Content-Type', 'application/json')])
+        # THE FIX: Ensure raw JSON response without Odoo RPC wrapping
+        return Response(json.dumps(response_data), content_type='application/json')
