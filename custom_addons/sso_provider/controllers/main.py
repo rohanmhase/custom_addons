@@ -6,7 +6,6 @@ from odoo.http import request, Response
 
 _logger = logging.getLogger(__name__)
 
-
 class OAuthProvider(http.Controller):
 
     @http.route('/oauth2/authorize', type='http', auth='user', website=False, sitemap=False)
@@ -113,10 +112,18 @@ class OAuthProvider(http.Controller):
 
         user = auth_code.user_id
 
+        # --- THE NAME SPLIT FIX ---
+        # Moodle requires separate first and last names. We split Odoo's single name field here.
+        full_name = user.name or "User"
+        name_parts = full_name.split(' ', 1)
+        fname = name_parts[0]
+        lname = name_parts[1] if len(name_parts) > 1 else "-" # Moodle crashes if last name is completely empty
+
         # Data that Moodle will use to create the account automatically
         response_data = {
             "sub": str(user.id),
-            "name": user.name,
+            "firstname": fname,
+            "lastname": lname,
             # THE FIX 3: Try to use the actual email field first, then fallback to login
             "email": user.email or user.login,
             "preferred_username": user.login,
