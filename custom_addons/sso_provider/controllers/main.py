@@ -1,5 +1,6 @@
 import json
 import logging
+import urllib.parse  # <--- THE MAGIC FIX
 from odoo import http, fields
 from odoo.http import request
 
@@ -34,8 +35,16 @@ class OAuthProvider(http.Controller):
 
         _logger.info(f"OAuth: Code generated for user {request.uid}, redirecting to {redirect_uri}")
 
-        # THE FIX: local=False prevents Odoo from hijacking the redirect to its own domain.
-        return request.redirect(f"{redirect_uri}?code={auth_code.code}&state={state}", local=False)
+        # --- THE CRITICAL FIX ---
+        # We MUST properly URL-encode the parameters, otherwise Moodle's complex 'state'
+        # string will break the URL, causing Moodle to throw a "Session timed out" error!
+        query_params = urllib.parse.urlencode({
+            'code': auth_code.code,
+            'state': state
+        })
+
+        # Return the safe, encoded URL
+        return request.redirect(f"{redirect_uri}?{query_params}", local=False)
 
     @http.route('/oauth2/token', type='http', auth='none', methods=['POST'], csrf=False)
     def token(self, **kwargs):
@@ -87,12 +96,20 @@ class OAuthProvider(http.Controller):
         """
         Step 3: Moodle fetches user details.
         """
+        # Try to get token from Header FIRST
         auth_header = request.httprequest.headers.get('Authorization', '')
         access_token = auth_header.replace('Bearer ', '')
+
+        # THE FIX 2: FALLBACK - If header is missing (stripped by Apache/Nginx), get it from URL kwargs
+        if not access_token:
+            access_token = kwargs.get('access_token')
+
+        _logger.info(f"OAuth: Userinfo requested with token: {access_token}")
 
         auth_code = request.env['oauth.code'].sudo().search([('code', '=', access_token)], limit=1)
 
         if not auth_code:
+            _logger.error("OAuth: Userinfo failed - Invalid Token")
             return request.make_response(json.dumps({'error': 'invalid_token'}),
                                          headers=[('Content-Type', 'application/json')])
 
@@ -102,11 +119,12 @@ class OAuthProvider(http.Controller):
         response_data = {
             "sub": str(user.id),
             "name": user.name,
-            "email": user.login,  # In Odoo, login is usually the email address
+            # THE FIX 3: Try to use the actual email field first, then fallback to login
+            "email": user.email or user.login,
             "preferred_username": user.login,
         }
 
-        _logger.info(f"OAuth: Sending userinfo for {user.login}")
+        _logger.info(f"OAuth: Successfully returning userinfo for {user.login}: {response_data}")
 
         return request.make_response(json.dumps(response_data),
                                      headers=[('Content-Type', 'application/json')])
