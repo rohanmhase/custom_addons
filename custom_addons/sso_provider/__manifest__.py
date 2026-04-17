@@ -3,7 +3,7 @@
     'version': '17.0.1.0.0',
     'summary': 'Turns Odoo into an Identity Provider for Moodle SSO',
     'category': 'Tools',
-    'author': 'Your Name',
+    'author': 'Parikshit Hiwase',
     'depends': ['base', 'web'],
     'data': [
         'security/ir.model.access.csv',
