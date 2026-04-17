@@ -57,6 +57,7 @@
                                    context="{'default_clinic_id': clinic_id}"
                                    options="{'no_open': True, 'no_quick_create': True, 'no_create_edit': False}"
                                    readonly="session_type == 'self'"
+                                   required="1"
                                    force_save="1"/>
                         </group>
                     </sheet>

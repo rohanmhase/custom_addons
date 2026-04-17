@@ -150,6 +150,7 @@ class ClinicDashboard(models.TransientModel):
             'patient_name': s.patient_id.name,
             'session_day': s.session_day,
             'doctor_name' : s.doctor_id.name,
+            'therapist_name' : s.therapist_id.name,
         }) for s in sessions]
 
         # New Registered Patients
