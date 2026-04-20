@@ -11,6 +11,7 @@ export class PrescriptionButton extends Component {
     setup() {
         this.popup = useService("popup");
         this.pos = usePos();
+        this.orm = useService("orm");
     }
 
     async onClick() {
@@ -32,9 +33,27 @@ export class PrescriptionButton extends Component {
             return;
             }
 
-            const partner = this.pos.db.get_partner_by_id(rec.patient_id);
+            let partner = this.pos.db.get_partner_by_id(rec.patient_id);
+
+            if (!partner) {
+                const partners = await this.orm.searchRead(
+                    'res.partner',
+                    [['id', '=', rec.patient_id]], ['name', 'phone', 'mobile'],
+                );
+
+                if (partners.length) {
+                    this.pos.db.add_partners(partners);
+                    partner = this.pos.db.get_partner_by_id(rec.patient_id);
+                }
+            }
+
             if (partner) {
                 order.set_partner(partner);
+            } else {
+                this.popup.add(ErrorPopup, {
+                    title: "Patient Not Found",
+                    body: "Unable to load patient in POS.",
+                });
             }
 
             order.prescription_id = rec.id;
