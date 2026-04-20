@@ -777,6 +777,7 @@
                                             <div class="info-text">
                                                 <strong>Status:</strong>
                                                 <t t-if="presc['state'] == 'confirmed'">Confirmed</t>
+                                                <t t-if="presc['state'] == 'partial'">Partially Completed</t>
                                                 <t t-if="presc['state'] == 'done'">Done</t>
                                                 <t t-if="presc['state'] == 'draft'">Draft</t>
                                             </div>

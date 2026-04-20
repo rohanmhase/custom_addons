@@ -153,7 +153,7 @@ patch(FormController.prototype, {
                 <div class="medicine_content">
                     <div class="medicine_name">${this.escapeHtml(medicine.name)}</div>
                     <div class="medicine_stock">
-                        <span class="badge ${medicine.qty_available > 0 ? 'bg-success' : 'bg-danger'}">
+                        <span class="badge ${medicine.qty_available > 0 ? 'bg-success' : 'bg-warning'}">
                             Stock: ${medicine.qty_available} ${this.escapeHtml(medicine.uom)}
                         </span>
                     </div>
@@ -191,10 +191,9 @@ patch(FormController.prototype, {
 
         if (qtyAvailable <= 0) {
             this.notification.add(
-                "This medicine is out of stock!",
+                "This medicine might be out of stock!",
                 { type: "warning" }
             );
-            return;
         }
 
         // Get current record

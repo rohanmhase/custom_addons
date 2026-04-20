@@ -1,0 +1,12 @@
+.table-black {
+    border: 2px solid black !important;
+}
+
+.table-black th,
+.table-black td {
+    border: 1px solid black !important;
+}
+
+.table-black thead tr {
+    border-bottom: 2px solid black !important;
+}

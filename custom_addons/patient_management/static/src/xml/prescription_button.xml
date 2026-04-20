@@ -1,0 +1,5 @@
+<t t-name="PrescriptionButtonTemplate" owl="1">
+    <button class="control-button" t-on-click="onClick">
+        Prescription
+    </button>
+</t>

@@ -35,8 +35,15 @@
 
         ],
         'point_of_sale._assets_pos': [
-            "patient_management/static/src/js/autoload_prescription.js",
+            "patient_management/static/src/js/prescription_popup.js",
+            "patient_management/static/src/js/prescription_button.js",
+            "patient_management/static/src/js/order_patch.js",
+            "patient_management/static/src/js/restrict_product_click.js",
+            "patient_management/static/src/js/orderline_patch.js",
+            "patient_management/static/src/css/prescription_pos.css",
             "patient_management/static/src/js/pos_bus.js",
+            "patient_management/static/src/xml/prescription_popup.xml",
+            "patient_management/static/src/xml/prescription_button.xml",
         ],
     },
     "installable": True,
