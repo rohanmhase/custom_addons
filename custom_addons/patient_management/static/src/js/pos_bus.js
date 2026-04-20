@@ -26,10 +26,6 @@ export const prescriptionNotificationService = {
         const channel = `pos_prescription_notification_${clinicId}`;
         console.log("✅ Clinic Notification Channel:", channel);
 
-        // ✅ Restore pending notifications (per clinic)
-//        self.restorePendingNotifications();
-
-        // ✅ Subscribe only to this clinic's channel
         bus_service.addChannel(channel);
 
         bus_service.addEventListener("notification", ({ detail: notifications }) => {
@@ -54,9 +50,6 @@ export const prescriptionNotificationService = {
             `Date: ${data.prescription_date || "Today"}`,
         ].join("\n");
 
-        // ✅ Save per clinic
-//        this.savePendingNotification(data);
-
         notification.add(message, {
             title: "🩺 New Prescription",
             type: "info",
@@ -69,47 +62,6 @@ export const prescriptionNotificationService = {
                             title: `Prescription #${data.prescription_id}`,
                             type: "info",
                         });
-                    },
-                },
-                {
-                    name: "Load",
-                    primary: true,
-                    onClick: async () => {
-                        try {
-                            const pos = this.env.services.pos;
-                            const order = pos.get_order();
-
-                            if (!order) {
-                                notification.add("⚠️ No active order found", { type: "warning" });
-                                return;
-                            }
-
-                            const partnerId = data.partner_id;
-                            if (!partnerId) {
-                                notification.add("❌ No patient linked", { type: "danger" });
-                                return;
-                            }
-
-                            const partner = pos.db.get_partner_by_id(partnerId);
-                            if (!partner) {
-                                notification.add(
-                                    `❌ Customer not found for ID ${partnerId}`,
-                                    { type: "danger" }
-                                );
-                                return;
-                            }
-
-                            await order.set_partner(partner);
-                            notification.add(
-                                `✅ Prescription loaded for ${partner.name}`,
-                                { type: "success" }
-                            );
-
-//                            this.removePendingNotification(data.prescription_id);
-                        } catch (error) {
-                            console.error("❌ Error in Load button:", error);
-                            notification.add("❌ Failed to load prescription", { type: "danger" });
-                        }
                     },
                 },
             ],
@@ -131,60 +83,6 @@ export const prescriptionNotificationService = {
             console.warn("❌ Sound not available:", error);
         }
     },
-
-    // --- Persistence handling (unchanged) ---
-
-//    savePendingNotification(data) {
-//        const stored =
-//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
-//            [];
-//
-//        const exists = stored.some(
-//            (n) => n.prescription_id === data.prescription_id
-//        );
-//
-//        if (!exists) {
-//            stored.push(data);
-//            localStorage.setItem(
-//                "pending_prescriptions",
-//                JSON.stringify(stored)
-//            );
-//            console.log("💾 Saved pending prescription:", data.prescription_id);
-//        }
-//    },
-
-//    removePendingNotification(prescriptionId) {
-//        let stored =
-//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
-//            [];
-//
-//        stored = stored.filter(
-//            (n) => n.prescription_id !== prescriptionId
-//        );
-//
-//        localStorage.setItem(
-//            "pending_prescriptions",
-//            JSON.stringify(stored)
-//        );
-//
-//        console.log(
-//            "🗑️ Removed prescription from pending list:",
-//            prescriptionId
-//        );
-//    },
-
-//    restorePendingNotifications() {
-//        const stored =
-//            JSON.parse(localStorage.getItem("pending_prescriptions") || "[]") ||
-//            [];
-//
-//        if (stored.length) {
-//            console.log("♻️ Restoring pending prescriptions:", stored);
-//            for (const data of stored) {
-//                this.handlePrescriptionNotification(data, this.notification);
-//            }
-//        }
-//    },
 };
 
 registry
