@@ -11,3 +11,4 @@ class ClinicDashboardLine(models.TransientModel):
     patient_name = fields.Char(string="Patient Name")
     session_day = fields.Char(string="Session Day")
     doctor_name = fields.Char(string="Doctor Name")
+    therapist_name = fields.Char(string="Therapist Name")
