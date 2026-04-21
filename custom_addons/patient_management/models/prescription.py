@@ -322,6 +322,7 @@ class Prescription(models.Model):
             mail_values = {
                 "subject": f"Partial Prescription Alert - {rec.patient_id.name}",
                 "body_html": body,
+                "email_from": "<noreply@researchayu.com>",
                 "email_to": rec.doctor_id.email,
             }
 
