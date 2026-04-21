@@ -325,7 +325,7 @@ class Prescription(models.Model):
                 "email_to": rec.doctor_id.email,
             }
 
-            self.env["mail.mail"].create(mail_values).send()
+            self.env["mail.mail"].sudo().create(mail_values).send()
 
 class PrescriptionLine(models.Model):
     _name = "patient.prescription.line"
