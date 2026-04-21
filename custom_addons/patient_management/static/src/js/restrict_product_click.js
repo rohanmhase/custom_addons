@@ -13,6 +13,10 @@ patch(Order.prototype, {
             return super.add_product(...arguments);
         }
 
+        if (options?.quantity && options.quantity < 0) {
+            return super.add_product(...arguments);
+        }
+
         if (product.type === 'service') {
             return super.add_product(...arguments);
         }
