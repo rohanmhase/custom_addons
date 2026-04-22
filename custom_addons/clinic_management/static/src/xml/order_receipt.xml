@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('pos-receipt')]//ReceiptHeader" position="after">
+            <div t-if="props.data.partner_name_only" style="text-align: center; font-weight: bold; margin-bottom: 5px;">
+                Patient: <t t-esc="props.data.partner_name_only"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('pos-receipt')]//OrderWidget" position="before">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed black; padding-bottom: 3px; font-weight: bold; margin-bottom: 5px;">
+                <span>Medicine</span>
+                <span>Qty</span>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('pos-receipt')]//Orderline" position="inside">
+            <span class="custom-qty-display" style="float: right;">
+                <t t-esc="line.qty"/>
+            </span>
+        </xpath>
+
+        <xpath expr="//div[hasclass('pos-receipt')]//OrderWidget" position="after">
+            <div style="border-top: 1px dashed black; width: 100%; margin-top: 5px;"/>
+        </xpath>
+
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('pos-receipt-amount')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('paymentlines')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('pos-receipt-taxes')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('receipt-change')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('before-footer')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
+
+    </t>
+</templates>

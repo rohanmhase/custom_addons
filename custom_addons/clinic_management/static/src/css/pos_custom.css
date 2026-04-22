@@ -1,29 +1,136 @@
-/* If Cart is SERVICE, disable PRODUCT and CONSU */
-body[data-cart-type="service"] article[data-product-type="product"],
-body[data-cart-type="service"] article[data-product-type="consu"] {
-    opacity: 0.3 !important;
-    filter: grayscale(100%) !important;
-    pointer-events: none !important;
-    background-color: #ffe6e6 !important;
-    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+/* This only hides elements on the PRINTED receipt */
+.pos-receipt .pos-receipt-contact div:nth-child(3),
+.pos-receipt .pos-receipt-order-data,
+.pos-receipt #order-date,
+.pos-receipt .before-footer,
+.pos-receipt .after-footer,
+.pos-receipt .orderline .price,
+.pos-receipt .orderline .price-per-unit,
+.pos-receipt .orderline .product-price,
+.pos-receipt .orderline .unit-price,
+.pos-receipt .orderline .pos-receipt-right-align,
+.pos-receipt .pos-receipt-amount,
+.pos-receipt .paymentlines,
+.pos-receipt .pos-receipt-taxes,
+.pos-receipt .receipt-change {
+    display: none !important;
 }
 
-/* If Cart is PRODUCT, disable SERVICE and CONSU */
-body[data-cart-type="product"] article[data-product-type="service"],
-body[data-cart-type="product"] article[data-product-type="consu"] {
-    opacity: 0.3 !important;
-    filter: grayscale(100%) !important;
-    pointer-events: none !important;
-    background-color: #ffe6e6 !important;
-    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+/* Ensure the receipt lines still flex correctly without breaking the screen */
+.pos-receipt .orderline {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100%;
 }
 
-/* If Cart is CONSU, disable SERVICE and PRODUCT */
-body[data-cart-type="consu"] article[data-product-type="service"],
-body[data-cart-type="consu"] article[data-product-type="product"] {
-    opacity: 0.3 !important;
-    filter: grayscale(100%) !important;
-    pointer-events: none !important;
-    background-color: #ffe6e6 !important;
-    box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*.pos-receipt-contact div:nth-child(3) {
+    display: none !important;
+}
+
+/* Hide the "Powered by Odoo" and footer order data */
+/*.pos-receipt-order-data,
+#order-date,
+.before-footer,
+.after-footer {
+    display: none !important;
+}
+
+/* Hide all price/unit text rendered inside order lines */
+/*.orderline .price,
+/*.orderline .price-per-unit,
+/*.orderline .product-price,
+/*.orderline .unit-price,
+/*.orderline .pos-receipt-right-align {
+    display: none !important;
+}
+
+/* Column headers row */
+/*.receipt-column-headers {
+    display: flex;
+    width: 100%;
+}
+
+/*.col-medicine {
+    flex: 1;
+    text-align: left;
+}
+
+/*.col-qty {
+    width: 50px; /* Adjust based on your preference */
+    text-align: right;
+}
+
+/* Divider line under headers */
+/*.receipt-column-divider {
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+/* Layout: product name left, qty right */
+/*.orderline {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100%;
+    padding: 4px 0;
+}
+
+/* Qty value styling — no label, just number */
+/*.custom-qty-display {
+    white-space: nowrap;
+    font-weight: 500;
+    margin-left: auto;
+    text-align: right;
+    min-width: 40px;
 }

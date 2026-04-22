@@ -7,7 +7,7 @@
         Module to manage Clinics
     """,
     "author": "ResearchAyu",
-    "depends": ["base", "stock", "point_of_sale", "bus","stock"],
+    "depends": ["base", "stock", "point_of_sale", "bus", "stock"],
     "data": [
         'security/clinic_security.xml',
         'security/ir.model.access.csv',
@@ -20,7 +20,9 @@
         'point_of_sale._assets_pos': [
             "clinic_management/static/src/js/product_screen.js",
             "clinic_management/static/src/js/pos_cc_validation.js",
+            "clinic_management/static/src/js/pos_store_patch.js",
             "clinic_management/static/src/css/pos_custom.css",
+            "clinic_management/static/src/xml/order_receipt.xml",
         ]
     },
     "installable": True,
