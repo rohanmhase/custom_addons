@@ -79,7 +79,6 @@ class PatientAttachment(models.Model):
                     'grade': record.x_ray_grade,
                 }
 
-                print(xray_data)
 
                 # Create X-Ray record and link it
                 xray_record = self.env['patient.xray'].create(xray_data)
@@ -93,6 +92,9 @@ class PatientAttachment(models.Model):
 
         # Handle X-Ray updates
         for record in self:
+            if 'active' in vals and record.file_type == 'xray' and record.x_ray_id:
+                record.x_ray_id.write({'active': vals['active']})
+
             if record.file_type == 'xray' and record.x_ray_id:
                 # Prepare X-Ray data
                 xray_data = {}
