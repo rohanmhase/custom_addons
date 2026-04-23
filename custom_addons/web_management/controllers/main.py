@@ -296,6 +296,8 @@ class PatientController(http.Controller):
                 "pain_lt": df.pain_lt,
                 "deformity_rt": df.deformity_rt,
                 "deformity_lt": df.deformity_lt,
+                "happiness": df.happiness,
+                "recovery": df.recovery,
                 "notes": df.notes,
             })
 

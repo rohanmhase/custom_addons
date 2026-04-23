@@ -29,10 +29,10 @@
                         <field name="attachment_date"/>
                         <field name="file_type"/>
                         <field name="x_ray_day" invisible="file_type != 'xray'" required="1"/>
-                        <field name="x_ray_actual_date" invisible="file_type != 'xray'" required="1"/>
+                        <field name="x_ray_actual_date" invisible="file_type != 'xray'" required="1" options="{'max_date' : 'today'}"/>
                         <field name="x_ray_grade" invisible="file_type != 'xray'" required="1"/>
                         <field name="x_ray_status" invisible="file_type != 'xray'" required="1"/>
-                        <field name="other_description"/>
+                        <field name="other_description" invisible="file_type != 'other'" required="1"/>
                         <field name="preview_url" invisible="1"/>
                     </group>
                     <group invisible="preview_url">
