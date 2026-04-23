@@ -1,7 +1,7 @@
 {
     'name': 'OAuth2 Identity Provider',
     'version': '17.0.1.0.0',
-    'summary': 'Turns Odoo into an Identity Provider for Moodle SSO',
+    'summary': 'Turns Odoo into an Identity Provider for ResearchAyu',
     'category': 'Tools',
     'author': 'Parikshit Hiwase',
     'depends': ['base', 'web'],
