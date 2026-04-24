@@ -114,3 +114,32 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+/* Hide HSN code and other product details in order lines */
+.pos-receipt .orderline .product-label,
+.pos-receipt .orderline div:not(:first-child):not(.custom-qty-display) {
+    display: none !important;
+}
+
+/* Hide Company details (Email, Website, etc.) from Header */
+.pos-receipt .pos-receipt-contact div:not(:first-child):not(:nth-child(2)) {
+    display: none !important;
+}
+
+/* Hide Patient Phone Number */
+.pos-receipt div:contains("Phone:"),
+.pos-receipt div:has(t[t-esc*="phone"]) {
+    display: none !important;
+}
+/* Change TOTAL to TOTAL AMOUNT */
+.pos-receipt .pos-receipt-amount > div:first-child {
+    font-size: 0 !important; /* Hides original word */
+    visibility: hidden !important;
+}
+
+.pos-receipt .pos-receipt-amount > div:first-child::before {
+    content: "TOTAL AMOUNT" !important;
+    font-size: 15px !important; /* Brings back the font size */
+    visibility: visible !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+}
