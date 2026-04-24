@@ -32,10 +32,10 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
 /* ========================================== */
 
 /* Hide unwanted elements on printed receipt */
-.pos-receipt .pos-receipt-amount,
-.pos-receipt .paymentlines,
+/*.pos-receipt .pos-receipt-amount,
+.pos-receipt .paymentlines,*/
 .pos-receipt .pos-receipt-taxes,
-.pos-receipt .receipt-change,
+/*.pos-receipt .receipt-change,*/
 .pos-receipt .before-footer,
 .pos-receipt .after-footer,
 .pos-receipt .orderline .price,
@@ -102,4 +102,15 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
     min-width: 40px !important;
     margin-left: 10px !important;
     white-space: nowrap !important;
+}
+/* Ensure signature section is visible and spaced correctly */
+.pos-receipt div[style*="margin-top: 50px"] {
+    display: block !important;
+    font-family: sans-serif;
+}
+
+/* Optional: Adjust "Medicine Dispatch" spacing if needed */
+.pos-receipt div[style*="font-size: 1.2em"] {
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
