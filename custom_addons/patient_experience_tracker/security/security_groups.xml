@@ -3,14 +3,24 @@
     <data noupdate="0">
         <record model="ir.module.category" id="module_category_presales">
             <field name="name">Pre-Sales</field>
-            <field name="description">Manage Pre-Sales Tracker access levels.</field>
+            <field name="description">Manage access levels for the Pre-Sales Tracker.</field>
             <field name="sequence">10</field>
         </record>
 
-        <record id="group_presales_manager" model="res.groups">
-            <field name="name">Manager (Can Change Advisors)</field>
+        <record id="group_presales_advisor" model="res.groups">
+            <field name="name">Advisor</field>
             <field name="category_id" ref="module_category_presales"/>
-            <field name="comment">Allows the user to reassign the Advisor Name in the Experience Tracker.</field>
+        </record>
+
+        <record id="group_presales_bm" model="res.groups">
+            <field name="name">BM (Branch Manager)</field>
+            <field name="category_id" ref="module_category_presales"/>
+        </record>
+
+        <record id="group_presales_manager" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="category_id" ref="module_category_presales"/>
+            <field name="implied_ids" eval="[(4, ref('group_presales_advisor')), (4, ref('group_presales_bm'))]"/>
         </record>
     </data>
 </odoo>
