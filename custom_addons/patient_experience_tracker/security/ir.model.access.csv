@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_patient_experience_tracker,patient.experience.tracker,model_patient_experience_tracker,base.group_user,1,1,1,1
 access_patient_experience_subcategory,patient.experience.subcategory,model_patient_experience_subcategory,base.group_user,1,1,1,1
+access_patient_experience_followup,access.patient.experience.followup,model_patient_experience_followup,base.group_user,1,1,1,0

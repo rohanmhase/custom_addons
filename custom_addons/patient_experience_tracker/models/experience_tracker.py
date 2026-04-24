@@ -1,10 +1,11 @@
 from odoo import models, fields, api, _
 from datetime import timedelta
 from odoo.exceptions import AccessError, UserError, ValidationError
+import re
 
 
 # ==========================================
-# 1. THE NEW DICTIONARY MODEL
+# 1. THE DICTIONARY MODEL
 # ==========================================
 class PatientExperienceSubcategory(models.Model):
     _name = 'patient.experience.subcategory'
@@ -13,12 +14,26 @@ class PatientExperienceSubcategory(models.Model):
     name = fields.Char(string='Name', required=True)
     parent_category = fields.Selection([
         ('Not Enrolled', 'Not Enrolled'), ('Active', 'Active'), ('Drop-off', 'Drop-off'),
-         ('Completed', 'Completed')
-    ], string='Parent Category', required=True, tracking=True)
+        ('Completed', 'Completed')
+    ], string='Parent Category', required=True)
 
 
 # ==========================================
-# 2. THE MAIN TRACKER MODEL
+# 2. THE FOLLOW-UP HISTORY MODEL (Log Sheet)
+# ==========================================
+class PatientExperienceFollowup(models.Model):
+    _name = 'patient.experience.followup'
+    _description = 'Patient Experience Followup History'
+    _order = 'date desc'
+
+    tracker_id = fields.Many2one('patient.experience.tracker', string="Tracker", ondelete='cascade')
+    date = fields.Datetime(string="Date & Time", default=fields.Datetime.now, readonly=True)
+    user_id = fields.Many2one('res.users', string="Logged By", default=lambda self: self.env.user, readonly=True)
+    bm_action = fields.Text(string="Action Taken", readonly=True)
+
+
+# ==========================================
+# 3. THE MAIN TRACKER MODEL
 # ==========================================
 class PatientExperienceTracker(models.Model):
     _name = 'patient.experience.tracker'
@@ -27,20 +42,80 @@ class PatientExperienceTracker(models.Model):
 
     _sql_constraints = [
         ('unique_patient_tracker', 'unique(patient_id)',
-         'This patient already has an Experience Tracker! Please go back and use the Search bar to find their existing record instead of creating a new one.')
+         'This patient already has an Experience Tracker! Please use the Search bar to find their existing record.')
     ]
 
-    # 1. CORE RELATIONS
+    # --- 1. CORE RELATIONS ---
     patient_id = fields.Many2one('clinic.patient', string='Patient', required=True)
     clinic_id = fields.Many2one(related='patient_id.clinic_id', string="Clinic", readonly=True, store=True)
     advisor_id = fields.Many2one('res.users', string="Advisor Name", default=lambda self: self.env.user, tracking=True)
+    consult_id = fields.Many2one('patient.case_taking', string="Consulted Name")
 
     phone = fields.Char(related='patient_id.phone', string="Phone", readonly=True)
+    alternate_phone = fields.Char(string="Alternate Phone", size=10, tracking=True)
     mrn = fields.Char(related='patient_id.mrn', string="MRN", readonly=True)
-    pain_types = fields.Char(related='patient_id.pain_types', string="Conditions", readonly=True)
+    consulted_by = fields.Char(string="Consulted By")
+
     total_sessions = fields.Integer(related='patient_id.total_sessions', string="Total Sessions", readonly=True)
     used_sessions = fields.Integer(compute='_compute_used_sessions', string="Used Sessions", readonly=True)
 
+    # --- THE KILL SWITCH (NOT INTERESTED) ---
+    is_not_interested = fields.Boolean(string="Patient Not Interested", tracking=True)
+    not_interested_reason = fields.Selection([
+        ('unresponsive', 'Unresponsive / Not Picking Up calls'),
+        ('cost', 'Too Expensive / Cost Issue'),
+        ('distance', 'Distance / Travel Issue'),
+        ('competitor', 'Chose Another Clinic'),
+        ('operation_suggested', 'Operation Suggested'),
+        ('other', 'Other Reason')
+    ], string="Reason for Opt-Out", tracking=True)
+    not_interested_description = fields.Text(string="Detailed Description", tracking=True)
+
+    # --- THE BM FOLLOW-UP LOG ---
+    followup_ids = fields.One2many('patient.experience.followup', 'tracker_id', string="Action History")
+    new_bm_action = fields.Text(string="New Action Taken")
+
+    # --- ROLE-BASED UI CONTROLS ---
+    readonly_treatment = fields.Boolean(compute='_compute_tab_access')
+    readonly_bm_tab = fields.Boolean(compute='_compute_tab_access')
+
+    @api.depends('is_not_interested')
+    @api.depends_context('uid')
+    def _compute_tab_access(self):
+        """Checks the user's group AND the Kill Switch to lock/unlock tabs."""
+        is_manager = self.env.user.has_group('patient_experience_tracker.group_presales_manager')
+        is_bm = self.env.user.has_group('patient_experience_tracker.group_presales_bm')
+        is_advisor = self.env.user.has_group('patient_experience_tracker.group_presales_advisor')
+
+        for record in self:
+            # KILL SWITCH OVERRIDE
+            if record.is_not_interested:
+                record.readonly_treatment = True
+                record.readonly_bm_tab = True
+            else:
+                # STANDARD RBAC
+                if is_manager:
+                    record.readonly_treatment = False
+                    record.readonly_bm_tab = False
+                elif is_bm:
+                    record.readonly_treatment = True
+                    record.readonly_bm_tab = False
+                elif is_advisor:
+                    record.readonly_treatment = False
+                    record.readonly_bm_tab = True
+                else:
+                    record.readonly_treatment = True
+                    record.readonly_bm_tab = True
+
+    def action_add_followup(self):
+        """Moves text from 'new_bm_action' to the permanent history model."""
+        for record in self:
+            if record.new_bm_action:
+                self.env['patient.experience.followup'].create({
+                    'tracker_id': record.id,
+                    'bm_action': record.new_bm_action,
+                })
+                record.new_bm_action = False
 
     @api.depends('patient_id.total_sessions', 'patient_id.remaining_sessions')
     def _compute_used_sessions(self):
@@ -50,20 +125,25 @@ class PatientExperienceTracker(models.Model):
             else:
                 record.used_sessions = 0
 
-    # 2. STATUS & CATEGORY
+    @api.constrains('alternate_phone')
+    def _check_phone_number(self):
+        for rec in self:
+            if rec.alternate_phone:
+                if not re.match(r'^\d{10}$', rec.alternate_phone):
+                    raise ValidationError("Phone number must be exactly 10 digits and contain only numbers.")
+
+    # --- 2. STATUS & CATEGORY ---
     category = fields.Selection([
         ('Active', 'Active'), ('Drop-off', 'Drop-off'),
         ('Not Enrolled', 'Not Enrolled'), ('Completed', 'Completed')
     ], string='Category', tracking=True, required=True)
 
-    # *** FIXED: UPGRADED & RENAMED TO AVOID DB CRASH ***
     sub_category_id = fields.Many2one('patient.experience.subcategory', string='Sub Category', tracking=True,
                                       required=True)
-
     priority = fields.Selection([('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], string="Priority",
                                 default="Low", tracking=True)
 
-    # 3. MEDICAL & TREATMENT INFO
+    # --- 3. MEDICAL & TREATMENT INFO ---
     treatment_status = fields.Selection([
         ('Not Started', 'Not Started'), ('Continue Treatment', 'Continue Treatment'),
         ('Planning to Stop', 'Planning to Stop'), ('Stopped', 'Stopped'),
@@ -83,22 +163,26 @@ class PatientExperienceTracker(models.Model):
     pain_score = fields.Selection([(str(i), str(i)) for i in range(11)], string='Pain Score (0-10)', required=True,
                                   tracking=True)
 
-    # 4. DATES & FOLLOW-UPS
+    # --- 4. DATES & FOLLOW-UPS ---
     start_date = fields.Date(string="Start Date", required=True, tracking=True)
     last_visit_date = fields.Date(string="Last Visit Date", required=True, tracking=True)
     last_contact_date = fields.Date(string='Last Contact Date', default=fields.Date.context_today, tracking=True,
-                                    required=True, )
+                                    required=True)
     next_followup_date = fields.Date(string='Recommended Next Follow-up', compute='_compute_followup', store=True,
                                      tracking=True)
     actual_followup_date = fields.Date(string='Actual Next Follow-up Date', tracking=True, required=True)
-
     days_since_last_contact = fields.Integer(string="Days Since Last Contact", compute="_compute_days_since")
 
     followup_status = fields.Selection([
         ('overdue', 'Overdue'), ('today', 'Due Today'), ('planned', 'Planned')
     ], string="Urgency", compute='_compute_followup_status')
 
-    # 5. METRICS & REMARKS
+    def action_open_case_paper(self):
+        self.ensure_one()
+        if self.patient_id:
+            return self.patient_id.action_open_patient_case_paper()
+
+    # --- 5. METRICS & REMARKS ---
     satisfaction_score = fields.Selection([(str(i), str(i)) for i in range(11)], string="Satisfaction Score (0-10)",
                                           required=True)
     referral_given = fields.Boolean(string="Referral Given", tracking=True)
@@ -109,26 +193,19 @@ class PatientExperienceTracker(models.Model):
     task_status = fields.Selection([('On Track', 'On Track'), ('Pending', 'Pending'), ('Closed', 'Closed')],
                                    default='On Track', string="Task Status")
 
-    # --- COMPUTED LOGIC ---
+    # --- COMPUTED LOGIC RULES ---
     @api.onchange('category')
     def _onchange_category_enforce_rules(self):
-        """Cleaned up automation without the warning boxes"""
         for record in self:
-            # 1. Wipe sub_category clean so they are forced to pick from the new filtered list
             record.sub_category_id = False
-
-            # 2. Enforce Treatment Status Rules
             if record.category == 'Not Enrolled':
                 record.treatment_status = 'Not Started'
             elif record.category == 'Drop-off':
                 record.treatment_status = False
-                # Auto-find and attach "Drop-risk" from the dictionary
                 drop_risk = self.env['patient.experience.subcategory'].search(
                     [('name', '=', 'Drop-risk'), ('parent_category', '=', 'Drop-off')], limit=1)
                 if drop_risk:
                     record.sub_category_id = drop_risk.id
-
-            # 3. Enforce Home Therapy Rules
             if record.category in ['Drop-off', 'Completed']:
                 record.home_therapy = False
 
@@ -159,7 +236,6 @@ class PatientExperienceTracker(models.Model):
     def _compute_followup(self):
         for record in self:
             days = 0
-            # Because it's a relational field now, we must look at '.name'
             sub_name = record.sub_category_id.name if record.sub_category_id else False
 
             if record.category == 'Active':
@@ -191,13 +267,9 @@ class PatientExperienceTracker(models.Model):
             else:
                 record.next_followup_date = False
 
-    # ==========================================
-    # SECURITY & ACCESS CONTROL
-    # ==========================================
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            # If a regular user tries to assign it to someone else during creation
             if 'advisor_id' in vals and vals.get('advisor_id') and vals.get('advisor_id') != self.env.user.id:
                 if not self.env.user.has_group('patient_experience_tracker.group_presales_manager'):
                     raise AccessError(
@@ -205,16 +277,12 @@ class PatientExperienceTracker(models.Model):
         return super(PatientExperienceTracker, self).create(vals_list)
 
     def write(self, vals):
-        # Only trigger the security check if the advisor_id is present in the save command
         if 'advisor_id' in vals:
             for record in self:
-                # CRITICAL: Only trigger if the new advisor is ACTUALLY DIFFERENT from the current advisor
                 if vals['advisor_id'] != record.advisor_id.id:
-                    # Check if the user lacks the Pre-Sales Manager badge
                     if not self.env.user.has_group('patient_experience_tracker.group_presales_manager'):
                         raise AccessError("Security Block: You do not have permission to change the Advisor Name.")
         return super(PatientExperienceTracker, self).write(vals)
 
     def copy(self, default=None):
-        raise UserError(_("⚠️ Duplication of this record is not allowed."))
-
+        raise UserError(_("Duplication of this record is not allowed."))
