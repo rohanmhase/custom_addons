@@ -50,7 +50,10 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
 .pos-receipt div[t-if="props.data.partner"] {
     display: none !important;
 }
-
+/* Hide Company name and Tel only, keep logo */
+.pos-receipt .pos-receipt-contact {
+    display: none !important;
+}
 /* Styling for custom receipt elements */
 .pos-receipt .receipt-patient-name {
     text-align: center;
