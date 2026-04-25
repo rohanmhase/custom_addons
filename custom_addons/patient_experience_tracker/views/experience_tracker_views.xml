@@ -63,7 +63,7 @@
                                     </div>
                                     <hr style="margin: 8px 0;"/>
 
-                                    <t t-if="! record.is_not_interested.raw_value">
+                                    <t t-if="!record.is_not_interested.raw_value">
                                         <div t-attf-class="#{record.followup_status.raw_value == 'overdue' ? 'text-danger font-weight-bold' : ''}">
                                             <strong>Next Follow-up:</strong>
                                             <field name="next_followup_date"/>
@@ -140,7 +140,9 @@
                             <field name="is_not_interested" widget="boolean_toggle"/>
                         </group>
                     </group>
+                    
                     <group invisible="not is_not_interested" class="alert alert-danger" role="alert">
+                        <field name="not_interested_user_id" invisible="not is_not_interested"/>
                         <field name="not_interested_reason" required="is_not_interested"/>
                         <field name="not_interested_description" required="is_not_interested" placeholder="Provide detailed context..."/>
                     </group>
@@ -161,14 +163,16 @@
                     <group>
                         <group string="Action Plan">
                             <field name="sub_category_id" domain="[('parent_category', '=', category)]"
-                                   options="{'no_create': True, 'no_open': True}" readonly="is_not_interested"/>
+                                   options="{'no_create': True, 'no_open': True}" 
+                                   readonly="is_not_interested" required="not is_not_interested"/>
                             <field name="priority" widget="radio" options="{'horizontal': true}" readonly="is_not_interested"/>
                             <field name="advisor_id" readonly="is_not_interested"/>
                         </group>
                         <group string="Follow-up">
                             <field name="last_contact_date" options="{'max_date': 'today' }" readonly="is_not_interested"/>
                             <field name="next_followup_date" readonly="is_not_interested"/>
-                            <field name="actual_followup_date" options="{'max_date': 'today'}" readonly="is_not_interested"/>
+                            <field name="actual_followup_date" options="{'max_date': 'today'}" 
+                                   readonly="is_not_interested" required="not is_not_interested"/>
                         </group>
                     </group>
 
@@ -181,13 +185,15 @@
                                 <field name="home_therapy" invisible="category in ['Drop-off', 'Completed']" readonly="readonly_treatment"/>
                                 <field name="outcome_status" readonly="readonly_treatment"/>
                                 <field name="mobility_status" readonly="readonly_treatment"/>
-                                <field name="pain_score" readonly="readonly_treatment"/>
+                                <field name="pain_score" readonly="readonly_treatment" required="not is_not_interested"/>
                             </group>
                             <group>
-                                <field name="start_date" options="{'max_date': 'today'}" readonly="readonly_treatment"/>
-                                <field name="last_visit_date" options="{'max_date': 'today'}" readonly="readonly_treatment"/>
+                                <field name="start_date" options="{'max_date': 'today'}" 
+                                       readonly="readonly_treatment" required="not is_not_interested"/>
+                                <field name="last_visit_date" options="{'max_date': 'today'}" 
+                                       readonly="readonly_treatment" required="not is_not_interested"/>
                                 <field name="days_since_last_contact" readonly="readonly_treatment"/>
-                                <field name="satisfaction_score" readonly="readonly_treatment"/>
+                                <field name="satisfaction_score" readonly="readonly_treatment" required="not is_not_interested"/>
                                 <field name="referral_given" readonly="readonly_treatment"/>
                                 <field name="review_given" readonly="readonly_treatment"/>
                             </group>
