@@ -3,7 +3,6 @@ from datetime import timedelta
 from odoo.exceptions import AccessError, UserError, ValidationError
 import re
 
-
 # ==========================================
 # 1. THE DICTIONARY MODEL
 # ==========================================
@@ -17,7 +16,6 @@ class PatientExperienceSubcategory(models.Model):
         ('Completed', 'Completed')
     ], string='Parent Category', required=True)
 
-
 # ==========================================
 # 2. THE FOLLOW-UP HISTORY MODEL (Log Sheet)
 # ==========================================
@@ -30,7 +28,6 @@ class PatientExperienceFollowup(models.Model):
     date = fields.Datetime(string="Date & Time", default=fields.Datetime.now, readonly=True)
     user_id = fields.Many2one('res.users', string="Logged By", default=lambda self: self.env.user, readonly=True)
     bm_action = fields.Text(string="Action Taken", readonly=True)
-
 
 # ==========================================
 # 3. THE MAIN TRACKER MODEL
@@ -61,6 +58,7 @@ class PatientExperienceTracker(models.Model):
 
     # --- THE KILL SWITCH (NOT INTERESTED) ---
     is_not_interested = fields.Boolean(string="Patient Not Interested", tracking=True)
+    not_interested_user_id = fields.Many2one('res.users', string="Marked Not Interested By", readonly=True, tracking=True)
     not_interested_reason = fields.Selection([
         ('unresponsive', 'Unresponsive / Not Picking Up calls'),
         ('cost', 'Too Expensive / Cost Issue'),
@@ -138,8 +136,7 @@ class PatientExperienceTracker(models.Model):
         ('Not Enrolled', 'Not Enrolled'), ('Completed', 'Completed')
     ], string='Category', tracking=True, required=True)
 
-    sub_category_id = fields.Many2one('patient.experience.subcategory', string='Sub Category', tracking=True,
-                                      required=True)
+    sub_category_id = fields.Many2one('patient.experience.subcategory', string='Sub Category', tracking=True)
     priority = fields.Selection([('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], string="Priority",
                                 default="Low", tracking=True)
 
@@ -160,17 +157,14 @@ class PatientExperienceTracker(models.Model):
         ('Severe Limitation', 'Severe Limitation'), ('Moderate Limitation', 'Moderate Limitation'),
         ('Mild Limitation', 'Mild Limitation'), ('Independent', 'Independent')
     ], string="Mobility Status")
-    pain_score = fields.Selection([(str(i), str(i)) for i in range(11)], string='Pain Score (0-10)', required=True,
-                                  tracking=True)
+    pain_score = fields.Selection([(str(i), str(i)) for i in range(11)], string='Pain Score (0-10)', tracking=True)
 
     # --- 4. DATES & FOLLOW-UPS ---
-    start_date = fields.Date(string="Start Date", required=True, tracking=True)
-    last_visit_date = fields.Date(string="Last Visit Date", required=True, tracking=True)
-    last_contact_date = fields.Date(string='Last Contact Date', default=fields.Date.context_today, tracking=True,
-                                    required=True)
-    next_followup_date = fields.Date(string='Recommended Next Follow-up', compute='_compute_followup', store=True,
-                                     tracking=True)
-    actual_followup_date = fields.Date(string='Actual Next Follow-up Date', tracking=True, required=True)
+    start_date = fields.Date(string="Start Date", tracking=True)
+    last_visit_date = fields.Date(string="Last Visit Date", tracking=True)
+    last_contact_date = fields.Date(string='Last Contact Date', default=fields.Date.context_today, tracking=True, required=True)
+    next_followup_date = fields.Date(string='Recommended Next Follow-up', compute='_compute_followup', store=True, tracking=True)
+    actual_followup_date = fields.Date(string='Actual Next Follow-up Date', tracking=True)
     days_since_last_contact = fields.Integer(string="Days Since Last Contact", compute="_compute_days_since")
 
     followup_status = fields.Selection([
@@ -183,8 +177,7 @@ class PatientExperienceTracker(models.Model):
             return self.patient_id.action_open_patient_case_paper()
 
     # --- 5. METRICS & REMARKS ---
-    satisfaction_score = fields.Selection([(str(i), str(i)) for i in range(11)], string="Satisfaction Score (0-10)",
-                                          required=True)
+    satisfaction_score = fields.Selection([(str(i), str(i)) for i in range(11)], string="Satisfaction Score (0-10)")
     referral_given = fields.Boolean(string="Referral Given", tracking=True)
     review_given = fields.Boolean(string="Review Given", tracking=True)
     action_taken = fields.Text(string="Action Taken", tracking=True)
@@ -277,11 +270,19 @@ class PatientExperienceTracker(models.Model):
         return super(PatientExperienceTracker, self).create(vals_list)
 
     def write(self, vals):
+        # 1. TRACKER: Who marked them Not Interested?
+        if vals.get('is_not_interested'):
+            vals['not_interested_user_id'] = self.env.user.id
+        elif 'is_not_interested' in vals and not vals['is_not_interested']:
+            vals['not_interested_user_id'] = False  # Clears it if they uncheck it
+
+        # 2. SECURITY: Advisor Lock
         if 'advisor_id' in vals:
             for record in self:
                 if vals['advisor_id'] != record.advisor_id.id:
                     if not self.env.user.has_group('patient_experience_tracker.group_presales_manager'):
                         raise AccessError("Security Block: You do not have permission to change the Advisor Name.")
+
         return super(PatientExperienceTracker, self).write(vals)
 
     def copy(self, default=None):
