@@ -155,3 +155,7 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
 font-weight: 100 !important;
 }
 
+/* Hide entire customer name + phone block */
+.pos-receipt-center-align {
+    display: none !important;
+}
