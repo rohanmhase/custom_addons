@@ -27,3 +27,135 @@ body[data-cart-type="consu"] article[data-product-type="product"] {
     background-color: #ffe6e6 !important;
     box-shadow: inset 0 0 0 5px rgba(255, 0, 0, 0.3) !important;
 }
+/* ========================================== */
+/* RECEIPT-ONLY CLEANUP                       */
+/* ========================================== */
+
+/* Hide unwanted elements on printed receipt */
+/*.pos-receipt .pos-receipt-amount,
+.pos-receipt .paymentlines,*/
+.pos-receipt .pos-receipt-taxes,
+/*.pos-receipt .receipt-change,*/
+.pos-receipt .before-footer,
+.pos-receipt .after-footer,
+.pos-receipt .orderline .price,
+.pos-receipt .orderline .price-per-unit,
+.pos-receipt .orderline .product-price,
+.pos-receipt .orderline .unit-price,
+.pos-receipt .orderline .pos-receipt-right-align,
+.pos-receipt .pos-receipt-contact div:nth-child(3),
+.pos-receipt .pos-receipt-order-data,
+.pos-receipt #order-date,
+.pos-receipt .partner-name,
+.pos-receipt div[t-if="props.data.partner"] {
+    display: none !important;
+}
+/* Hide Company name and Tel only, keep logo */
+.pos-receipt .pos-receipt-contact {
+    display: none !important;
+}
+/* Styling for custom receipt elements */
+.pos-receipt .receipt-patient-name {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.pos-receipt .receipt-custom-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed black;
+    padding-bottom: 3px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.pos-receipt .receipt-final-divider {
+    border-top: 1px dashed black;
+    width: 100%;
+    margin-top: 5px;
+}
+
+/* ========================================== */
+/* LINEAR ALIGNMENT FIX (Medicine & Qty)      */
+/* ========================================== */
+
+.pos-receipt .orderline {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    padding: 2px 0 !important;
+}
+
+/* Forces medicine name to take all space and push Qty to edge */
+.pos-receipt .orderline > t:first-child,
+.pos-receipt .orderline > span:first-child,
+.pos-receipt .orderline div:first-child {
+    flex-grow: 1 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+}
+
+/* Keeps Quantity pinned to the right and aligned at top */
+.pos-receipt .custom-qty-display,
+.pos-receipt .receipt-qty-only {
+    text-align: right !important;
+    min-width: 40px !important;
+    margin-left: 10px !important;
+    white-space: nowrap !important;
+}
+/* Ensure signature section is visible and spaced correctly */
+.pos-receipt div[style*="margin-top: 50px"] {
+    display: block !important;
+    font-family: sans-serif;
+}
+
+/* Optional: Adjust "Medicine Dispatch" spacing if needed */
+.pos-receipt div[style*="font-size: 1.2em"] {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+/* Hide HSN code and other product details in order lines */
+.pos-receipt .orderline .product-label,
+.pos-receipt .orderline div:not(:first-child):not(.custom-qty-display) {
+    display: none !important;
+}
+
+/* Hide Company details (Email, Website, etc.) from Header */
+.pos-receipt .pos-receipt-contact div:not(:first-child):not(:nth-child(2)) {
+    display: none !important;
+}
+
+/* Hide Patient Phone Number */
+.pos-receipt div:contains("Phone:"),
+.pos-receipt div:has(t[t-esc*="phone"]) {
+    display: none !important;
+}
+/* Change TOTAL to TOTAL AMOUNT */
+.pos-receipt .pos-receipt-amount > div:first-child {
+    font-size: 0 !important; /* Hides original word */
+    visibility: hidden !important;
+}
+
+.pos-receipt .pos-receipt-amount > div:first-child::before {
+    content: "TOTAL AMOUNT" !important;
+    font-size: 15px !important; /* Brings back the font size */
+    visibility: visible !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+}
+/* Increase ResearchAyu logo size */
+.pos-receipt img {
+    width: 75% !important;
+    height: auto !important;
+}
+.order-container {
+font-weight: 100 !important;
+}
+
+/* Hide entire customer name + phone block */
+.pos-receipt-center-align {
+    display: none !important;
+}

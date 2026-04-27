@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 class Prescription(models.Model):
@@ -32,6 +32,7 @@ class Prescription(models.Model):
         [
             ("draft", "Draft"),
             ("confirmed", "Confirmed"),
+            ("partial", "Partially Completed"),
             ("done", "Done"),
         ],
         string="Status",
@@ -118,7 +119,7 @@ class Prescription(models.Model):
         return medicine_data
 
     def _check_stock(self):
-        """Check all lines against available stock"""
+        """Check stock but DO NOT block, only warn"""
         self._check_has_lines()
         error_msgs = []
         for line in self.line_ids:
@@ -132,12 +133,11 @@ class Prescription(models.Model):
 
             if line.qty > qty_available:
                 error_msgs.append(
-                    _("❌ %s is out of stock. Available: %s, Required: %s")
-                    % (product.display_name, qty_available, line.qty)
+                    _(" %s might be out of stock.")
+                    % (product.display_name,)
                 )
 
-        if error_msgs:
-            raise UserError("\n".join(error_msgs))
+        return error_msgs
 
     def _notify_pos_prescription_created(self):
         """Send real-time notification to active POS sessions when a prescription is confirmed."""
@@ -161,23 +161,13 @@ class Prescription(models.Model):
         if self.clinic_id:
             domain.append(('config_id.clinic_id', '=', self.clinic_id.id))
 
-        print(domain)
         active_sessions = self.env['pos.session'].search(domain)
 
         # ✅ Extract the user (cashier) from each session
         pos_users = active_sessions.mapped('user_id')
 
-        # print(pos_users)
-        # if not pos_users:
-        #     # Fallback: notify all POS users in case there are no open sessions
-        #     pos_users = self.env['res.users'].search([
-        #         ('groups_id', 'in', self.env.ref('point_of_sale.group_pos_user').id)
-        #     ])
-
         # ✅ Send message to each POS user's partner channel
         for user in pos_users:
-            print(user.partner_id)
-            print(message_data)
             if user.partner_id:
                 bus._sendone(
                     user.partner_id,
@@ -200,7 +190,9 @@ class Prescription(models.Model):
         for rec in self:
             rec._check_has_lines()
             if rec.state == "done":
-                raise UserError(_("⚠️ You cannot reconfirm a prescription that is already %s.") % rec.state)
+                raise UserError(_("⚠️ You cannot reconfirm a prescription that is already Done."))
+            elif rec.state == "partial":
+                raise UserError(_("⚠️ You cannot reconfirm a prescription that is already Partially Completed."))
             if not rec.line_ids:
                 raise UserError(_("⚠️ You cannot confirm a prescription without medicines."))
 
@@ -224,6 +216,8 @@ class Prescription(models.Model):
         for rec in self:
             if rec.state == "done":
                 raise UserError(_("⚠️ You cannot update a prescription that is Done."))
+            elif rec.state == "partial":
+                raise UserError(_("⚠️ You cannot update a prescription that is Partially Completed."))
         result = super().write(vals)
 
         for rec in self:
@@ -276,6 +270,63 @@ class Prescription(models.Model):
             raise UserError(_("⚠️ Please confirm the prescription before printing."))
 
         return self.env.ref('patient_management.report_prescription').report_action(self)
+
+    @api.model
+    def get_pending_prescriptions(self, clinic_id):
+        records = self.search([
+            ("state", "=", "confirmed"),
+            ("clinic_id", "=", clinic_id),
+            ("active", "=", True),
+        ], order="prescription_date desc")
+        today = date.today()
+        result = []
+        for rec in records:
+            result.append({
+                "id": rec.id,
+                "patient_id": rec.patient_id.partner_id.id if rec.patient_id.partner_id else False,
+                "patient_name": rec.patient_id.name,
+                "date": rec.prescription_date.strftime('%d-%m-%Y') if rec.prescription_date else "",
+                "is_today": rec.prescription_date == today,
+                "doctor_name": rec.doctor_id.name,
+                "lines": [
+                    {
+                        "product_id": line.product_id.id,
+                        "name": line.product_id.display_name,
+                        "qty": line.qty,
+                    }
+                    for line in rec.line_ids
+                ],
+            })
+        return result
+
+    def _send_partial_notification_mail(self, missing_products=None):
+        for rec in self:
+            if not rec.doctor_id or not rec.doctor_id.email:
+                return
+
+            body = f"""
+            <p>Dear Dr. {rec.doctor_id.name},</p>
+
+            <p>The prescription for patient <b>{rec.patient_id.name}</b> has been <b>partially completed</b>.</p>
+
+            <p><b>Missing Medicines:</b></p>
+            <ul>
+                {''.join([f"<li>{p}</li>" for p in (missing_products or [])])}
+            </ul>
+
+            <p>Please review the patient compliance.</p>
+
+            <p>Regards,<br/>Clinic POS System</p>
+            """
+
+            mail_values = {
+                "subject": f"Partial Prescription Alert - {rec.patient_id.name}",
+                "body_html": body,
+                "email_from": "<noreply@researchayu.com>",
+                "email_to": rec.doctor_id.email,
+            }
+
+            self.env["mail.mail"].sudo().create(mail_values).send()
 
 class PrescriptionLine(models.Model):
     _name = "patient.prescription.line"

@@ -777,6 +777,7 @@
                                             <div class="info-text">
                                                 <strong>Status:</strong>
                                                 <t t-if="presc['state'] == 'confirmed'">Confirmed</t>
+                                                <t t-if="presc['state'] == 'partial'">Partially Completed</t>
                                                 <t t-if="presc['state'] == 'done'">Done</t>
                                                 <t t-if="presc['state'] == 'draft'">Draft</t>
                                             </div>
@@ -1137,6 +1138,21 @@
                                                         </tr>
                                                     </tbody>
                                                 </table>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Happiness:</strong>
+                                                <t t-if="df['happiness'] == '3'">Excellent- Highly Satisfied</t>
+                                                <t t-if="df['happiness'] == '2'">Good- Satisfied</t>
+                                                <t t-if="df['happiness'] == '1'">Average- Neutral</t>
+                                                <t t-if="df['happiness'] == '0'">Unhappy</t>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Recovery:</strong>
+                                                <t t-if="df['recovery'] == '4'">Excellent- Pain almost gone/ Negative</t>
+                                                <t t-if="df['recovery'] == '3'">Good- Significant pain reduction</t>
+                                                <t t-if="df['recovery'] == '2'">Moderate- Pain reduced but still present</t>
+                                                <t t-if="df['recovery'] == '1'">Mild- Pain persist with slight relief</t>
+                                                <t t-if="df['recovery'] == '0'">Poor- No Significant improvement</t>
                                             </div>
                                             <div class="info-text">
                                                 <strong>Notes:</strong>

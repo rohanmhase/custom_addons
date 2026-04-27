@@ -38,6 +38,7 @@
                                     <field name="patient_name" string="Patient Name"/>
                                     <field name="session_day" string="Session Day"/>
                                     <field name="doctor_name" string="Doctor"/>
+                                    <field name="therapist_name" string="Therapist"/>
                                 </tree>
                             </field>
                         </page>

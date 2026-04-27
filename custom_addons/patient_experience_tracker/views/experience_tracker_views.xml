@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_experience_search" model="ir.ui.view">
+        <field name="name">patient.experience.tracker.search</field>
+        <field name="model">patient.experience.tracker</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="patient_id"/>
+                <field name="mrn"/>
+                <field name="phone"/>
+                <field name="advisor_id"/>
+
+                <filter string="Due Today" name="filter_today"
+                        domain="[('next_followup_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Overdue Follow-ups" name="filter_overdue"
+                        domain="[('next_followup_date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="My Leads" name="filter_my_leads" domain="[('advisor_id', '=', uid)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_by_category" context="{'group_by': 'category'}"/>
+                    <filter string="Advisor" name="group_by_advisor" context="{'group_by': 'advisor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_experience_kanban" model="ir.ui.view">
+        <field name="name">patient.experience.tracker.kanban</field>
+        <field name="model">patient.experience.tracker</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="category" class="o_kanban_small_column" sample="1" no_create="True">
+                <field name="patient_id"/>
+                <field name="sub_category_id"/>
+                <field name="mrn"/>
+                <field name="phone"/>
+                <field name="total_sessions"/>
+                <field name="next_followup_date"/>
+                <field name="followup_status"/>
+                <field name="is_not_interested"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click shadow-sm border-left #{record.is_not_interested.raw_value ? 'border-danger' : (record.followup_status.raw_value == 'overdue' ? 'border-danger' : (record.followup_status.raw_value == 'today' ? 'border-warning' : 'border-success'))}"
+                             t-attf-style="border-left-width: 5px !important; border-radius: 4px; #{record.is_not_interested.raw_value ? 'background-color: #fff0f0;' : ''}">
+                            <div class="oe_kanban_details">
+                                <div class="o_kanban_record_top mb-2">
+                                    <strong class="o_kanban_record_title" style="font-size: 1.1em;">
+                                        <field name="patient_id"/>
+                                    </strong>
+                                    <span class="badge badge-pill badge-light float-right border">
+                                        <field name="sub_category_id"/>
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.9em; color: #555;">
+                                    <div>
+                                        <strong>MRN:</strong>
+                                        <field name="mrn"/>
+                                    </div>
+                                    <div>
+                                        <strong>Phone:</strong>
+                                        <field name="phone"/>
+                                    </div>
+                                    <hr style="margin: 8px 0;"/>
+
+                                    <t t-if="!record.is_not_interested.raw_value">
+                                        <div t-attf-class="#{record.followup_status.raw_value == 'overdue' ? 'text-danger font-weight-bold' : ''}">
+                                            <strong>Next Follow-up:</strong>
+                                            <field name="next_followup_date"/>
+                                        </div>
+                                    </t>
+                                    <t t-if="record.is_not_interested.raw_value">
+                                        <div class="text-danger font-weight-bold mt-1">
+                                            <i class="fa fa-ban"/> PATIENT NOT INTERESTED
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_experience_tree" model="ir.ui.view">
+        <field name="name">patient.experience.tracker.tree</field>
+        <field name="model">patient.experience.tracker</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="followup_status == 'overdue' and not is_not_interested"
+                  decoration-warning="followup_status == 'today' and not is_not_interested"
+                  decoration-muted="category == 'Completed' or is_not_interested">
+                <field name="clinic_id" optional="hide"/>
+                <field name="patient_id"/>
+                <field name="mrn"/>
+                <field name="advisor_id"/>
+                <field name="category"/>
+                <field name="sub_category_id"/>
+                <field name="next_followup_date"/>
+                <field name="task_status" widget="badge"/>
+                <field name="is_not_interested" invisible="1"/>
+                <field name="followup_status" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_experience_form" model="ir.ui.view">
+        <field name="name">patient.experience.tracker.form</field>
+        <field name="model">patient.experience.tracker</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="category" widget="statusbar" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <field name="readonly_treatment" invisible="1"/>
+                    <field name="readonly_bm_tab" invisible="1"/>
+
+                    <widget name="web_ribbon" title="Not Interested" bg_color="text-bg-danger" invisible="not is_not_interested"/>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_case_paper" type="object"
+                                class="oe_stat_button" icon="fa-external-link"
+                                invisible="not patient_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Case Paper</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title mb-4">
+                        <h1>
+                            <field name="patient_id" placeholder="Select Patient..."
+                                   options="{'no_open': True, 'no_create': True}"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="is_not_interested" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    
+                    <group invisible="not is_not_interested" class="alert alert-danger" role="alert">
+                        <field name="not_interested_user_id" invisible="not is_not_interested"/>
+                        <field name="not_interested_reason" required="is_not_interested"/>
+                        <field name="not_interested_description" required="is_not_interested" placeholder="Provide detailed context..."/>
+                    </group>
+
+                    <group class="alert alert-info mt-3" role="status">
+                        <group>
+                            <field name="mrn"/>
+                            <field name="phone"/>
+                            <field name="alternate_phone" placeholder="Only if patient has an alternate phone" readonly="is_not_interested"/>
+                            <field name="clinic_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="total_sessions"/>
+                            <field name="used_sessions"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Action Plan">
+                            <field name="sub_category_id" domain="[('parent_category', '=', category)]"
+                                   options="{'no_create': True, 'no_open': True}" 
+                                   readonly="is_not_interested" required="not is_not_interested"/>
+                            <field name="priority" widget="radio" options="{'horizontal': true}" readonly="is_not_interested"/>
+                            <field name="advisor_id" readonly="is_not_interested"/>
+                        </group>
+                        <group string="Follow-up">
+                            <field name="last_contact_date" options="{'max_date': 'today' }" readonly="is_not_interested"/>
+                            <field name="next_followup_date" readonly="is_not_interested"/>
+                            <field name="actual_followup_date" options="{'max_date': 'today'}" 
+                                   readonly="is_not_interested" required="not is_not_interested"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Patient Status &amp; Treatment">
+                            <group>
+                                <field name="treatment_status" invisible="category == 'Drop-off'" readonly="readonly_treatment"/>
+                                <field name="reason_not_starting"
+                                       invisible="treatment_status in ['Continue Treatment', 'Completed', 'Maintenance']" readonly="readonly_treatment"/>
+                                <field name="home_therapy" invisible="category in ['Drop-off', 'Completed']" readonly="readonly_treatment"/>
+                                <field name="outcome_status" readonly="readonly_treatment"/>
+                                <field name="mobility_status" readonly="readonly_treatment"/>
+                                <field name="pain_score" readonly="readonly_treatment" required="not is_not_interested"/>
+                            </group>
+                            <group>
+                                <field name="start_date" options="{'max_date': 'today'}" 
+                                       readonly="readonly_treatment" required="not is_not_interested"/>
+                                <field name="last_visit_date" options="{'max_date': 'today'}" 
+                                       readonly="readonly_treatment" required="not is_not_interested"/>
+                                <field name="days_since_last_contact" readonly="readonly_treatment"/>
+                                <field name="satisfaction_score" readonly="readonly_treatment" required="not is_not_interested"/>
+                                <field name="referral_given" readonly="readonly_treatment"/>
+                                <field name="review_given" readonly="readonly_treatment"/>
+                            </group>
+                            <group>
+                                <field name="task_status" readonly="readonly_treatment"/>
+                                <field name="escalation_needed" readonly="readonly_treatment"/>
+                            </group>
+                            <label for="remarks" string="Remarks"/>
+                            <field name="remarks" placeholder="Add specific notes or observations here..." readonly="readonly_treatment"/>
+                        </page>
+
+                        <page string="BM FOLLOW UP">
+                            <group>
+                                <field name="new_bm_action" placeholder="Type new action taken here..." readonly="readonly_bm_tab"/>
+
+                                <button name="action_add_followup"
+                                        string="Submit Action"
+                                        type="object"
+                                        class="btn-primary"
+                                        invisible="not new_bm_action or readonly_bm_tab"/>
+                            </group>
+
+                            <separator string="Action History"/>
+
+                            <field name="followup_ids" readonly="1">
+                                <tree create="0" edit="0" delete="0">
+                                    <field name="date" string="Time Stamp"/>
+                                    <field name="user_id" string="BM Name"/>
+                                    <field name="bm_action" string="Action Logged"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_experience_tracker" model="ir.actions.act_window">
+        <field name="name">Pre-Sales Tracker</field>
+        <field name="res_model">patient.experience.tracker</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_experience_search"/>
+        <field name="context">{'search_default_filter_today': 1, 'search_default_filter_overdue': 1}</field>
+    </record>
+
+    <menuitem id="menu_presales_root" name="Pre-Sales" sequence="10"/>
+    <menuitem id="menu_experience_tracker" name="Experience Tracker" parent="menu_presales_root"
+              action="action_experience_tracker"/>
+
+</odoo>

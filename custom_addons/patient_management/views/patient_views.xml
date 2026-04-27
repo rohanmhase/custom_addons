@@ -130,9 +130,13 @@
                         <field name="clinic_id"/>
                         <field name="admin_id"/>
                         <field name="is_existing"/>
-                        <field name="non_enrollment_reason"/>
-                        <field name="other_reason" invisible="non_enrollment_reason != 'others'" required="1" />
-                        <field name="non_enrollment_reason_updated_by" force_save="1"/>
+
+                        <field name="treatment_status" widget="radio" options="{'horizontal': true}"/>
+                        <field name="not_converted_reasons" invisible="treatment_status != 'not_converted'" required="1"/>
+                        <field name="not_applicable_reasons" invisible="treatment_status != 'not_applicable'" required="1"/>
+                        <field name="other_reason" invisible="not_converted_reasons != 'others' and not_applicable_reasons != 'others'" required="1"/>
+                        <field name="treatment_updated_by" force_save="1"/>
+
                         <field name="patient_status"
                                widget="radio"
                                options="{'horizontal': true}"
@@ -147,7 +151,7 @@
                         <field name="pain_ra"/>
                         <field name="pain_ana"/>
                         <field name="pain_others"/>
-                        <field name="others" invisible="not pain_others"/>
+                        <field name="others" invisible="not pain_others" required="1"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter">

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="subcat_active_regular" model="patient.experience.subcategory">
+            <field name="name">Regular</field>
+            <field name="parent_category">Active</field>
+        </record>
+        <record id="subcat_active_irregular" model="patient.experience.subcategory">
+            <field name="name">Irregular</field>
+            <field name="parent_category">Active</field>
+        </record>
+
+        <record id="subcat_dropoff_risk" model="patient.experience.subcategory">
+            <field name="name">Drop-risk</field>
+            <field name="parent_category">Drop-off</field>
+        </record>
+
+        <record id="subcat_not_hot" model="patient.experience.subcategory">
+            <field name="name">Hot</field>
+            <field name="parent_category">Not Enrolled</field>
+        </record>
+        <record id="subcat_not_warm" model="patient.experience.subcategory">
+            <field name="name">Warm</field>
+            <field name="parent_category">Not Enrolled</field>
+        </record>
+        <record id="subcat_not_cold" model="patient.experience.subcategory">
+            <field name="name">Cold</field>
+            <field name="parent_category">Not Enrolled</field>
+        </record>
+
+        <record id="subcat_comp_happy" model="patient.experience.subcategory">
+            <field name="name">Happy</field>
+            <field name="parent_category">Completed</field>
+        </record>
+        <record id="subcat_comp_neutral" model="patient.experience.subcategory">
+            <field name="name">Neutral</field>
+            <field name="parent_category">Completed</field>
+        </record>
+        <record id="subcat_comp_unsatisfied" model="patient.experience.subcategory">
+            <field name="name">Unsatisfied</field>
+            <field name="parent_category">Completed</field>
+        </record>
+    </data>
+</odoo>
