@@ -4,7 +4,7 @@
             <link rel="stylesheet" type="text/css" href="/web_management/static/src/css/custom_style.css"/>
             <div class="container">
                 <div class="header">
-                    <h1>Internal Patient Summary</h1>
+                    <h1>Patient Internal Summary</h1>
                 </div>
                 <div class="patient-details">
                     <div class="patient-header">
