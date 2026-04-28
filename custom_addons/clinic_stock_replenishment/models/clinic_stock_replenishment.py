@@ -1,6 +1,8 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 from datetime import datetime, timedelta, date
+from collections import defaultdict
+
 
 class ClinicStockReplenishment(models.Model):
     _name = 'clinic.stock.replenishment'
@@ -65,44 +67,6 @@ class ClinicStockReplenishment(models.Model):
             super(ClinicStockReplenishment, archived_records).unlink()
 
         return True
-    # -------------------------------
-    # CORE SHORTAGE CALCULATION
-    # -------------------------------
-
-    def _compute_shortage(self, product, warehouse):
-        self.ensure_one()
-
-        # Get formula rule for this clinic + product
-        rule = self.env['stock.count.formula'].search([
-            ('clinic_id', '=', warehouse.id),
-            ('product_id', '=', product.id),
-        ], limit=1)
-
-        if rule:
-            therapy_count = max(rule.get_yesterday_therapy_count())
-            # print("DEBUG → Clinic:", warehouse.name)
-            # print("DEBUG → Product:", product.display_name)
-            # print("DEBUG → Therapy Count:", therapy_count)
-
-            target_qty = rule.calculate_price(therapy_count)
-            # print("DEBUG → Target Qty:", target_qty)
-        else:
-            target_qty = 0.0
-
-        # Get available stock
-        quants = self.env['stock.quant'].search([
-            ('product_id', '=', product.id),
-            ('location_id', 'child_of', warehouse.lot_stock_id.id),
-        ])
-
-        available_qty = sum(q.quantity - q.reserved_quantity for q in quants)
-        # print("DEBUG → Available Qty:", available_qty)
-
-        shortage = target_qty - available_qty
-        # print("DEBUG → Shortage:", shortage)
-        # print(f"DEBUG → [{warehouse.name}] [{product.display_name}] Target: {target_qty} | Stock: {available_qty} | Shortage: {shortage}")
-
-        return shortage if shortage > 0 else 0.0
 
     # -------------------------------
     # GENERATE INTERNAL TRANSFERS
@@ -114,33 +78,54 @@ class ClinicStockReplenishment(models.Model):
         if not self.destination_warehouse_ids:
             raise UserError("Select at least one destination warehouse.")
 
-        products = self.env['product.product'].search([
-            ('type', '=', 'product')
+        # --- PREFETCH: one query for all rules ---
+        all_rules = self.env['stock.count.formula'].search([
+            ('clinic_id', 'in', self.destination_warehouse_ids.ids)
         ])
+
+        products = all_rules.mapped('product_id')
+        rules_map = {
+            (r.clinic_id.id, r.product_id.id): r
+            for r in all_rules
+        }
+
+        # --- PREFETCH: one query for all quants across all destination warehouses ---
+        all_stock_location_ids = self.destination_warehouse_ids.mapped('lot_stock_id').ids
+        all_quants = self.env['stock.quant'].search([
+            ('product_id', 'in', products.ids),
+            ('location_id', 'child_of', all_stock_location_ids),
+        ])
+
+        quants_map = defaultdict(float)
+        for q in all_quants:
+            for wh in self.destination_warehouse_ids:
+                if wh.lot_stock_id.id in q.location_id.parent_path.split('/'):
+                    quants_map[(q.product_id.id, wh.id)] += q.quantity - q.reserved_quantity
+                    break
 
         for warehouse in self.destination_warehouse_ids:
 
             move_lines = []
+            log_vals = []
 
             for product in products:
-                shortage = self._compute_shortage(product, warehouse)
-
-                # --- SNAPSHOT LOG ---
-                rule = self.env['stock.count.formula'].search([
-                    ('clinic_id', '=', warehouse.id),
-                    ('product_id', '=', product.id),
-                ], limit=1)
+                # --- dict lookup, zero DB queries ---
+                rule = rules_map.get((warehouse.id, product.id))
 
                 therapy_data = rule.get_yesterday_therapy_count() if rule else [0, 0, 0]
                 max_count = max(therapy_data) if therapy_data else 0
 
-                quants = self.env['stock.quant'].search([
-                    ('product_id', '=', product.id),
-                    ('location_id', 'child_of', warehouse.lot_stock_id.id),
-                ])
-                current_stock = sum(q.quantity - q.reserved_quantity for q in quants)
+                current_stock = quants_map[(product.id, warehouse.id)]
 
-                self.env['clinic.stock.replenishment.log'].create({
+                if rule:
+                    therapy_count = max(therapy_data)
+                    target_qty = rule.calculate_price(therapy_count)
+                else:
+                    target_qty = 0.0
+
+                shortage = max(target_qty - current_stock, 0.0)
+
+                log_vals.append({
                     'replenishment_id': self.id,
                     'source_warehouse_id': self.source_warehouse_id.id,
                     'destination_warehouse_id': warehouse.id,
@@ -153,7 +138,6 @@ class ClinicStockReplenishment(models.Model):
                     'current_stock': current_stock,
                     'shortage_qty': shortage,
                 })
-                # --- SNAPSHOT LOG END ---
 
                 if shortage > 0:
                     move_lines.append((0, 0, {
@@ -165,11 +149,12 @@ class ClinicStockReplenishment(models.Model):
                         'location_dest_id': warehouse.lot_stock_id.id,
                     }))
 
-            # If no shortage, skip this warehouse
+            # --- single batch create instead of one per product ---
+            self.env['clinic.stock.replenishment.log'].create(log_vals)
+
             if not move_lines:
                 continue
 
-            # Get internal picking type for source warehouse
             picking_type = self.env['stock.picking.type'].search([
                 ('code', '=', 'internal'),
                 ('warehouse_id', '=', self.source_warehouse_id.id),
@@ -178,7 +163,6 @@ class ClinicStockReplenishment(models.Model):
             if not picking_type:
                 raise UserError("No internal picking type found for source warehouse.")
 
-            # Create picking
             self.env['stock.picking'].create({
                 'picking_type_id': picking_type.id,
                 'location_id': self.source_warehouse_id.lot_stock_id.id,
@@ -187,7 +171,6 @@ class ClinicStockReplenishment(models.Model):
                 'origin': self.name,
             })
 
-        # Update state AFTER processing all warehouses
         self.state = 'generated'
 
     def action_open_log(self):
@@ -219,8 +202,7 @@ class ClinicStockReplenishment(models.Model):
         return super().create(vals)
 
     def _ist_date(self):
-
-        utc = (datetime.now())
+        utc = datetime.now()
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
         return ist_date.date()
