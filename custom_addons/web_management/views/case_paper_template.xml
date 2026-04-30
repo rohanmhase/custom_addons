@@ -357,32 +357,36 @@
                                                 <table class="session-table">
                                                     <thead>
                                                         <tr>
-<!--                                                            <th>Daily Sheet Reference</th>-->
+                                                            <!--                                                            <th>Daily Sheet Reference</th>-->
                                                             <th>Total Therapy Charges</th>
-<!--                                                            <th>Therapy Amount</th>-->
-<!--                                                            <th>First Consultation Charges</th>-->
-<!--                                                            <th>Therapy + Medicine</th>-->
-                                                            <th>Number of Therapy Sessions for which Patient has Enrolled</th>
-                                                            <th>Number of Therapy Sessions Patient has already Completed</th>
+                                                            <!--                                                            <th>Therapy Amount</th>-->
+                                                            <!--                                                            <th>First Consultation Charges</th>-->
+                                                            <!--                                                            <th>Therapy + Medicine</th>-->
+                                                            <th>Number of Therapy Sessions for which Patient has
+                                                                Enrolled
+                                                            </th>
+                                                            <th>Number of Therapy Sessions Patient has already
+                                                                Completed
+                                                            </th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr>
-<!--                                                            <td>-->
-<!--                                                                <t t-esc="en['daily_sheet_ref']"/>-->
-<!--                                                            </td>-->
+                                                            <!--                                                            <td>-->
+                                                            <!--                                                                <t t-esc="en['daily_sheet_ref']"/>-->
+                                                            <!--                                                            </td>-->
                                                             <td class="td_t_c">
                                                                 <t t-esc="en['total_amount']"/>
                                                             </td>
-<!--                                                            <td>-->
-<!--                                                                <t t-esc="en['therapy_amount']"/>-->
-<!--                                                            </td>-->
-<!--                                                            <td>-->
-<!--                                                                <t t-esc="en['first_cons_charges']"/>-->
-<!--                                                            </td>-->
-<!--                                                            <td>-->
-<!--                                                                <t t-esc="en['therapy_medicine']"/>-->
-<!--                                                            </td>-->
+                                                            <!--                                                            <td>-->
+                                                            <!--                                                                <t t-esc="en['therapy_amount']"/>-->
+                                                            <!--                                                            </td>-->
+                                                            <!--                                                            <td>-->
+                                                            <!--                                                                <t t-esc="en['first_cons_charges']"/>-->
+                                                            <!--                                                            </td>-->
+                                                            <!--                                                            <td>-->
+                                                            <!--                                                                <t t-esc="en['therapy_medicine']"/>-->
+                                                            <!--                                                            </td>-->
                                                             <td class="td_t_c">
                                                                 <t t-esc="en['total_sessions']"/>
                                                             </td>
@@ -402,7 +406,7 @@
                                 </t>
                                 <!-- Weekly Followup -->
                                 <t t-if="cp['followup']">
-                                    <h5>Weekly Followup</h5>
+                                    <h5>RS Followup</h5>
                                     <t t-foreach="cp['followup']" t-as="fl" t-key="loop.index0">
                                         <div class="mb-2">
                                             <div class="info-tag created-by-tag">
@@ -761,6 +765,269 @@
                                         </div>
                                     </t>
                                 </t>
+                                <!-- RS Followup Updated Version -->
+                                <t t-if="cp['assessment']">
+                                    <h5>RS Followup</h5>
+                                    <t t-foreach="cp['assessment']" t-as="assess" t-key="loop.index0">
+                                        <div class="mb-2">
+                                            <div class="info-tag created-by-tag">
+                                                <strong>Created By:</strong>
+                                                <t t-esc="assess['doctor']"/>
+                                            </div>
+                                            <div class="info-tag modified-by-tag">
+                                                <strong>Modified By:</strong>
+                                                <t t-esc="assess['modified_by']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Weight:</strong>
+                                                <t t-esc="assess['weight']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Diagnosis:</strong>
+                                                <t t-esc="assess['diagnosis']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>K/C/O:</strong>
+                                                <t t-esc="assess['k_c_o']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Investigation Status:</strong>
+                                                <t t-esc="assess['investigation_status']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Case Under Discussion With:</strong>
+                                                <t t-esc="assess['case_under_discussion']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Day of Therapy:</strong>
+                                                <t t-esc="assess['day_of_therapy']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Type of Therapy:</strong>
+                                                <t t-if="assess['type_of_therapy'] == 'detox'">Detox</t>
+                                                <t t-if="assess['type_of_therapy'] == 'regeneration'">Regeneration</t>
+                                                <t t-if="assess['type_of_therapy'] == 'transition'">Transition</t>
+                                                <t t-if="assess['type_of_therapy'] == 'nil'">Nil</t>
+                                            </div>
+                                            <t t-if="assess['gradation']">
+                                            <div class="row">
+                                                <span>
+                                                    <i>Gradation Assessment</i>
+                                                </span>
+                                                <table class="session-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Organ</th>
+                                                            <th>Summary</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="assess['gradation']" t-as="gra" t-key="loop.index0">
+                                                            <tr>
+                                                                <td><t t-esc="gra['organ']"/></td>
+                                                                <td><t t-esc="gra['summary']"/></td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            </t>
+                                            <div class="row">
+                                                <span>
+                                                    <i>Symptom Assessment</i>
+                                                </span>
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Symptom</th>
+                                                            <th>Score</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="assess['symptoms']" t-as="sym"
+                                                           t-key="loop.index0">
+                                                            <tr>
+                                                                <td>
+                                                                    <t t-if="sym['symptom'] == 'salivation_when_hungry'">
+                                                                        When the person feels hungry, water comes in the
+                                                                        mouth (salivation) (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'nausea_when_hungry'">
+                                                                        Nausea when hungry (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'nausea_before_meals'">
+                                                                        Nausea / queasiness before meals (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'uncomfortable_after_eating'">
+                                                                        Uncomfortable after eating (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'sour_smell_when_hungry'">
+                                                                        Bad (sour/Khatta/Ambat) smell from mouth when
+                                                                        hungry (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'no_appetite_even_if_hungry'">
+                                                                        Even though hungry, does not feel like eating
+                                                                        (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'sour_belching'">Sour
+                                                                        belching (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'joint_pain_after_acidity'">
+                                                                        Joint pains after acidity (Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'palm_sole_burning'">
+                                                                        Palm, sole burning (Saam Pitta,Saam Rakta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'heel_pain'">Heel pain
+                                                                        (Saam Pitta, Saam Rakta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'bitter_taste'">Bitter
+                                                                        taste in mouth (Pitta Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'dizziness_when_hungry'">
+                                                                        Dizziness when hungry (Pitta Vridhi,Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'frequent_hunger'">Wants
+                                                                        to eat repeatedly (hunger again within ~2 hours
+                                                                        after meals) (Pitta Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'body_feels_hot'">Body
+                                                                        feels hot (Pitta Vridhi,Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'touch_feels_hot'">Touch
+                                                                        feels hot (Pitta Vridhi, Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'yellow_eyes'">Yellow
+                                                                        Eyes (Pitta Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'face_looks_reddish'">
+                                                                        Face looks reddish (Pitta Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'pitta_headache'">
+                                                                        Headache or migraine when Pitta increases (Pitta
+                                                                        Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'yellow_urine'">Yellow
+                                                                        Urine (yellowish than normal) throughout the day
+                                                                        (Pitta Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'body_tenderness'">Body
+                                                                        tenderness (biceps, thighs painful even with
+                                                                        moderate pressure), knee tenderness (Pitta
+                                                                        Vridhi, Saam Pitta, Saam Rakta, Aam vaat)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'if_patient_eats_after_being_very_hungry_it_results_in_bloating_indigestion_nausea'">
+                                                                        If patient eats after being very hungry, it
+                                                                        results in bloating, indigestion, nausea (Drav
+                                                                        Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'if_vomiting_happens_food_particles_come_out_undigested'">
+                                                                        If vomiting happens, food particles come out
+                                                                        undigested (as it is) (Drav Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'smelly_stool'">Smelly
+                                                                        stool (Saam Kapha, Saam Pita)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'sticky_stool'">Sticky
+                                                                        stool (Saam Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'feels_like_belching_will_come_but_cannot_belch_out'">
+                                                                        Feels like belching will come, but cannot belch
+                                                                        out (Dakar ane jaise feeling ati hain par dakar
+                                                                        nahi ati) (Saam Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'feels_like_mucus_is_stuck_in_the_throat'">
+                                                                        Feels like mucus is stuck in the throat (Saam
+                                                                        Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'very_low_hunger'">Very
+                                                                        low hunger (Saam Kapha, Pitta Kshaya, Saam vata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'bad_smell_from_mouth'">
+                                                                        Bad smell from mouth (Saam Kapha, Saam Pitta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'urine_may_be_cloudy_heavy_smell'">
+                                                                        Urine may be cloudy / heavy smell (Saam Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'mucus_color_may_be_cloudy_black_green_etc'">
+                                                                        Mucus color may be cloudy, black, green, etc.
+                                                                        (Saam Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'saam_kapha_will_have_saam_medha_so_smelly_sweat'">
+                                                                        Saam Kapha will have Saam Medha, so smelly sweat
+                                                                        (Saam Kapha, Saam Medha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'knee_swelling_knee_stiffness_heaviness'">
+                                                                        Knee swelling, knee stiffness + heaviness (Saam
+                                                                        Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'morning_stiffness_kapha_vaata'">
+                                                                        Morning stiffness (Saam Vata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'very_mild_hunger_or_no_hunger'">
+                                                                        Very mild hunger or no hunger (Saam Kapha)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'cough_is_clear_white_or_milky'">
+                                                                        Cough is clear white or milky (Kapha Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'heavy_joints_but_not_stiff'">
+                                                                        Heavy joints but not stiff (Kapha Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'ra_ana_increased'">RA /
+                                                                        ANA increased (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'shifting_pain'">Shifting
+                                                                        pain (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'adhman_bloating'">Adhman
+                                                                        (bloating) (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'whole_body_pain'">Whole
+                                                                        body pain (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'dry_skin'">Dry skin
+                                                                        (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'skin_becomes_dark'">Skin
+                                                                        becomes dark (Saam Vaata,Vaata Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'pain_increases_in_cold'">
+                                                                        Pain increases in cold (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'pain_increases_after_travelling'">
+                                                                        Pain increases after travelling (Saam Vaata)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'constipation_hard_stool_difficult_to_pass'">
+                                                                        Constipation (hard stool, difficult to pass)
+                                                                        (Vaata Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'tremors_shaking_in_some_patients'">
+                                                                        Tremors (shaking) in some patients (Vaat Vridhi,
+                                                                        Maaja Kshaya)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'numbness_or_tingling_pins_and_needles'">
+                                                                        Numbness / tingling (Vaat Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'cramps_especially_calves_or_thighs'">
+                                                                        Cramps especially calves / thighs (Vaat Vridhi)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'osteophytes'">
+                                                                        Osteophytes (Vikrut vaata, Saam Medha, Saam
+                                                                        Asthi)
+                                                                    </t>
+
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="sym['value']"/>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
                                 <!-- Prescriptions -->
                                 <t t-if="cp['prescriptions']">
                                     <h5>Prescriptions</h5>
@@ -887,7 +1154,9 @@
                                                 <t t-if="sess['session_type'] == 'self'">Self</t>
                                             </div>
                                             <div class="row">
-                                                <span><i>Therapy Information</i></span>
+                                                <span>
+                                                    <i>Therapy Information</i>
+                                                </span>
                                             </div>
                                             <div class="row">
                                                 <table class="session-table">
@@ -960,7 +1229,9 @@
                                                 </table>
                                             </div>
                                             <div class="row">
-                                                <span><i>Diet Information</i></span>
+                                                <span>
+                                                    <i>Diet Information</i>
+                                                </span>
                                             </div>
                                             <div class="info-text">
                                                 <strong>7 AM - 9 AM:</strong>
@@ -987,7 +1258,7 @@
                                 </t>
                                 <!-- Daily Followup -->
                                 <t t-if="cp['daily_followup']">
-                                    <h5>Daily Followup</h5>
+                                    <h5>CS Followup</h5>
                                     <t t-foreach="cp['daily_followup']" t-as="df" t-key="loop.index0">
                                         <div class="mb-2">
                                             <div class="info-tag created-by-tag">
@@ -1148,10 +1419,14 @@
                                             </div>
                                             <div class="info-text">
                                                 <strong>Recovery:</strong>
-                                                <t t-if="df['recovery'] == '4'">Excellent- Pain almost gone/ Negative</t>
+                                                <t t-if="df['recovery'] == '4'">Excellent- Pain almost gone/ Negative
+                                                </t>
                                                 <t t-if="df['recovery'] == '3'">Good- Significant pain reduction</t>
-                                                <t t-if="df['recovery'] == '2'">Moderate- Pain reduced but still present</t>
-                                                <t t-if="df['recovery'] == '1'">Mild- Pain persist with slight relief</t>
+                                                <t t-if="df['recovery'] == '2'">Moderate- Pain reduced but still
+                                                    present
+                                                </t>
+                                                <t t-if="df['recovery'] == '1'">Mild- Pain persist with slight relief
+                                                </t>
                                                 <t t-if="df['recovery'] == '0'">Poor- No Significant improvement</t>
                                             </div>
                                             <div class="info-text">
