@@ -88,7 +88,7 @@ class GradationFollowupLine(models.Model):
     def _compute_summary_display(self):
         grade_fields = [
             ('tenderness', 'Tenderness'),
-            ('stiffness', 'Stiffness'),
+            ('stiffness', 'Morning Stiffness'),
             ('pain_grade', 'Pain Grade'),
             ('swelling', 'Swelling'),
             ('edema', 'Edema'),
