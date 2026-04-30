@@ -10,6 +10,7 @@
                 <field name="diagnosis"/>
                 <field name="k_c_o"/>
                 <field name="investigation_status"/>
+                <field name="active"/>
             </tree>
         </field>
     </record>
@@ -25,12 +26,12 @@
                         <field name="doctor_id"/>
                         <field name="assessment_date"/>
                         <field name="weight"/>
-                        <field name="type_of_therapy"/>
-                        <field name="day_of_therapy"/>
                         <field name="diagnosis"/>
                         <field name="k_c_o"/>
                         <field name="investigation_status"/>
-                        <field name="case_under_discussion_with"/>
+                        <field name="case_under_discussion" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="type_of_therapy"/>
+                        <field name="day_of_therapy"/>
                     </group>
 
                     <div style="font-size:14px; padding:1px 1px;">Gradation Assessment</div>
@@ -134,17 +135,11 @@
                     <notebook>
                         <page string="Symptom Scores" name="symptoms">
                             <field name="assessment_line_ids" mode="tree">
-                                <tree editable="bottom" delete="0">
+                                <tree editable="bottom" create="0" delete="0">
 
-                                    <field name="display_type" column_invisible="True"/>
+                                    <field name="key" class="text-wrap" width="1" readonly="1" force_save="1"/>
 
-                                    <field name="name" widget="section_and_note_text" readonly="1" force_save="1"/>
-
-                                    <field name="key" class="text-wrap" width="1" readonly="1" force_save="1"
-                                           invisible="display_type == 'line_section'"/>
-
-                                    <field name="value" string="Score (0-5)"
-                                           invisible="display_type == 'line_section'"/>
+                                    <field name="value" string="Score (0-5)" widget="radio" options="{'horizontal': true}"/>
 
                                 </tree>
                             </field>

@@ -64,6 +64,11 @@ class PatientController(http.Controller):
             order="blood_report_date desc"
         )
 
+        assessment = request.env["patient.assessment"].sudo().search(
+            [("patient_id", "=", patient.id)],
+            order="assessment_date desc"
+        )
+
         query = """
                     SELECT pol.id, pol.product_id, pol.qty, pol.price_unit, pol.write_date, 
                            po.name as order_name, rp.name as customer_name, po.create_uid
@@ -90,7 +95,57 @@ class PatientController(http.Controller):
                                             "xray": [],
                                             "blood_report": [],
                                             "pos_orders": [],
+                                            "assessment": [],
                                             })
+
+        # Group Assessment by date
+
+        for assess in assessment:
+            if not assess.assessment_date:
+                continue
+
+            if isinstance(assess.assessment_date, datetime):
+                date_key = assess.assessment_date.date()
+
+            else:
+                date_key = assess.assessment_date
+
+            symptoms = [{
+                "symptom": line.key,
+                "value": line.value,
+            } for line in assess.assessment_line_ids]
+
+            gradation = [{
+                "organ": line.organ_id.name,
+                "category": line.organ_category,
+                "summary": line.summary_display,
+                "tenderness": line.tenderness,
+                "stiffness": line.stiffness,
+                "pain_grade": line.pain_grade,
+                "swelling": line.swelling,
+                "edema": line.edema,
+                "rom": line.rom,
+                "discoloration": line.discoloration,
+                "crepitus": line.crepitus,
+                "slr": line.slr,
+                "burning": line.burning,
+                "rashes": line.rashes,
+                "pain_relief": line.pain_relief,
+            } for line in assess.gradation_line_ids]
+
+            grouped_data[date_key]["assessment"].append({
+                "doctor": assess.doctor_id.name,
+                "modified_by": assess.write_uid.name,
+                "weight": assess.weight,
+                "diagnosis": assess.diagnosis,
+                "k_c_o": assess.k_c_o,
+                "investigation_status": assess.investigation_status,
+                "case_under_discussion": assess.case_under_discussion.name,
+                "day_of_therapy": assess.day_of_therapy,
+                "type_of_therapy": assess.type_of_therapy,
+                "symptoms": symptoms,
+                "gradation": gradation,
+            })
 
         # Group prescriptions by date
         for pres in prescriptions:
@@ -503,6 +558,7 @@ class PatientController(http.Controller):
                 "daily_followup": details["daily_followup"],
                 "diet_chart": details["diet_chart"],
                 "followup": details["followup"],
+                "assessment": details["assessment"],
                 "attachment": details["attachment"],
                 "xray": details["xray"],
                 "blood_report": details["blood_report"],
