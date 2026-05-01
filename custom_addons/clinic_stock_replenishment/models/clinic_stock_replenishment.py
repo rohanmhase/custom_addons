@@ -99,7 +99,7 @@ class ClinicStockReplenishment(models.Model):
         quants_map = defaultdict(float)
         for q in all_quants:
             for wh in self.destination_warehouse_ids:
-                if wh.lot_stock_id.id in q.location_id.parent_path.split('/'):
+                if str(wh.lot_stock_id.id) in q.location_id.parent_path.split('/'):
                     quants_map[(q.product_id.id, wh.id)] += q.quantity - q.reserved_quantity
                     break
 
