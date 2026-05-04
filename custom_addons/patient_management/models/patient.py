@@ -1,14 +1,14 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-import re
 from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
+import re
 import uuid
 
 class Patient(models.Model):
     _name = "clinic.patient"
     _description = "Clinic Patient"
     _inherit = ['mail.thread', 'mail.activity.mixin']
-
 
     name = fields.Char(string="Full Name", required=True, tracking=True)               # Full name of patient
     age = fields.Integer(string="Age", required=True, tracking=True)                   # Age of patient
@@ -43,6 +43,22 @@ class Patient(models.Model):
     pain_ana = fields.Boolean(string="ANA")
 
     is_existing = fields.Boolean(string="Is Existing", tracking=True)
+
+    patient_source = fields.Selection([
+        ('facebook', 'Facebook'),
+        ('instagram', 'Instagram'),
+        ('youtube', 'Youtube'),
+        ('event','Event'),
+        ('sms','SMS'),
+        ('walkin','Walkin'),
+        ('referral', 'Referral')
+    ], string="Patient Source")
+
+    source_event = fields.Many2one('event.event', string="Event name", domain=lambda self: [
+        '|', '&',('stage_id.name', 'in', ['Confirmed', 'Event Done']),
+            ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),
+        ('name', '=', 'Others')
+    ])
 
     treatment_status = fields.Selection([
         ('converted', 'Converted'),
@@ -95,7 +111,6 @@ class Patient(models.Model):
     other_reason = fields.Char(string="Specify Other Reason", tracking=True)
     treatment_updated_by = fields.Many2one('res.users', string="Updated by", readonly=True)
 
-
     @api.onchange('treatment_status')
     def _onchange_treatment_status(self):
         for record in self:
@@ -119,11 +134,9 @@ class Patient(models.Model):
                 record.not_converted_reasons = False
                 record.other_reason = False
 
-
-
     _sql_constraints = [
-        # ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'), # Prevent creating records for same registered phone numbers
-        ('unique_uuid', 'unique(uuid)', '⚠️ UUID must be unique!'),
+        # ('unique_phone', 'unique(phone)', '?? This phone number is already registered!'), # Prevent creating records for same registered phone numbers
+        ('unique_uuid', 'unique(uuid)', '?? UUID must be unique!'),
     ]
 
     admin_id = fields.Many2one("res.users", string="Admin / BM",
@@ -213,11 +226,11 @@ class Patient(models.Model):
                 lines = []
                 for i, p in enumerate(duplicates, 1):
                     clinic_name = p.clinic_id.name or "Unknown Clinic"
-                    lines.append(f"{i}. 👤 {p.name}  |  🏥 {clinic_name}")
+                    lines.append(f"{i}. ? {p.name}  |  ? {clinic_name}")
 
                 return {
                     'warning': {
-                        'title': f'⚠️ Duplicate Phone Number ({len(duplicates)} found)',
+                        'title': f'?? Duplicate Phone Number ({len(duplicates)} found)',
                         'message': (
                                 f"This phone number is already registered to:\n\n"
                                 + "\n".join(lines)
@@ -413,7 +426,7 @@ class Patient(models.Model):
         if clinic_id:
             clinic = self.env["clinic.clinic"].browse(clinic_id)
             if not clinic.code:
-                raise ValidationError("⚠️ Selected clinic has no code defined!")
+                raise ValidationError("?? Selected clinic has no code defined!")
 
             current_year = datetime.today().year
             prefix = f"{clinic.code}-{current_year}"
@@ -421,15 +434,11 @@ class Patient(models.Model):
             seq = self.env["ir.sequence"].next_by_code("clinic.patient.mrn") or "000001"
             vals["mrn"] = f"{prefix}-{seq.zfill(6)}"
 
-
         return super(Patient, self).create(vals)
 
-    # -------------------------------
-    # Write Override
-    # -------------------------------
     def write(self, vals):
         if "mrn" in vals:
-            raise ValidationError("⚠️ MRN cannot be modified!")
+            raise ValidationError("?? MRN cannot be modified!")
 
         if 'patient_status' in vals:
             for rec in self:
@@ -642,8 +651,54 @@ class Patient(models.Model):
             "url": url,
         }
 
-    def _ist_date(self):
+    # --- NEW ACTIONS FOR PET AND BM ---
 
+    def action_open_pet_tracker(self):
+        """Teleport to the Full Form of the PET Tracker"""
+        self.ensure_one()
+        # Look for an existing tracker for this patient
+        tracker = self.env['patient.experience.tracker'].search([
+            ('patient_id', '=', self.id)
+        ], limit=1)
+
+        # If it doesn't exist, create a new one!
+        if not tracker:
+            tracker = self.env['patient.experience.tracker'].create({
+                'patient_id': self.id,
+            })
+
+        return {
+            'name': 'Patient Experience Tracker',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.experience.tracker',
+            'res_id': tracker.id,
+            'view_mode': 'form',
+            'target': 'current',  # Opens in Full Form as requested
+        }
+
+    def action_open_bm_followup(self):
+        """Teleport to the BM Follow-up record"""
+        self.ensure_one()
+        # Similar logic: Find or Create
+        bm_record = self.env['patient.bm.followup'].search([
+            ('patient_id', '=', self.id)
+        ], limit=1)
+
+        if not bm_record:
+            bm_record = self.env['patient.bm.followup'].create({
+                'patient_id': self.id,
+            })
+
+        return {
+            'name': 'BM Follow-up',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.bm.followup',
+            'res_id': bm_record.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def _ist_date(self):
         utc = (datetime.now())
         td = timedelta(hours=5, minutes=30)
         ist_date = utc + td
@@ -652,5 +707,5 @@ class Patient(models.Model):
     def unlink(self):
         for record in self:
             record.active = False
-        # Do not call super() → prevents actual deletion
+        # Do not call super() ? prevents actual deletion
         return True
