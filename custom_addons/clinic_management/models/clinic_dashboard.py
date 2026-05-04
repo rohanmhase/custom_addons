@@ -28,7 +28,7 @@ class ClinicDashboard(models.TransientModel):
     )
 
     total_followups = fields.Integer(
-        string="Total Followups",
+        string="Total RS Followups",
         compute="_compute_total_followups"
     )
 
@@ -44,7 +44,7 @@ class ClinicDashboard(models.TransientModel):
     )
 
     total_daily_followups = fields.Integer(
-        string="Total Daily Followups",
+        string="Total CS Followups",
         compute="_compute_total_daily_followups"
     )
 
@@ -69,7 +69,13 @@ class ClinicDashboard(models.TransientModel):
     daily_followup_line_ids = fields.One2many(
         'clinic.dashboard.daily.followup.line',
         'dashboard_id',
-        string="Daily Followups"
+        string="CS Followups"
+    )
+
+    assessment_line_ids = fields.One2many(
+        'clinic.dashboard.assessment.line',
+        'dashboard_id',
+        string="RS Followups"
     )
 
     @api.constrains('from_date', 'to_date')
@@ -203,3 +209,29 @@ class ClinicDashboard(models.TransientModel):
             'patient_name':d.patient_id.name,
             'doctor_name':d.doctor_id.name,
         }) for d in daily_followups]
+
+        # Patient Assessment
+
+        assessment = self.env['patient.assessment'].search([
+            ('patient_id.clinic_id', '=', self.clinic_id.id),
+            ('assessment_date', '>=', self.from_date),
+            ('assessment_date', '<=', self.to_date),
+        ])
+
+        merged_lines = []
+
+        # From patient.followup
+        for f in followups:
+            merged_lines.append((0, 0, {
+                'patient_name': f.patient_id.name,
+                'doctor_name': f.doctor_id.name,
+            }))
+
+        # From patient.assessment (RS Followups)
+        for a in assessment:
+            merged_lines.append((0, 0, {
+                'patient_name': a.patient_id.name,
+                'doctor_name': a.doctor_id.name,
+            }))
+
+        self.followup_line_ids = merged_lines
