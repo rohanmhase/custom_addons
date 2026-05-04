@@ -180,11 +180,6 @@ class ClinicDashboard(models.TransientModel):
             ('weekly_followup_date', '<=', self.to_date),
         ])
 
-        self.followup_line_ids = [(0, 0, {
-            'patient_name': f.patient_id.name,
-            'doctor_name': f.doctor_id.name,
-        }) for f in followups]
-
         # Enrollments
 
         enrollments = self.env['patient.enrollment'].search([
