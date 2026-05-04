@@ -50,7 +50,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="Followups">
+                        <page string="RS Followup">
                             <field name="followup_line_ids" nolabel="1">
                                 <tree create="false" edit="false" delete="false">
                                     <field name="patient_name" string="Patient Name"/>
@@ -67,7 +67,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="Daily Followups">
+                        <page string="CS Followup">
                             <field name="daily_followup_line_ids" nolabel="1">
                                 <tree create="false" edit="false" delete="false">
                                     <field name="patient_name" string="Patient Name"/>
