@@ -44,7 +44,9 @@
                             <div>
                                 <strong>First X-Ray Grade -</strong>
                                 <t t-if="record.first_xray_grade.raw_value">
-                                    <field name="first_xray_grade"/> <span>(<field name="first_xray_day"/>)</span>
+                                    <field name="first_xray_grade"/>
+                                    <span>(<field name="first_xray_day"/>)
+                                    </span>
                                 </t>
                                 <t t-else="">
                                     <span class="text-muted">Not Available</span>
@@ -53,7 +55,9 @@
                             <div>
                                 <strong>Latest X-Ray Grade -</strong>
                                 <t t-if="record.latest_xray_grade.raw_value">
-                                    <field name="latest_xray_grade"/> <span>(<field name="latest_xray_day"/>)</span>
+                                    <field name="latest_xray_grade"/>
+                                    <span>(<field name="latest_xray_day"/>)
+                                    </span>
                                 </t>
                                 <t t-else="">
                                     <span class="text-muted">Not Available</span>
@@ -132,10 +136,18 @@
                         <field name="is_existing"/>
 
                         <field name="treatment_status" widget="radio" options="{'horizontal': true}"/>
-                        <field name="not_converted_reasons" invisible="treatment_status != 'not_converted'" required="1"/>
-                        <field name="not_applicable_reasons" invisible="treatment_status != 'not_applicable'" required="1"/>
-                        <field name="other_reason" invisible="not_converted_reasons != 'others' and not_applicable_reasons != 'others'" required="1"/>
+                        <field name="not_converted_reasons" invisible="treatment_status != 'not_converted'"
+                               required="1"/>
+                        <field name="not_applicable_reasons" invisible="treatment_status != 'not_applicable'"
+                               required="1"/>
+                        <field name="other_reason"
+                               invisible="not_converted_reasons != 'others' and not_applicable_reasons != 'others'"
+                               required="1"/>
                         <field name="treatment_updated_by" force_save="1"/>
+
+                        <field name="patient_source" required="1"/>
+                        <field name="source_event" options="{'no_create': True, 'no_open': True}"
+                               invisible="patient_source != 'event'" required="1"/>
 
                         <field name="patient_status"
                                widget="radio"
