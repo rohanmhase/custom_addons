@@ -55,15 +55,15 @@ class Patient(models.Model):
         ('referral', 'Referral')
     ], string="Patient Source")
 
-    source_event = fields.Many2one('event.event', string="Event name", domain=lambda self: [
+    source_event = fields.Many2one('event.event', string="Event Name", domain=lambda self: [
         '|', '&', ('stage_id.name', 'in', ['Confirmed', 'Event Done']),
         ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),
         ('name', '=', 'Others')
     ])
 
     treatment_status = fields.Selection([
-        ('converted', 'Converted'),
-        ('not_converted', 'Not Converted'),
+        ('converted', 'Enrolled'),
+        ('not_converted', 'Not Enrolled'),
         ('not_applicable', 'Not Applicable'),
     ], string="Treatment Status", tracking=True)
 
@@ -84,7 +84,7 @@ class Patient(models.Model):
         ('left_without_consultation_due_to_more_waiting_time', 'Left Without Consultation Due To Waiting Time'),
         ('was_getting_late_didnt_wait_for_closure', "Was getting late, didn't wait for closure"),
         ('others', 'Others'),
-    ], string="Not Converted Reasons", tracking=True)
+    ], string="Not Enrolled Reasons", tracking=True)
 
     not_applicable_reasons = fields.Selection([
         ('ligament_tear', 'Complete ligament tear'),
