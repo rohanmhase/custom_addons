@@ -1,7 +1,8 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-import re
 from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
+import re
 import uuid
 
 class Patient(models.Model):
@@ -43,6 +44,22 @@ class Patient(models.Model):
     pain_ana = fields.Boolean(string="ANA")
 
     is_existing = fields.Boolean(string="Is Existing", tracking=True)
+
+    patient_source = fields.Selection([
+        ('facebook', 'Facebook'),
+        ('instagram', 'Instagram'),
+        ('youtube', 'Youtube'),
+        ('event', 'Event'),
+        ('sms', 'SMS'),
+        ('walkin', 'Walkin'),
+        ('referral', 'Referral')
+    ], string="Patient Source")
+
+    source_event = fields.Many2one('event.event', string="Event name", domain=lambda self: [
+        '|', '&', ('stage_id.name', 'in', ['Confirmed', 'Event Done']),
+        ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),
+        ('name', '=', 'Others')
+    ])
 
     treatment_status = fields.Selection([
         ('converted', 'Converted'),
