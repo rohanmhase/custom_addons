@@ -51,7 +51,8 @@ class Patient(models.Model):
         ('youtube', 'Youtube'),
         ('event', 'Event'),
         ('sms', 'SMS'),
-        ('walkin', 'Walkin'),
+        ('doctor', 'Doctor Referred'),
+        ('walkin', 'Walk-in'),
         ('referral', 'Referral')
     ], string="Patient Source")
 
@@ -60,6 +61,8 @@ class Patient(models.Model):
         ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),
         ('name', '=', 'Others')
     ])
+    source_event_name = fields.Char(related='source_event.name', string="Event Name Helper")
+    manual_event_name = fields.Char(string="Type Event Name")
 
     treatment_status = fields.Selection([
         ('converted', 'Enrolled'),

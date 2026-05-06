@@ -145,9 +145,14 @@
                                required="1"/>
                         <field name="treatment_updated_by" force_save="1"/>
 
-                        <field name="patient_source" required="1"/>
+                        <field name="id" invisible="1"/>
+                        <field name="patient_source" required="id == False"/>
+
                         <field name="source_event" options="{'no_create': True, 'no_open': True}"
-                               invisible="patient_source != 'event'" required="1"/>
+                               invisible="patient_source != 'event'" required="patient_source == 'event'"/>
+                        <field name="source_event_name" invisible="1"/>
+                        <field name="manual_event_name"
+                               invisible="source_event_name != 'Others'"/>
 
                         <field name="patient_status"
                                widget="radio"
