@@ -73,7 +73,8 @@
                         </div>
 
                         <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
-                        <div class="watermark">
+                        <div class="watermark"
+                             style="position: absolute; top: 350px; left: -10%; width: 120%; text-align: center; opacity: 0.08; font-size: 28px; font-weight: bold; color: #999; white-space: nowrap; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: -1000;">
                             ResearchAyu -
                             <span t-field="o.patient_name"/>
                             -
