@@ -26,6 +26,20 @@
                 body, .page, p, li, h2, h5 {
                 font-family: 'NotoDevanagari', 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoSans', sans-serif
                 !important;
+                line-height: 1.8 !important;
+                }
+
+                p {
+                margin-bottom: 10px !important;
+                }
+
+                li {
+                margin-bottom: 5px !important;
+                }
+
+                h5 {
+                margin-top: 15px !important;
+                margin-bottom: 8px !important;
                 }
             </style>
 
