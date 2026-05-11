@@ -34,7 +34,7 @@
                 <t t-call="web.basic_layout" t-lang="o.consent_language">
                     <div class="page" style="color: #333;"
                          t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">
-                        <p t-esc="o.consent_language"/>
+<!--                        <p t-esc="o.consent_language"/>-->
                         <!--                remove 1line from below letter-->
 
                         <!-- 1. Absolute Logo: Moves it above the standard 'content' area -->
@@ -45,7 +45,7 @@
 
                         <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
                         <div class="watermark"
-                             style="position: fixed; opacity: 0.08; top: 45%; left: 0; width: 100%; text-align: center; transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 28px; font-weight: bold; color: #000; white-space: nowrap;">
+                             style="position: absolute; opacity: 0.05; top: 300px; left: 0; width: 100%; text-align: center; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 24px; font-weight: bold; color: #ccc; white-space: nowrap;">
                             ResearchAyu -
                             <span t-field="o.patient_name"/>
                             -
