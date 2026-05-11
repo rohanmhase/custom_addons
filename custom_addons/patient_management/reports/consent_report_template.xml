@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="consent_report_template">
+        <t t-call="web.html_container">
+            <style>
+                @font-face {
+                font-family: 'NotoSans';
+                src:
+                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSans-Regular.ttf');
+                }
+                @font-face {
+                font-family: 'NotoDevanagari';
+                src:
+                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansDevanagari-Regular.ttf');
+                }
+                @font-face {
+                font-family: 'NotoGujarati';
+                src:
+                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansGujarati-Regular.ttf');
+                }
+                @font-face {
+                font-family: 'NotoKannada';
+                src:
+                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansKannada-Regular.ttf');
+                }
+                @font-face {
+                font-family: 'NotoTelugu';
+                src:
+                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansTelugu-Regular.ttf');
+                }
+                body, .page, p, li, h2, h5 {
+                font-family: 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoDevanagari', 'NotoSans', sans-serif
+                !important;
+                }
+            </style>
+
+            <t t-foreach="docs" t-as="o">
+
+                <t t-call="web.basic_layout" t-lang="o.consent_language">
+                    <div class="page" style="color: #333;"
+                         t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">
+                        <!--                remove 1line from below letter-->
+                        <!--                        <p t-esc="o.consent_language"/>-->
+
+                        <!-- 1. Absolute Logo: Moves it above the standard 'content' area -->
+                        <div style="position: absolute; top: -140px; left: 0; width: 100%; text-align: center;">
+                            <img t-if="res_company.logo" t-att-src="image_data_uri(res_company.logo)"
+                                 style="max-height: 95px;"/>
+                        </div>
+
+                        <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
+                        <div class="watermark"
+                             style="position: absolute; opacity: 0.12; top: 400px; left: 0; width: 100%; text-align: center; transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 36px; font-weight: bold; color: #000; white-space: nowrap;">
+                            ResearchAyu -
+                            <span t-field="o.patient_name"/>
+                            -
+                            <span t-field="o.patient_mrn"/>
+                        </div>
+
+                        <!-- 3. Content Header: Positioned relatively to leave room for the absolute logo -->
+                        <h2 style="color: #2C5F8F; text-transform: uppercase; border-bottom: 2px solid #2C5F8F; padding-bottom: 5px; font-weight: bold; margin-top: 150px;">
+                            <t t-if="context.get('report_type') == 'consultation'">1. Consultation Consent &amp;
+                                Declaration
+                            </t>
+                            <t t-if="context.get('report_type') == 'treatment'">2. Treatment Consent &amp; Declaration
+                            </t>
+                        </h2>
+
+                        <!-- Info Row -->
+                        <div class="row mt-3">
+                            <div class="col-4">
+                                <strong>Date:</strong>
+                                <!-- Using the method directly from the record object 'o' -->
+                                <span t-esc="datetime.datetime.now().strftime('%d / %m / %Y')"/>
+                            </div>
+                            <div class="col-8">
+                                <strong>Patient Name:</strong>
+                                <span t-field="o.patient_name"
+                                      style="border-bottom: 1px solid black; display: inline-block; min-width: 300px;"/>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-justify">
+                            <!-- Consultation Content -->
+                            <t t-if="context.get('report_type') == 'consultation'">
+                                <div>
+                                    <h5 style="font-weight: bold;">Purpose of Consultation:</h5>
+                                    <p t-translation="on">I understand that I am visiting ResearchAyu for consultation
+                                        related to stiffness, mobility, or related concerns.
+                                    </p>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">The consultation may include:</h5>
+                                    <ul style="list-style-type: none; padding-left: 15px;">
+                                        <li t-translation="on">- Medical history review</li>
+                                        <li t-translation="on">- Physical assessment</li>
+                                        <li t-translation="on">- Review of reports (X-ray/MRI/Blood tests)</li>
+                                        <li t-translation="on">- Discussion of symptoms and lifestyle</li>
+                                    </ul>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">Understanding of Advice:</h5>
+                                    <ul style="list-style-type: none; padding-left: 15px;">
+                                        <li t-translation="on">- The consultation is advisory in nature.</li>
+                                        <li t-translation="on">- Further investigations may be required.</li>
+                                        <li t-translation="on">- I agree to share complete medical history.</li>
+                                    </ul>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">No Guarantee Clause:</h5>
+                                    <p t-translation="on">No diagnosis or outcome is guaranteed.</p>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">Patient Responsibility:</h5>
+                                    <ul style="list-style-type: none; padding-left: 15px;">
+                                        <li t-translation="on">- Provide true information</li>
+                                        <li t-translation="on">- Ask questions if unclear</li>
+                                    </ul>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">Consent:</h5>
+                                    <p t-translation="on">I voluntarily consent to consultation.</p>
+                                </div>
+                            </t>
+
+                            <!-- Treatment Content -->
+                            <!-- START: Treatment Specific Content -->
+                            <t t-if="context.get('report_type') == 'treatment'">
+                                <div style="font-size: 15px; line-height: 1.6;">
+
+                                    <p t-translation="on" class="mb-3">
+                                        Enrollment consent ResearchAyu provides research-driven Ayurvedic consultation
+                                        and therapies for difficult health problems. I understand treatment may include:
+                                        Regrow Therapy, Panchakarma/Detox therapies, Ayurvedic medicines, diet guidance,
+                                        and lifestyle modifications, as applicable. Outcomes may vary based on my
+                                        condition and compliance. I understand no medical guarantee of outcomes is
+                                        possible. I agree that: The treatment process has been explained to me in a
+                                        language I understand and I will follow the plan.
+                                    </p>
+                                    <p t-translation="on" class="mb-3">
+                                        I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I
+                                        will disclose complete medical history including autoimmune/comorbid conditions
+                                        (e.g., RA/ANA), past reports, and current medicines. I understand non-disclosure
+                                        may cause complications and the clinic will not be liable for issues arising
+                                        from undisclosed conditions. I understand Ayurvedic/Panchakarma treatments may
+                                        cause temporary side effects such as digestive discomfort, fatigue, temporary
+                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report
+                                        any side effects immediately.
+                                    </p>
+                                    <p t-translation="on">
+                                        I will behave respectfully with staff and patients. Misconduct/threats may lead
+                                        to refusal of service and/or legal action. Unutilized prepaid refund (if
+                                        eligible): deductions include ₹5,000 admin fee + medicines issued + services
+                                        used. Written request within 15 days of discontinuation. Processing up to 90
+                                        working days. EMI/Third-party: refund must be handled with the EMI/third-party
+                                        provider as per their terms. Double payment: proof within 15 days; duplicate
+                                        refunded within 15 working days via NEFT. I will not request/share any other
+                                        patient's personal, treatment, or payment details. Disputes will be resolved via
+                                        arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will
+                                        have jurisdiction if required.
+                                    </p>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Signature Lines -->
+                        <div style="margin-top: 50px;">
+                            <div class="row">
+                                <!-- Patient Side (Left) -->
+                                <div class="col-6">
+                                    <strong>Patient Signature:</strong>
+                                    <div style="margin-top: 40px; border-top: 1px solid black; width: 200px;"></div>
+                                </div>
+
+                                <!-- Staff Side (Right) -->
+                                <!--                                <div class="col-6 text-right">-->
+                                <!--                                    <strong>Staff Name:</strong>-->
+                                <!--                                    <div style="margin-top: 10px;">-->
+                                <!--                                        &lt;!&ndash; This pulls the name of the user who created the record &ndash;&gt;-->
+                                <!--                                        <span t-field="o.create_uid.name"/>-->
+                                <!--                                    </div>-->
+                                <!--                                    <div style="margin-top: 20px; border-top: 1px width: 200px; float: right;"></div>-->
+                                <!--                                </div>-->
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

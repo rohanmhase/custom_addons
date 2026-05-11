@@ -1,0 +1,173 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* patient_management
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-06 06:43+0000\n"
+"PO-Revision-Date: 2026-05-06 06:43+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+"Language: gu_IN\n"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if unclear"
+msgstr "- જો કંઈ સ્પષ્ટ ન હોય, તો પ્રશ્નો પૂછો."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Discussion of symptoms and lifestyle"
+msgstr "- લક્ષણો અને જીવનશૈલી પર ચર્ચા"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Further investigations may be required."
+msgstr "- વધુ તપાસ જરૂરી હોઈ શકે છે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to share complete medical history."
+msgstr "- હું મારો સંપૂર્ણ તબીબી ઇતિહાસ શેર કરવા સંમત છું."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history review"
+msgstr "- તબીબી ઇતિહાસની સમીક્ષા"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Physical assessment"
+msgstr "- શારીરિક મૂલ્યાંકન"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Provide true information"
+msgstr "- સાચી માહિતી આપો."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Review of reports (X-ray/MRI/Blood tests)"
+msgstr "- અહેવાલોની સમીક્ષા (એક્સ-રે/MRI/રક્ત પરીક્ષણ)"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- The consultation is advisory in nature."
+msgstr "- આ પરામર્શ સલાહકારી સ્વભાવનો છે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Consent:"
+msgstr "સંમતિ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"Enrollment consent ResearchAyu provides research-driven Ayurvedic consultation\n"
+"                                        and therapies for difficult health problems. I understand treatment may include:\n"
+"                                        Regrow Therapy, Panchakarma/Detox therapies, Ayurvedic medicines, diet guidance,\n"
+"                                        and lifestyle modifications, as applicable. Outcomes may vary based on my\n"
+"                                        condition and compliance. I understand no medical guarantee of outcomes is\n"
+"                                        possible. I agree that: The treatment process has been explained to me in a\n"
+"                                        language I understand and I will follow the plan."
+msgstr ""
+"નોંધણી સંમતિ: ResearchAyu, મુશ્કેલ સ્વાસ્થ્ય સમસ્યાઓ માટે સંશોધન-આધારિત આયુર્વેદિક પરામર્શ\n"
+"                                        અને ઉપચાર પ્રદાન કરે છે. હું સમજું છું કે સારવારમાં સમાવેશ થઈ શકે છે:\n"
+"                                        Regrow Therapy, પંચકર્મ/Detox ઉપચાર, આયુર્વેદિક દવાઓ, આહાર માર્ગદર્શન,\n"
+"                                        અને જીવનશૈલીમાં ફેરફાર (જ્યાં લાગુ પડે). પરિણામો મારી\n"
+"                                        સ્થિતિ અને અનુપાલનના આધારે બદલાઈ શકે છે. હું સમજું છું કે પરિણામોની કોઈ તબીબી ગેરંટી\n"
+"                                        શક્ય નથી. હું સંમત છું કે: સારવારની પ્રક્રિયા મને એવી\n"
+"                                        ભાષામાં સમજાવવામાં આવી છે જે હું સમજું છું, અને હું આ યોજનાનું પાલન કરીશ."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I understand that I am visiting ResearchAyu for consultation\n"
+"                                        related to stiffness, mobility, or related concerns."
+msgstr "હું સમજું છું કે હું ResearchAyu ખાતે જડતા, ગતિશીલતા અથવા સંબંધિત સમસ્યાઓ માટે પરામર્શ માટે આવ્યો/આવી છું."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to consultation."
+msgstr "હું સ્વૈચ્છિક રીતે પરામર્શ માટે સંમતિ આપું છું."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will behave respectfully with staff and patients. Misconduct/threats may lead\n"
+"                                        to refusal of service and/or legal action. Unutilized prepaid refund (if\n"
+"                                        eligible): deductions include ₹5,000 admin fee + medicines issued + services\n"
+"                                        used. Written request within 15 days of discontinuation. Processing up to 90\n"
+"                                        working days. EMI/Third-party: refund must be handled with the EMI/third-party\n"
+"                                        provider as per their terms. Double payment: proof within 15 days; duplicate\n"
+"                                        refunded within 15 working days via NEFT. I will not request/share any other\n"
+"                                        patient's personal, treatment, or payment details. Disputes will be resolved via\n"
+"                                        arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will\n"
+"                                        have jurisdiction if required."
+msgstr ""
+"હું સ્ટાફ અને દર્દીઓ સાથે આદરપૂર્વક વ્યવહાર કરીશ. ગેરવર્તન/ધમકીઓ સેવા નકારવા અને/અથવા કાનૂની કાર્યવાહી તરફ દોરી શકે છે.\n"
+"                                        ઉપયોગ ન થયેલ પ્રીપેડ રિફંડ (જો પાત્ર હોય): કપાતમાં ₹5,000 એડમિન ફી + આપવામાં આવેલ દવાઓ + ઉપયોગ કરેલ સેવાઓ સામેલ છે.\n"
+"                                        સેવા બંધ કર્યાના 15 દિવસની અંદર લેખિત વિનંતી. પ્રક્રિયામાં 90 કાર્યકારી દિવસ સુધીનો સમય લાગી શકે છે.\n"
+"                                        EMI/થર્ડ-પાર્ટી: રિફંડ EMI/થર્ડ-પાર્ટી પ્રદાતા સાથે તેમની શરતો અનુસાર ઉકેલવું પડશે.\n"
+"                                        ડબલ પેમેન્ટ: 15 દિવસની અંદર પુરાવો; ડુપ્લિકેટ 15 કાર્યકારી દિવસની અંદર NEFT દ્વારા પરત કરવામાં આવશે.\n"
+"                                        હું અન્ય કોઈ દર્દીની વ્યક્તિગત, સારવાર અથવા ચુકવણીની વિગતો માંગીશ/શેર કરીશ નહીં.\n"
+"                                        વિવાદો ઠાણે, મહારાષ્ટ્રમાં આર્બિટ્રેશન દ્વારા ઉકેલવામાં આવશે (અંગ્રેજી/હિન્દી/મરાઠી).\n"
+"                                        જો જરૂરી હોય તો ઠાણેની અદાલતોને અધિકારક્ષેત્ર રહેશે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I\n"
+"                                        will disclose complete medical history including autoimmune/comorbid conditions\n"
+"                                        (e.g., RA/ANA), past reports, and current medicines. I understand non-disclosure\n"
+"                                        may cause complications and the clinic will not be liable for issues arising\n"
+"                                        from undisclosed conditions. I understand Ayurvedic/Panchakarma treatments may\n"
+"                                        cause temporary side effects such as digestive discomfort, fatigue, temporary\n"
+"                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report\n"
+"                                        any side effects immediately."
+msgstr ""
+"સલાહ મળ્યા પ્રમાણે, હું જરૂરી તપાસ (X-ray/MRI/રક્ત પરીક્ષણ) પૂર્ણ કરીશ.\n"
+"                                        હું મારો સંપૂર્ણ તબીબી ઇતિહાસ જણાવીશ, જેમાં ઓટોઇમ્યૂન/સહ-રોગ સ્થિતિઓ\n"
+"                                        (દા.ત. RA/ANA), પહેલાના અહેવાલો અને હાલ ચાલતી દવાઓ સામેલ છે.\n"
+"                                        હું સમજું છું કે માહિતી ન આપવાથી જટિલતાઓ ઊભી થઈ શકે છે, અને\n"
+"                                        જે સ્થિતિઓ જાહેર ન કરવામાં આવી હોય તેનાથી ઉદ્ભવતી સમસ્યાઓ માટે ક્લિનિક જવાબદાર નહીં હોય.\n"
+"                                        હું સમજું છું કે આયુર્વેદિક/પંચકર્મ સારવારોથી કામચલાઉ આડઅસરો થઈ શકે છે,\n"
+"                                        જેમ કે પાચનની તકલીફ, થાક, લક્ષણોમાં કામચલાઉ વધારો, એલર્જી/ફોલ્લી,\n"
+"                                        ભાવનાત્મક બદલાવ અથવા ત્વચા પર ફોલ્લીઓ. કોઈ આડઅસર થાય તો\n"
+"                                        હું તરત જ જાણ કરીશ."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No Guarantee Clause:"
+msgstr "કોઈ ગેરંટી નહીં કલમ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No diagnosis or outcome is guaranteed."
+msgstr "કોઈ પણ નિદાન અથવા પરિણામની ગેરંટી નથી."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Patient Responsibility:"
+msgstr "દર્દીની જવાબદારી:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Purpose of Consultation:"
+msgstr "પરામર્શનો હેતુ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "The consultation may include:"
+msgstr "પરામર્શમાં નીચેનો સમાવેશ થઈ શકે છે:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Advice:"
+msgstr "સલાહની સમજ:"

@@ -642,6 +642,18 @@ class Patient(models.Model):
             "url": url,
         }
 
+    def action_open_consent(self):
+        return {
+            'name': 'Consent Form',
+            'type': 'ir.actions.act_window',
+            'res_model': 'consent.form',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_patient_id': self.id,
+            },
+        }
+
     def _ist_date(self):
 
         utc = (datetime.now())

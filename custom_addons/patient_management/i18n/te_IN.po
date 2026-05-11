@@ -1,0 +1,173 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* patient_management
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-06 06:43+0000\n"
+"PO-Revision-Date: 2026-05-06 06:43+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+"Language: te_IN\n"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if unclear"
+msgstr "- ఏదైనా అర్థం కాకపోతే ప్రశ్నలు అడగండి."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Discussion of symptoms and lifestyle"
+msgstr "- లక్షణాలు మరియు జీవనశైలిపై చర్చ"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Further investigations may be required."
+msgstr "- మరిన్ని పరీక్షలు అవసరం కావచ్చు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to share complete medical history."
+msgstr "- నా పూర్తి వైద్య చరిత్రను పంచుకోవడానికి అంగీకరిస్తున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history review"
+msgstr "- వైద్య చరిత్ర సమీక్ష"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Physical assessment"
+msgstr "- శారీరక మూల్యాంకనం"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Provide true information"
+msgstr "- నిజమైన సమాచారాన్ని అందించండి."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Review of reports (X-ray/MRI/Blood tests)"
+msgstr "- నివేదికల సమీక్ష (ఎక్స్-రే/MRI/రక్త పరీక్షలు)"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- The consultation is advisory in nature."
+msgstr "- ఈ సంప్రదింపు సలహా స్వభావంతో ఉంటుంది."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Consent:"
+msgstr "అంగీకారం:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"Enrollment consent ResearchAyu provides research-driven Ayurvedic consultation\n"
+"                                        and therapies for difficult health problems. I understand treatment may include:\n"
+"                                        Regrow Therapy, Panchakarma/Detox therapies, Ayurvedic medicines, diet guidance,\n"
+"                                        and lifestyle modifications, as applicable. Outcomes may vary based on my\n"
+"                                        condition and compliance. I understand no medical guarantee of outcomes is\n"
+"                                        possible. I agree that: The treatment process has been explained to me in a\n"
+"                                        language I understand and I will follow the plan."
+msgstr ""
+"నమోదు అంగీకారం: ResearchAyu కష్టమైన ఆరోగ్య సమస్యలకు పరిశోధన-ఆధారిత ఆయుర్వేద సంప్రదింపు\n"
+"                                        మరియు చికిత్సలను అందిస్తుంది. చికిత్సలో ఇవి ఉండవచ్చని నేను అర్థం చేసుకున్నాను:\n"
+"                                        Regrow Therapy, పంచకర్మ/Detox చికిత్సలు, ఆయుర్వేద మందులు, ఆహార మార్గదర్శకత్వం,\n"
+"                                        మరియు జీవనశైలి మార్పులు (వర్తించినప్పుడు). ఫలితాలు నా\n"
+"                                        పరిస్థితి మరియు అనుసరణపై ఆధారపడి మారవచ్చు. ఫలితాలకు ఎటువంటి వైద్య హామీ\n"
+"                                        సాధ్యం కాదని నేను అర్థం చేసుకున్నాను. నేను అంగీకరిస్తున్నాను: చికిత్స ప్రక్రియను నాకు\n"
+"                                        అర్థమయ్యే భాషలో వివరించారు మరియు నేను ప్రణాళికను అనుసరిస్తాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I understand that I am visiting ResearchAyu for consultation\n"
+"                                        related to stiffness, mobility, or related concerns."
+msgstr "నేను ResearchAyu ని దృఢత్వం, కదలిక లేదా సంబంధిత సమస్యలకు సంప్రదింపు కోసం సందర్శిస్తున్నానని అర్థం చేసుకున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to consultation."
+msgstr "నేను స్వచ్ఛందంగా సంప్రదింపుకు అంగీకరిస్తున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will behave respectfully with staff and patients. Misconduct/threats may lead\n"
+"                                        to refusal of service and/or legal action. Unutilized prepaid refund (if\n"
+"                                        eligible): deductions include ₹5,000 admin fee + medicines issued + services\n"
+"                                        used. Written request within 15 days of discontinuation. Processing up to 90\n"
+"                                        working days. EMI/Third-party: refund must be handled with the EMI/third-party\n"
+"                                        provider as per their terms. Double payment: proof within 15 days; duplicate\n"
+"                                        refunded within 15 working days via NEFT. I will not request/share any other\n"
+"                                        patient's personal, treatment, or payment details. Disputes will be resolved via\n"
+"                                        arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will\n"
+"                                        have jurisdiction if required."
+msgstr ""
+"నేను సిబ్బంది మరియు రోగులతో గౌరవంగా వ్యవహరిస్తాను. దుర్వర్తన/బెదిరింపులు సేవ నిరాకరణ మరియు/లేదా చట్టపరమైన చర్యకు దారితీయవచ్చు.\n"
+"                                        వినియోగించని ప్రీపెయిడ్ రీఫండ్ (అర్హులైతే): మినహాయింపులలో ₹5,000 అడ్మిన్ రుసుము + జారీ చేసిన మందులు + ఉపయోగించిన సేవలు ఉంటాయి.\n"
+"                                        నిలిపివేత తర్వాత 15 రోజులలో లిఖిత విన్నపం. ప్రాసెసింగ్ 90 పని దినాల వరకు.\n"
+"                                        EMI/థర్డ్-పార్టీ: రీఫండ్‌ను EMI/థర్డ్-పార్టీ ప్రొవైడర్‌తో వారి నిబంధనల ప్రకారం నిర్వహించాలి.\n"
+"                                        రెట్టింపు చెల్లింపు: 15 రోజులలో రుజువు; నకిలీ 15 పని దినాలలో NEFT ద్వారా రీఫండ్.\n"
+"                                        నేను ఇతర రోగి యొక్క వ్యక్తిగత, చికిత్స లేదా చెల్లింపు వివరాలను అభ్యర్థించను/పంచుకోను.\n"
+"                                        వివాదాలు థానే, మహారాష్ట్రలో మధ్యవర్తిత్వం ద్వారా పరిష్కరించబడతాయి (ఇంగ్లీష్/హిందీ/మరాఠీ).\n"
+"                                        అవసరమైతే థానే న్యాయస్థానాలకు అధికార పరిధి ఉంటుంది."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I\n"
+"                                        will disclose complete medical history including autoimmune/comorbid conditions\n"
+"                                        (e.g., RA/ANA), past reports, and current medicines. I understand non-disclosure\n"
+"                                        may cause complications and the clinic will not be liable for issues arising\n"
+"                                        from undisclosed conditions. I understand Ayurvedic/Panchakarma treatments may\n"
+"                                        cause temporary side effects such as digestive discomfort, fatigue, temporary\n"
+"                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report\n"
+"                                        any side effects immediately."
+msgstr ""
+"సలహా ఇచ్చినప్పుడు నేను అవసరమైన పరీక్షలు (X-ray/MRI/రక్త పరీక్షలు) పూర్తి చేస్తాను.\n"
+"                                        స్వయం రోగనిరోధక/సహ-వ్యాధి పరిస్థితులు (ఉదా. RA/ANA), గత నివేదికలు మరియు ప్రస్తుత మందులతో సహా\n"
+"                                        పూర్తి వైద్య చరిత్రను వెల్లడిస్తాను. సమాచారం వెల్లడించకపోవడం\n"
+"                                        సమస్యలకు దారితీయవచ్చు మరియు వెల్లడించని పరిస్థితుల వల్ల తలెత్తే సమస్యలకు\n"
+"                                        క్లినిక్ బాధ్యత వహించదని నేను అర్థం చేసుకున్నాను. ఆయుర్వేద/పంచకర్మ\n"
+"                                        చికిత్సలు తాత్కాలిక దుష్ప్రభావాలకు కారణమవుతాయని నేను అర్థం చేసుకున్నాను;\n"
+"                                        జీర్ణ అసౌకర్యం, అలసట, తాత్కాలిక లక్షణ తీవ్రత, అలర్జీ/దద్దుర్లు,\n"
+"                                        భావోద్వేగ మార్పులు లేదా చర్మ మొటిమలు. ఏదైనా దుష్ప్రభావాలను\n"
+"                                        నేను వెంటనే నివేదిస్తాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No Guarantee Clause:"
+msgstr "హామీ లేదు నిబంధన:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No diagnosis or outcome is guaranteed."
+msgstr "ఏ రోగనిర్ధారణ లేదా ఫలితానికి హామీ ఇవ్వబడదు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Patient Responsibility:"
+msgstr "రోగి బాధ్యత:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Purpose of Consultation:"
+msgstr "సంప్రదింపు యొక్క ఉద్దేశ్యం:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "The consultation may include:"
+msgstr "సంప్రదింపులో ఇవి ఉండవచ్చు:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Advice:"
+msgstr "సలహా అవగాహన:"
