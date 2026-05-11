@@ -28,6 +28,9 @@
         'views/prescription_views.xml',
         'views/attachment_views.xml',
         'views/rs_followup_views.xml',
+        'views/consent_form_views.xml',
+        'reports/consent_report.xml',
+        'reports/consent_report_template.xml',
     ],
     'assets': {
         'web.assets_backend': [

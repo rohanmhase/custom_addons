@@ -1,0 +1,3975 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* patient_management
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-06 06:43+0000\n"
+"PO-Revision-Date: 2026-05-06 06:43+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid " %s might be out of stock."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__pain_relief
+msgid "% Pain Relief"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.report,print_report_name:patient_management.action_report_consultation_consent
+msgid "'Consultation_Consent_%s' % (object.patient_name)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.report,print_report_name:patient_management.action_report_treatment_consent
+msgid "'Treatment_Consent_%s' % (object.patient_name)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__heavy_free_lt
+msgid "(heavy/free left:"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if unclear"
+msgstr "- अगर कुछ स्पष्ट न हो, तो प्रश्न पूछें।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Discussion of symptoms and lifestyle"
+msgstr "- लक्षणों और जीवनशैली पर चर्चा"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Further investigations may be required."
+msgstr "- आगे की जांच की आवश्यकता हो सकती है।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to share complete medical history."
+msgstr "- मैं अपनी पूरी मेडिकल हिस्ट्री शेयर करने के लिए सहमत हूँ।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history review"
+msgstr "- चिकित्सा इतिहास की समीक्षा"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Physical assessment"
+msgstr "- शारीरिक मूल्यांकन"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Provide true information"
+msgstr "- सच्ची जानकारी दें।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Review of reports (X-ray/MRI/Blood tests)"
+msgstr "- रिपोर्टों की समीक्षा (एक्स-रे/MRI/रक्त परीक्षण)"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- The consultation is advisory in nature."
+msgstr "- यह परामर्श सलाहकारी प्रकृति का है।"
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_1
+msgid "0 - 0 - 1"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_2
+msgid "0 - 0 - 2"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_3
+msgid "0 - 0 - 3"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_4
+msgid "0 - 0 - 4"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_1_-_0
+msgid "0 - 1 - 0"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_2_-_0
+msgid "0 - 2 - 0"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__recovery__0
+msgid "0- Poor- No Significant improvement"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__happiness__0
+msgid "0- Unhappy"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__1_-_0_-_1
+msgid "1 - 0 - 1"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__1_-_1_-_1
+msgid "1 - 1 - 1"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__happiness__1
+msgid "1- Average- Neutral"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__recovery__1
+msgid "1- Mild- Pain persist with slight relief"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"1. Consultation Consent &amp;\n"
+"                                Declaration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__lunch_with_time
+msgid "10 AM - 1 PM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__10am_6pm
+msgid "10 am - 6 pm"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_blood_report__blood_report_day__1
+msgid "1st Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__2_-_0_-_2
+msgid "2 - 0 - 2"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__2_-_2_-_2
+msgid "2 - 2 - 2"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__happiness__2
+msgid "2- Good- Satisfied"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__recovery__2
+msgid "2- Moderate- Pain reduced but still present"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "2. Treatment Consent &amp; Declaration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__20
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_day__20
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_day__20
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_day__20
+msgid "20th Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__3_-_0_-_3
+msgid "3 - 0 - 3"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__3_-_3_-_3
+msgid "3 - 3 - 3"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__happiness__3
+msgid "3- Excellent- Highly Satisfied"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__recovery__3
+msgid "3- Good- Significant pain reduction"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_blood_report__blood_report_day__30
+msgid "30th Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__evening_with_time
+msgid "4 PM - 6 PM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_daily_followup__recovery__4
+msgid "4- Excellent- Pain almost gone/ Negative"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__40
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_day__40
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_day__40
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_day__40
+msgid "40th Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__5
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_day__5
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_day__5
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_day__5
+msgid "5th Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__60
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_day__60
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_day__60
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_blood_report__blood_report_day__60
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_day__60
+msgid "60th Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__morning_with_time
+msgid "7 AM - 9 AM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__dinner_with_time
+msgid "7 PM - 10 PM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__8am_5pm
+msgid "8 am - 5 pm"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__80
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_day__80
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_day__80
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_blood_report__blood_report_day__80
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_day__80
+msgid "80th Day"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "<span class=\"o_form_label\">Available Medicines</span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "<span class=\"o_form_label\">Prescribed Medicines</span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<span class=\"text-muted\">Not Available</span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"<span style=\"text-decoration: underline;\">\n"
+"                            <strong>\n"
+"                                <i>Daily Routine</i>\n"
+"                            </strong>\n"
+"                        </span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"<span style=\"text-decoration: underline;\">\n"
+"                            <strong>\n"
+"                                <i>Koshthagata</i>\n"
+"                                Examinations\n"
+"                            </strong>\n"
+"                        </span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"<span style=\"text-decoration: underline;\">\n"
+"                            <strong>\n"
+"                                <i>Shakhagata</i>\n"
+"                                Examinations\n"
+"                            </strong>\n"
+"                        </span>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>Date -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Date:</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>Enrolled Sessions -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>First X-Ray Grade -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>Latest X-Ray Grade -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>Latest X-Ray Status -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Name:</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Signature:</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
+msgid "<strong>Remaining Sessions -</strong>"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_ana
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__ana
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "ANA"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Action"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_needaction
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_needaction
+msgid "Action Needed"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/js/orderline_patch.js:0
+#: code:addons/patient_management/static/src/js/restrict_product_click.js:0
+#, python-format
+msgid "Action Restricted"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__active
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__active
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__active
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_status__active
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_enrollment__state__active
+msgid "Active"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__cancer_tb
+msgid "Active Cancer/Active Tuberculosis"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__active_enrollment_id
+msgid "Active Enrollment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_ids
+msgid "Activities"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_exception_decoration
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_state
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_state
+msgid "Activity State"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_type_icon
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_type_icon
+msgid "Activity Type Icon"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__address
+msgid "Address"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__adhman_bloating
+msgid "Adhman (bloating) (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__admin_id
+msgid "Admin / BM"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_attachment
+msgid "Admin Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__admin
+msgid "Admin/BM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__adv_investigation
+msgid "Adv Investigation"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__adv_treatment
+msgid "Adv Treatment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__adv_rx
+msgid "Advise Rx"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__after_food
+msgid "After Food"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__age
+msgid "Age"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__allergies
+msgid "Allergies"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__along_with_lukewarm_water
+msgid "Along With Lukewarm Water"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__along_with_milk
+msgid "Along With Milk"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__along_with_milk_rock_sugar
+msgid "Along With Milk + Rock Sugar"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__nidra__alpa
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__sweda__alpa
+msgid "Alpa"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__ankle
+msgid "Ankle"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__anti_ccp
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Anti-CCP"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__ascites
+msgid "Ascites"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__followup_id
+msgid "Assessment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__assessment_line_ids
+msgid "Assessment Lines"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__at_night_time
+msgid "At Night Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__nidra__ati
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__sweda__ati
+msgid "Ati"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_attachment
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Attachment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_attachment_count
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_attachment_count
+msgid "Attachment Count"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__attachment_date
+msgid "Attachment Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__attachment_ids
+msgid "Attachments"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__available_organ_ids
+msgid "Available Organs"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__qty_available
+msgid "Available Qty"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L\n"
+"                                        Knee tenderness with gradation and position"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L\n"
+"                                        knee Crept with Gradation"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L\n"
+"                                        shin discoloration/rashes/itching/bruises"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L\n"
+"                                        shin oedema with gradation"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L\n"
+"                                        shin tenderness with gradation"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_knee_tenderness_with_gradation_and_position_lt
+msgid "B/L Knee tenderness with gradation and position left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_knee_tenderness_with_gradation_and_position_rt
+msgid "B/L Knee tenderness with gradation and position right:"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"B/L SLR\n"
+"                                        with degree"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_slr_with_degree_lt
+msgid "B/L SLR with degree left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_slr_with_degree_rt
+msgid "B/L SLR with degree right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_knee_crept_with_gradation_lt
+msgid "B/L knee Crept with Gradation left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_knee_crept_with_gradation_rt
+msgid "B/L knee Crept with Gradation right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_discoloration_rashes_itching_bruises_lt
+msgid "B/L shin discoloration/rashes/itching/bruises left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_discoloration_rashes_itching_bruises_rt
+msgid "B/L shin discoloration/rashes/itching/bruises right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_oedema_with_gradation_lt
+msgid "B/L shin oedema with gradation left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_oedema_with_gradation_rt
+msgid "B/L shin oedema with gradation right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_tenderness_with_gradation_lt
+msgid "B/L shin tenderness with gradation left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__b_l_shin_tenderness_with_gradation_rt
+msgid "B/L shin tenderness with gradation right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__doctor_id
+msgid "BM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__bsl_fasting
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "BSL Fasting"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__bsl_post_prandial
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "BSL Post Prandial"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__sour_smell_when_hungry
+msgid "Bad (sour/Khatta/Ambat) smell from mouth when hungry (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__bad_smell_from_mouth
+msgid "Bad smell from mouth (Saam Kapha, Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_status__baseline
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_status__baseline
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_status__baseline
+msgid "Baseline"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__bed_ridden
+msgid "Bed ridden patient"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__before_and_after_therapy_comment
+msgid "Before & After Therapy Comment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__before_food
+msgid "Before Food"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__bitter_taste
+msgid "Bitter taste in mouth (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_blood_report
+#: model:ir.model,name:patient_management.model_patient_blood_report
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__file_type__blood_report
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Blood Report"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__blood_report_date
+msgid "Blood Report Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__body_feels_hot
+msgid "Body feels hot (Pitta Vridhi,Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__body_tenderness
+msgid ""
+"Body tenderness (biceps, thighs painful even with moderate pressure), knee "
+"tenderness (Pitta Vridhi, Saam Pitta, Saam Rakta, Aam vaat)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+msgid "Bowel Habits"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__breakfast
+msgid "Breakfast:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__burning
+msgid "Burning"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Burning\n"
+"                                        sensation in B/L Knee/Shin"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__burning_sensation_in_b_l_knee_shin_lt
+msgid "Burning sensation in B/L Knee/Shin left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__burning_sensation_in_b_l_knee_shin_rt
+msgid "Burning sensation in B/L Knee/Shin right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__busy_schedule
+msgid "Busy Schedule"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__c_peptide
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "C-Peptide"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__c_o
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__c_o
+msgid "C/O"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__cbc
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "CBC"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__crp
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "CRP"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "CS Followup"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_consent_form
+msgid "Cancel"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_case_taking
+#: model:ir.model,name:patient_management.model_patient_case_taking
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Case Taking"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__case_taking_date
+msgid "Case Taking Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__case_under_discussion
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__case_under_discussion_with
+msgid "Case Under Discussion With"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__category
+msgid "Category"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__cervical_spine
+msgid "Cervical Spine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.server,name:patient_management.ir_cron_check_patient_inactive_ir_actions_server
+msgid "Check Inactive Patients"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__chronic_cva
+msgid "Chronic CVA"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+msgid "Click to browse..."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_clinic_clinic
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__clinic_id
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__clinic_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__clinic_id
+#: model:ir.model.fields,field_description:patient_management.field_res_partner__clinic_id
+#: model:ir.model.fields,field_description:patient_management.field_res_users__clinic_id
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_enrollment__enrollment_type__clinic
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__session_type__clinic
+msgid "Clinic"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__clinic_id
+msgid "Clinic Context"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_clinic_patient
+msgid "Clinic Patient"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Close"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_session_form
+msgid "Comment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__comments
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__comments
+msgid "Comments"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__company_id
+msgid "Company"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Complete / Restricted with degree"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__ligament_tear
+msgid "Complete ligament tear"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_enrollment__state__completed
+msgid "Completed"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "Confirm"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription__state__confirmed
+msgid "Confirmed"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__congenital_deformity
+msgid "Congenital bone deformity"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_consent_form
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__file_type__consent
+#: model_terms:ir.ui.view,arch_db:patient_management.view_consent_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Consent Form"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Consent:"
+msgstr "संमती:"
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__constipation_hard_stool_difficult_to_pass
+msgid "Constipation (hard stool, difficult to pass) (Vaata Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.report,name:patient_management.action_report_consultation_consent
+msgid "Consultation Consent"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_res_partner
+msgid "Contact"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__contact_number
+msgid "Contact Number"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__cost_issue
+msgid "Cost Issue"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__cough_is_clear_white_or_milky
+msgid "Cough is clear white or milky (Kapha Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__cramps_especially_calves_or_thighs
+msgid "Cramps especially calves / thighs (Vaat Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__create_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__create_date
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__create_date
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__create_date
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__create_date
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__create_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__crepitus
+msgid "Crepitus"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Crepts"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__crepts_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__crepts_lt
+msgid "Crepts Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__crepts_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__crepts_rt
+msgid "Crepts Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__partner_id
+msgid "Customer"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__dvt
+msgid "DVT"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_daily_followup
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Daily Followup"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_daily_followup
+msgid "Daily Followup Details"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__daily_sheet_ref
+msgid "Daily Sheet Reference"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__assessment_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__x_ray_actual_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__blood_report_actual_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__followup_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__diet_taken_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__x_ray_actual_date
+#, python-format
+msgid "Date"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_tree
+msgid "Date(MM/DD/YYYY)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__day_of_therapy
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__day_of_therapy
+msgid "Day Of Therapy"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__blood_report_day
+msgid "Day of Blood Report"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__x_ray_day
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__x_ray_day
+msgid "Day of X-Ray"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__decision_maker_absent
+msgid "Decision Maker Absent"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid ""
+"Definite osteophytes and possible\n"
+"                                        joint\n"
+"                                        space narrowing."
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Deformity"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__deformity_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__deformity_lt
+msgid "Deformity Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__deformity_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__deformity_rt
+msgid "Deformity Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment__type_of_therapy__detox
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__type_of_therapy__detox
+msgid "Detox"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__detox_therapy
+msgid "Detox Therapy"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_diabetes
+msgid "Diabetes"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__diagnosis
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__diagnosis
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__diagnosis
+msgid "Diagnosis"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__dialysis
+msgid "Dialysis"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__diet
+msgid "Diet"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_diet_chart
+#: model:ir.model,name:patient_management.model_patient_diet_chart
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_diet_chart_form
+msgid "Diet Chart"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_session_form
+msgid "Diet Information"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__digestion
+msgid "Digestion"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__dinner_with_time
+msgid "Dinner With Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__dinner
+msgid "Dinner:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__discoloration
+msgid "Discoloration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__display_name
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__display_name
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__display_name
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__display_name
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__display_name
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__divastap
+msgid "Divastap:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__dizziness_when_hungry
+msgid "Dizziness when hungry (Pitta Vridhi,Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__doctor_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__doctor_id
+#, python-format
+msgid "Doctor"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_blood_report
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_case_taking
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_daily_followup
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_diet_chart
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_followup
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_session
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_xray
+msgid "Doctor Name"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_prescription
+msgid "Doctor/Admin Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription__state__done
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__state__done
+msgid "Done"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__dosage
+msgid "Dosage"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid ""
+"Doubtful Joint space narrowing and\n"
+"                                        possible osteophytic lipping."
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_consent_form
+msgid "Download Consultation Consent Form"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_consent_form
+msgid "Download Treatment Consent Form"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription__state__draft
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__state__draft
+msgid "Draft"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__dry_skin
+msgid "Dry skin (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__emi_rejected
+msgid "EMI Rejected"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__esr
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "ESR"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__edema
+msgid "Edema"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__email
+msgid "Email"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__en_us
+msgid "English"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__enrolled
+msgid "Enrolled"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__enrolled_for
+msgid "Enrolled For"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_tree
+msgid "Enrolled Sessions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_enrollment
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__enrollment_ids
+#: model_terms:ir.ui.view,arch_db:patient_management.view_enrollment_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Enrollment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__enroll_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__enrollment_date
+msgid "Enrollment Date"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_enrollment_form
+msgid "Enrollment For"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__enrollment_type
+msgid "Enrollment Type"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"Enrollment consent ResearchAyu provides research-driven Ayurvedic consultation\n"
+"                                        and therapies for difficult health problems. I understand treatment may include:\n"
+"                                        Regrow Therapy, Panchakarma/Detox therapies, Ayurvedic medicines, diet guidance,\n"
+"                                        and lifestyle modifications, as applicable. Outcomes may vary based on my\n"
+"                                        condition and compliance. I understand no medical guarantee of outcomes is\n"
+"                                        possible. I agree that: The treatment process has been explained to me in a\n"
+"                                        language I understand and I will follow the plan."
+msgstr ""
+"नामांकन सहमति: ResearchAyu, मुश्किल स्वास्थ्य समस्याओं के लिए शोध-आधारित आयुर्वेदिक परामर्श\n"
+"                                        और उपचार प्रदान करता है। मैं समझता हूँ कि उपचार में ये शामिल हो सकते हैं:\n"
+"                                        Regrow Therapy, पंचकर्म/Detox उपचार, आयुर्वेदिक दवाएँ, आहार संबंधी मार्गदर्शन,\n"
+"                                        और जीवनशैली में बदलाव (जैसा भी लागू हो)। परिणाम मेरी\n"
+"                                        स्थिति और निर्देशों के पालन के आधार पर अलग-अलग हो सकते हैं। मैं समझता हूँ कि परिणामों की कोई चिकित्सकीय गारंटी\n"
+"                                        संभव नहीं है। मैं सहमत हूँ कि: उपचार की प्रक्रिया मुझे ऐसी\n"
+"                                        भाषा में समझाई गई है जिसे मैं समझता हूँ, और मैं इस योजना का पालन करूँगा।"
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__no_appetite_even_if_hungry
+msgid "Even though hungry, does not feel like eating (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__evening_with_time
+msgid "Evening With Time"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+msgid "Examination"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__f_h
+msgid "F/H"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__face_looks_reddish
+msgid "Face looks reddish (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__feels_like_belching_will_come_but_cannot_belch_out
+msgid ""
+"Feels like belching will come, but cannot belch out (Dakar ane jaise feeling"
+" ati hain par dakar nahi ati) (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__feels_like_mucus_is_stuck_in_the_throat
+msgid "Feels like mucus is stuck in the throat (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__gender__female
+msgid "Female"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__name
+msgid "File Name"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+msgid "File Preview"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__fingers
+msgid "Fingers"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__first_cons_charges
+msgid "First Consultation Charges"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__first_xray_day
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__latest_xray_day
+msgid "First X-Ray Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__first_xray_grade
+msgid "First X-Ray Grade"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Follow Up"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__weekly_followup_date
+msgid "Follow Up Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__followup_id
+msgid "Follow-Up Reference"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_follower_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_follower_ids
+msgid "Followers"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_partner_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_partner_ids
+msgid "Followers (Partners)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_assessment
+#: model:ir.actions.act_window,name:patient_management.action_followup
+msgid "Followup"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_followup
+msgid "Followup Details"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__activity_type_icon
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__forearm
+msgid "Forearm"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__sweda__foul
+msgid "Foul"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__fracture
+msgid "Fracture"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__name
+msgid "Full Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__gender
+msgid "Gender"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Gradation Assessment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_gradation_followup_line
+msgid "Gradation Follow-up Line"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Gradation Line"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__gradation_line_ids
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Gradation Lines"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__xray_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__x_ray_grade
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__grade
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid "Grade"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_grade__grade_0
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_grade__grade_0
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__grade__grade_0
+msgid "Grade 0"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_grade__grade_0
+msgid "Grade 0 - Normal"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_grade__grade_1
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_grade__grade_1
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__grade__grade_1
+msgid "Grade 1"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_grade__grade_1
+msgid ""
+"Grade 1 - Doubtful Joint space narrowing and possible osteophytic lipping."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_grade__grade_2
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_grade__grade_2
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__grade__grade_2
+msgid "Grade 2"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_grade__grade_2
+msgid "Grade 2 - Definite osteophytes and possible joint space narrowing."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_grade__grade_3
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_grade__grade_3
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__grade__grade_3
+msgid "Grade 3"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_grade__grade_3
+msgid ""
+"Grade 3 - Moderate multiple osteophytes, definite narrowing of joint space "
+"and some sclerosis and possible deformity of bone ends."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_grade__grade_4
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_grade__grade_4
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__grade__grade_4
+msgid "Grade 4"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_grade__grade_4
+msgid ""
+"Grade 4 - Large osteophytes, marked narrowing of joint space, severe "
+"sclerosis and definite deformity of bone ends."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__summary_display
+msgid "Grade Summary"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__gu_in
+msgid "Gujarati"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__hba1c
+msgid "HBA1c"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__hiv_aids_hep
+msgid "HIV/AIDS/Hepatitis B and C"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__homa_ir
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "HOMA-IR"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__habits
+msgid "Habits"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__haemoglobin
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Haemoglobin"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__happiness
+msgid "Happiness"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_clinic_patient_search
+msgid "Has Active Enrollment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__has_message
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__has_message
+msgid "Has Message"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Hba1c"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__pitta_headache
+msgid "Headache or migraine when Pitta increases (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Heavy /\n"
+"                                        Free"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__heavy_joints_but_not_stiff
+msgid "Heavy joints but not stiff (Kapha Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__heel_pain
+msgid "Heel pain (Saam Pitta, Saam Rakta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__hi_in
+msgid "Hindi"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_enrollment__enrollment_type__home
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__session_type__home
+msgid "Home"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I understand that I am visiting ResearchAyu for consultation\n"
+"                                        related to stiffness, mobility, or related concerns."
+msgstr ""
+"मैं समझता हूँ कि मैं ResearchAyu में अकड़न, गतिशीलता या उससे संबंधित समस्याओं के लिए परामर्श हेतु आया हूँ।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to consultation."
+msgstr "मैं स्वेच्छा से परामर्श के लिए सहमति देता हूँ।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will behave respectfully with staff and patients. Misconduct/threats may lead\n"
+"                                        to refusal of service and/or legal action. Unutilized prepaid refund (if\n"
+"                                        eligible): deductions include ₹5,000 admin fee + medicines issued + services\n"
+"                                        used. Written request within 15 days of discontinuation. Processing up to 90\n"
+"                                        working days. EMI/Third-party: refund must be handled with the EMI/third-party\n"
+"                                        provider as per their terms. Double payment: proof within 15 days; duplicate\n"
+"                                        refunded within 15 working days via NEFT. I will not request/share any other\n"
+"                                        patient's personal, treatment, or payment details. Disputes will be resolved via\n"
+"                                        arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will\n"
+"                                        have jurisdiction if required."
+msgstr ""
+"मैं स्टाफ़ और मरीज़ों के साथ सम्मानपूर्वक व्यवहार करूँगा। दुर्व्यवहार/धमकियों के कारण सेवा से इनकार किया जा सकता है और/या कानूनी कार्रवाई की जा सकती है। इस्तेमाल न की गई प्रीपेड राशि का रिफ़ंड (यदि पात्र हों): कटौतियों में ₹5,000 की एडमिन फ़ीस + दी गई दवाएँ + इस्तेमाल की गई सेवाएँ शामिल हैं। सेवा बंद करने के 15 दिनों के भीतर लिखित अनुरोध करना होगा। प्रोसेसिंग में 90 कार्य दिवस तक लग सकते हैं। EMI/थर्ड-पार्टी: रिफ़ंड का मामला EMI/थर्ड-पार्टी प्रदाता के साथ, उनकी शर्तों के अनुसार ही निपटाया जाएगा। दोहरी पेमेंट: 15 दिनों के भीतर सबूत देना होगा; डुप्लीकेट पेमेंट का रिफ़ंड 15 कार्य दिवसों के भीतर NEFT के माध्यम से कर दिया जाएगा। मैं किसी अन्य मरीज़ की व्यक्तिगत, इलाज या पेमेंट संबंधी जानकारी का अनुरोध नहीं करूँगा और न ही उसे किसी के साथ साझा करूँगा। विवादों का समाधान ठाणे, महाराष्ट्र में मध्यस्थता (आर्बिट्रेशन) के माध्यम से किया जाएगा (भाषाएँ: अंग्रेज़ी/हिंदी/मराठी)। यदि आवश्यक हुआ, तो ठाणे स्थित न्यायालयों का ही क्षेत्राधिकार मान्य होगा।"
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I\n"
+"                                        will disclose complete medical history including autoimmune/comorbid conditions\n"
+"                                        (e.g., RA/ANA), past reports, and current medicines. I understand non-disclosure\n"
+"                                        may cause complications and the clinic will not be liable for issues arising\n"
+"                                        from undisclosed conditions. I understand Ayurvedic/Panchakarma treatments may\n"
+"                                        cause temporary side effects such as digestive discomfort, fatigue, temporary\n"
+"                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report\n"
+"                                        any side effects immediately."
+msgstr ""
+"सलाह दिए जाने पर, मैं ज़रूरी जाँचें (जैसे X-ray/MRI/खून की जाँच) पूरी करूँगा/करूँगी।\n"
+"                                        मैं अपनी पूरी मेडिकल हिस्ट्री बताऊँगा/बताऊँगी, जिसमें ऑटोइम्यून/सह-रुग्ण स्थितियाँ\n"
+"                                        (जैसे RA/ANA), पिछली रिपोर्टें, और अभी चल रही दवाएँ शामिल हैं। मैं समझता/समझती हूँ कि जानकारी न देने से\n"
+"                                        जटिलताएँ पैदा हो सकती हैं, और जिन स्थितियों के बारे में जानकारी नहीं दी गई है, उनसे पैदा होने वाली समस्याओं के लिए\n"
+"                                        क्लिनिक ज़िम्मेदार नहीं होगा। मैं समझता/समझती हूँ कि आयुर्वेदिक/पंचकर्म उपचारों से\n"
+"                                        अस्थायी दुष्प्रभाव हो सकते हैं, जैसे पाचन में दिक्कत, थकान, लक्षणों का अस्थायी रूप से बढ़ जाना,\n"
+"                                        एलर्जी/चकत्ते, भावनात्मक बदलाव, या त्वचा पर फुंसियाँ निकलना। मैं\n"
+"                                        किसी भी दुष्प्रभाव की जानकारी तुरंत दूँगा/दूँगी।"
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__id
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__id
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__id
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__id
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__id
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__id
+msgid "ID"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_exception_icon
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_exception_icon
+msgid "Icon"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__activity_exception_icon
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__message_needaction
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__message_has_error
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__message_has_sms_error
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__message_has_error
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__if_patient_eats_after_being_very_hungry_it_results_in_bloating_indigestion_nausea
+msgid ""
+"If patient eats after being very hungry, it results in bloating, "
+"indigestion, nausea (Drav Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__if_vomiting_happens_food_particles_come_out_undigested
+msgid ""
+"If vomiting happens, food particles come out undigested (as it is) (Drav "
+"Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_status__inactive
+msgid "Inactive"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Incomplete extension in fingers"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__instructions
+msgid "Instructions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__investigation_status
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__investigation_status
+msgid "Investigation Status"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__is_existing
+msgid "Is Existing"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_is_follower
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_is_follower
+msgid "Is Follower"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__jivha__ishat_saam
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__jivha__ishat_saam
+msgid "Ishat Saam"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__jivha
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__jivha
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__jivha
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Jivha"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__jivha
+msgid "Jivha:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__joint_pain_after_acidity
+msgid "Joint pains after acidity (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__jwaranubhuti
+msgid "Jwaranubhuti:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__k_c_o
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__k_c_o
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__k_c_o
+msgid "K/C/O"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__kn_in
+msgid "Kannada"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__kantha
+msgid "Kantha-Uro-Udar Daha:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__knee
+msgid "Knee"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_knee
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__pain_knee
+msgid "Knee Pain"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__knee_swelling_knee_stiffness_heaviness
+msgid "Knee swelling, knee stiffness + heaviness (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__kshudha
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__kshudha
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Kshudha"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__kshudha
+msgid "Kshudha:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__lft
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "LFT"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__la_ma_test
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "La/Ma Test"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__lab_name
+msgid "Lab Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__consent_language
+msgid "Language"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid ""
+"Large osteophytes, marked narrowing\n"
+"                                        of joint space, severe sclerosis and\n"
+"                                        definite deformity of bone ends."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__write_uid
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__write_date
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__write_date
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__write_date
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__write_date
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__write_date
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__latest_blood_report_id
+msgid "Latest Blood Report"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__latest_followup_id
+msgid "Latest Follow Up"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__latest_xray_grade
+msgid "Latest X-Ray Grade"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__latest_xray_status
+msgid "Latest X-Ray Status"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__left_knee
+msgid "Left Knee"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__left_without_consultation_due_to_more_waiting_time
+msgid "Left Without Consultation Due To Waiting Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__partner_id
+msgid "Link patient to POS/Invoices"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__lipid_profile
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Lipid Profile"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__liver_cirrhosis
+msgid "Liver cirrhosis"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Load"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Local\n"
+"                                        knee temperature"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__instructions__local_application
+msgid "Local Application"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__local_knee_temperature_lt
+msgid "Local knee temperature left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__local_knee_temperature_rt
+msgid "Local knee temperature right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__local_skin_issues
+msgid "Local skin issues (Acute Psoriasis, Gangrene, Open wounds)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__long_distance
+msgid "Long distance"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__lumbar_spine
+msgid "Lumbar Spine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__lunch_with_time
+msgid "Lunch with Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__lunch
+msgid "Lunch:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__file_type__mri
+msgid "MRI"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__patient_mrn
+msgid "MRN No."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__mal
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__mal
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Mal"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__mala_aadhman_malabaddhata_sticky_drava
+msgid "Mala/Aadhman/Malabaddhata/sticky/Drava/IBS:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__gender__male
+msgid "Male"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__kshudha__manda
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__digestion__manda
+msgid "Manda"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__mr_in
+msgid "Marathi"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__mrn
+msgid "Medical Record Number"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__medications
+msgid "Medications"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__product_id
+msgid "Medicine"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__line_ids
+#, python-format
+msgid "Medicines"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_has_error
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_has_error
+msgid "Message Delivery error"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_status__mild_positive
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_status__mild_positive
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_status__mild_positive
+msgid "Mild Positive"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid ""
+"Moderate multiple osteophytes,\n"
+"                                        definite narrowing of joint space and\n"
+"                                        some sclerosis and possible deformity\n"
+"                                        of bone ends."
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_attachment
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_blood_report
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_case_taking
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_daily_followup
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_diet_chart
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_followup
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_prescription
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_session
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_xray
+msgid "Modified By"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Morning\n"
+"                                        stiffness with duration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__stiffness
+msgid "Morning Stiffness"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__morning_with_time
+msgid "Morning With Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__morning_stiffness_kapha_vaata
+msgid "Morning stiffness (Saam Vata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__morning_stiffness_with_duration_lt
+msgid "Morning stiffness with duration left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__morning_stiffness_with_duration_rt
+msgid "Morning stiffness with duration right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__motion
+msgid "Motion"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__mucus_color_may_be_cloudy_black_green_etc
+msgid "Mucus color may be cloudy, black, green, etc. (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__mutra
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__mutra
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Mutra"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__mutra_naktamutrata_mutradaha
+msgid "Mutra/Naktamutrata/Mutradaha:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__my_activity_date_deadline
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__nakta
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__nakta
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Nakta"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__nidra__nasha
+msgid "Nasha"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__nausea_before_meals
+msgid "Nausea / queasiness before meals (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__nausea_when_hungry
+msgid "Nausea when hungry (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_status__negative
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_status__negative
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_status__negative
+msgid "Negative"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_date_deadline
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_summary
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_summary
+msgid "Next Activity Summary"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_type_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_type_id
+msgid "Next Activity Type"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__nidra
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__nidra
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Nidra"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__nidra
+msgid "Nidra:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment__type_of_therapy__nil
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__type_of_therapy__nil
+msgid "Nil"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__jivha__niram
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__jivha__niram
+msgid "Niram"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_status__no_change
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_status__no_change
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_status__no_change
+msgid "No Change"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No Guarantee Clause:"
+msgstr "कोई गारंटी नहीं खंड:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "No diagnosis or outcome is guaranteed."
+msgstr "किसी भी निदान या परिणाम की गारंटी नहीं है।"
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__no_knee_spine_concern
+msgid "No knee/spine related concern"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Non-Pitting oedema"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid "Normal"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__not_applicable
+msgid "Not Applicable"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__not_applicable_reasons
+msgid "Not Applicable Reasons"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__not_enrolled
+msgid "Not Enrolled"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__not_enrolled_reasons
+msgid "Not Enrolled Reasons"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__not_feasible
+msgid "Not Feasible"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__not_interested
+msgid "Not Interested"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__notes
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__notes
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__notes
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__notes
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__notes
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Notes"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_needaction_counter
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__used_sessions
+msgid "Number of Therapy Sessions Patient has already Completed"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__total_sessions
+msgid "Number of Therapy Sessions for which Patient has Enrolled"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "Number of Therapy Sessions for which Patient has Enrolled Cannot be 0."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_has_error_counter
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__message_needaction_counter
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__message_has_error_counter
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__numbness_or_tingling_pins_and_needles
+msgid "Numbness / tingling (Vaat Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "O/E:"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid "Observation"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Observations"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Old"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/js/restrict_product_click.js:0
+#, python-format
+msgid "Only allowed combo products or prescription items can be added."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__organ_id
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Organ"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__organ_category
+msgid "Organ Category"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_organ__name
+msgid "Organ Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_gradation_organ
+msgid "Organ for Gradation"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__osteophytes
+msgid "Osteophytes (Vikrut vaata, Saam Medha, Saam Asthi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_others
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__gender__other
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__file_type__other
+msgid "Other"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_attachment
+msgid "Other Description"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__others
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__others
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Others"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__others_k
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__others_s
+msgid "Others:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__p_h_o
+msgid "P/H/O"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Pain"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Pain\n"
+"                                        Walking Reduced By %"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__pain_grade
+msgid "Pain Grade"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__pain_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__pain_lt
+msgid "Pain Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__pain_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__pain_rt
+msgid "Pain Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_types
+msgid "Pain Types"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__pain_while_walking_reduced_by_lt
+msgid "Pain Walking Reduced By % left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__pain_while_walking_reduced_by_rt
+msgid "Pain Walking Reduced By % right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__pain_increases_after_travelling
+msgid "Pain increases after travelling (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__pain_increases_in_cold
+msgid "Pain increases in cold (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__palm_sole_burning
+msgid "Palm, sole burning (Saam Pitta,Saam Rakta)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Parameter"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Parameters"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription__state__partial
+msgid "Partially Completed"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__patient_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__patient_id
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+#, python-format
+msgid "Patient"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_assessment
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Patient Assessment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_assessment_line
+msgid "Patient Assessment Line"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+msgid "Patient Attachment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_attachment
+msgid "Patient Attachments (X-Ray, MRI, Consent, Blood Report)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "Patient Blood Report (View Only)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_enrollment
+msgid "Patient Enrollment"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Patient Feedback"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "Patient Follow-Ups (View Only)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Patient Internal Summary"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_consent_form__patient_name
+msgid "Patient Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_prescription
+msgid "Patient Prescription"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Patient Responsibility:"
+msgstr "रुग्णाची जबाबदारी:"
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__patient_status
+msgid "Patient Status"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_xray
+msgid "Patient X-Ray"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__patient_absent
+msgid "Patient absent"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__patient_not_present
+msgid "Patient not present"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/patient.py:0
+#, python-format
+msgid ""
+"Patient status cannot be changed back to 'Visit' once it is Active or "
+"Inactive."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_patient
+#: model:ir.model.fields,field_description:patient_management.field_clinic_clinic__patient_ids
+msgid "Patients"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+msgid ""
+"Pedal\n"
+"                                        Oedema"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Pedal Oedema"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__pedal_oedema_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__pedal_oedema_lt
+msgid "Pedal Oedema Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__pedal_oedema_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__pedal_oedema_rt
+msgid "Pedal Oedema Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__personal_reasons
+msgid "Personal Reasons"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__phone
+msgid "Phone"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Pitting\n"
+"                                        oedema"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__platelet_count
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Platelet Count"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__other_description
+msgid "Please specify (if Other)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_pos_order
+msgid "Point of Sale Orders"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__pregnant_lactating
+msgid "Pregnant/Lactating females"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_button.xml:0
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__prescription_id
+#: model:ir.model.fields,field_description:patient_management.field_pos_order__prescription_id
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+#, python-format
+msgid "Prescription"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__prescription_date
+msgid "Prescription Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_prescription_line
+msgid "Prescription Line"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "Prescription Lines"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "Prescription confirmed successfully!"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_prescription
+msgid "Prescriptions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__preview_html
+msgid "Preview"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__preview_url
+msgid "Preview URL"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Purpose of Consultation:"
+msgstr "सल्ल्याचा उद्देश:"
+
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__qty
+msgid "Quantity"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_ra
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "RA"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__ra_ana_increased
+msgid "RA / ANA increased (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__rft
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "RFT"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__rom
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "ROM"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__rom_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__rom_lt
+msgid "ROM Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__rom_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__rom_rt
+msgid "ROM Right"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "RS Followup"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__ra
+msgid "Ra Factor"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__ra_factor_titre
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Ra Factor/Titre"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid "Radiological Findings"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__rasa_dhatu_dushti_lakshane
+msgid "Rasa Dhatu Dushi Lakshane:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__rashes
+msgid "Rashes"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__recent_paralysis
+msgid "Recent history of paralysis"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__recovery
+msgid "Recovery"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment__type_of_therapy__regeneration
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__type_of_therapy__regeneration
+msgid "Regeneration"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__regeneration_therapy
+msgid "Regeneration Therapy"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Registered For"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__x_ray_id
+msgid "Related X-Ray Record"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__remaining_sessions
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__remaining_sessions
+msgid "Remaining Sessions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__renal_failure
+msgid "Renal failure"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "ResearchAyu -"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_user_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__activity_user_id
+msgid "Responsible User"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__right_knee
+msgid "Right Knee"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__s3_url
+msgid "S3 URL"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__slr
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "SLR"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__slr_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__slr_lt
+msgid "SLR Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__slr_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__slr_rt
+msgid "SLR Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__message_has_sms_error
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__jivha__saam
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__jivha__saam
+msgid "Saam"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__saam_kapha_will_have_saam_medha_so_smelly_sweat
+msgid ""
+"Saam Kapha will have Saam Medha, so smelly sweat (Saam Kapha, Saam Medha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__kshudha__samyak
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__nidra__samyak
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__sweda__samyak
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__digestion__samyak
+msgid "Samyak"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__value
+msgid "Score"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Score (0-5)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
+msgid "Search medicines..."
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Search patient name..."
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+msgid "Select File"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_enrollment__enrollment_type__self
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__session_type__self
+msgid "Self"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_session
+msgid "Session"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__session_date
+msgid "Session Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__session_day
+msgid "Session Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_patient_session
+msgid "Session Details"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_session_form
+msgid "Sessions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__shifting_pain
+msgid "Shifting pain (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+msgid ""
+"Shin\n"
+"                                        Tenderness"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Shin Tenderness"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__shin_tenderness_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__shin_tenderness_lt
+msgid "Shin Tenderness Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__shin_tenderness_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__shin_tenderness_rt
+msgid "Shin Tenderness Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__shoulder
+msgid "Shoulder"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__latest_xray_status__significant_positive
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__x_ray_status__significant_positive
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_xray__x_ray_status__significant_positive
+msgid "Significant Positive"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__skin_becomes_dark
+msgid "Skin becomes dark (Saam Vaata,Vaata Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__sleep_time
+msgid "Sleep Time:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__smelly_stool
+msgid "Smelly stool (Saam Kapha, Saam Pita)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__sour_belching
+msgid "Sour belching (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__other_reason
+msgid "Specify Other Reason"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__others
+msgid "Specify if Other"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__pain_spine
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__pain_spine
+msgid "Spine Pain"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__sr_creatinine
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Sr. Creatinine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__sr_uric_acid
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Sr. Uric Acid"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__state
+msgid "State"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__state
+#: model:ir.model.fields,field_description:patient_management.field_patient_prescription__state
+msgid "Status"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__activity_state
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__sticky_stool
+msgid "Sticky stool (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__surgical_implants
+msgid "Surgical implants"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__sweda
+msgid "Sweda:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__swelling
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__swelling
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Swelling"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__swelling_lt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__swelling_lt
+msgid "Swelling Left"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__swelling_rt
+#: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__swelling_rt
+msgid "Swelling Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__s_h
+msgid "Sx/H"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment_line__key
+msgid "Symptom"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_assessment_form
+msgid "Symptom Scores"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__t_cholesterol
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "T-Cholesterol"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__t_triglyceride
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "T-Triglyceride"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__t3
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "T3"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__t4
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "T4"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__tsh
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "TSH"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__consent_form__consent_language__te_in
+msgid "Telugu"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_gradation_followup_line__tenderness
+msgid "Tenderness"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "The consultation may include:"
+msgstr "सल्लामसलतीमध्ये खालील बाबींचा समावेश असू शकतो:"
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/attachment.py:0
+#, python-format
+msgid "The date of X-Ray must be today or earlier."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "The enrollment date must be today or earlier."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/patient.py:0
+#, python-format
+msgid "The visit date must be today or earlier."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_therapist__name
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__therapist_id
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__therapist_name
+msgid "Therapist Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__therapy_medicine
+msgid "Therapy + Medicine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__therapy_amount
+msgid "Therapy Amount"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__therapy_day
+msgid "Therapy Day"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_session__session_type
+msgid "Therapy Location"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_session_form
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "Therapy Session"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__session_ids
+msgid "Therapy Sessions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__thigh
+msgid "Thigh"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.constraint,message:patient_management.constraint_clinic_therapist_unique_contact_per_clinic
+msgid ""
+"This contact number is already registered for another therapist in this "
+"clinic!"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__thoracic_spine
+msgid "Thoracic Spine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__tibia
+msgid "Tibia"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__kshudha__tikshna
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__digestion__tikshna
+msgid "Tikshna"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__tiktamlodgar
+msgid "Tiktamlodgar:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__time_issue
+msgid "Time Issue"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "Today"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_clinic_patient_search
+msgid "Today's Registered Patients"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__toes
+msgid "Toes"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__total_sessions
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_enrollment_tree
+msgid "Total Sessions"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__total_amount
+msgid "Total Therapy Charges"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "Total Therapy Charges Cannot be 0."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__touch_feels_hot
+msgid "Touch feels hot (Pitta Vridhi, Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_daily_followup_form
+msgid "Traditional Observations"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment__type_of_therapy__transition
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__type_of_therapy__transition
+msgid "Transition"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__travel_issue
+msgid "Travel Issue"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__treatment
+msgid "Treatment"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.report,name:patient_management.action_report_treatment_consent
+msgid "Treatment Consent"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_status
+msgid "Treatment Status"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__tremors_shaking_in_some_patients
+msgid "Tremors (shaking) in some patients (Vaat Vridhi, Maaja Kshaya)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__file_type
+msgid "Type of Report"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__type_of_therapy
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__type_of_therapy
+msgid "Type of Therapy"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__activity_exception_decoration
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__uuid
+msgid "UUID"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__uncomfortable_after_eating
+msgid "Uncomfortable after eating (Saam Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Advice:"
+msgstr "सल्ल्याचे आकलन:"
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
+msgid "Updated by"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_attachment_form
+msgid "Upload"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__file_data
+msgid "Upload File"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__upper_arm
+msgid "Upper Arm"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__uric_acid
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Uric Acid"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_microscopic
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine Microscopic"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_protein
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine Protein"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_routine
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine Routine"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_sugar
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine Sugar"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_blood_crystal
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine blood/crystal"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__urine_may_be_cloudy_heavy_smell
+msgid "Urine may be cloudy / heavy smell (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_blood_report__urine_pus_cells_bacteria
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_blood_report_form
+msgid "Urine pus cells/bacteria"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_enrollment_tree
+msgid "Used Sessions"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "Used Sessions cannot be greater than Total Sessions."
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid "Varicose veins gradation"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__varicose_veins_gradation_lt
+msgid "Varicose veins gradation left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__varicose_veins_gradation_rt
+msgid "Varicose veins gradation right:"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
+msgid ""
+"Varus /\n"
+"                                        Valgus deformity"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__very_low_hunger
+msgid "Very low hunger (Saam Kapha, Pitta Kshaya, Saam vata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__very_mild_hunger_or_no_hunger
+msgid "Very mild hunger or no hunger (Saam Kapha)"
+msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.view_patient_form
+msgid "View X-Rays"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__kshudha__vishama
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_session__digestion__vishama
+msgid "Vishama"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_status__visit
+msgid "Visit"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__wake_up_time
+msgid "Wake up time:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_second_opinion
+msgid "Wants Second Opinion"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_time_to_think
+msgid "Wants Time to Think"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_to_discuss_at_home
+msgid "Wants to Discuss at Home"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__frequent_hunger
+msgid ""
+"Wants to eat repeatedly (hunger again within ~2 hours after meals) (Pitta "
+"Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__was_getting_late_didnt_wait_for_closure
+msgid "Was getting late, didn't wait for closure"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__website_message_ids
+#: model:ir.model.fields,field_description:patient_management.field_patient_enrollment__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,help:patient_management.field_clinic_patient__website_message_ids
+#: model:ir.model.fields,help:patient_management.field_patient_enrollment__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_assessment__weight
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__weight
+msgid "Weight"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__salivation_when_hungry
+msgid ""
+"When the person feels hungry, water comes in the mouth (salivation) (Saam "
+"Pitta)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__whole_body_pain
+msgid "Whole body pain (Saam Vaata)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__gradation_organ__category__wrist
+msgid "Wrist"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_attachment__file_type__xray
+msgid "X-Ray"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__date_taken
+msgid "X-Ray Date"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_attachment__x_ray_status
+#: model:ir.model.fields,field_description:patient_management.field_patient_xray__x_ray_status
+msgid "X-Ray Status"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.actions.act_window,name:patient_management.action_xray
+#: model_terms:ir.ui.view,arch_db:patient_management.patient_xray_form
+msgid "X-Rays"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__yellow_eyes
+msgid "Yellow Eyes (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__yellow_urine
+msgid "Yellow Urine (yellowish than normal) throughout the day (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "You can enter a maximum of 100 therapy sessions."
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/js/orderline_patch.js:0
+#, python-format
+msgid "You cannot increase quantity of prescribed medicines."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/patient.py:0
+#, python-format
+msgid "You cannot manually set patient to Inactive. It is system controlled."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/enrollment.py:0
+#, python-format
+msgid "You cannot modify an enrollment that is already completed"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model,name:patient_management.model_clinic_therapist
+msgid "clinic.therapist"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__complete_restricted_with_degree_lt
+msgid "complete/restricted with degree left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__complete_restricted_with_degree_rt
+msgid "complete/restricted with degree right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__heavy_free_rt
+msgid "heavy/free right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__incomplete_extension_in_fingers_lt
+msgid "incomplete extension in fingers left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__incomplete_extension_in_fingers_rt
+msgid "incomplete extension in fingers right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__non_pitting_oedema_lt
+msgid "non-Pitting oedema left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__non_pitting_oedema_rt
+msgid "non-Pitting oedema right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__pitting_oedema_lt
+msgid "pitting oedema left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__pitting_oedema_rt
+msgid "pitting oedema right:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__varus_valgus_deformity_lt
+msgid "varus/valgus deformity left:"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_patient_followup__varus_valgus_deformity_rt
+msgid "varus/valgus deformity right:"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ Duplication of this record is not allowed."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ Please confirm the prescription before printing."
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.constraint,message:patient_management.constraint_clinic_patient_unique_uuid
+msgid "⚠️ UUID must be unique!"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot confirm a prescription without medicines."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot create a prescription without medicines."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot reconfirm a prescription that is already Done."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid ""
+"⚠️ You cannot reconfirm a prescription that is already Partially Completed."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot update a prescription that is Done."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot update a prescription that is Partially Completed."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "⚠️ You cannot update a prescription without medicines."
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "✅ Success"
+msgstr ""
+
+#. module: patient_management
+#. odoo-python
+#: code:addons/patient_management/models/prescription.py:0
+#, python-format
+msgid "🩺 New Prescription for %s by Dr. %s"
+msgstr ""
+
+#. module: patient_management
+#. odoo-javascript
+#: code:addons/patient_management/static/src/xml/prescription_popup.xml:0
+#, python-format
+msgid "🩺 Prescription Queue"
+msgstr ""
