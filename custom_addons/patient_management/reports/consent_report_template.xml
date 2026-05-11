@@ -5,28 +5,23 @@
             <style>
                 @font-face {
                 font-family: 'NotoSans';
-                src:
-                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSans-Regular.ttf');
+                src: url('file:///usr/share/fonts/noto/NotoSans-Regular.ttf');
                 }
                 @font-face {
                 font-family: 'NotoDevanagari';
-                src:
-                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansDevanagari-Regular.ttf');
+                src: url('file:///usr/share/fonts/noto/NotoSansDevanagari-Regular.ttf');
                 }
                 @font-face {
                 font-family: 'NotoGujarati';
-                src:
-                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansGujarati-Regular.ttf');
+                src: url('file:///usr/share/fonts/noto/NotoSansGujarati-Regular.ttf');
                 }
                 @font-face {
                 font-family: 'NotoKannada';
-                src:
-                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansKannada-Regular.ttf');
+                src: url('file:///usr/share/fonts/noto/NotoSansKannada-Regular.ttf');
                 }
                 @font-face {
                 font-family: 'NotoTelugu';
-                src:
-                url('file:///home/sarthak/git_changes/custom_addons/custom_addons/patient_management/static/fonts/NotoSansTelugu-Regular.ttf');
+                src: url('file:///usr/share/fonts/noto/NotoSansTelugu-Regular.ttf');
                 }
                 body, .page, p, li, h2, h5 {
                 font-family: 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoDevanagari', 'NotoSans', sans-serif
