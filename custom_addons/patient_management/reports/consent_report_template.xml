@@ -41,6 +41,21 @@
                 margin-top: 15px !important;
                 margin-bottom: 8px !important;
                 }
+                .watermark {
+                position: fixed;
+                top: 40%;
+                left: -10%;
+                width: 120%;
+                text-align: center;
+                opacity: 0.08;
+                font-size: 28px;
+                font-weight: bold;
+                color: #999;
+                white-space: nowrap;
+                -webkit-transform: rotate(-45deg);
+                transform: rotate(-45deg);
+                z-index: -1000;
+                }
             </style>
 
             <t t-foreach="docs" t-as="o">
@@ -58,8 +73,7 @@
                         </div>
 
                         <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
-                        <div class="watermark"
-                             style="position: absolute; opacity: 0.05; top: 300px; left: 0; width: 150%; text-align: center; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 24px; font-weight: bold; color: #ccc; white-space: nowrap;">
+                        <div class="watermark">
                             ResearchAyu -
                             <span t-field="o.patient_name"/>
                             -
