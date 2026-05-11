@@ -59,7 +59,7 @@
 
                         <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
                         <div class="watermark"
-                             style="position: absolute; opacity: 0.05; top: 300px; left: 0; width: 100%; text-align: center; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 24px; font-weight: bold; color: #ccc; white-space: nowrap;">
+                             style="position: absolute; opacity: 0.05; top: 300px; left: 0; width: 150%; text-align: center; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); z-index: -1000; pointer-events: none; font-size: 24px; font-weight: bold; color: #ccc; white-space: nowrap;">
                             ResearchAyu -
                             <span t-field="o.patient_name"/>
                             -
