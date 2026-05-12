@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_form_inherit_pet_bm" model="ir.ui.view">
+        <field name="name">clinic.patient.form.inherit.pet.bm</field>
+        <field name="model">clinic.patient</field>
+        <field name="inherit_id" ref="patient_management.view_patient_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_patient_xray']" position="after">
+                <button name="action_open_pet_tracker"
+                        type="object"
+                        class="btn-secondary"
+                        string="PET"
+                        />
+                <button name="action_open_bm_followup"
+                        type="object"
+                        class="btn-secondary"
+                        string="BM Follow UP"
+                        />
+            </xpath>
+        </field>
+    </record>
+</odoo>

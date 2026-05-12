@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pet_record_search" model="ir.ui.view">
+        <field name="name">pet.record.search</field>
+        <field name="model">pet.record</field>
+        <field name="arch" type="xml">
+            <search string="Search Tracker">
+                <field name="patient_id"/>
+                <field name="patient_mrn"/>
+                <field name="phone_number"/>
+                <separator/>
+                <filter string="High Pain (7+)" name="high_pain" domain="['|', ('pain_walking_score', '&gt;=', 7), ('pain_resting_score', '&gt;=', 7)]"/>
+                <filter string="Low Satisfaction" name="low_sat" domain="[('satisfaction_score', '&lt;', 5)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Clinic" name="group_clinic" context="{'group_by': 'clinic_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_pet_record_tree" model="ir.ui.view">
+        <field name="name">pet.record.tree</field>
+        <field name="model">pet.record</field>
+        <field name="arch" type="xml">
+            <tree string="Patient Experience Tracker">
+                <field name="patient_id"/>
+                <field name="patient_mrn"/>
+                <field name="category_id"/>
+                <field name="last_contact_date"/>
+                <field name="actual_next_followup_date"/>
+                <field name="recommended_next_followup"/>
+                <field name="followup_overdue"/>
+                <field name="remarks"/>
+
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pet_record_form" model="ir.ui.view">
+        <field name="name">pet.record.form</field>
+        <field name="model">pet.record</field>
+        <field name="arch" type="xml">
+            <form string="Patient Experience Tracker">
+
+                <sheet>
+                    <div class="oe_title">
+                        <label for="patient_id" string="Patient Name"/>
+                        <h1>
+                            <field name="patient_id" readonly="1" force_save="1" placeholder="Patient..."/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="PATIENT INFO">
+                            <field name="patient_mrn"/>
+                            <field name="phone_number"/>
+                            <field name="alternate_number"/>
+                            <field name="clinic_id"/>
+                            <field name="advisor_id"/>
+                        </group>
+                        <group string="TRACKING STATUS">
+                            <field name="category_id" options="{'no_create': True}" placeholder="Select Category..."/>
+                            <field name="subcategory_id" options="{'no_create': True}"
+                                   domain="[('category_id', '=', category_id)]" placeholder="Select Sub Category..."/>
+                            <field name="priority" />
+                            <field name="escalation_needed"/>
+                        </group>
+                    </group>
+
+                    <separator string="Treatment &amp; Follow-up"/>
+                    <group>
+                        <group string="Dates">
+                            <field name="start_date"/>
+                            <field name="last_visit_date"/>
+                            <field name="last_contact_date"/>
+                        </group>
+                        <group string="Next Steps">
+                            <field name="suggested_followup_days" force_save="1"/>
+                            <field name="recommended_next_followup" force_save="1"/>
+                            <field name="actual_next_followup_date"/>
+                            <field name="followup_overdue" invisible="followup_overdue == 0"/>
+                        </group>
+                    </group>
+
+                    <separator string="Clinical Metrics"/>
+                    <group>
+                        <group string="Scores">
+                            <field name="pain_walking_score"/>
+                            <field name="pain_resting_score"/>
+                            <field name="satisfaction_score"/>
+                            <field name="mobility_status"/>
+                        </group>
+                        <group string="Treatment Status">
+                            <field name="treatment_status"/>
+                            <field name="home_therapy_kit"/>
+                            <field name="outcome_status"/>
+                        </group>
+                    </group>
+                    <group string="Details">
+                        <field name="reason_not_starting_stopping"/>
+                    </group>
+
+                    <separator string="Actions &amp; Remarks"/>
+                    <group>
+                        <group>
+                            <field name="action_taken" placeholder="Describe recent actions..."/>
+                            <field name="remarks" placeholder="General notes..."/>
+                        </group>
+                        <group string="Outcome Tracking">
+                            <field name="referral_given"/>
+                            <field name="review_given"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pet_record" model="ir.actions.act_window">
+        <field name="name">PET Tracker</field>
+        <field name="res_model">pet.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first PET record!
+            </p>
+        </field>
+    </record>
+
+    <record id="view_bm_followup_log_tree" model="ir.ui.view">
+        <field name="name">bm.followup.log.tree</field>
+        <field name="model">bm.followup.log</field>
+        <field name="arch" type="xml">
+            <tree string="BM Follow-up Logs">
+                <field name="timestamp"/>
+                <field name="patient_id"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="action_taken"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_bm_followup_log_form" model="ir.ui.view">
+        <field name="name">bm.followup.log.form</field>
+        <field name="model">bm.followup.log</field>
+        <field name="arch" type="xml">
+            <form string="BM Follow-up Log">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="patient_id" readonly="1" force_save="1"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group>
+                            <field name="timestamp"/>
+                        </group>
+                    </group>
+                    <group string="Log Details">
+                        <field name="action_taken" placeholder="Enter follow-up details here..." nolabel="1"
+                               colspan="2"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+</odoo>
