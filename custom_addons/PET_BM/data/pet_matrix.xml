@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="cat_active" model="pet.category"><field name="name">Active</field></record>
+        <record id="cat_dropoff" model="pet.category"><field name="name">Drop-off</field></record>
+        <record id="cat_notenrolled" model="pet.category"><field name="name">Not Enrolled</field></record>
+        <record id="cat_completed" model="pet.category"><field name="name">Completed</field></record>
+
+        <record id="sub_regular" model="pet.subcategory">
+            <field name="name">Regular</field>
+            <field name="category_id" ref="cat_active"/>
+        </record>
+        <record id="sub_irregular" model="pet.subcategory">
+            <field name="name">Irregular</field>
+            <field name="category_id" ref="cat_active"/>
+        </record>
+        <record id="sub_droprisk_active" model="pet.subcategory">
+            <field name="name">Drop-risk</field>
+            <field name="category_id" ref="cat_active"/>
+        </record>
+
+        <record id="sub_droprisk_dropoff" model="pet.subcategory">
+            <field name="name">Drop-risk</field>
+            <field name="category_id" ref="cat_dropoff"/>
+        </record>
+
+        <record id="sub_hot" model="pet.subcategory">
+            <field name="name">Hot</field>
+            <field name="category_id" ref="cat_notenrolled"/>
+        </record>
+        <record id="sub_warm" model="pet.subcategory">
+            <field name="name">Warm</field>
+            <field name="category_id" ref="cat_notenrolled"/>
+        </record>
+        <record id="sub_cold" model="pet.subcategory">
+            <field name="name">Cold</field>
+            <field name="category_id" ref="cat_notenrolled"/>
+        </record>
+
+        <record id="sub_happy" model="pet.subcategory">
+            <field name="name">Happy</field>
+            <field name="category_id" ref="cat_completed"/>
+        </record>
+        <record id="sub_neutral" model="pet.subcategory">
+            <field name="name">Neutral</field>
+            <field name="category_id" ref="cat_completed"/>
+        </record>
+        <record id="sub_unsatisfied" model="pet.subcategory">
+            <field name="name">Unsatisfied</field>
+            <field name="category_id" ref="cat_completed"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,214 @@
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
+from datetime import date, timedelta
+
+
+class PETCategory(models.Model):
+    _name = 'pet.category'
+    _description = 'PET Category'
+    name = fields.Char(string="Category Name", required=True)
+
+
+class PETSubCategory(models.Model):
+    _name = 'pet.subcategory'
+    _description = 'PET Sub Category'
+    category_id = fields.Many2one('pet.category', string="Category", required=True, ondelete='cascade')
+    name = fields.Char(string="Sub Category Name", required=True)
+
+
+class PETRecord(models.Model):
+    _name = 'pet.record'
+    _description = 'Patient Experience Tracker'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    # --- RELATIONAL FIELDS (Patient Info) ---
+    patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, ondelete='cascade', tracking=True)
+    patient_mrn = fields.Char(related="patient_id.mrn", string="MRN", readonly=True)
+    clinic_id = fields.Many2one('clinic.clinic', string="Clinic Name", related="patient_id.clinic_id", store=True)
+    advisor_id = fields.Many2one('res.users', string="Advisor Name", default=lambda self: self.env.user, tracking=True)
+    phone_number = fields.Char(related="patient_id.phone", string="Phone Number", readonly=True)
+    alternate_number = fields.Integer(string= 'Alternate Phone Number', tracking=True)
+
+    # --- THE RELATIONAL MATRIX ---
+    category_id = fields.Many2one('pet.category', string="Category", tracking=True)
+    subcategory_id = fields.Many2one('pet.subcategory', string="Sub Category",
+                                     domain="[('category_id', '=', category_id)]", tracking=True)
+
+    treatment_status = fields.Selection([
+        ('Continue Treatment', 'Continue Treatment'),
+        ('Planning to Stop', 'Planning to Stop'),
+        ('Stopped', 'Stopped'),
+        ('Not Started', 'Not Started'),
+        ('Completed', 'Completed'),
+        ('Maintenance', 'Maintenance')
+    ], string="Current Treatment Status", tracking=True)
+
+    reason_not_starting_stopping = fields.Text(string="Reason for Not Starting / Stopping", tracking=True)
+    home_therapy_kit = fields.Selection([('Yes', 'Yes'), ('No', 'No'), ('Maybe', 'Maybe')], string="Home Therapy Kit",
+                                        tracking=True)
+
+    # --- DATES ---
+    start_date = fields.Date(string="Start Date", tracking=True)
+    last_visit_date = fields.Date(string="Last Visit Date", tracking=True)
+    last_contact_date = fields.Date(string="Last Contact Date", tracking=True)
+    actual_next_followup_date = fields.Date(string="Actual Next Follow-up Date", tracking=True)
+
+    suggested_followup_days = fields.Integer(string="Suggested Follow-up Days", compute="_compute_followup_logic",
+                                             store=True, readonly=True)
+    recommended_next_followup = fields.Date(string="Recommended Next Follow-up", compute="_compute_followup_logic",
+                                            store=True, readonly=True)
+
+    # --- METRICS & OUTCOMES ---
+    pain_walking_score = fields.Integer(string="Pain While Walking (0-10)", tracking=True)
+    pain_resting_score = fields.Integer(string="Pain While Resting (0-10)", tracking=True)
+    mobility_status = fields.Selection(
+        [('Severe Limitation', 'Severe'), ('Moderate Limitation', 'Moderate'), ('Mild Limitation', 'Mild')],
+        string="Mobility Status", tracking=True)
+    satisfaction_score = fields.Integer(string="Satisfaction Score (0-10)", tracking=True)
+    referral_given = fields.Boolean(string="Referral Given", tracking=True)
+    review_given = fields.Boolean(string="Review Given", tracking=True)
+
+    action_taken = fields.Text(string="Action Taken", tracking=True)
+    remarks = fields.Text(string="Remarks", tracking=True)
+    outcome_status = fields.Selection(
+        [('On Track', 'On Track'), ('Improving', 'Improving'), ('Plateau', 'Plateau'), ('Stopped', 'Stopped')],
+        string="Outcome Status", tracking=True)
+
+    days_since_last_contact = fields.Integer(string="Days Since Last Contact", compute="_compute_metrics", store=True)
+    followup_overdue = fields.Integer(string="Follow-up Overdue (Days)", compute="_compute_metrics", store=True)
+
+    priority = fields.Selection([('0', 'Low'), ('1', 'Normal'), ('2', 'High'), ('3', 'Critical')], string="Priority",
+                                default='1', tracking=True)
+    escalation_needed = fields.Boolean(string="Escalation Needed", tracking=True)
+    task_status = fields.Selection([('pending', 'Pending'), ('in_progress', 'In Progress'), ('completed', 'Completed')],
+                                   string="Task Status", default='pending', tracking=True)
+
+    # ==========================================
+    # AUTOMATIONS
+    # ==========================================
+
+    @api.constrains('pain_walking_score', 'pain_resting_score', 'satisfaction_score')
+    def _check_scores_range(self):
+        for rec in self:
+            if rec.pain_walking_score < 0 or rec.pain_walking_score > 10:
+                raise ValidationError("The 'Pain While Walking' score must be between 0 and 10.")
+
+            if rec.pain_resting_score < 0 or rec.pain_resting_score > 10:
+                raise ValidationError("The 'Pain While Resting' score must be between 0 and 10.")
+
+            if rec.satisfaction_score < 0 or rec.satisfaction_score > 10:
+                raise ValidationError("The 'Satisfaction Score' must be between 0 and 10.")
+
+    @api.onchange('category_id', 'subcategory_id')
+    def _onchange_matrix(self):
+        for rec in self:
+            cat = rec.category_id.name if rec.category_id else False
+            if cat == 'Active':
+                rec.treatment_status = 'Continue Treatment'
+            elif cat == 'Not Enrolled':
+                rec.treatment_status = 'Not Started'
+            elif cat == 'Drop-off' and rec.treatment_status not in ['Planning to Stop', 'Stopped']:
+                rec.treatment_status = False
+            elif cat == 'Completed' and rec.treatment_status not in ['Completed', 'Maintenance']:
+                rec.treatment_status = False
+
+    @api.depends('last_contact_date', 'actual_next_followup_date')
+    def _compute_metrics(self):
+        today = date.today()
+        for rec in self:
+            rec.days_since_last_contact = (today - rec.last_contact_date).days if rec.last_contact_date else 0
+            if rec.actual_next_followup_date and rec.actual_next_followup_date < today:
+                rec.followup_overdue = (today - rec.actual_next_followup_date).days
+            else:
+                rec.followup_overdue = 0
+
+    @api.depends('category_id', 'subcategory_id', 'last_contact_date')
+    def _compute_followup_logic(self):
+        for rec in self:
+            days = 0
+            cat = rec.category_id.name if rec.category_id else ""
+            sub_cat = rec.subcategory_id.name if rec.subcategory_id else ""
+
+            if not cat:
+                rec.suggested_followup_days = 0
+                rec.recommended_next_followup = False
+                continue
+
+            if cat == 'Active':
+                if sub_cat == 'Regular':
+                    days = 7
+                elif sub_cat == 'Irregular':
+                    days = 2
+                elif sub_cat == 'Drop-risk':
+                    days = 1
+                else:
+                    days = 7
+            elif cat == 'Drop-off':
+                days = 3
+            elif cat == 'Not Enrolled':
+                if sub_cat == 'Hot':
+                    days = 1
+                elif sub_cat == 'Warm':
+                    days = 2
+                elif sub_cat == 'Cold':
+                    days = 7
+                else:
+                    days = 3
+            elif cat == 'Completed':
+                if sub_cat == 'Unsatisfied':
+                    days = 7
+                else:
+                    days = 30
+            else:
+                days = 0
+
+            rec.suggested_followup_days = days
+
+            if rec.last_contact_date and days > 0:
+                rec.recommended_next_followup = rec.last_contact_date + timedelta(days=days)
+            else:
+                rec.recommended_next_followup = False
+
+
+# --- TOTALLY SEPARATED BM FOLLOW-UP DATA ---
+class BMFollowupLog(models.Model):
+    _name = 'bm.followup.log'
+    _description = 'BM Follow-up Log'
+    _order = 'create_date desc'
+
+    # This single line turns on Odoo's tracking engine for this model
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, ondelete='cascade', tracking=True)
+    user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True,
+                              tracking=True)
+
+    # Kept it simple: Just a text box for the history
+    action_taken = fields.Text(string="Action History", required=True, tracking=True)
+    timestamp = fields.Datetime(string="Timestamp", default=fields.Datetime.now, readonly=True, tracking=True)
+
+
+class PatientInherit(models.Model):
+    _inherit = 'clinic.patient'
+
+    def action_open_pet_tracker(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'PET Tracker',
+            'res_model': 'pet.record',
+            'view_mode': 'tree,form',
+            'domain': [('patient_id', '=', self.id)],
+            'context': {'default_patient_id': self.id},
+            'target': 'current',
+        }
+
+    def action_open_bm_followup(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'BM Follow-up Logs',
+            'res_model': 'bm.followup.log',
+            'view_mode': 'tree,form',
+            'domain': [('patient_id', '=', self.id)],
+            'context': {'default_patient_id': self.id},
+            'target': 'current',
+        }
