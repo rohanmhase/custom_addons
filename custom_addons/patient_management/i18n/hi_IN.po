@@ -989,7 +989,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Consent:"
-msgstr "संमती:"
+msgstr "सहमति:"
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__constipation_hard_stool_difficult_to_pass
@@ -2762,7 +2762,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Patient Responsibility:"
-msgstr "रुग्णाची जबाबदारी:"
+msgstr "रोगी की जिम्मेदारी:"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__patient_status
@@ -2912,7 +2912,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Purpose of Consultation:"
-msgstr "सल्ल्याचा उद्देश:"
+msgstr "परामर्श का उद्देश्य:"
 
 
 #. module: patient_management
@@ -3363,7 +3363,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "The consultation may include:"
-msgstr "सल्लामसलतीमध्ये खालील बाबींचा समावेश असू शकतो:"
+msgstr "परामर्श में ये शामिल हो सकते हैं:"
 
 #. module: patient_management
 #. odoo-python
@@ -3568,7 +3568,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Understanding of Advice:"
-msgstr "सल्ल्याचे आकलन:"
+msgstr "सलाह की समझ:"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
