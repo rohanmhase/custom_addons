@@ -41,26 +41,19 @@
                 margin-top: 15px !important;
                 margin-bottom: 8px !important;
                 }
-                .watermark {
-                position: fixed;
-                top: 40%;
-                left: -10%;
-                width: 120%;
-                text-align: center;
-                opacity: 0.08;
-                font-size: 28px;
-                font-weight: bold;
-                color: #999;
-                white-space: nowrap;
-                -webkit-transform: rotate(-45deg);
-                transform: rotate(-45deg);
-                z-index: -1000;
-                }
             </style>
 
             <t t-foreach="docs" t-as="o">
 
                 <t t-call="web.basic_layout" t-lang="o.consent_language">
+                    <div class="watermark"
+                         style="position: absolute; top: 55%; left: -20%; width: 140%; text-align: center; opacity: 0.06; font-size: 36px; font-weight: bold; color: #999; white-space: nowrap; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: -1000;">
+                        ResearchAyu -
+                        <span t-field="o.patient_name"/>
+                        -
+                        <span t-field="o.patient_mrn"/>
+                    </div>
+
                     <div class="page" style="color: #333;"
                          t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">
 <!--                        <p t-esc="o.consent_language"/>-->
@@ -70,15 +63,6 @@
                         <div style="text-align: center; margin-bottom: 20px;">
                             <img t-if="res_company.logo" t-att-src="image_data_uri(res_company.logo)"
                                  style="max-height: 95px;"/>
-                        </div>
-
-                        <!-- 2. Watermark: Reducing rotation and font-size so it doesn't bleed off -->
-                        <div class="watermark"
-                             style="position: absolute; top: 55%; left: -20%; width: 140%; text-align: center; opacity: 0.06; font-size: 36px; font-weight: bold; color: #999; white-space: nowrap; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: -1000;">
-                            ResearchAyu -
-                            <span t-field="o.patient_name"/>
-                            -
-                            <span t-field="o.patient_mrn"/>
                         </div>
 
                         <!-- 3. Content Header: Positioned relatively to leave room for the absolute logo -->
