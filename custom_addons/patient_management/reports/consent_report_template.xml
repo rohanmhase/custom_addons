@@ -50,7 +50,7 @@
                     <div class="page" style="color: #333;"
                          t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">
 
-                        <div style="position: fixed; top: 500px; left: -10%; width: 120%; text-align: center; opacity: 0.35; font-size: 36px; font-weight: bold; color: #888; white-space: nowrap; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: 0;">
+                        <div style="position: fixed; top: 500px; left: -10%; width: 120%; text-align: center; opacity: 0.35; font-size: 36px; font-weight: bold; color: #888; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: 0;">
                             ResearchAyu -
 <!--                            -->
                             <span t-field="o.patient_name"/>
