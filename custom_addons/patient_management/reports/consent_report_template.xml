@@ -23,24 +23,24 @@
                 font-family: 'NotoTelugu';
                 src: url('file:///usr/share/fonts/noto/NotoSansTelugu-Regular.ttf');
                 }
-                body, .page, p, li, h2, h5 {
-                font-family: 'NotoDevanagari', 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoSans', sans-serif
-                !important;
-                line-height: 1.8 !important;
-                }
+<!--                body, .page, p, li, h2, h5 {-->
+<!--                font-family: 'NotoDevanagari', 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoSans', sans-serif-->
+<!--                !important;-->
+<!--                line-height: 1.8 !important;-->
+<!--                }-->
 
-                p {
-                margin-bottom: 10px !important;
-                }
+<!--                p {-->
+<!--                margin-bottom: 10px !important;-->
+<!--                }-->
 
-                li {
-                margin-bottom: 5px !important;
-                }
+<!--                li {-->
+<!--                margin-bottom: 5px !important;-->
+<!--                }-->
 
-                h5 {
-                margin-top: 15px !important;
-                margin-bottom: 8px !important;
-                }
+<!--                h5 {-->
+<!--                margin-top: 15px !important;-->
+<!--                margin-bottom: 8px !important;-->
+<!--                }-->
             </style>
 
             <t t-foreach="docs" t-as="o">
@@ -48,8 +48,8 @@
                 <t t-call="web.basic_layout" t-lang="o.consent_language">
 
                     <div class="page" style="color: #333;"
-                         t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">
-
+                         t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'Noto Sans Gujarati\'' or o.consent_language == 'kn_IN' and '\'Noto Sans Kannada\'' or o.consent_language == 'te_IN' and '\'Noto Sans Telugu\'' or '\'Noto Sans Devanagari\'') + ', sans-serif;'"
+                    <!--                         t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">-->
                         <div style="position: fixed; top: 500px; left: -10%; width: 120%; text-align: center; opacity: 0.35; font-size: 36px; font-weight: bold; color: #888; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: 0;">
                             ResearchAyu -
 <!--                            -->
