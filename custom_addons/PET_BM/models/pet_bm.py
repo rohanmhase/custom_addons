@@ -142,31 +142,39 @@ class PETRecord(models.Model):
 
             allowed_names = []
 
-            # ---------------------------------------------------------
-            # EXACT MATRIX MAPPING
-            # ---------------------------------------------------------
-            if cat == 'Active':
-                if sub in ['Regular', 'Irregular']:
-                    allowed_names = ['Continue Treatment']
+            # 1. If NO Category is selected, show all options so the dropdown isn't dead
+            if not cat:
+                allowed_names = [
+                    'Continue Treatment', 'Planning to Stop', 'Stopped',
+                    'Not Started', 'Completed', 'Maintenance'
+                ]
 
+            # 2. Logic for 'Active' Category (Visible with or without subcategory)
+            elif cat == 'Active':
+                allowed_names = ['Continue Treatment']
+
+            # 3. Logic for 'Drop-off' Category
             elif cat == 'Drop-off':
                 if sub == 'Drop-risk':
                     allowed_names = ['Planning to Stop', 'Stopped']
+                else:
+                    # Fallback if Drop-off is selected but subcategory is blank
+                    allowed_names = ['Planning to Stop', 'Stopped']
 
+            # 4. Logic for 'Not Enrolled' Category (Visible with or without subcategory)
             elif cat == 'Not Enrolled':
-                if sub in ['Hot', 'Warm', 'Cold']:
-                    allowed_names = ['Not Started']
+                allowed_names = ['Not Started']
 
+            # 5. Logic for 'Completed' Category (Visible with or without subcategory)
             elif cat == 'Completed':
-                if sub in ['Happy', 'Neutral', 'Unsatisfied']:
-                    allowed_names = ['Completed', 'Maintenance']
+                allowed_names = ['Completed', 'Maintenance']
 
             # Apply the results to the invisible field
             if allowed_names:
                 statuses = self.env['pet.patient.status'].search([('name', 'in', allowed_names)])
                 rec.allowed_status_ids = statuses.ids
             else:
-                rec.allowed_status_ids = False  # Shows nothing if no match is found
+                rec.allowed_status_ids = False
 
     @api.onchange('category_id', 'subcategory_id')
     def _clear_status_on_change(self):
