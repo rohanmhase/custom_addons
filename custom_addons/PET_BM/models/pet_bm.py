@@ -316,9 +316,9 @@ class PatientInherit(models.Model):
     # ADD THESE TWO FUNCTIONS TO FIX THE XML VALIDATION CRASH
     # ========================================================
     def action_open_consent(self):
-        # This pacifies the Odoo XML validator
-        pass
+        """ Calls the original consent form logic from the parent module """
+        return super(PatientInherit, self).action_open_consent()
 
     def action_open_patient_xray(self):
-        # This pacifies the Odoo XML validator
-        pass
+        """ Calls the original X-Ray logic from the parent module """
+        return super(PatientInherit, self).action_open_patient_xray()
