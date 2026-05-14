@@ -3,6 +3,34 @@ from odoo.exceptions import ValidationError
 from datetime import date, timedelta
 
 
+# --- ADDED: The missing model for the dynamic statuses ---
+class PETPatientStatus(models.Model):
+    _name = 'pet.patient.status'
+    _description = 'Patient Treatment Status'
+
+    name = fields.Char(string="Status Name", required=True)
+    active = fields.Boolean(default=True)
+
+    def init(self):
+        """
+        This automatically injects the default statuses into the database
+        when the module is upgraded, keeping everything in Python!
+        """
+        default_statuses = [
+            'Active',
+            'Continue Treatment',
+            'Planning to Stop',
+            'Stopped',
+            'Not Started',
+            'Completed',
+            'Maintenance'
+        ]
+        for status in default_statuses:
+            # Check if it already exists so we don't create duplicates on every upgrade
+            if not self.search([('name', '=', status)]):
+                self.create({'name': status})
+
+
 class PETCategory(models.Model):
     _name = 'pet.category'
     _description = 'PET Category'
@@ -27,25 +55,30 @@ class PETRecord(models.Model):
     clinic_id = fields.Many2one('clinic.clinic', string="Clinic Name", related="patient_id.clinic_id", store=True)
     advisor_id = fields.Many2one('res.users', string="Advisor Name", default=lambda self: self.env.user, tracking=True)
     phone_number = fields.Char(related="patient_id.phone", string="Phone Number", readonly=True)
-    alternate_number = fields.Integer(string= 'Alternate Phone Number', tracking=True)
+    alternate_number = fields.Integer(string='Alternate Phone Number', tracking=True)
 
     # --- THE RELATIONAL MATRIX ---
     category_id = fields.Many2one('pet.category', string="Category", tracking=True)
     subcategory_id = fields.Many2one('pet.subcategory', string="Sub Category",
                                      domain="[('category_id', '=', category_id)]", tracking=True)
 
-    treatment_status = fields.Selection([
-        ('Continue Treatment', 'Continue Treatment'),
-        ('Planning to Stop', 'Planning to Stop'),
-        ('Stopped', 'Stopped'),
-        ('Not Started', 'Not Started'),
-        ('Completed', 'Completed'),
-        ('Maintenance', 'Maintenance')
-    ], string="Current Treatment Status", tracking=True)
+    # --- FIXED: Many2one syntax does not accept a list of tuples ---
+    patient_status = fields.Many2one(
+        'pet.patient.status',
+        string="Current Treatment Status",
+        tracking=True
+    )
+    allowed_status_ids = fields.Many2many(
+        'pet.patient.status',
+        compute='_compute_allowed_statuses',
+        store=False
+    )
 
     reason_not_starting_stopping = fields.Text(string="Reason for Not Starting / Stopping", tracking=True)
-    home_therapy_kit = fields.Selection([('Yes', 'Yes'), ('No', 'No'), ('Maybe', 'Maybe')], string="Home Therapy Kit",
-                                        tracking=True)
+    therapy_kit_status = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No')
+    ], string="Home Therapy Kit", tracking=True)
 
     # --- DATES ---
     start_date = fields.Date(string="Start Date", tracking=True)
@@ -71,7 +104,8 @@ class PETRecord(models.Model):
     action_taken = fields.Text(string="Action Taken", tracking=True)
     remarks = fields.Text(string="Remarks", tracking=True)
     outcome_status = fields.Selection(
-        [('On Track', 'On Track'), ('Improving', 'Improving'), ('Plateau', 'Plateau'), ('Stopped', 'Stopped')],
+        [('On Track', 'On Track'), ('Improving', 'Improving'), ('Plateau', 'Plateau'), ('Stopped', 'Stopped')
+            , ('completed', 'Completed')],
         string="Outcome Status", tracking=True)
 
     days_since_last_contact = fields.Integer(string="Days Since Last Contact", compute="_compute_metrics", store=True)
@@ -99,18 +133,40 @@ class PETRecord(models.Model):
             if rec.satisfaction_score < 0 or rec.satisfaction_score > 10:
                 raise ValidationError("The 'Satisfaction Score' must be between 0 and 10.")
 
-    @api.onchange('category_id', 'subcategory_id')
-    def _onchange_matrix(self):
+    @api.depends('category_id', 'subcategory_id')
+    def _compute_allowed_statuses(self):
         for rec in self:
             cat = rec.category_id.name if rec.category_id else False
+            sub = rec.subcategory_id.name if rec.subcategory_id else False
+
+            allowed_names = []
+
+            # Your Matrix Logic
             if cat == 'Active':
-                rec.treatment_status = 'Continue Treatment'
-            elif cat == 'Not Enrolled':
-                rec.treatment_status = 'Not Started'
-            elif cat == 'Drop-off' and rec.treatment_status not in ['Planning to Stop', 'Stopped']:
-                rec.treatment_status = False
-            elif cat == 'Completed' and rec.treatment_status not in ['Completed', 'Maintenance']:
-                rec.treatment_status = False
+                if sub == 'Regular':
+                    allowed_names = ['Active', 'Continue Treatment', 'Planning to Stop']
+                elif sub == 'Irregular':
+                    allowed_names = ['Continue Treatment', 'Planning to Stop', 'Stopped']
+            elif cat == 'Drop-off':
+                if sub == 'Drop-risk':
+                    allowed_names = ['Stopped', 'Not Started']
+                elif sub == 'Regular':
+                    allowed_names = ['Stopped', 'Completed', 'Maintenance']
+            elif cat == 'Completed':
+                if sub == 'Happy':
+                    allowed_names = ['Completed', 'Maintenance']
+
+            # Apply the results to the invisible field
+            if allowed_names:
+                statuses = self.env['pet.patient.status'].search([('name', 'in', allowed_names)])
+                rec.allowed_status_ids = statuses.ids
+            else:
+                rec.allowed_status_ids = False  # Shows nothing if combination isn't coded
+
+    @api.onchange('category_id', 'subcategory_id')
+    def _clear_status_on_change(self):
+        # Simply wipe the current selection clean if the user changes the category
+        self.patient_status = False
 
     @api.depends('last_contact_date', 'actual_next_followup_date')
     def _compute_metrics(self):
@@ -169,6 +225,14 @@ class PETRecord(models.Model):
             else:
                 rec.recommended_next_followup = False
 
+    @api.onchange('patient_id')
+    def _onchange_patient_id_dates(self):
+        for rec in self:
+            if rec.patient_id and not rec.start_date:
+                # Auto-fills today's date when a patient is selected
+                rec.start_date = fields.Date.today()
+                rec.last_visit_date = fields.Date.today()
+
 
 # --- TOTALLY SEPARATED BM FOLLOW-UP DATA ---
 class BMFollowupLog(models.Model):
@@ -198,7 +262,12 @@ class PatientInherit(models.Model):
             'res_model': 'pet.record',
             'view_mode': 'tree,form',
             'domain': [('patient_id', '=', self.id)],
-            'context': {'default_patient_id': self.id},
+            'context': {
+                'default_patient_id': self.id,
+                # Automatically pulls the enrollment date from the patient profile
+                'default_start_date': self.enroll_date,
+                'default_last_visit_date': self.enroll_date,
+            },
             'target': 'current',
         }
 

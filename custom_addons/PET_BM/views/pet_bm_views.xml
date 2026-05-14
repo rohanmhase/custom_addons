@@ -31,7 +31,6 @@
                 <field name="recommended_next_followup"/>
                 <field name="followup_overdue"/>
                 <field name="remarks"/>
-
             </tree>
         </field>
     </record>
@@ -41,7 +40,6 @@
         <field name="model">pet.record</field>
         <field name="arch" type="xml">
             <form string="Patient Experience Tracker">
-
                 <sheet>
                     <div class="oe_title">
                         <label for="patient_id" string="Patient Name"/>
@@ -62,6 +60,11 @@
                             <field name="category_id" options="{'no_create': True}" placeholder="Select Category..."/>
                             <field name="subcategory_id" options="{'no_create': True}"
                                    domain="[('category_id', '=', category_id)]" placeholder="Select Sub Category..."/>
+
+                            <!-- THE FIX IS IN THESE TWO LINES -->
+                            <field name="allowed_status_ids" invisible="1"/>
+                            <field name="patient_status" domain="[('id', 'in', allowed_status_ids)]" options="{'no_create': True}"/>
+
                             <field name="priority" />
                             <field name="escalation_needed"/>
                         </group>
@@ -70,7 +73,7 @@
                     <separator string="Treatment &amp; Follow-up"/>
                     <group>
                         <group string="Dates">
-                            <field name="start_date"/>
+                            <field name="start_date" readonly="1" force_save="1" />
                             <field name="last_visit_date"/>
                             <field name="last_contact_date"/>
                         </group>
@@ -91,8 +94,9 @@
                             <field name="mobility_status"/>
                         </group>
                         <group string="Treatment Status">
-                            <field name="treatment_status"/>
-                            <field name="home_therapy_kit"/>
+                            <!-- FIXED: Changed to patient_status in the comment too, just in case you uncomment it later -->
+                            <!-- <field name="patient_status"/> -->
+                            <field name="therapy_kit_status"/>
                             <field name="outcome_status"/>
                         </group>
                     </group>
