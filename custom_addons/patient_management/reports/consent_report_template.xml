@@ -96,36 +96,50 @@
                             <t t-if="context.get('report_type') == 'consultation'">
                                 <div>
                                     <h5 style="font-weight: bold;">Purpose of Consultation:</h5>
-                                    <p t-translation="on">I understand that I am visiting ResearchAyu for consultation
-                                        related to stiffness, mobility, or related concerns.
+                                        <p t-translation="on">I am visiting ResearchAyu for medical consultation,
+                                        assessment, and guidance related to my health concerns.
                                     </p>
 
                                     <h5 style="font-weight: bold;" class="mt-3">The consultation may include:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
-                                        <li t-translation="on">- Medical history review</li>
+                                        <li t-translation="on">- Medical history discussion</li>
                                         <li t-translation="on">- Physical assessment</li>
                                         <li t-translation="on">- Review of reports (X-ray/MRI/Blood tests)</li>
-                                        <li t-translation="on">- Discussion of symptoms and lifestyle</li>
+                                        <li t-translation="on">- Lifestyle and symptom evaluation</li>
+                                        <li t-translation="on">- Guidance regarding treatment or further investigations</li>
                                     </ul>
 
-                                    <h5 style="font-weight: bold;" class="mt-3">Understanding of Advice:</h5>
+                                    <h5 style="font-weight: bold;" class="mt-3">Understanding of Consultation:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
-                                        <li t-translation="on">- The consultation is advisory in nature.</li>
-                                        <li t-translation="on">- Further investigations may be required.</li>
-                                        <li t-translation="on">- I agree to share complete medical history.</li>
+                                        <li t-translation="on">- I understand that:</li>
+                                        <li t-translation="on">- The consultation is meant to provide professional guidance based on the information shared.</li>
+                                        <li t-translation="on">- Additional tests or specialist advice may sometimes be required.</li>
+                                        <li t-translation="on">- Treatment response and recovery may vary from person to person.</li>
                                     </ul>
 
-                                    <h5 style="font-weight: bold;" class="mt-3">No Guarantee Clause:</h5>
-                                    <p t-translation="on">No diagnosis or outcome is guaranteed.</p>
+<!--                                    <h5 style="font-weight: bold;" class="mt-3">No Guarantee Clause:</h5>-->
+<!--                                    <p t-translation="on">No diagnosis or outcome is guaranteed.</p>-->
 
                                     <h5 style="font-weight: bold;" class="mt-3">Patient Responsibility:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
-                                        <li t-translation="on">- Provide true information</li>
-                                        <li t-translation="on">- Ask questions if unclear</li>
+                                        <li t-translation="on">- I agree to:</li>
+                                        <li t-translation="on">- Share accurate medical information to the best of my knowledge.</li>
+                                        <li t-translation="on">- Inform the doctor about ongoing medications, medical conditions, surgeries, or allergies.</li>
+                                        <li t-translation="on">- Ask questions if any advice is unclear.</li>
                                     </ul>
 
+                                    <h5 style="font-weight: bold;" class="mt-3">Outcome Understanding:</h5>
+                                    <ul style="list-style-type: none; padding-left: 15px;">
+                                        <li t-translation="on">- I understand that:</li>
+                                        <li t-translation="on">- While every effort will be made to provide appropriate care and guidance, specific results or recovery timelines cannot be guaranteed as treatment response may differ from person to person.</li>
+                                        <li t-translation="on">- The consultation does not replace emergency medical care when required.</li>
+                                    </ul>
+
+                                    <h5 style="font-weight: bold;" class="mt-3">Confidentiality:</h5>
+                                    <p t-translation="on">My medical information and records will be kept confidential as per applicable healthcare standards.</p>
+
                                     <h5 style="font-weight: bold;" class="mt-3">Consent:</h5>
-                                    <p t-translation="on">I voluntarily consent to consultation.</p>
+                                    <p t-translation="on">I voluntarily consent to this consultation and related assessment.</p>
                                 </div>
                             </t>
 
