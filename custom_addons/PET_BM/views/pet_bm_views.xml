@@ -9,7 +9,8 @@
                 <field name="patient_mrn"/>
                 <field name="phone_number"/>
                 <separator/>
-                <filter string="High Pain (7+)" name="high_pain" domain="['|', ('pain_walking_score', '&gt;=', 7), ('pain_resting_score', '&gt;=', 7)]"/>
+                <filter string="High Pain (7+)" name="high_pain"
+                        domain="['|', ('pain_walking_score', '&gt;=', 7), ('pain_resting_score', '&gt;=', 7)]"/>
                 <filter string="Low Satisfaction" name="low_sat" domain="[('satisfaction_score', '&lt;', 5)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Clinic" name="group_clinic" context="{'group_by': 'clinic_id'}"/>
@@ -52,9 +53,9 @@
                         <group string="PATIENT INFO">
                             <field name="patient_mrn"/>
                             <field name="phone_number"/>
-                            <field name="alternate_number"/>
+                            <field name="alternate_number" force_save="1"/>
                             <field name="clinic_id"/>
-                            <field name="advisor_id"/>
+                            <field name="advisor_id" readonly="1" force_save="1"/>
                         </group>
                         <group string="TRACKING STATUS">
                             <field name="category_id" options="{'no_create': True}" placeholder="Select Category..."/>
@@ -63,17 +64,19 @@
 
                             <!-- THE FIX IS IN THESE TWO LINES -->
                             <field name="allowed_status_ids" invisible="1"/>
-                            <field name="patient_status" domain="[('id', 'in', allowed_status_ids)]" options="{'no_create': True}"/>
+                            <field name="patient_status" domain="[('id', 'in', allowed_status_ids)]"
+                                   options="{'no_create': True}"/>
 
-                            <field name="priority" />
+                            <field name="priority"/>
                             <field name="escalation_needed"/>
+                            <field name="task_status" readonly="1" force_save="1"/>
                         </group>
                     </group>
 
-                    <separator string="Treatment &amp; Follow-up"/>
+                    <!--                    <separator string="Treatment &amp; Follow-up"/>-->
                     <group>
                         <group string="Dates">
-                            <field name="start_date" readonly="1" force_save="1" />
+                            <field name="start_date" readonly="1" force_save="1"/>
                             <field name="last_visit_date"/>
                             <field name="last_contact_date"/>
                         </group>
@@ -85,35 +88,37 @@
                         </group>
                     </group>
 
-                    <separator string="Clinical Metrics"/>
-                    <group>
-                        <group string="Scores">
+                    <!--                    <separator string="Clinical Metrics"/>-->
+                    <group string="Patient Outcome Measures:">
+                        <group>
                             <field name="pain_walking_score"/>
                             <field name="pain_resting_score"/>
                             <field name="satisfaction_score"/>
-                            <field name="mobility_status"/>
                         </group>
-                        <group string="Treatment Status">
-                            <!-- FIXED: Changed to patient_status in the comment too, just in case you uncomment it later -->
-                            <!-- <field name="patient_status"/> -->
+                        <group>
+                            <field name="mobility_status"/>
                             <field name="therapy_kit_status"/>
-                            <field name="outcome_status"/>
                         </group>
                     </group>
                     <group string="Details">
-                        <field name="reason_not_starting_stopping"/>
+                        <field name="reason_not_starting_stopping" placeholder="Type the Reason here"/>
                     </group>
 
-                    <separator string="Actions &amp; Remarks"/>
+                    <!--                    <separator string="Actions &amp; Remarks"/>-->
                     <group>
-                        <group>
+                        <group string="Actions &amp; Remarks">
                             <field name="action_taken" placeholder="Describe recent actions..."/>
                             <field name="remarks" placeholder="General notes..."/>
                         </group>
-                        <group string="Outcome Tracking">
+                        <group string="Feedback Tracking">
                             <field name="referral_given"/>
+                            <field name="referral_name" invisible="not referral_given"/>
+                            <field name="referral_contact" invisible="not referral_given"/>
                             <field name="review_given"/>
+                            <field name="review_link" widget="url" placeholder="e.g. https://g.page/r/..."
+                                   invisible="not review_given"/>
                         </group>
+
                     </group>
                 </sheet>
                 <div class="oe_chatter">
