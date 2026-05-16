@@ -96,11 +96,16 @@ class PETRecord(models.Model):
     pain_walking_score = fields.Integer(string="Pain While Walking (0-10)", tracking=True)
     pain_resting_score = fields.Integer(string="Pain While Resting (0-10)", tracking=True)
     mobility_status = fields.Selection(
-        [('Severe Limitation', 'Severe'), ('Moderate Limitation', 'Moderate'), ('Mild Limitation', 'Mild')],
+        [('Severe Limitation', 'Severe'), ('Moderate Limitation', 'Moderate'), ('Mild Limitation', 'Mild'),
+         ('Independent', 'Independent')],
         string="Mobility Status", tracking=True)
     satisfaction_score = fields.Integer(string="Satisfaction Score (0-10)", tracking=True)
     referral_given = fields.Boolean(string="Referral Given", tracking=True)
     review_given = fields.Boolean(string="Review Given", tracking=True)
+
+    referral_name = fields.Char(string="Referral Name", tracking=True)
+    referral_contact = fields.Char(string="Referral Number", tracking=True)
+    review_link = fields.Char(string="Review Link/Details", tracking=True)
 
     action_taken = fields.Text(string="Action Taken", tracking=True)
     remarks = fields.Text(string="Remarks", tracking=True)
@@ -109,14 +114,59 @@ class PETRecord(models.Model):
             , ('completed', 'Completed')],
         string="Outcome Status", tracking=True)
 
-    days_since_last_contact = fields.Integer(string="Days Since Last Contact", compute="_compute_metrics", store=True)
-    followup_overdue = fields.Integer(string="Follow-up Overdue (Days)", compute="_compute_metrics", store=True)
+    # Ensure all five fields have both store=True and compute_sudo=True
+    days_since_last_contact = fields.Integer(
+        string="Days Since Last Contact",
+        compute="_compute_all_metrics",
+        store=True, readonly=True, compute_sudo=True
+    )
+    followup_overdue = fields.Integer(
+        string="Follow-up Overdue (Days)",
+        compute="_compute_all_metrics",
+        store=True, readonly=True, compute_sudo=True
+    )
+    priority = fields.Selection([
+        ('0', 'Low'),
+        ('1', 'Medium'),
+        ('2', 'High')
+    ], string="Priority", compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
 
-    priority = fields.Selection([('0', 'Low'), ('1', 'Normal'), ('2', 'High'), ('3', 'Critical')], string="Priority",
-                                default='1', tracking=True)
-    escalation_needed = fields.Boolean(string="Escalation Needed", tracking=True)
-    task_status = fields.Selection([('pending', 'Pending'), ('in_progress', 'In Progress'), ('completed', 'Completed')],
-                                   string="Task Status", default='pending', tracking=True)
+    escalation_needed = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes')
+    ], string="Escalation Needed", compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
+
+    task_status = fields.Selection([
+        ('no_set', 'No follow-up set'),
+        ('overdue', 'Overdue Follow-up'),
+        ('today', 'Due Today'),
+        ('on_track', 'On Track')
+    ], string="Task Status", compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
+
+    def init(self):
+        """
+        This runs automatically during module upgrade to fix existing records
+        and prevent the OwlError/Selection crash.
+        """
+        # 1. Convert old Boolean escalation to Selection strings
+        self.env.cr.execute("""
+            UPDATE pet_record 
+            SET escalation_needed = CASE 
+                WHEN escalation_needed = 'True' THEN 'yes' 
+                ELSE 'no' 
+            END 
+            WHERE escalation_needed NOT IN ('yes', 'no') OR escalation_needed IS NULL
+        """)
+
+        # 2. Fix old Priority keys (Mapping '3'/'Critical' to '2'/'High')
+        self.env.cr.execute("UPDATE pet_record SET priority = '2' WHERE priority = '3'")
+
+        # 3. Reset Task Status keys to a valid new value
+        self.env.cr.execute("""
+            UPDATE pet_record 
+            SET task_status = 'on_track' 
+            WHERE task_status NOT IN ('no_set', 'overdue', 'today', 'on_track')
+        """)
 
     # ==========================================
     # AUTOMATIONS
@@ -151,7 +201,7 @@ class PETRecord(models.Model):
 
             # 2. Logic for 'Active' Category (Visible with or without subcategory)
             elif cat == 'Active':
-                allowed_names = ['Continue Treatment']
+                allowed_names = ['Continue Treatment','Not Started']
 
             # 3. Logic for 'Drop-off' Category
             elif cat == 'Drop-off':
@@ -163,7 +213,7 @@ class PETRecord(models.Model):
 
             # 4. Logic for 'Not Enrolled' Category (Visible with or without subcategory)
             elif cat == 'Not Enrolled':
-                allowed_names = ['Not Started']
+                allowed_names = ['Not Started','Maintenance']
 
             # 5. Logic for 'Completed' Category (Visible with or without subcategory)
             elif cat == 'Completed':
@@ -181,15 +231,52 @@ class PETRecord(models.Model):
         # Simply wipe the current selection clean if the user changes the category
         self.patient_status = False
 
-    @api.depends('last_contact_date', 'actual_next_followup_date')
-    def _compute_metrics(self):
-        today = date.today()
+    @api.depends(
+        'last_contact_date', 'actual_next_followup_date', 'subcategory_id',
+        'category_id', 'pain_walking_score', 'pain_resting_score',
+        'satisfaction_score', 'remarks'
+    )
+    def _compute_all_metrics(self):
+        today = fields.Date.today()
         for rec in self:
+            # A. Calculate Days Since Last Contact & Overdue
             rec.days_since_last_contact = (today - rec.last_contact_date).days if rec.last_contact_date else 0
-            if rec.actual_next_followup_date and rec.actual_next_followup_date < today:
-                rec.followup_overdue = (today - rec.actual_next_followup_date).days
+
+            overdue = 0
+            if rec.actual_next_followup_date:
+                diff = (today - rec.actual_next_followup_date).days
+                overdue = max(0, diff)
+            rec.followup_overdue = overdue
+
+            # B. Priority Logic (Using original keys '0', '1', '2')
+            sub_name = rec.subcategory_id.name if rec.subcategory_id else ""
+            cat_name = rec.category_id.name if rec.category_id else ""
+            max_pain = max(rec.pain_walking_score, rec.pain_resting_score)
+
+            if sub_name == "Drop-risk" or overdue >= 3 or max_pain >= 8:
+                rec.priority = '2'  # High
+            elif sub_name == "Irregular" or overdue >= 1 or max_pain >= 6 or cat_name == "Drop-off":
+                rec.priority = '1'  # Medium
             else:
-                rec.followup_overdue = 0
+                rec.priority = '0'  # Low
+
+            # C. Escalation Needed Logic
+            if (rec.priority == '2' or
+                    (cat_name == 'Completed' and rec.satisfaction_score < 7) or
+                    rec.remarks == 'Lost trust'):
+                rec.escalation_needed = 'yes'
+            else:
+                rec.escalation_needed = 'no'
+
+            # D. Task Status Logic
+            if not rec.actual_next_followup_date:
+                rec.task_status = 'no_set'
+            elif overdue > 0:
+                rec.task_status = 'overdue'
+            elif rec.actual_next_followup_date == today:
+                rec.task_status = 'today'
+            else:
+                rec.task_status = 'on_track'
 
     @api.depends('category_id', 'subcategory_id', 'last_contact_date')
     def _compute_followup_logic(self):
