@@ -112,7 +112,7 @@
                     <button name="action_open_blood_report" type="object" string="Blood Report"/>
                     <button name="action_open_daily_followup" type="object" string="CS Followup"/>
                     <!--                    <button name="action_open_diet_chart" type="object" string="Diet Chart"/>-->
-<!--                    <button name="action_open_followup" type="object" string="RS Followup"/>-->
+                    <!--                    <button name="action_open_followup" type="object" string="RS Followup"/>-->
                     <button name="action_open_assessment" type="object" string="RS Followup"/>
                     <button name="action_open_prescription" type="object" string="Prescription"/>
                     <button name="action_open_session" type="object" string="Therapy Session"/>
@@ -150,11 +150,17 @@
                         <field name="id" invisible="1"/>
                         <field name="patient_source" required="id == False"/>
 
-                        <field name="source_event" options="{'no_create': True, 'no_open': True}"
-                               invisible="patient_source != 'event'" required="patient_source == 'event'"/>
+                        <field name="source_event"
+                               widget="selection"
+                               options="{'no_create': True, 'no_open': True}"
+                               invisible="patient_source != 'event'"
+                               required="patient_source == 'event'"/>
+
                         <field name="source_event_name" invisible="1"/>
+
                         <field name="manual_event_name"
-                               invisible="source_event_name != 'Others'"/>
+                               invisible="source_event_name not in ('Others', 'Old Event')"
+                               required="source_event_name in ('Others', 'Old Event')"/>
 
                         <field name="patient_status"
                                widget="radio"
