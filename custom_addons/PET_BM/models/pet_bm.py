@@ -55,7 +55,7 @@ class PETRecord(models.Model):
     clinic_id = fields.Many2one('clinic.clinic', string="Clinic Name", related="patient_id.clinic_id", store=True)
     advisor_id = fields.Many2one('res.users', string="Advisor Name", default=lambda self: self.env.user, tracking=True)
     phone_number = fields.Char(related="patient_id.phone", string="Phone Number", readonly=True)
-    alternate_number = fields.Integer(string='Alternate Phone Number', tracking=True)
+    alternate_number = fields.Char(string='Alternate Phone Number', tracking=True)
 
     # --- THE RELATIONAL MATRIX ---
     category_id = fields.Many2one('pet.category', string="Category", tracking=True)
@@ -348,6 +348,22 @@ class PETRecord(models.Model):
             else:
                 rec.start_date = False
                 rec.last_visit_date = False
+
+    @api.model
+    def _cron_update_daily_metrics(self):
+        """
+        Runs every night at midnight to refresh all automated metrics.
+        We filter for records that actually have a follow-up date set,
+        ensuring we don't miss Completed or Maintenance patients who still need calls!
+        """
+        # Find all records that have an actual follow-up date scheduled
+        records_to_update = self.search([
+            ('actual_next_followup_date', '!=', False)
+        ])
+
+        # Force Odoo to recalculate the automated fields for these records
+        if records_to_update:
+            records_to_update._compute_all_metrics()
 
 
 # --- TOTALLY SEPARATED BM FOLLOW-UP DATA ---
