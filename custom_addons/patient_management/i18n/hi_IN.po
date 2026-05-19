@@ -10,6 +10,7 @@ msgstr ""
 "PO-Revision-Date: 2026-05-06 06:43+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
+"Language: hi_IN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -44,48 +45,13 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Ask questions if unclear"
-msgstr "- अगर कुछ स्पष्ट न हो, तो प्रश्न पूछें।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Discussion of symptoms and lifestyle"
-msgstr "- लक्षणों और जीवनशैली पर चर्चा"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Further investigations may be required."
-msgstr "- आगे की जांच की आवश्यकता हो सकती है।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- I agree to share complete medical history."
-msgstr "- मैं अपनी पूरी मेडिकल हिस्ट्री शेयर करने के लिए सहमत हूँ।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Medical history review"
-msgstr "- चिकित्सा इतिहास की समीक्षा"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Physical assessment"
 msgstr "- शारीरिक मूल्यांकन"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Provide true information"
-msgstr "- सच्ची जानकारी दें।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Review of reports (X-ray/MRI/Blood tests)"
 msgstr "- रिपोर्टों की समीक्षा (एक्स-रे/MRI/रक्त परीक्षण)"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- The consultation is advisory in nature."
-msgstr "- यह परामर्श सलाहकारी प्रकृति का है।"
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_1
@@ -152,7 +118,7 @@ msgstr ""
 msgid ""
 "1. Consultation Consent &amp;\n"
 "                                Declaration"
-msgstr ""
+msgstr "१. परामर्श सहमति एवं घोषणा"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_session__lunch_with_time
@@ -192,7 +158,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "2. Treatment Consent &amp; Declaration"
-msgstr ""
+msgstr "२. उपचार सहमति एवं घोषणा"
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__first_xray_day__20
@@ -341,7 +307,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "<strong>Date:</strong>"
-msgstr ""
+msgstr "<strong>दिनांक:</strong>"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
@@ -366,12 +332,12 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "<strong>Patient Name:</strong>"
-msgstr ""
+msgstr "<strong>रोगी का नाम:</strong>"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "<strong>Patient Signature:</strong>"
-msgstr ""
+msgstr "<strong>रोगी के हस्ताक्षर:</strong>"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.view_patient_kanban
@@ -1766,19 +1732,6 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid ""
-"I understand that I am visiting ResearchAyu for consultation\n"
-"                                        related to stiffness, mobility, or related concerns."
-msgstr ""
-"मैं समझता हूँ कि मैं ResearchAyu में अकड़न, गतिशीलता या उससे संबंधित समस्याओं के लिए परामर्श हेतु आया हूँ।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "I voluntarily consent to consultation."
-msgstr "मैं स्वेच्छा से परामर्श के लिए सहमति देता हूँ।"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid ""
 "I will behave respectfully with staff and patients. Misconduct/threats may lead\n"
 "                                        to refusal of service and/or legal action. Unutilized prepaid refund (if\n"
 "                                        eligible): deductions include ₹5,000 admin fee + medicines issued + services\n"
@@ -2407,16 +2360,6 @@ msgid "No Change"
 msgstr ""
 
 #. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No Guarantee Clause:"
-msgstr "कोई गारंटी नहीं खंड:"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No diagnosis or outcome is guaranteed."
-msgstr "किसी भी निदान या परिणाम की गारंटी नहीं है।"
-
-#. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__no_knee_spine_concern
 msgid "No knee/spine related concern"
 msgstr ""
@@ -3032,7 +2975,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "ResearchAyu -"
-msgstr ""
+msgstr "ResearchAyu -"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__activity_user_id
@@ -3566,11 +3509,6 @@ msgid "Uncomfortable after eating (Saam Pitta)"
 msgstr ""
 
 #. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "Understanding of Advice:"
-msgstr "सलाह की समझ:"
-
-#. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
 msgid "Updated by"
 msgstr ""
@@ -3973,3 +3911,124 @@ msgstr ""
 #, python-format
 msgid "🩺 Prescription Queue"
 msgstr ""
+
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Additional tests or specialist advice may sometimes be required."
+msgstr "- कभी-कभी अतिरिक्त परीक्षण या विशेषज्ञ की सलाह की आवश्यकता हो सकती है।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if any advice is unclear."
+msgstr "- यदि कोई सलाह अस्पष्ट हो, तो प्रश्न पूछें।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Guidance regarding treatment or further investigations"
+msgstr "- उपचार या आगे की जांच के संबंध में मार्गदर्शन"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to:"
+msgstr "- मैं सहमत हूँ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I understand that:"
+msgstr "- मैं समझता/समझती हूँ कि:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- Inform the doctor about ongoing medications, medical conditions, "
+"surgeries, or allergies."
+msgstr "- चल रही दवाओं, चिकित्सा स्थितियों, सर्जरी या एलर्जी के बारे में डॉक्टर को सूचित करें।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Lifestyle and symptom evaluation"
+msgstr "- जीवनशैली और लक्षण मूल्यांकन"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history discussion"
+msgstr "- चिकित्सा इतिहास पर चर्चा"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Share accurate medical information to the best of my knowledge."
+msgstr "- अपनी सर्वोत्तम जानकारी के अनुसार सटीक चिकित्सा जानकारी साझा करूँगा/करूँगी।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation does not replace emergency medical care when required."
+msgstr "- यह परामर्श आवश्यकता पड़ने पर आपातकालीन चिकित्सा देखभाल का स्थान नहीं लेता।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation is meant to provide professional guidance based on the "
+"information shared."
+msgstr "- यह परामर्श सत्र साझा की गई जानकारी के आधार पर पेशेवर मार्गदर्शन प्रदान करने के लिए है।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Treatment response and recovery may vary from person to person."
+msgstr "- उपचार की प्रतिक्रिया और स्वस्थ होना व्यक्ति-दर-व्यक्ति भिन्न हो सकता है।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- While every effort will be made to provide appropriate care and guidance, "
+"specific results or recovery timelines cannot be guaranteed as treatment "
+"response may differ from person to person."
+msgstr "- उचित देखभाल और मार्गदर्शन प्रदान करने के लिए हर संभव प्रयास किया जाएगा, लेकिन चूँकि उपचार की प्रतिक्रिया व्यक्ति-दर-व्यक्ति भिन्न हो सकती है, इसलिए विशिष्ट परिणाम या ठीक होने की समय-सीमा की गारंटी नहीं दी जा सकती।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Confidentiality:"
+msgstr "गोपनीयता:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I am visiting ResearchAyu for medical consultation,\n"
+"                                        assessment, and guidance related to my health concerns."
+msgstr "मैं अपनी स्वास्थ्य संबंधी चिंताओं के लिए चिकित्सा परामर्श, मूल्यांकन और मार्गदर्शन हेतु ResearchAyu में आ रहा/रही हूँ।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to this consultation and related assessment."
+msgstr "मैं स्वेच्छा से इस परामर्श और संबंधित मूल्यांकन के लिए सहमति देता/देती हूँ।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I\n"
+"                                        will disclose complete medical history including autoimmune/comorbid conditions\n"
+"                                        (e.g., RA/ANA), past reports, and current medicines. I understand non-disclosure\n"
+"                                        may cause complications and the clinic will not be liable for issues arising\n"
+"                                        from undisclosed conditions. I understand Ayurvedic/Panchakarma treatments may\n"
+"                                        cause temporary side effects such as digestive discomfort, fatigue, temporary\n"
+"                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report\n"
+"                                        any side effects immediately."
+msgstr "सलाह दिए जाने पर मैं आवश्यक जाँचें (एक्स-रे/MRI/रक्त परीक्षण) पूरी करूँगा/करूँगी। मैं अपना पूरा चिकित्सा इतिहास — जिसमें ऑटोइम्यून/सह-रोग स्थितियाँ (जैसे RA/ANA), पिछली रिपोर्टें और वर्तमान दवाएँ शामिल हैं — पूरी तरह प्रकट करूँगा/करूँगी। मैं समझता/समझती हूँ कि जानकारी न देने से जटिलताएँ हो सकती हैं और क्लिनिक अप्रकट स्थितियों से उत्पन्न समस्याओं के लिए उत्तरदायी नहीं होगा। मैं समझता/समझती हूँ कि आयुर्वेदिक/पंचकर्म उपचार से पाचन संबंधी असुविधा, थकान, लक्षणों में अस्थायी वृद्धि, एलर्जी/चकत्ते, भावनात्मक बदलाव या त्वचा पर दाने जैसे अस्थायी दुष्प्रभाव हो सकते हैं। कोई भी दुष्प्रभाव होने पर मैं तुरंत सूचित करूँगा/करूँगी।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"My medical information and records will be kept confidential as per "
+"applicable healthcare standards."
+msgstr "मेरी चिकित्सा जानकारी और रिकॉर्ड लागू स्वास्थ्य सेवा मानकों के अनुसार गोपनीय रखे जाएंगे।"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Outcome Understanding:"
+msgstr "परिणाम की समझ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Consultation:"
+msgstr "परामर्श की समझ:"

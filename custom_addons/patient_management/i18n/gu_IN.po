@@ -18,48 +18,13 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Ask questions if unclear"
-msgstr "- જો કંઈ સ્પષ્ટ ન હોય, તો પ્રશ્નો પૂછો."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Discussion of symptoms and lifestyle"
-msgstr "- લક્ષણો અને જીવનશૈલી પર ચર્ચા"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Further investigations may be required."
-msgstr "- વધુ તપાસ જરૂરી હોઈ શકે છે."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- I agree to share complete medical history."
-msgstr "- હું મારો સંપૂર્ણ તબીબી ઇતિહાસ શેર કરવા સંમત છું."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Medical history review"
-msgstr "- તબીબી ઇતિહાસની સમીક્ષા"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Physical assessment"
 msgstr "- શારીરિક મૂલ્યાંકન"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Provide true information"
-msgstr "- સાચી માહિતી આપો."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Review of reports (X-ray/MRI/Blood tests)"
 msgstr "- અહેવાલોની સમીક્ષા (એક્સ-રે/MRI/રક્ત પરીક્ષણ)"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- The consultation is advisory in nature."
-msgstr "- આ પરામર્શ સલાહકારી સ્વભાવનો છે."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -84,18 +49,6 @@ msgstr ""
 "                                        સ્થિતિ અને અનુપાલનના આધારે બદલાઈ શકે છે. હું સમજું છું કે પરિણામોની કોઈ તબીબી ગેરંટી\n"
 "                                        શક્ય નથી. હું સંમત છું કે: સારવારની પ્રક્રિયા મને એવી\n"
 "                                        ભાષામાં સમજાવવામાં આવી છે જે હું સમજું છું, અને હું આ યોજનાનું પાલન કરીશ."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid ""
-"I understand that I am visiting ResearchAyu for consultation\n"
-"                                        related to stiffness, mobility, or related concerns."
-msgstr "હું સમજું છું કે હું ResearchAyu ખાતે જડતા, ગતિશીલતા અથવા સંબંધિત સમસ્યાઓ માટે પરામર્શ માટે આવ્યો/આવી છું."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "I voluntarily consent to consultation."
-msgstr "હું સ્વૈચ્છિક રીતે પરામર્શ માટે સંમતિ આપું છું."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -144,16 +97,6 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No Guarantee Clause:"
-msgstr "કોઈ ગેરંટી નહીં કલમ:"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No diagnosis or outcome is guaranteed."
-msgstr "કોઈ પણ નિદાન અથવા પરિણામની ગેરંટી નથી."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Patient Responsibility:"
 msgstr "દર્દીની જવાબદારી:"
 
@@ -169,5 +112,139 @@ msgstr "પરામર્શમાં નીચેનો સમાવેશ થ
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "Understanding of Advice:"
-msgstr "સલાહની સમજ:"
+msgid "- Additional tests or specialist advice may sometimes be required."
+msgstr "- કેટલીક વખત વધારાની તપાસ અથવા નિષ્ણાતની સલાહ જરૂરી હોઈ શકે છે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if any advice is unclear."
+msgstr "- જો કોઈ સલાહ સ્પષ્ટ ન હોય, તો પ્રશ્નો પૂછો."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Guidance regarding treatment or further investigations"
+msgstr "- સારવાર અથવા વધુ તપાસ અંગે માર્ગદર્શન"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to:"
+msgstr "- હું સંમત છું:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I understand that:"
+msgstr "- મને સમજાય છે કે:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- Inform the doctor about ongoing medications, medical conditions, "
+"surgeries, or allergies."
+msgstr "- ચાલુ દવાઓ, તબીબી સ્થિતિ, શસ્ત્રક્રિયા અથવા એલર્જી વિશે ડૉક્ટરને જાણ કરો."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Lifestyle and symptom evaluation"
+msgstr "- જીવનશૈલી અને લક્ષણ મૂલ્યાંકન"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history discussion"
+msgstr "- તબીબી ઇતિહાસ ચર્ચા"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Share accurate medical information to the best of my knowledge."
+msgstr "- મારી શ્રેષ્ઠ જ્ઞાન મુજબ સચોટ તબીબી માહિતી શેર કરીશ."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation does not replace emergency medical care when required."
+msgstr "- જ્યારે જરૂરી હોય ત્યારે આ પરામર્શ કટોકટી તબીબી સંભાળનું સ્થાન લેતી નથી."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation is meant to provide professional guidance based on the "
+"information shared."
+msgstr "- આ પરામર્શ સત્ર શેર કરેલી માહિતીના આધારે વ્યાવસાયિક માર્ગદર્શન આપવા માટે છે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Treatment response and recovery may vary from person to person."
+msgstr "- સારવારનો પ્રતિસાદ અને પુનઃપ્રાપ્તિ વ્યક્તિ-વ્યક્તિ અનુસાર અલગ હોઈ શકે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- While every effort will be made to provide appropriate care and guidance, "
+"specific results or recovery timelines cannot be guaranteed as treatment "
+"response may differ from person to person."
+msgstr "- યોગ્ય સંભાળ અને માર્ગદર્શન આપવા માટે દરેક પ્રયાસ કરવામાં આવશે, પરંતુ સારવારના પ્રતિભાવ વ્યક્તિ-અનુસાર ભિન્ન હોઈ શકે, તેથી ચોક્કસ પરિણામ અથવા સ્વસ્થ થવાની સમયસીમાની ખાતરી આપી શકાતી નથી."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"1. Consultation Consent &amp;\n"
+"                                Declaration"
+msgstr "૧. પરામર્શ સંમતિ અને ઘોષણા"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "2. Treatment Consent &amp; Declaration"
+msgstr "૨. સારવાર સંમતિ અને ઘોષણા"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Date:</strong>"
+msgstr "<strong>તારીખ:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Name:</strong>"
+msgstr "<strong>દર્દીનું નામ:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Signature:</strong>"
+msgstr "<strong>દર્દીની સહી:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Confidentiality:"
+msgstr "ગોપનીયતા:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I am visiting ResearchAyu for medical consultation,\n"
+"                                        assessment, and guidance related to my health concerns."
+msgstr "હું મારી સ્વાસ્થ્ય સંબંધિત સમસ્યાઓ અંગે તબીબી પરામર્શ, મૂલ્યાંકન અને માર્ગદર્શન માટે ResearchAyu ની મુલાકાત લઈ રહ્યો/રહી છું."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to this consultation and related assessment."
+msgstr "હું સ્વૈચ્છિક રીતે આ પરામર્શ અને સંબંધિત મૂલ્યાંકન માટે સંમત છું."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"My medical information and records will be kept confidential as per "
+"applicable healthcare standards."
+msgstr "મારી તબીબી માહિતી અને રેકોર્ડ લાગુ આરોગ્ય સેવા ધોરણો અનુસાર ગોપનીય રાખવામાં આવશે."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Outcome Understanding:"
+msgstr "પરિણામ સમજ:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "ResearchAyu -"
+msgstr "ResearchAyu -"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Consultation:"
+msgstr "પરામર્શની સમજ:"

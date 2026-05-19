@@ -18,48 +18,13 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Ask questions if unclear"
-msgstr "- ఏదైనా అర్థం కాకపోతే ప్రశ్నలు అడగండి."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Discussion of symptoms and lifestyle"
-msgstr "- లక్షణాలు మరియు జీవనశైలిపై చర్చ"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Further investigations may be required."
-msgstr "- మరిన్ని పరీక్షలు అవసరం కావచ్చు."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- I agree to share complete medical history."
-msgstr "- నా పూర్తి వైద్య చరిత్రను పంచుకోవడానికి అంగీకరిస్తున్నాను."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Medical history review"
-msgstr "- వైద్య చరిత్ర సమీక్ష"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Physical assessment"
 msgstr "- శారీరక మూల్యాంకనం"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Provide true information"
-msgstr "- నిజమైన సమాచారాన్ని అందించండి."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Review of reports (X-ray/MRI/Blood tests)"
 msgstr "- నివేదికల సమీక్ష (ఎక్స్-రే/MRI/రక్త పరీక్షలు)"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- The consultation is advisory in nature."
-msgstr "- ఈ సంప్రదింపు సలహా స్వభావంతో ఉంటుంది."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -84,18 +49,6 @@ msgstr ""
 "                                        పరిస్థితి మరియు అనుసరణపై ఆధారపడి మారవచ్చు. ఫలితాలకు ఎటువంటి వైద్య హామీ\n"
 "                                        సాధ్యం కాదని నేను అర్థం చేసుకున్నాను. నేను అంగీకరిస్తున్నాను: చికిత్స ప్రక్రియను నాకు\n"
 "                                        అర్థమయ్యే భాషలో వివరించారు మరియు నేను ప్రణాళికను అనుసరిస్తాను."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid ""
-"I understand that I am visiting ResearchAyu for consultation\n"
-"                                        related to stiffness, mobility, or related concerns."
-msgstr "నేను ResearchAyu ని దృఢత్వం, కదలిక లేదా సంబంధిత సమస్యలకు సంప్రదింపు కోసం సందర్శిస్తున్నానని అర్థం చేసుకున్నాను."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "I voluntarily consent to consultation."
-msgstr "నేను స్వచ్ఛందంగా సంప్రదింపుకు అంగీకరిస్తున్నాను."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -144,16 +97,6 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No Guarantee Clause:"
-msgstr "హామీ లేదు నిబంధన:"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No diagnosis or outcome is guaranteed."
-msgstr "ఏ రోగనిర్ధారణ లేదా ఫలితానికి హామీ ఇవ్వబడదు."
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Patient Responsibility:"
 msgstr "రోగి బాధ్యత:"
 
@@ -169,5 +112,139 @@ msgstr "సంప్రదింపులో ఇవి ఉండవచ్చు:
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "Understanding of Advice:"
-msgstr "సలహా అవగాహన:"
+msgid "- Additional tests or specialist advice may sometimes be required."
+msgstr "- కొన్నిసార్లు అదనపు పరీక్షలు లేదా నిపుణుల సలహా అవసరం కావచ్చు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Ask questions if any advice is unclear."
+msgstr "- ఏదైనా సలహా అస్పష్టంగా ఉంటే ప్రశ్నలు అడగండి."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Guidance regarding treatment or further investigations"
+msgstr "- చికిత్స లేదా మరింత పరిశోధనలకు సంబంధించి మార్గదర్శకత్వం"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I agree to:"
+msgstr "- నేను అంగీకరిస్తున్నాను:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- I understand that:"
+msgstr "- నాకు అర్థమైంది:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- Inform the doctor about ongoing medications, medical conditions, "
+"surgeries, or allergies."
+msgstr "- నడుస్తున్న మందులు, వైద్య పరిస్థితులు, శస్త్రచికిత్సలు లేదా అలెర్జీల గురించి వైద్యుడికి తెలియజేయండి."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Lifestyle and symptom evaluation"
+msgstr "- జీవనశైలి మరియు లక్షణాల మూల్యాంకనం"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history discussion"
+msgstr "- వైద్య చరిత్ర చర్చ"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Share accurate medical information to the best of my knowledge."
+msgstr "- నా అత్యుత్తమ జ్ఞానానుసారం ఖచ్చితమైన వైద్య సమాచారాన్ని పంచుకుంటాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation does not replace emergency medical care when required."
+msgstr "- అవసరమైనప్పుడు ఈ సంప్రదింపు అత్యవసర వైద్య సంరక్షణను భర్తీ చేయదు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation is meant to provide professional guidance based on the "
+"information shared."
+msgstr "- ఈ సంప్రదింపు సెషన్ అందించిన సమాచారం ఆధారంగా వృత్తిపరమైన మార్గదర్శకత్వం అందించడానికి ఉద్దేశించబడింది."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Treatment response and recovery may vary from person to person."
+msgstr "- చికిత్సకు స్పందన మరియు కోలుకోవడం వ్యక్తి నుండి వ్యక్తికి మారవచ్చు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- While every effort will be made to provide appropriate care and guidance, "
+"specific results or recovery timelines cannot be guaranteed as treatment "
+"response may differ from person to person."
+msgstr "- తగిన సంరక్షణ మరియు మార్గదర్శకత్వం అందించడానికి ప్రతి ప్రయత్నం చేయబడుతుంది, అయితే చికిత్సకు స్పందన వ్యక్తి నుండి వ్యక్తికి మారవచ్చు కాబట్టి నిర్దిష్ట ఫలితాలు లేదా కోలుకునే సమయపట్టికను హామీ ఇవ్వలేరు."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"1. Consultation Consent &amp;\n"
+"                                Declaration"
+msgstr "౧. సంప్రదింపు అంగీకారం మరియు ప్రకటన"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "2. Treatment Consent &amp; Declaration"
+msgstr "౨. చికిత్స అంగీకారం మరియు ప్రకటన"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Date:</strong>"
+msgstr "<strong>తేదీ:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Name:</strong>"
+msgstr "<strong>రోగి పేరు:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "<strong>Patient Signature:</strong>"
+msgstr "<strong>రోగి సంతకం:</strong>"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Confidentiality:"
+msgstr "గోప్యత:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"I am visiting ResearchAyu for medical consultation,\n"
+"                                        assessment, and guidance related to my health concerns."
+msgstr "నా ఆరోగ్య సమస్యలకు సంబంధించి వైద్య సంప్రదింపు, మూల్యాంకనం మరియు మార్గదర్శకత్వం కోసం నేను ResearchAyu సందర్శిస్తున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I voluntarily consent to this consultation and related assessment."
+msgstr "నేను స్వచ్ఛందంగా ఈ సంప్రదింపు మరియు సంబంధిత మూల్యాంకనానికి అంగీకరిస్తున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"My medical information and records will be kept confidential as per "
+"applicable healthcare standards."
+msgstr "నా వైద్య సమాచారం మరియు రికార్డులు వర్తించే ఆరోగ్య సేవా ప్రమాణాల ప్రకారం గోప్యంగా ఉంచబడతాయి."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Outcome Understanding:"
+msgstr "ఫలితం అవగాహన:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "ResearchAyu -"
+msgstr "ResearchAyu -"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Understanding of Consultation:"
+msgstr "సంప్రదింపు అవగాహన:"
