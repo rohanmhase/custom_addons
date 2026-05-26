@@ -4,12 +4,7 @@ from odoo.exceptions import ValidationError
 
 class ResUsersInherit(models.Model):
     _inherit = 'res.users'
-
     clinic_id = fields.Many2one('clinic.clinic', string='Assigned Clinic')
-
-    @property
-    def SELF_READABLE_FIELDS(self):
-        return super().SELF_READABLE_FIELDS + ['clinic_id']
 
 
 class Clinic(models.Model):

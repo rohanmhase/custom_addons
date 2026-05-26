@@ -90,8 +90,8 @@
                     </div>
                     <group>
                         <group>
-                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1"/>
-                            <field name="payee_id" readonly="state in ('waiting', 'approved')"/>
+                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="payee_id" readonly="state in ('waiting', 'approved')" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="amount" readonly="state in ('waiting', 'approved')"/>
                         </group>
                         <group>
@@ -160,7 +160,7 @@
         <field name="arch" type="xml">
             <tree editable="top">
                 <field name="date" column_invisible="1"/>
-                <field name="clinic_id"/>
+                <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="period_start" widget="date"/>
                 <field name="period_end" widget="date"/>
                 <field name="amount" sum="Total"/>
@@ -184,27 +184,13 @@
         </field>
     </record>
 
-    <record id="view_users_form_inherit_clinic" model="ir.ui.view">
-        <field name="name">res.users.form.inherit.clinic</field>
-        <field name="model">res.users</field>
-        <field name="inherit_id" ref="base.view_users_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="Clinic Assignment">
-                    <group>
-                        <field name="clinic_id"/>
-                    </group>
-                </page>
-            </xpath>
-        </field>
-    </record>
 
     <record id="view_op_fund_config_tree" model="ir.ui.view">
         <field name="name">operational.fund.config.tree</field>
         <field name="model">operational.fund.config</field>
         <field name="arch" type="xml">
             <tree editable="bottom">
-                <field name="clinic_id"/>
+                <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="approval_threshold" widget="monetary"/>
             </tree>
         </field>
