@@ -2,11 +2,6 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 
-class ResUsersInherit(models.Model):
-    _inherit = 'res.users'
-    clinic_id = fields.Many2one('clinic.clinic', string='Assigned Clinic')
-
-
 class Clinic(models.Model):
     _inherit = 'clinic.clinic'
 
