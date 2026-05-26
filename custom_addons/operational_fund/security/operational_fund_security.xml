@@ -16,26 +16,24 @@
         <field name="implied_ids" eval="[(4, ref('group_op_fund_custodian'))]"/>
     </record>
 
-    <record id="rule_op_fund_allocation_custodian" model="ir.rule">
-        <field name="name">Allocations: Custodian (Own Clinic Only)</field>
-        <field name="model_id" ref="model_operational_fund_allocation"/>
-        <field name="domain_force">[('clinic_id', '=', user.clinic_id.id)]</field>
+    <record id="rule_op_fund_account_custodian" model="ir.rule">
+        <field name="name">Operational Account: Custodian (Own Clinic Only)</field>
+        <field name="model_id" ref="model_operational_fund_account"/>
+        <field name="domain_force">[('clinic_id.id', '=', user.clinic_id.id)]</field>
         <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
     </record>
 
-    <record id="rule_op_fund_allocation_controller" model="ir.rule">
-        <field name="name">Allocations: Controller (All Clinics)</field>
-        <field name="model_id" ref="model_operational_fund_allocation"/>
+    <record id="rule_op_fund_account_controller" model="ir.rule">
+        <field name="name">Operational Account: Controller (All Clinics)</field>
+        <field name="model_id" ref="model_operational_fund_account"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_op_fund_controller'))]"/>
     </record>
 
     <record id="rule_op_fund_disbursement_custodian" model="ir.rule">
-        <field name="name">Disbursements: Custodian (Own Records)</field>
+        <field name="name">Disbursements: Custodian (Own Clinic Only)</field>
         <field name="model_id" ref="model_operational_fund_disbursement"/>
-
-        <field name="domain_force">[('create_uid', '=', user.id)]</field>
-
+        <field name="domain_force">[('account_id.clinic_id.id', '=', user.clinic_id.id)]</field>
         <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
     </record>
 

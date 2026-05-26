@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Sequence for Disbursement Vouchers -->
     <record id="seq_op_fund_disbursement" model="ir.sequence">
         <field name="name">Operational Fund Disbursement</field>
         <field name="code">operational.fund.disbursement</field>
@@ -8,58 +9,38 @@
         <field name="company_id" eval="False"/>
     </record>
 
+    <!-- ========================= -->
+    <!-- DISBURSEMENTS (EXPENSES)  -->
+    <!-- ========================= -->
     <record id="view_op_fund_disbursement_form" model="ir.ui.view">
         <field name="name">operational.fund.disbursement.form</field>
         <field name="model">operational.fund.disbursement</field>
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" icon="fa-print" invisible="state == 'validated'"/>
-
-                    <button name="action_validate" string="2. Validate &amp; Post" type="object" class="oe_highlight" invisible="state == 'validated'"/>
-
+                    <button name="action_validate" string="Validate" type="object" class="oe_highlight" invisible="state == 'validated'"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-info text-center" role="alert" invisible="signed_voucher_file != False or state == 'validated'" style="margin-bottom: 20px;">
-                        <i class="fa fa-info-circle me-2"></i>
-                        <strong>Action Required:</strong> Click <em>Print Voucher</em>, sign the physical document, and upload it below to unlock validation.
-                    </div>
-
                     <div class="oe_title">
-                        <h1>
-                            <field name="name"/>
-                        </h1>
+                        <h1><field name="name"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="clinic_id" readonly="state == 'validated'" force_save="1"/>
+                            <field name="account_id" readonly="state == 'validated'"/>
                             <field name="payee_id" readonly="state == 'validated'"/>
                             <field name="amount" readonly="state == 'validated'"/>
                         </group>
                         <group>
                             <field name="date" readonly="state == 'validated'"/>
                             <field name="category" readonly="state == 'validated'"/>
-
-                            <field name="other_expense_details"
-                                   invisible="category != 'other'"
-                                   required="category == 'other'"
-                                   readonly="state == 'validated'"/>
-
                             <field name="receipt_file" filename="receipt_filename" readonly="state == 'validated'"/>
                             <field name="receipt_filename" invisible="1"/>
                         </group>
                     </group>
-
-                    <group string="Compliance &amp; Signatures" invisible="state == 'validated' and signed_voucher_file == False">
-                        <field name="signed_voucher_file" filename="signed_voucher_filename" readonly="state == 'validated'" widget="Work_Permit_Upload" style="width: 50%;"/>
-                        <field name="signed_voucher_filename" invisible="1"/>
-                    </group>
-
                     <notebook>
                         <page string="Business Purpose">
-                            <field name="description" readonly="state == 'validated'"
-                                   placeholder="Specify the exact purpose of this disbursement..."/>
+                            <field name="description" readonly="state == 'validated'" placeholder="Specify the exact purpose of this disbursement..."/>
                         </page>
                     </notebook>
                 </sheet>
@@ -79,12 +60,11 @@
             <tree decoration-info="state == 'draft'" decoration-success="state == 'validated'">
                 <field name="name"/>
                 <field name="date"/>
-                <field name="clinic_id"/>
+                <field name="account_id"/>
                 <field name="payee_id"/>
                 <field name="category"/>
                 <field name="amount" sum="Total"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'"
-                       decoration-success="state == 'validated'"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'validated'"/>
             </tree>
         </field>
     </record>
@@ -95,13 +75,91 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <!-- ========================= -->
+    <!-- FUND ACCOUNTS (WALLETS)   -->
+    <!-- ========================= -->
+    <record id="view_op_fund_account_form" model="ir.ui.view">
+        <field name="name">operational.fund.account.form</field>
+        <field name="model">operational.fund.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Bandra Clinic Main Fund"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="clinic_id"/>
+                        </group>
+                        <group>
+                            <field name="total_allocated"/>
+                            <field name="total_spent"/>
+                            <field name="current_balance" class="fw-bold fs-3 text-success"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Disbursements">
+                            <field name="disbursement_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="payee_id"/>
+                                    <field name="amount" sum="Total Spent"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'validated'"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Funding History">
+                            <field name="allocation_ids" readonly="1">
+                                <tree>
+                                    <field name="date"/>
+                                    <field name="reference"/>
+                                    <field name="controller_id"/>
+                                    <field name="amount" sum="Total Allocated"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_op_fund_account_tree" model="ir.ui.view">
+        <field name="name">operational.fund.account.tree</field>
+        <field name="model">operational.fund.account</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="clinic_id"/>
+                <field name="total_allocated" sum="Total Allocated"/>
+                <field name="total_spent" sum="Total Spent"/>
+                <field name="current_balance" sum="Total Balance" decoration-danger="current_balance &lt; 500"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_account" model="ir.actions.act_window">
+        <field name="name">Operational Accounts</field>
+        <field name="res_model">operational.fund.account</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ========================= -->
+    <!-- ALLOCATIONS (TOP-UPS)     -->
+    <!-- ========================= -->
     <record id="view_op_fund_allocation_tree" model="ir.ui.view">
         <field name="name">operational.fund.allocation.tree</field>
         <field name="model">operational.fund.allocation</field>
         <field name="arch" type="xml">
             <tree editable="top">
                 <field name="date"/>
-                <field name="clinic_id"/>
+                <field name="account_id"/>
                 <field name="reference"/>
                 <field name="amount" sum="Total"/>
                 <field name="controller_id"/>
@@ -114,28 +172,12 @@
         <field name="res_model">operational.fund.allocation</field>
         <field name="view_mode">tree</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Allocate funds directly to a clinic.
-            </p>
-            <p>
-                You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of
-                the month.
-            </p>
-        </field>
-    </record>
-
-    <record id="view_users_form_inherit_clinic" model="ir.ui.view">
-        <field name="name">res.users.form.inherit.clinic</field>
-        <field name="model">res.users</field>
-        <field name="inherit_id" ref="base.view_users_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="Clinic Assignment">
-                    <group>
-                        <field name="clinic_id"/>
-                    </group>
-                </page>
-            </xpath>
+          <p class="o_view_nocontent_smiling_face">
+            Allocate funds to a clinic account.
+          </p>
+          <p>
+            You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of the month.
+          </p>
         </field>
     </record>
 </odoo>
