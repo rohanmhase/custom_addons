@@ -18,18 +18,14 @@
                     <div class="page">
                         <div class="text-center mt-4 mb-4">
                             <h2>DISBURSEMENT VOUCHER</h2>
-                            <h4>
-                                <t t-esc="doc.name"/>
-                            </h4>
+                            <h4><t t-esc="doc.name"/></h4>
                         </div>
 
                         <table class="table table-bordered mt-4">
                             <tr>
-                                <td>
-                                    <strong>Date:</strong> <t t-esc="doc.date"/><br/>
-                                    <strong>Fund Account:</strong> <t t-esc="doc.clinic_id.name"/><br/>
-                                    <strong>Category:</strong> <t t-esc="dict(doc.fields_get(allfields=['category'])['category']['selection'])[doc.category]"/>
-                                </td>
+                                <strong>Date:</strong> <t t-esc="doc.date"/><br/>
+                                <strong>Fund Account:</strong> <t t-esc="doc.account_id.name"/><br/>
+                                <strong>Category:</strong> <t t-esc="dict(doc.fields_get(allfields=['category'])['category']['selection'])[doc.category]"/>
                             </tr>
                         </table>
 
@@ -43,33 +39,22 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>
-                                        <t t-esc="doc.payee_id.name"/>
-                                    </td>
-                                    <td>
-                                        <t t-esc="doc.description"/>
-                                    </td>
-                                    <td class="text-end fw-bold">₹
-                                        <t t-esc="doc.amount"/>
-                                    </td>
+                                    <td><t t-esc="doc.payee_id.name"/></td>
+                                    <td><t t-esc="doc.description"/></td>
+                                    <td class="text-end fw-bold">₹<t t-esc="doc.amount"/></td>
                                 </tr>
                             </tbody>
                         </table>
 
-                        <div class="row mt-5" style="page-break-inside: avoid;">
-
+                        <div class="row mt-5 pt-5">
                             <div class="col-6 text-center">
-                                <br/><br/><br/> <p>___________________________</p>
-                                <p><strong>Payee Signature</strong></p>
-                                <p t-field="doc.payee_id.name"/>
+                                _______________________<br/>
+                                <strong>Payee Signature</strong>
                             </div>
-
                             <div class="col-6 text-center">
-                                <br/><br/><br/> <p>___________________________</p>
-                                <p><strong>Authorized Admin</strong></p>
-                                <p t-field="doc.create_uid.name"/>
+                                _______________________<br/>
+                                <strong>Authorized Custodian</strong>
                             </div>
-
                         </div>
                     </div>
                 </t>
