@@ -19,7 +19,7 @@
     <record id="rule_op_fund_allocation_custodian" model="ir.rule">
         <field name="name">Allocations: Custodian (Own Clinic Only)</field>
         <field name="model_id" ref="model_operational_fund_allocation"/>
-        <field name="domain_force">[('clinic_id', '=', user.clinic_id.id)]</field>
+        <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
     </record>
 
