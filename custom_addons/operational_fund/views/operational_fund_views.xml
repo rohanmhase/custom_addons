@@ -28,8 +28,7 @@
                                     </strong>
                                 </div>
                                 <div class="o_kanban_record_title text-end fw-bold text-success fs-5">
-                                    ₹
-                                    <field name="amount"/>
+                                    ₹ <field name="amount"/>
                                 </div>
                             </div>
                             <div class="o_kanban_record_bottom">
@@ -199,6 +198,7 @@
             </xpath>
         </field>
     </record>
+
     <record id="view_op_fund_config_tree" model="ir.ui.view">
         <field name="name">operational.fund.config.tree</field>
         <field name="model">operational.fund.config</field>
@@ -216,17 +216,6 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_op_fund_configuration_root"
-              name="Configuration"
-              parent="menu_operational_fund_root"
-              sequence="100"
-              groups="operational_fund.group_op_fund_controller"/>
-
-    <menuitem id="menu_op_fund_config_thresholds"
-              name="Clinic Thresholds"
-              parent="menu_op_fund_configuration_root"
-              action="action_op_fund_config"
-              sequence="10"/>
     <record id="view_op_fund_clinic_balance_tree" model="ir.ui.view">
         <field name="name">op.fund.clinic.balance.tree</field>
         <field name="model">clinic.clinic</field>
