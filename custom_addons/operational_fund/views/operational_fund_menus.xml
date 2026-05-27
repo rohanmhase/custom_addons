@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_operational_fund_root"
+              name="Operational Funds"
+              sequence="50"/>
+
+    <menuitem id="menu_op_fund_dashboard"
+              name="Fund Dashboard"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_clinic_balance"
+              sequence="5"/>
+
+    <menuitem id="menu_op_fund_disbursement"
+              name="Disbursements"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_disbursement"
+              sequence="10"/>
+
+    <menuitem id="menu_op_fund_allocation"
+              name="Allocations (Funding)"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_allocation"
+              sequence="20"
+              groups="operational_fund.group_op_fund_controller"/>
+
+    <menuitem id="menu_op_fund_configuration_root"
+              name="Configuration"
+              parent="menu_operational_fund_root"
+              sequence="100"
+              groups="operational_fund.group_op_fund_controller"/>
+
+    <menuitem id="menu_op_fund_config_thresholds"
+              name="Clinic Thresholds"
+              parent="menu_op_fund_configuration_root"
+              action="action_op_fund_config"
+              sequence="10"/>
+</odoo>

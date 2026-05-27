@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_op_fund_disbursement" model="ir.sequence">
+        <field name="name">Operational Fund Disbursement</field>
+        <field name="code">operational.fund.disbursement</field>
+        <field name="prefix">OFD/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="view_op_fund_disbursement_kanban" model="ir.ui.view">
+        <field name="name">operational.fund.disbursement.kanban</field>
+        <field name="model">operational.fund.disbursement</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile" sample="1" records_draggable="0">
+                <field name="name"/>
+                <field name="clinic_id"/>
+                <field name="payee_id"/>
+                <field name="amount"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title fs-5">
+                                        <field name="name"/>
+                                    </strong>
+                                </div>
+                                <div class="o_kanban_record_title text-end fw-bold text-success fs-5">
+                                    ₹ <field name="amount"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <span class="text-muted">
+                                        <i class="fa fa-building-o me-1"></i>
+                                        <field name="clinic_id"/>
+                                    </span>
+                                    <br/>
+                                    <span class="text-muted">
+                                        <i class="fa fa-user-o me-1"></i>
+                                        <field name="payee_id"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_op_fund_disbursement_form" model="ir.ui.view">
+        <field name="name">operational.fund.disbursement.form</field>
+        <field name="model">operational.fund.disbursement</field>
+        <field name="arch" type="xml">
+            <form string="Operational Fund Disbursement" delete="0">
+                <header>
+                    <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary"/>
+
+                    <button name="action_submit_for_approval" string="Submit for Approval" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+
+                    <button name="action_approve" string="Approve" type="object" class="btn-success"
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
+
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger"
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
+
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
+                            invisible="state not in ('rejected', 'approved')"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info text-center" role="alert"
+                         invisible="signed_voucher_file != False or state in ('waiting', 'approved')"
+                         style="margin-bottom: 20px;">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <strong>Action Required:</strong>
+                        Click <em>Print Voucher</em>, sign the physical document, and upload it below to unlock
+                        submission.
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="payee_id" readonly="state in ('waiting', 'approved')" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="amount" readonly="state in ('waiting', 'approved')"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state in ('waiting', 'approved')"/>
+                            <field name="category" readonly="state in ('waiting', 'approved')"/>
+                            <field name="other_expense_details" invisible="category != 'other'"
+                                   required="category == 'other'" readonly="state in ('waiting', 'approved')"/>
+                            <field name="receipt_file" filename="receipt_filename"
+                                   readonly="state in ('waiting', 'approved')"/>
+                            <field name="receipt_filename" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Compliance &amp; Signatures"
+                           invisible="state in ('waiting', 'approved') and signed_voucher_file == False">
+                        <field name="signed_voucher_file" filename="signed_voucher_filename"
+                               readonly="state in ('waiting', 'approved')" widget="Work_Permit_Upload"
+                               style="width: 50%;"/>
+                        <field name="signed_voucher_filename" invisible="1"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Business Purpose">
+                            <field name="description" readonly="state in ('waiting', 'approved')"
+                                   placeholder="Specify the exact purpose of this disbursement..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_op_fund_disbursement_tree" model="ir.ui.view">
+        <field name="name">operational.fund.disbursement.tree</field>
+        <field name="model">operational.fund.disbursement</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state == 'draft'" decoration-warning="state == 'waiting'"
+                  decoration-success="state == 'approved'" delete="0">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="clinic_id"/>
+                <field name="payee_id"/>
+                <field name="category"/>
+                <field name="amount" sum="Total"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'"
+                       decoration-warning="state == 'waiting'" decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_disbursement" model="ir.actions.act_window">
+        <field name="name">Disbursements</field>
+        <field name="res_model">operational.fund.disbursement</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+
+    <record id="view_op_fund_allocation_tree" model="ir.ui.view">
+        <field name="name">operational.fund.allocation.tree</field>
+        <field name="model">operational.fund.allocation</field>
+        <field name="arch" type="xml">
+            <tree editable="top">
+                <field name="date" column_invisible="1"/>
+                <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="period_start" widget="date"/>
+                <field name="period_end" widget="date"/>
+                <field name="amount" sum="Total"/>
+                <field name="controller_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_allocation" model="ir.actions.act_window">
+        <field name="name">Fund Allocations</field>
+        <field name="res_model">operational.fund.allocation</field>
+        <field name="view_mode">tree</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Allocate funds directly to a clinic.
+            </p>
+            <p>
+                You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of
+                the month.
+            </p>
+        </field>
+    </record>
+
+
+    <record id="view_op_fund_config_tree" model="ir.ui.view">
+        <field name="name">operational.fund.config.tree</field>
+        <field name="model">operational.fund.config</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="approval_threshold" widget="monetary"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_config" model="ir.actions.act_window">
+        <field name="name">Clinic Thresholds</field>
+        <field name="res_model">operational.fund.config</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_op_fund_clinic_balance_tree" model="ir.ui.view">
+        <field name="name">op.fund.clinic.balance.tree</field>
+        <field name="model">clinic.clinic</field>
+        <field name="arch" type="xml">
+            <tree string="Fund Balances" create="0" edit="0" delete="0">
+                <field name="name" string="Branch / Clinic"/>
+                <field name="total_allocated" sum="Total Funded" decoration-info="1"/>
+                <field name="total_spent" sum="Total Spent" decoration-warning="1"/>
+                <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0" decoration-danger="op_fund_balance == 0"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_clinic_balance" model="ir.actions.act_window">
+        <field name="name">Fund Dashboard</field>
+        <field name="res_model">clinic.clinic</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_op_fund_clinic_balance_tree"/>
+    </record>
+</odoo>

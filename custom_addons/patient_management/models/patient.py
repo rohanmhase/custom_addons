@@ -5,35 +5,36 @@ from dateutil.relativedelta import relativedelta
 import re
 import uuid
 
+
 class Patient(models.Model):
     _name = "clinic.patient"
     _description = "Clinic Patient"
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-
-    name = fields.Char(string="Full Name", required=True, tracking=True)               # Full name of patient
-    age = fields.Integer(string="Age", required=True, tracking=True)                   # Age of patient
+    name = fields.Char(string="Full Name", required=True, tracking=True)  # Full name of patient
+    age = fields.Integer(string="Age", required=True, tracking=True)  # Age of patient
     gender = fields.Selection([
         ("male", "Male"),
         ("female", "Female"),
         ("other", "Other"),
-    ], string="Gender", required=True, tracking=True)                                  # Gender of patient
-    phone = fields.Char(string="Phone", required=True, size=10, tracking=True)         # Phone number of patient which cannot be duplicate
-    email = fields.Char(string="Email", tracking=True)                                 # Email of patient if any
-    address = fields.Text(string="Address", required=True, tracking=True)              # Address of patient
+    ], string="Gender", required=True, tracking=True)  # Gender of patient
+    phone = fields.Char(string="Phone", required=True, size=10,
+                        tracking=True)  # Phone number of patient which cannot be duplicate
+    email = fields.Char(string="Email", tracking=True)  # Email of patient if any
+    address = fields.Text(string="Address", required=True, tracking=True)  # Address of patient
 
     mrn = fields.Char(string="Medical Record Number",
-                      readonly=True, copy=False, index=True)            # Medical record number
+                      readonly=True, copy=False, index=True)  # Medical record number
     uuid = fields.Char(string="UUID", readonly=True, copy=False, index=True, default=lambda self: str(uuid.uuid4()))
     enroll_date = fields.Date(string="Enrollment Date",
                               default=lambda self: self._ist_date(),
-                              copy=False, required=True)                # Enroll Date of patient
+                              copy=False, required=True)  # Enroll Date of patient
 
     clinic_id = fields.Many2one(
         "clinic.clinic",
         string="Clinic",
         required=True, tracking=True
-    )                                                                   # Clinic name
+    )  # Clinic name
 
     pain_types = fields.Char(string="Pain Types", tracking=True)
 
@@ -57,10 +58,13 @@ class Patient(models.Model):
     ], string="Patient Source")
 
     source_event = fields.Many2one('event.event', string="Event Name", domain=lambda self: [
-        '|', '&', ('stage_id.name', 'in', ['Confirmed', 'Event Done']),
-        ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),
-        ('name', '=', 'Others')
+        '|',
+        '&',
+        ('stage_id.name', '=', 'Event Done'),  # Only look at Event Done stage
+        ('date_begin', '>=', fields.Datetime.now() - relativedelta(months=3)),  # Within 3 months
+        ('name', 'in', ['Others', 'Old Event'])  # Always include your custom options
     ])
+
     source_event_name = fields.Char(related='source_event.name', string="Event Name Helper")
     manual_event_name = fields.Char(string="Type Event Name")
 
@@ -115,11 +119,10 @@ class Patient(models.Model):
     other_reason = fields.Char(string="Specify Other Reason", tracking=True)
     treatment_updated_by = fields.Many2one('res.users', string="Updated by", readonly=True)
 
-
     @api.onchange('treatment_status')
     def _onchange_treatment_status(self):
         for record in self:
-            if record.treatment_status:     #update the tracker
+            if record.treatment_status:  # update the tracker
                 record.treatment_updated_by = self.env.user
             else:
                 record.treatment_updated_by = False
@@ -139,17 +142,15 @@ class Patient(models.Model):
                 record.not_converted_reasons = False
                 record.other_reason = False
 
-
-
     _sql_constraints = [
         # ('unique_phone', 'unique(phone)', '⚠️ This phone number is already registered!'), # Prevent creating records for same registered phone numbers
         ('unique_uuid', 'unique(uuid)', '⚠️ UUID must be unique!'),
     ]
 
     admin_id = fields.Many2one("res.users", string="Admin / BM",
-                                required=True,
-                                default=lambda self: self.env.user,
-                                readonly=True)
+                               required=True,
+                               default=lambda self: self.env.user,
+                               readonly=True)
 
     partner_id = fields.Many2one("res.partner", string="Customer", help="Link patient to POS/Invoices")
 
@@ -277,7 +278,7 @@ class Patient(models.Model):
             ("mild_positive", "Mild Positive"),
             ("no_change", "No Change"),
             ("negative", "Negative"),
-            ("baseline", "Baseline"),],
+            ("baseline", "Baseline"), ],
         string="Latest X-Ray Status",
         compute="_compute_latest_xray_grade",
         store=True
@@ -309,7 +310,7 @@ class Patient(models.Model):
         store=True
     )
 
-    latest_xray_day  = fields.Selection(
+    latest_xray_day = fields.Selection(
         [
             ("5", "5th Day"),
             ("20", "20th Day"),
@@ -327,8 +328,7 @@ class Patient(models.Model):
                  "attachment_ids.create_date",
                  "attachment_ids.x_ray_grade",
                  "attachment_ids.x_ray_status",
-                 "attachment_ids.x_ray_day",)
-
+                 "attachment_ids.x_ray_day", )
     def _compute_latest_xray_grade(self):
         for rec in self:
             # Filter only active X-Ray attachments
@@ -442,7 +442,6 @@ class Patient(models.Model):
             seq = self.env["ir.sequence"].next_by_code("clinic.patient.mrn") or "000001"
             vals["mrn"] = f"{prefix}-{seq.zfill(6)}"
 
-
         return super(Patient, self).create(vals)
 
     # -------------------------------
@@ -523,7 +522,7 @@ class Patient(models.Model):
             "res_model": "patient.blood_report",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_case_taking(self):
@@ -536,7 +535,7 @@ class Patient(models.Model):
             "res_model": "patient.case_taking",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_daily_followup(self):
@@ -549,7 +548,7 @@ class Patient(models.Model):
             "res_model": "patient.daily_followup",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_diet_chart(self):
@@ -562,7 +561,7 @@ class Patient(models.Model):
             "res_model": "patient.diet_chart",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_followup(self):
@@ -575,7 +574,7 @@ class Patient(models.Model):
             "res_model": "patient.followup",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_enrollment(self):
@@ -588,7 +587,7 @@ class Patient(models.Model):
             "res_model": "patient.enrollment",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_session(self):
@@ -601,7 +600,7 @@ class Patient(models.Model):
             "res_model": "patient.session",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_xray(self):
@@ -614,7 +613,7 @@ class Patient(models.Model):
             "res_model": "patient.xray",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_prescription(self):
@@ -627,7 +626,7 @@ class Patient(models.Model):
             "res_model": "patient.prescription",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_attachment(self):
@@ -640,7 +639,7 @@ class Patient(models.Model):
             "res_model": "patient.attachment",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
-            "context": {"default_patient_id": self.id, "active_test": not show_all,},
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
     def action_open_patient_case_paper(self):
@@ -687,3 +686,18 @@ class Patient(models.Model):
             record.active = False
         # Do not call super() → prevents actual deletion
         return True
+
+    @api.onchange('patient_source')
+    def _onchange_patient_source_clear_events(self):
+        """Wipe event fields if the source is changed away from 'Event'"""
+        for record in self:
+            if record.patient_source != 'event':
+                record.source_event = False
+                record.manual_event_name = False
+
+    @api.onchange('source_event')
+    def _onchange_source_event_clear_manual(self):
+        """Wipe the manual text box if they select a standard event instead of Others/Old Event"""
+        for record in self:
+            if record.source_event_name not in ('Others', 'Old Event'):
+                record.manual_event_name = False

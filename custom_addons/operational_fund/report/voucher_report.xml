@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_op_fund_voucher" model="ir.actions.report">
+        <field name="name">Disbursement Voucher</field>
+        <field name="model">operational.fund.disbursement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">operational_fund.report_voucher_template</field>
+        <field name="report_file">operational_fund.report_voucher_template</field>
+        <field name="print_report_name">'Voucher - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_voucher_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center mt-4 mb-4">
+                            <h2>DISBURSEMENT VOUCHER</h2>
+                            <h4>
+                                <t t-esc="doc.name"/>
+                            </h4>
+                        </div>
+
+                        <table class="table table-bordered mt-4">
+                            <tr>
+                                <td>
+                                    <strong>Date:</strong> <t t-esc="doc.date"/><br/>
+                                    <strong>Fund Account:</strong> <t t-esc="doc.clinic_id.name"/><br/>
+                                    <strong>Category:</strong> <t t-esc="dict(doc.fields_get(allfields=['category'])['category']['selection'])[doc.category]"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table mt-4">
+                            <thead>
+                                <tr>
+                                    <th>Payee / Vendor</th>
+                                    <th>Business Purpose</th>
+                                    <th class="text-end">Amount Disbursed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <t t-esc="doc.payee_id.name"/>
+                                    </td>
+                                    <td>
+                                        <t t-esc="doc.description"/>
+                                    </td>
+                                    <td class="text-end fw-bold">₹
+                                        <t t-esc="doc.amount"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-5" style="page-break-inside: avoid;">
+
+                            <div class="col-6 text-center">
+                                <br/><br/><br/> <p>___________________________</p>
+                                <p><strong>Payee Signature</strong></p>
+                                <p t-field="doc.payee_id.name"/>
+                            </div>
+
+                            <div class="col-6 text-center">
+                                <br/><br/><br/> <p>___________________________</p>
+                                <p><strong>Authorized Admin</strong></p>
+                                <p t-field="doc.create_uid.name"/>
+                            </div>
+
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

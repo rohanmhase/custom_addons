@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-06 06:43+0000\n"
-"PO-Revision-Date: 2026-05-06 06:43+0000\n"
+"POT-Creation-Date: 2026-05-15 06:16+0000\n"
+"PO-Revision-Date: 2026-05-15 06:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -44,28 +44,46 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Ask questions if unclear"
-msgstr "- काही स्पष्ट नसल्यास प्रश्न विचारा."
+msgid "- Additional tests or specialist advice may sometimes be required."
+msgstr "- काही वेळा अतिरिक्त चाचण्या किंवा तज्ज्ञांचा सल्ला आवश्यक असू शकतो."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Discussion of symptoms and lifestyle"
-msgstr "- लक्षणे आणि जीवनशैलीची चर्चा"
+msgid "- Ask questions if any advice is unclear."
+msgstr "- जर एखादा सल्ला स्पष्ट नसेल, तर प्रश्न विचारा."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Further investigations may be required."
-msgstr "- पुढील तपासणीची आवश्यकता असू शकते."
+msgid "- Guidance regarding treatment or further investigations"
+msgstr "- उपचार किंवा पुढील तपासण्यांविषयी मार्गदर्शन"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- I agree to share complete medical history."
-msgstr "- मी माझा संपूर्ण वैद्यकीय इतिहास सामायिक करण्यास सहमत आहे."
+msgid "- I agree to:"
+msgstr "- मी सहमत आहे:"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Medical history review"
-msgstr "- वैद्यकीय इतिहासाचा आढावा"
+msgid "- I understand that:"
+msgstr "- मला हे समजले आहे की:"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- Inform the doctor about ongoing medications, medical conditions, "
+"surgeries, or allergies."
+msgstr ""
+"- सध्या सुरू असलेली औषधे, वैद्यकीय स्थिती, शस्त्रक्रिया किंवा ॲलर्जींबद्दल डॉक्टरांना माहिती द्या."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Lifestyle and symptom evaluation"
+msgstr "- जीवनशैली आणि लक्षणांचे मूल्यमापन"
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Medical history discussion"
+msgstr "- वैद्यकीय इतिहासाची चर्चा"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -74,18 +92,43 @@ msgstr "- शारीरिक तपासणी"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- Provide true information"
-msgstr "- खरी माहिती द्या"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Review of reports (X-ray/MRI/Blood tests)"
 msgstr "- अहवालांचे परीक्षण (क्ष-किरण / एमआरआय / रक्त चाचण्या)"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "- The consultation is advisory in nature."
-msgstr "- हा सल्लामसलत स्वरूपाचा आहे."
+msgid "- Share accurate medical information to the best of my knowledge."
+msgstr "- माझ्या सर्वोत्तम माहितीनुसार, अचूक वैद्यकीय माहिती सामायिक करेन."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation does not replace emergency medical care when required."
+msgstr "- आवश्यक असताना, हा सल्ला आपत्कालीन वैद्यकीय सेवेची जागा घेत नाही."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- The consultation is meant to provide professional guidance based on the "
+"information shared."
+msgstr ""
+"-हे सल्लामसलत सत्र सामायिक केलेल्या माहितीवर आधारित व्यावसायिक मार्गदर्शन प्रदान करण्याच्या उद्देशाने आहे."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "- Treatment response and recovery may vary from person to person."
+msgstr "- उपचारांना मिळणारा प्रतिसाद आणि सुधारणा ही व्यक्तीनुसार वेगवेगळी असू शकते."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"- While every effort will be made to provide appropriate care and guidance, "
+"specific results or recovery timelines cannot be guaranteed as treatment "
+"response may differ from person to person."
+msgstr ""
+"- योग्य ती काळजी आणि मार्गदर्शन पुरवण्यासाठी सर्वतोपरी प्रयत्न केले जातील, "
+"तथापि, उपचारांना मिळणारा प्रतिसाद प्रत्येक व्यक्तीनुसार भिन्न असू शकत असल्याने, "
+"विशिष्ट परिणाम किंवा बरे होण्याचा कालावधी यांची हमी देता येत नाही."
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_1
@@ -821,7 +864,7 @@ msgid "Burning sensation in B/L Knee/Shin right:"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__busy_schedule
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__busy_schedule
 msgid "Busy Schedule"
 msgstr ""
 
@@ -964,6 +1007,11 @@ msgid "Completed"
 msgstr ""
 
 #. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Confidentiality:"
+msgstr "गोपनीयता:"
+
+#. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
 msgid "Confirm"
 msgstr ""
@@ -1012,7 +1060,7 @@ msgid "Contact Number"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__cost_issue
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__cost_issue
 msgid "Cost Issue"
 msgstr ""
 
@@ -1155,7 +1203,7 @@ msgid "Day of X-Ray"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__decision_maker_absent
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__decision_maker_absent
 msgid "Decision Maker Absent"
 msgstr ""
 
@@ -1310,6 +1358,11 @@ msgid "Doctor Name"
 msgstr ""
 
 #. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__doctor
+msgid "Doctor Referred"
+msgstr ""
+
+#. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.view_patient_prescription
 msgid "Doctor/Admin Name"
 msgstr ""
@@ -1354,7 +1407,7 @@ msgid "Dry skin (Saam Vaata)"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__emi_rejected
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__emi_rejected
 msgid "EMI Rejected"
 msgstr ""
 
@@ -1380,7 +1433,7 @@ msgid "English"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__enrolled
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__converted
 msgid "Enrolled"
 msgstr ""
 
@@ -1433,6 +1486,7 @@ msgstr ""
 "                                        'Regrow Therapy', पंचकर्म/शरीरशुद्धी (Detox) उपचार, आयुर्वेदिक औषधे, आहाराबाबतचे मार्गदर्शन \n"
 "                                        आणि - आवश्यकतेनुसार - जीवनशैलीतील बदल. माझ्या शारीरिक स्थितीनुसार आणि मी उपचारांचे किती काटेकोरपणे पालन करतो यावर, उपचारांचे परिणाम (Outcomes) वेगवेगळे असू शकतात. \n"
 "                                        मला हे समजले आहे की, उपचारांच्या परिणामांबाबत कोणतीही वैद्यकीय हमी देणे शक्य नाही. मी या गोष्टीशी सहमत आहे की: उपचारांची संपूर्ण प्रक्रिया मला समजेल अशा भाषेत समजावून सांगण्यात आली आहे आणि मी या उपचार योजनेचे (Plan) पालन करेन."
+
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__no_appetite_even_if_hungry
 msgid "Even though hungry, does not feel like eating (Saam Pitta)"
@@ -1441,6 +1495,21 @@ msgstr ""
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_diet_chart__evening_with_time
 msgid "Evening With Time"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__event
+msgid "Event"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__source_event
+msgid "Event Name"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__source_event_name
+msgid "Event Name Helper"
 msgstr ""
 
 #. module: patient_management
@@ -1456,6 +1525,11 @@ msgstr ""
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__face_looks_reddish
 msgid "Face looks reddish (Pitta Vridhi)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__facebook
+msgid "Facebook"
 msgstr ""
 
 #. module: patient_management
@@ -1763,15 +1837,15 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid ""
-"I understand that I am visiting ResearchAyu for consultation\n"
-"                                        related to stiffness, mobility, or related concerns."
+"I am visiting ResearchAyu for medical consultation,\n"
+"                                        assessment, and guidance related to my health concerns."
 msgstr ""
-"मला समजले आहे की, सांध्यांचा ताठरपणा, हालचाल किंवा तत्सम संबंधित समस्यांबाबत सल्ला घेण्यासाठी मी ResearchAyu ला भेट देत आहे."
+"मी माझ्या आरोग्याशी संबंधित समस्यांबाबत वैद्यकीय सल्ला, तपासणी आणि मार्गदर्शनासाठी ResearchAyu ला भेट देत आहे."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "I voluntarily consent to consultation."
-msgstr "मी स्वेच्छेने सल्लामसलतीस संमती देतो."
+msgid "I voluntarily consent to this consultation and related assessment."
+msgstr "मी या सल्लामसलतीस आणि संबंधित मूल्यमापनास स्वेच्छेने संमती देतो."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -1787,7 +1861,20 @@ msgid ""
 "                                        arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will\n"
 "                                        have jurisdiction if required."
 msgstr ""
-"मी कर्मचारी आणि रुग्णांशी आदरपूर्वक वागेन. गैरवर्तन किंवा धमक्यांमुळे सेवा नाकारली जाऊ शकते आणि/किंवा कायदेशीर कारवाई केली जाऊ शकते. न वापरलेल्या आगाऊ भरलेल्या रक्रेचा परतावा (जर पात्र असल्यास): यातून ₹५,००० प्रशासकीय शुल्क + वितरित केलेली औषधे + वापरलेल्या सेवा यांची वजावट केली जाईल. सेवा खंडित केल्यापासून १५ दिवसांच्या आत लेखी विनंती करणे आवश्यक आहे. या प्रक्रियेस ९० कामकाजाचे दिवस लागू शकतात. EMI/त्रयस्थ पक्ष: परताव्याची प्रक्रिया संबंधित EMI/त्रयस्थ पक्ष सेवा पुरवठादाराच्या अटींनुसार त्यांच्यामार्फतच हाताळली जाईल. दुबार भरणा: १५ दिवसांच्या आत पुरावा सादर करणे आवश्यक; दुबार भरलेली रक्कम १५ कामकाजाच्या दिवसांत NEFT द्वारे परत केली जाईल. मी इतर कोणत्याही रुग्णाची वैयक्तिक माहिती, उपचारांचे तपशील किंवा भरणाविषयक माहितीची मागणी करणार नाही किंवा ती कोणाशीही सामायिक करणार नाही. कोणत्याही वादांचे निराकरण ठाणे, महाराष्ट्र येथे लवाद प्रक्रियेद्वारे (लवादाची भाषा: इंग्रजी/हिंदी/मराठी) केले जाईल. आवश्यक भासल्यास, ठाणे येथील न्यायालयांच्या अधिकारक्षेत्रात हे प्रकरण येईल."
+"मी कर्मचारी आणि रुग्णांशी आदरपूर्वक वागेन. गैरवर्तन किंवा धमक्यांमुळे सेवा "
+"नाकारली जाऊ शकते आणि/किंवा कायदेशीर कारवाई केली जाऊ शकते. न वापरलेल्या आगाऊ "
+"भरलेल्या रक्रेचा परतावा (जर पात्र असल्यास): यातून ₹५,००० प्रशासकीय शुल्क + "
+"वितरित केलेली औषधे + वापरलेल्या सेवा यांची वजावट केली जाईल. सेवा खंडित "
+"केल्यापासून १५ दिवसांच्या आत लेखी विनंती करणे आवश्यक आहे. या प्रक्रियेस ९० "
+"कामकाजाचे दिवस लागू शकतात. EMI/त्रयस्थ पक्ष: परताव्याची प्रक्रिया संबंधित "
+"EMI/त्रयस्थ पक्ष सेवा पुरवठादाराच्या अटींनुसार त्यांच्यामार्फतच हाताळली "
+"जाईल. दुबार भरणा: १५ दिवसांच्या आत पुरावा सादर करणे आवश्यक; दुबार भरलेली "
+"रक्कम १५ कामकाजाच्या दिवसांत NEFT द्वारे परत केली जाईल. मी इतर कोणत्याही "
+"रुग्णाची वैयक्तिक माहिती, उपचारांचे तपशील किंवा भरणाविषयक माहितीची मागणी "
+"करणार नाही किंवा ती कोणाशीही सामायिक करणार नाही. कोणत्याही वादांचे निराकरण "
+"ठाणे, महाराष्ट्र येथे लवाद प्रक्रियेद्वारे (लवादाची भाषा: "
+"इंग्रजी/हिंदी/मराठी) केले जाईल. आवश्यक भासल्यास, ठाणे येथील न्यायालयांच्या "
+"अधिकारक्षेत्रात हे प्रकरण येईल."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -1801,7 +1888,17 @@ msgid ""
 "                                        symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report\n"
 "                                        any side effects immediately."
 msgstr ""
-"सल्ला दिल्याप्रमाणे मी आवश्यक त्या तपासण्या (उदा. एक्स-रे, एमआरआय, रक्तचाचण्या) पूर्ण करेन.मी माझा संपूर्ण वैद्यकीय इतिहास — ज्यामध्ये स्वयंप्रतिकार (autoimmune) किंवा सह-व्याधींचा (comorbid conditions) समावेश असेल (उदा. RA/ANA), तसेच मागील वैद्यकीय अहवाल आणि सध्या सुरू असलेली औषधे — पूर्णपणे उघड करेन. मला याची जाणीव आहे की, कोणतीही माहिती लपवून ठेवल्यास गुंतागुंत निर्माण होऊ शकते; आणि अशा प्रकारे उघड न केलेल्या व्याधींमुळे उद्भवणाऱ्या कोणत्याही समस्यांसाठी हे क्लिनिक जबाबदार राहणार नाही. मला हे समजले आहे की, आयुर्वेदिक किंवा पंचकर्म उपचारांमुळे काही तात्पुरते दुष्परिणाम उद्भवू शकतात; यामध्ये पचनासंबंधी अस्वस्थता, थकवा, लक्षणांमध्ये तात्पुरती वाढ (flare-up), ॲलर्जी/पुरळ, भावनिक बदल किंवा त्वचेवर फोड येणे यांचा समावेश असू शकतो. कोणताही दुष्परिणाम जाणवल्यास, मी त्याची माहिती त्वरित कळवेन."
+"सल्ला दिल्याप्रमाणे मी आवश्यक त्या तपासण्या (उदा. एक्स-रे, एमआरआय, "
+"रक्तचाचण्या) पूर्ण करेन.मी माझा संपूर्ण वैद्यकीय इतिहास — ज्यामध्ये "
+"स्वयंप्रतिकार (autoimmune) किंवा सह-व्याधींचा (comorbid conditions) समावेश "
+"असेल (उदा. RA/ANA), तसेच मागील वैद्यकीय अहवाल आणि सध्या सुरू असलेली औषधे — "
+"पूर्णपणे उघड करेन. मला याची जाणीव आहे की, कोणतीही माहिती लपवून ठेवल्यास "
+"गुंतागुंत निर्माण होऊ शकते; आणि अशा प्रकारे उघड न केलेल्या व्याधींमुळे "
+"उद्भवणाऱ्या कोणत्याही समस्यांसाठी हे क्लिनिक जबाबदार राहणार नाही. मला हे "
+"समजले आहे की, आयुर्वेदिक किंवा पंचकर्म उपचारांमुळे काही तात्पुरते दुष्परिणाम"
+" उद्भवू शकतात; यामध्ये पचनासंबंधी अस्वस्थता, थकवा, लक्षणांमध्ये तात्पुरती "
+"वाढ (flare-up), ॲलर्जी/पुरळ, भावनिक बदल किंवा त्वचेवर फोड येणे यांचा समावेश "
+"असू शकतो. कोणताही दुष्परिणाम जाणवल्यास, मी त्याची माहिती त्वरित कळवेन."
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__id
@@ -1873,6 +1970,11 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
 msgid "Incomplete extension in fingers"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__instagram
+msgid "Instagram"
 msgstr ""
 
 #. module: patient_management
@@ -2080,7 +2182,7 @@ msgid "Left Knee"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__left_without_consultation_due_to_more_waiting_time
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__left_without_consultation_due_to_more_waiting_time
 msgid "Left Without Consultation Due To Waiting Time"
 msgstr ""
 
@@ -2319,6 +2421,14 @@ msgid "My Activity Deadline"
 msgstr ""
 
 #. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid ""
+"My medical information and records will be kept confidential as per "
+"applicable healthcare standards."
+msgstr ""
+"माझी वैद्यकीय माहिती आणि नोंदी, लागू असलेल्या आरोग्यसेवा मानकांनुसार गोपनीय ठेवल्या जातील."
+
+#. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__nakta
 #: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__nakta
 #: model_terms:ir.ui.view,arch_db:patient_management.patient_case_taking_form
@@ -2399,16 +2509,6 @@ msgid "No Change"
 msgstr ""
 
 #. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No Guarantee Clause:"
-msgstr "हमी-विरहित कलम:"
-
-#. module: patient_management
-#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "No diagnosis or outcome is guaranteed."
-msgstr "कोणत्याही निदानाची किंवा निष्पत्तीची हमी दिली जात नाही."
-
-#. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__no_knee_spine_concern
 msgid "No knee/spine related concern"
 msgstr ""
@@ -2434,22 +2534,22 @@ msgid "Not Applicable Reasons"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__not_enrolled
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__treatment_status__not_converted
 msgid "Not Enrolled"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__not_enrolled_reasons
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__not_converted_reasons
 msgid "Not Enrolled Reasons"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__not_feasible
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__not_feasible
 msgid "Not Feasible"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__not_interested
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__not_interested
 msgid "Not Interested"
 msgstr ""
 
@@ -2583,7 +2683,7 @@ msgstr ""
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_applicable_reasons__others
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__others
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__others
 #: model_terms:ir.ui.view,arch_db:patient_management.patient_followup_form
 msgid "Others"
 msgstr ""
@@ -2593,6 +2693,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:patient_management.field_patient_followup__others_s
 msgid "Others:"
 msgstr ""
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "Outcome Understanding:"
+msgstr "निष्पत्तीचे आकलन"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__p_h_o
@@ -2757,6 +2862,11 @@ msgid "Patient Responsibility:"
 msgstr "रुग्णाची जबाबदारी:"
 
 #. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__patient_source
+msgid "Patient Source"
+msgstr ""
+
+#. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__patient_status
 msgid "Patient Status"
 msgstr ""
@@ -2767,7 +2877,7 @@ msgid "Patient X-Ray"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__patient_absent
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__patient_absent
 msgid "Patient absent"
 msgstr ""
 
@@ -2816,7 +2926,7 @@ msgid "Pedal Oedema Right"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__personal_reasons
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__personal_reasons
 msgid "Personal Reasons"
 msgstr ""
 
@@ -2906,7 +3016,6 @@ msgstr ""
 msgid "Purpose of Consultation:"
 msgstr "सल्ल्याचा उद्देश:"
 
-
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_prescription_line__qty
 msgid "Quantity"
@@ -2990,6 +3099,11 @@ msgid "Recovery"
 msgstr ""
 
 #. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__referral
+msgid "Referral"
+msgstr ""
+
+#. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment__type_of_therapy__regeneration
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_followup__type_of_therapy__regeneration
 msgid "Regeneration"
@@ -3066,6 +3180,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__slr_rt
 #: model:ir.model.fields,field_description:patient_management.field_patient_daily_followup__slr_rt
 msgid "SLR Right"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__sms
+msgid "SMS"
 msgstr ""
 
 #. module: patient_management
@@ -3450,7 +3569,7 @@ msgid "Tiktamlodgar:"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__time_issue
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__time_issue
 msgid "Time Issue"
 msgstr ""
 
@@ -3506,7 +3625,7 @@ msgid "Transition"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__travel_issue
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__travel_issue
 msgid "Travel Issue"
 msgstr ""
 
@@ -3528,6 +3647,11 @@ msgstr ""
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__tremors_shaking_in_some_patients
 msgid "Tremors (shaking) in some patients (Vaat Vridhi, Maaja Kshaya)"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields,field_description:patient_management.field_clinic_patient__manual_event_name
+msgid "Type Event Name"
 msgstr ""
 
 #. module: patient_management
@@ -3559,8 +3683,8 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
-msgid "Understanding of Advice:"
-msgstr "सल्ल्याचे आकलन:"
+msgid "Understanding of Consultation:"
+msgstr ""
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
@@ -3695,17 +3819,22 @@ msgid "Wake up time:"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_second_opinion
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__walkin
+msgid "Walk-in"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__wants_second_opinion
 msgid "Wants Second Opinion"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_time_to_think
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__wants_time_to_think
 msgid "Wants Time to Think"
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__wants_to_discuss_at_home
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__wants_to_discuss_at_home
 msgid "Wants to Discuss at Home"
 msgstr ""
 
@@ -3717,7 +3846,7 @@ msgid ""
 msgstr ""
 
 #. module: patient_management
-#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_enrolled_reasons__was_getting_late_didnt_wait_for_closure
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__not_converted_reasons__was_getting_late_didnt_wait_for_closure
 msgid "Was getting late, didn't wait for closure"
 msgstr ""
 
@@ -3814,6 +3943,11 @@ msgstr ""
 #: code:addons/patient_management/models/enrollment.py:0
 #, python-format
 msgid "You cannot modify an enrollment that is already completed"
+msgstr ""
+
+#. module: patient_management
+#: model:ir.model.fields.selection,name:patient_management.selection__clinic_patient__patient_source__youtube
+msgid "Youtube"
 msgstr ""
 
 #. module: patient_management

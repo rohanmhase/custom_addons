@@ -6,9 +6,11 @@
     'data': [
         'security/ir.model.access.csv',
         'data/pet_matrix.xml',
+        'data/pet_cron.xml',
         'views/pet_bm_views.xml',
         'views/patient_inherit_views.xml',
     ],
     'installable': True,
     'application': True,
+    "license": "LGPL-3",
 }
