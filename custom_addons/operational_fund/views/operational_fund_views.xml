@@ -60,10 +60,12 @@
                     <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary"/>
                     <button name="action_submit_for_approval" string="Submit for Approval" type="object"
                             class="oe_highlight" invisible="state != 'draft'"/>
+
                     <button name="action_approve" string="Approve" type="object" class="btn-success"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+
                     <button name="action_reset_to_draft" string="Reset to Draft" type="object"
                             invisible="state not in ('rejected', 'approved')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved"/>

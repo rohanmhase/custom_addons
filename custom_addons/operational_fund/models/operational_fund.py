@@ -12,7 +12,6 @@ class Clinic(models.Model):
                                      help="If this clinic shares a fund with another, select the main clinic here.")
     child_clinic_ids = fields.One2many('clinic.clinic', 'master_fund_id', string='Child Clinics')
 
-    # NEW: The Logic Bridge for the Dashboard Folders
     wallet_group_name = fields.Char(string='Wallet Group', compute='_compute_wallet_group', store=True,
                                     help="Used to group clinics cleanly on the dashboard.")
 
@@ -24,9 +23,9 @@ class Clinic(models.Model):
     def _check_master_fund(self):
         for clinic in self:
             if clinic.master_fund_id == clinic:
-                raise ValidationError(_("A clinic cannot be its own Master Fund. Please leave the 'Shared Wallet' field blank for the main master clinic."))
+                raise ValidationError(
+                    _("A clinic cannot be its own Master Fund. Please leave the 'Shared Wallet' field blank for the main master clinic."))
 
-    # NEW: Compute the folder name for grouping
     @api.depends('name', 'master_fund_id.name')
     def _compute_wallet_group(self):
         for clinic in self:
@@ -35,25 +34,62 @@ class Clinic(models.Model):
             else:
                 clinic.wallet_group_name = clinic.name
 
-    @api.depends('allocation_ids.amount', 'disbursement_ids.amount', 'disbursement_ids.state',
+    # THE CHRONOLOGICAL CASCADE (Handles Leftover Rollovers)
+    @api.depends('allocation_ids.amount', 'allocation_ids.period_start', 'allocation_ids.period_end',
+                 'disbursement_ids.amount', 'disbursement_ids.state', 'disbursement_ids.date',
                  'child_clinic_ids.disbursement_ids.amount', 'child_clinic_ids.disbursement_ids.state',
-                 'master_fund_id')
+                 'child_clinic_ids.disbursement_ids.date', 'master_fund_id')
     def _compute_balances(self):
+        today = fields.Date.context_today(self)
         for clinic in self:
             if clinic.master_fund_id and clinic.master_fund_id != clinic:
                 clinic.total_allocated = 0.0
                 clinic.total_spent = 0.0
                 clinic.op_fund_balance = 0.0
+                continue
+
+            allocations = clinic.allocation_ids.sorted(key=lambda a: a.period_start)
+            all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
+            approved_disbs = all_disbursements.filtered(lambda d: d.state == 'approved')
+
+            running_rollover = 0.0
+            current_allocated = 0.0
+            current_spent = 0.0
+            current_balance = 0.0
+            found_active = False
+
+            for alloc in allocations:
+                # Find expenses strictly within this allocation's time window
+                period_disbs = approved_disbs.filtered(
+                    lambda d: d.date and alloc.period_start <= d.date <= alloc.period_end)
+                period_spent = sum(period_disbs.mapped('amount'))
+
+                # Math: Old Leftovers + New Money - Money Spent
+                total_available = running_rollover + alloc.amount
+                period_ending_balance = total_available - period_spent
+
+                # If this is the current active month, update the dashboard display
+                if alloc.period_start <= today <= alloc.period_end:
+                    current_allocated = total_available
+                    current_spent = period_spent
+                    current_balance = period_ending_balance
+                    found_active = True
+
+                running_rollover = period_ending_balance
+
+            if not allocations:
+                clinic.total_allocated = 0.0
+                clinic.total_spent = 0.0
+                clinic.op_fund_balance = 0.0
+            elif not found_active and today > allocations[-1].period_end:
+                # If we are between months, show the unspent rollover sitting in the bank
+                clinic.total_allocated = running_rollover
+                clinic.total_spent = 0.0
+                clinic.op_fund_balance = running_rollover
             else:
-                allocated = sum(clinic.allocation_ids.mapped('amount'))
-                spent = sum(clinic.disbursement_ids.filtered(lambda t: t.state == 'approved').mapped('amount'))
-
-                for child in clinic.child_clinic_ids:
-                    spent += sum(child.disbursement_ids.filtered(lambda t: t.state == 'approved').mapped('amount'))
-
-                clinic.total_allocated = allocated
-                clinic.total_spent = spent
-                clinic.op_fund_balance = allocated - spent
+                clinic.total_allocated = current_allocated
+                clinic.total_spent = current_spent
+                clinic.op_fund_balance = current_balance
 
 
 class OperationalFundAudit(models.Model):
@@ -83,8 +119,9 @@ class OperationalFundConfig(models.Model):
         default=0.0,
         help="Disbursements at or below this amount are automatically approved."
     )
+    # TIER 2 ASSIGNMENT: Multi-Manager Routing
     manager_ids = fields.Many2many('res.users', string='Approving Managers',
-                                 help="Select all managers (Group, Regional, Head) who can approve and should be notified.")
+                                   help="Select all managers (Group, Regional, Head) who can approve and should be notified.")
 
     _sql_constraints = [
         ('clinic_uniq', 'unique (clinic_id)', 'A clinic can only have one operational fund configuration limit!')
@@ -115,6 +152,21 @@ class OperationalFundAllocation(models.Model):
         for rec in self:
             if rec.period_start and rec.period_end and rec.period_start > rec.period_end:
                 raise ValidationError(_("The Period End date cannot be earlier than the Period Start date."))
+
+    # NEW: OVERLAP PROTECTION
+    @api.constrains('period_start', 'period_end', 'clinic_id')
+    def _check_overlap(self):
+        for rec in self:
+            if rec.period_start and rec.period_end:
+                domain = [
+                    ('id', '!=', rec.id),
+                    ('clinic_id', '=', rec.clinic_id.id),
+                    ('period_start', '<=', rec.period_end),
+                    ('period_end', '>=', rec.period_start)
+                ]
+                if self.search_count(domain) > 0:
+                    raise ValidationError(
+                        _("Allocation periods cannot overlap for the same clinic. Please check your dates."))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -211,23 +263,31 @@ class OperationalFundDisbursement(models.Model):
             if rec.payee_type == 'external' and not rec.vendor_name:
                 raise ValidationError(_("Please specify the External Vendor name."))
 
-    @api.onchange('amount', 'clinic_id')
+    def _verify_active_period(self, active_clinic, check_date):
+        if not check_date:
+            return True
+        allocs = active_clinic.allocation_ids.filtered(lambda a: a.period_start <= check_date <= a.period_end)
+        return bool(allocs)
+
+    @api.onchange('amount', 'clinic_id', 'date')
     def _onchange_budget_warning(self):
-        if self.clinic_id and self.amount > 0:
+        if self.clinic_id and self.amount > 0 and self.date:
             active_clinic = self.clinic_id.master_fund_id or self.clinic_id
+
+            if not self._verify_active_period(active_clinic, self.date):
+                return {
+                    'warning': {
+                        'title': "No Active Funding Period!",
+                        'message': f"The date selected ({self.date}) does not fall within any funded period for {active_clinic.name}."
+                    }
+                }
+
             available_balance = active_clinic.op_fund_balance
             if self.amount > available_balance:
                 return {
                     'warning': {
                         'title': "Insufficient Funds!",
                         'message': f"This request (₹{self.amount}) exceeds the available balance (₹{available_balance}) for {active_clinic.name}."
-                    }
-                }
-            elif available_balance > 0 and (self.amount / available_balance) >= 0.90:
-                return {
-                    'warning': {
-                        'title': "Low Balance Alert",
-                        'message': f"Warning: This disbursement will consume 90%+ of the remaining funds for {active_clinic.name}. Proceed with caution."
                     }
                 }
 
@@ -254,6 +314,12 @@ class OperationalFundDisbursement(models.Model):
                     _("Hold on! You must download, sign, and upload the Disbursement Voucher before you can submit it."))
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+
+            # NEW: NO MAN'S LAND PROTECTION
+            if not self._verify_active_period(active_clinic, rec.date):
+                raise ValidationError(
+                    _("No active funding period found for this date. Please contact management to log this month's allocation."))
+
             config = self.env['operational.fund.config'].search([('clinic_id', '=', active_clinic.id)], limit=1)
             threshold = config.approval_threshold if config else 0.0
 
@@ -263,12 +329,13 @@ class OperationalFundDisbursement(models.Model):
                         _("Cannot auto-approve. Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
                 rec.action_approve()
                 rec.message_post(
-                    body=f"System Auto-Approved: The requested amount (₹{rec.amount}) is within the clinic's safe threshold of ₹{threshold}.",
+                    body=f"System Auto-Approved: The requested amount (₹{rec.amount}) is within the safe threshold of ₹{threshold}.",
                     subtype_xmlid='mail.mt_note',
                     author_id=self.env.ref('base.partner_root').id
                 )
             else:
                 rec.state = 'waiting'
+                # MULTI-MANAGER PING
                 if config and config.manager_ids:
                     for manager in config.manager_ids:
                         rec.activity_schedule(
@@ -281,6 +348,11 @@ class OperationalFundDisbursement(models.Model):
     def action_approve(self):
         for rec in self:
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+
+            if not self._verify_active_period(active_clinic, rec.date):
+                raise ValidationError(
+                    _("Cannot approve. This voucher's date does not fall within an active funding period."))
+
             if rec.amount > active_clinic.op_fund_balance:
                 raise ValidationError(
                     _("Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
