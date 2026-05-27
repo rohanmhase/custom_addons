@@ -1015,6 +1015,12 @@
                                                                         Osteophytes (Vikrut vaata, Saam Medha, Saam
                                                                         Asthi)
                                                                     </t>
+                                                                    <t t-if="sym['symptom'] == 'varicose_veins'">
+                                                                        Varicose veins (Vaat Rakta)
+                                                                    </t>
+                                                                    <t t-if="sym['symptom'] == 'heel_pain'">
+                                                                        Heel Pain (Vaat Rakta)
+                                                                    </t>
 
                                                                 </td>
                                                                 <td>
@@ -1146,6 +1152,11 @@
                                             <div class="info-text">
                                                 <strong>Session Day:</strong>
                                                 <t t-esc="sess['session_day']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>Type of Therapy:</strong>
+                                                <t t-if="sess['type_of_therapy'] == 'detox'">Detox</t>
+                                                <t t-if="sess['type_of_therapy'] == 'regrowth'">Regrowth</t>
                                             </div>
                                             <div class="info-text">
                                                 <strong>Therapy Location:</strong>

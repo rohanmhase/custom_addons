@@ -30,6 +30,7 @@
                             <group>
                                 <field name="patient_id"/>
                                 <field name="doctor_id"/>
+                                <field name="type_of_therapy"/>
                             </group>
                             <group>
                                 <field name="session_date"/>

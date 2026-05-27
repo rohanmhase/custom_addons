@@ -11,6 +11,9 @@ class Session(models.Model):
     session_date = fields.Date(string="Session Date", default=lambda self: self._ist_date(), readonly=True)
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, default=lambda self: self.env.user,
                                 readonly=True)
+    type_of_therapy = fields.Selection([("detox", "Detox"),
+                                        ("regrowth", "Regrowth"),
+                                        ], string="Type of Therapy", required=True)
     session_day = fields.Integer(
         string="Session Day", compute="default_get", store=True)
     jivha = fields.Selection([("saam", "Saam"),
