@@ -262,6 +262,7 @@ class PatientController(http.Controller):
             grouped_data[date_key]["session"].append({
                 "doctor": sess.doctor_id.name,
                 "modified_by": sess.write_uid.name,
+                "type_of_therapy": sess.type_of_therapy,
                 "session_day": sess.session_day,
                 "session_type": sess.session_type,
                 "jivha": sess.jivha,

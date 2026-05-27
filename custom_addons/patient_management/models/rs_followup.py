@@ -82,6 +82,8 @@ class PatientAssessment(models.Model):
                         'numbness_or_tingling_pins_and_needles',
                         'cramps_especially_calves_or_thighs',
                         'osteophytes',
+                        'varicose_veins',
+                        'heel_pain',
                         ]
 
         for symptom in all_symptoms:
@@ -250,7 +252,9 @@ class PatientAssessmentLine(models.Model):
         ('tremors_shaking_in_some_patients', 'Tremors (shaking) in some patients (Vaat Vridhi, Maaja Kshaya)'),
         ('numbness_or_tingling_pins_and_needles', 'Numbness / tingling (Vaat Vridhi)'),
         ('cramps_especially_calves_or_thighs', 'Cramps especially calves / thighs (Vaat Vridhi)'),
-        ('osteophytes', 'Osteophytes (Vikrut vaata, Saam Medha, Saam Asthi)')
+        ('osteophytes', 'Osteophytes (Vikrut vaata, Saam Medha, Saam Asthi)'),
+        ('varicose_veins', 'Varicose veins (Vaat Rakta)'),
+        ('heel_pain', 'Heel Pain (Vaat Rakta)'),
 
     ], string="Symptom")
 
