@@ -4,16 +4,16 @@
               name="Operational Funds"
               sequence="50"/>
 
-    <menuitem id="menu_op_fund_dashboard"
-              name="Fund Dashboard"
-              parent="menu_operational_fund_root"
-              action="action_op_fund_clinic_balance"
-              sequence="5"/>
-
     <menuitem id="menu_op_fund_disbursement"
               name="Disbursements"
               parent="menu_operational_fund_root"
               action="action_op_fund_disbursement"
+              sequence="5"/>
+
+    <menuitem id="menu_op_fund_dashboard"
+              name="Fund Dashboard"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_clinic_balance"
               sequence="10"/>
 
     <menuitem id="menu_op_fund_allocation"
@@ -22,6 +22,12 @@
               action="action_op_fund_allocation"
               sequence="20"
               groups="operational_fund.group_op_fund_controller"/>
+
+    <menuitem id="menu_op_fund_audit"
+              name="Audit Ledger"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_audit"
+              sequence="30"/>
 
     <menuitem id="menu_op_fund_configuration_root"
               name="Configuration"
