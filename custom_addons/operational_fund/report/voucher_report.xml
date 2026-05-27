@@ -44,7 +44,7 @@
                             <tbody>
                                 <tr>
                                     <td>
-                                        <t t-esc="doc.payee_id.name"/>
+                                        <t t-esc="doc.payee_display"/>
                                     </td>
                                     <td>
                                         <t t-esc="doc.description"/>
@@ -61,7 +61,7 @@
                             <div class="col-6 text-center">
                                 <br/><br/><br/> <p>___________________________</p>
                                 <p><strong>Payee Signature</strong></p>
-                                <p t-field="doc.payee_id.name"/>
+                                <p><t t-esc="doc.payee_display"/></p>
                             </div>
 
                             <div class="col-6 text-center">

@@ -15,7 +15,7 @@
             <kanban default_group_by="state" class="o_kanban_mobile" sample="1" records_draggable="0">
                 <field name="name"/>
                 <field name="clinic_id"/>
-                <field name="payee_id"/>
+                <field name="payee_display"/>
                 <field name="amount"/>
                 <field name="state"/>
                 <templates>
@@ -40,7 +40,7 @@
                                     <br/>
                                     <span class="text-muted">
                                         <i class="fa fa-user-o me-1"></i>
-                                        <field name="payee_id"/>
+                                        <field name="payee_display"/>
                                     </span>
                                 </div>
                             </div>
@@ -58,19 +58,16 @@
             <form string="Operational Fund Disbursement" delete="0">
                 <header>
                     <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary"/>
-
                     <button name="action_submit_for_approval" string="Submit for Approval" type="object"
                             class="oe_highlight" invisible="state != 'draft'"/>
 
                     <button name="action_approve" string="Approve" type="object" class="btn-success"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
-
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_controller"/>
+                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
                     <button name="action_reset_to_draft" string="Reset to Draft" type="object"
                             invisible="state not in ('rejected', 'approved')"/>
-
                     <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved"/>
                 </header>
                 <sheet>
@@ -90,8 +87,14 @@
                     </div>
                     <group>
                         <group>
-                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
-                            <field name="payee_id" readonly="state in ('waiting', 'approved')" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="payee_type" widget="radio" readonly="state in ('waiting', 'approved')"/>
+                            <field name="payee_id" invisible="payee_type == 'external'"
+                                   required="payee_type == 'internal'" readonly="state in ('waiting', 'approved')"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="vendor_name" invisible="payee_type == 'internal'"
+                                   required="payee_type == 'external'" readonly="state in ('waiting', 'approved')"/>
                             <field name="amount" readonly="state in ('waiting', 'approved')"/>
                         </group>
                         <group>
@@ -138,7 +141,7 @@
                 <field name="name"/>
                 <field name="date"/>
                 <field name="clinic_id"/>
-                <field name="payee_id"/>
+                <field name="payee_display"/>
                 <field name="category"/>
                 <field name="amount" sum="Total"/>
                 <field name="state" widget="badge" decoration-info="state == 'draft'"
@@ -174,16 +177,11 @@
         <field name="res_model">operational.fund.allocation</field>
         <field name="view_mode">tree</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Allocate funds directly to a clinic.
-            </p>
-            <p>
-                You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of
-                the month.
-            </p>
+            <p class="o_view_nocontent_smiling_face">Allocate funds directly to a clinic.</p>
+            <p>You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of
+                the month.</p>
         </field>
     </record>
-
 
     <record id="view_op_fund_config_tree" model="ir.ui.view">
         <field name="name">operational.fund.config.tree</field>
@@ -191,6 +189,7 @@
         <field name="arch" type="xml">
             <tree editable="bottom">
                 <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="manager_ids" widget="many2many_tags" options="{'no_create': True}"/>
                 <field name="approval_threshold" widget="monetary"/>
             </tree>
         </field>
@@ -202,15 +201,31 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <record id="view_op_fund_clinic_search" model="ir.ui.view">
+        <field name="name">op.fund.clinic.search</field>
+        <field name="model">clinic.clinic</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="wallet_group_name"/>
+                <filter string="Wallet Group" name="group_by_wallet" context="{'group_by': 'wallet_group_name'}"/>
+            </search>
+        </field>
+    </record>
+
     <record id="view_op_fund_clinic_balance_tree" model="ir.ui.view">
         <field name="name">op.fund.clinic.balance.tree</field>
         <field name="model">clinic.clinic</field>
         <field name="arch" type="xml">
-            <tree string="Fund Balances" create="0" edit="0" delete="0">
-                <field name="name" string="Branch / Clinic"/>
-                <field name="total_allocated" sum="Total Funded" decoration-info="1"/>
-                <field name="total_spent" sum="Total Spent" decoration-warning="1"/>
-                <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0" decoration-danger="op_fund_balance == 0"/>
+            <tree string="Fund Balances" create="0" delete="0" editable="bottom">
+                <field name="name" string="Branch / Clinic" readonly="1"/>
+                <field name="master_fund_id" string="Shared Wallet (Master Clinic)"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="wallet_group_name" column_invisible="1"/>
+                <field name="total_allocated" sum="Total Funded" decoration-info="1" readonly="1"/>
+                <field name="total_spent" sum="Total Spent" decoration-warning="1" readonly="1"/>
+                <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0"
+                       decoration-danger="op_fund_balance == 0" readonly="1"/>
             </tree>
         </field>
     </record>
@@ -220,5 +235,33 @@
         <field name="res_model">clinic.clinic</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_op_fund_clinic_balance_tree"/>
+        <field name="search_view_id" ref="view_op_fund_clinic_search"/>
+        <field name="context">{'search_default_group_by_wallet': 1}</field>
+    </record>
+
+    <record id="view_op_fund_audit_tree" model="ir.ui.view">
+        <field name="name">operational.fund.audit.tree</field>
+        <field name="model">operational.fund.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Fund Audit Ledger" create="0" edit="0" delete="0"
+                  decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'">
+                <field name="date"/>
+                <field name="clinic_id"/>
+                <field name="transaction_type"/>
+                <field name="amount" sum="Total Volume"/>
+                <field name="reference"/>
+                <field name="user_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_audit" model="ir.actions.act_window">
+        <field name="name">Audit Ledger</field>
+        <field name="res_model">operational.fund.audit</field>
+        <field name="view_mode">tree</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No transactions yet.</p>
+            <p>Once allocations are made or disbursements are approved, they will be immutably logged here.</p>
+        </field>
     </record>
 </odoo>
