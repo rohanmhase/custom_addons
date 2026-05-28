@@ -4,13 +4,11 @@ class PosOrder(models.Model):
     _inherit = "pos.order"
 
     prescription_id = fields.Many2one("patient.prescription", string="Prescription")
-    enrollment_id = fields.Many2one("patient.enrollment", string="Enrollment")
 
     def _order_fields(self, ui_order):
         res = super()._order_fields(ui_order)
 
         res["prescription_id"] = ui_order.get("prescription_id") or False
-        res["enrollment_id"] = ui_order.get("enrollment_id") or False
 
         return res
 
@@ -49,15 +47,5 @@ class PosOrder(models.Model):
 
                 else:
                     order.prescription_id.state = "done"
-
-            if order.enrollment_id:
-
-                vals = {
-                    "payment_state": "paid",
-                    "payment_date": fields.Date.today(),
-                    "pos_order_id": order.id,
-                }
-
-                order.enrollment_id.write(vals)
 
         return res
