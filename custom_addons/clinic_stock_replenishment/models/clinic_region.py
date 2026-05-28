@@ -1,6 +1,5 @@
 from odoo import models, fields
 
-
 class ClinicStockRegion(models.Model):
     _name = 'clinic.stock.region'
     _description = 'Clinic Stock Region'

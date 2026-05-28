@@ -48,3 +48,4 @@ class ClinicStockReplenishmentLog(models.Model):
 
     # Final shortage
     shortage_qty = fields.Float(string="Shortage", readonly=True)
+    gender_session_count = fields.Char(string="M / F Sessions", readonly=True)

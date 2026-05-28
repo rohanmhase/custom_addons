@@ -1,0 +1,56 @@
+<odoo>
+    <record id="view_clinic_formula_copy_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.formula.copy.wizard.form</field>
+        <field name="model">clinic.formula.copy.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Copy Clinic Formulas">
+                <group>
+                    <field name="source_clinic_id"/>
+                    <field name="target_clinic_id"/>
+                </group>
+                <group string="Summary" invisible="not source_clinic_id or not target_clinic_id">
+                    <field name="formula_count" readonly="1"/>
+                    <field name="skip_count" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_copy"
+                            type="object"
+                            string="Confirm Copy"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_clinic_formula_copy_wizard" model="ir.actions.act_window">
+        <field name="name">Copy Clinic Formulas</field>
+        <field name="res_model">clinic.formula.copy.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <record id="view_clinic_formula_apply_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.formula.apply.wizard.form</field>
+        <field name="model">clinic.formula.apply.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Apply Formula to All Clinics">
+                <group>
+                    <field name="product_id" readonly="1"/>
+                    <field name="clinic_count" readonly="1"
+                           string="Clinics that will be updated"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_apply"
+                            type="object"
+                            string="Apply to All Clinics"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

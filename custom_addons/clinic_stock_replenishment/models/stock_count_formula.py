@@ -45,7 +45,15 @@ class StockCountFormula(models.Model):
         store=True
     )
 
+    # active = fields.Boolean(default=True, tracking=True)
+
     active = fields.Boolean(default=True, tracking=True)
+
+    gender_filter = fields.Selection([
+        ('all', 'All'),
+        ('male', 'Male only'),
+        ('female', 'Female only'),
+    ], default='all', tracking=True)
 
     def get_yesterday_therapy_count(self):
         self.ensure_one()
@@ -57,21 +65,65 @@ class StockCountFormula(models.Model):
                 ('session_date', '=', today - timedelta(days=i)),
                 ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
             ])
-            # print(f"DEBUG → Day -{i} ({today - timedelta(days=i)}): {count} sessions")
             daily_counts.append(count)
-        return daily_counts
 
-        therapy_count = max(daily_counts)
+        max_index = daily_counts.index(max(daily_counts))
+        max_day_date = today - timedelta(days=(max_index + 1))
+
+        if self.gender_filter == 'male':
+            formula_count = self.env['patient.session'].search_count([
+                ('session_date', '=', max_day_date),
+                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+                ('patient_id.gender', '=', 'male'),
+            ])
+        elif self.gender_filter == 'female':
+            formula_count = self.env['patient.session'].search_count([
+                ('session_date', '=', max_day_date),
+                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+                ('patient_id.gender', '=', 'female'),
+            ])
+        else:
+            formula_count = max(daily_counts)
+
+        return daily_counts, max_index, formula_count
+
+        # therapy_count = max(daily_counts)
         # print(f"DEBUG → Max therapy count selected: {therapy_count}")
+        # return therapy_count
 
-        return therapy_count
+    # def calculate_from_yesterday(self):
+    #     self.ensure_one()
+    #
+    #     therapy_count = self.get_yesterday_therapy_count()
+    #
+    #     return self.calculate_price(therapy_count)
 
     def calculate_from_yesterday(self):
         self.ensure_one()
 
-        therapy_count = self.get_yesterday_therapy_count()
+        therapy_data, _, formula_count = self.get_yesterday_therapy_count()
 
-        return self.calculate_price(therapy_count)
+        return self.calculate_price(formula_count)
+
+    def action_apply_to_all_clinics(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Apply to All Clinics',
+            'res_model': 'clinic.formula.apply.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_source_formula_id': self.id},
+        }
+
+    def action_open_copy_wizard(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Copy Clinic Formulas',
+            'res_model': 'clinic.formula.copy.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
 
     # -------------------------------------------------
     # Calculation Fields
