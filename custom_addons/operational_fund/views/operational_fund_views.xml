@@ -57,27 +57,24 @@
         <field name="arch" type="xml">
             <form string="Operational Fund Disbursement" delete="0">
                 <header>
-                    <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary"/>
-                    <button name="action_submit_for_approval" string="Submit for Approval" type="object"
-                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
+                    <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft'"/>
 
-                    <button name="action_approve" string="Approve" type="object" class="btn-success"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-                    <button name="action_reject" string="Reject" type="object" class="btn-danger"
-                            invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
-                            invisible="state not in ('rejected', 'approved')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved"/>
+                    <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state != 'approved'"/>
+                    <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,refunded"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-info text-center" role="alert"
-                         invisible="signed_voucher_file != False or state in ('waiting', 'approved')"
-                         style="margin-bottom: 20px;">
+                    <div class="alert alert-info text-center" role="alert" invisible="signed_voucher_file != False or state in ('waiting', 'approved', 'refund_requested', 'refunded')" style="margin-bottom: 20px;">
                         <i class="fa fa-info-circle me-2"></i>
-                        <strong>Action Required:</strong>
-                        Click <em>Print Voucher</em>, sign the physical document, and upload it below to unlock
-                        submission.
+                        <strong>Action Required:</strong> Click <em>Print Voucher</em>, sign the physical document, and upload it below to unlock submission.
                     </div>
 
                     <div class="oe_title">
@@ -87,39 +84,37 @@
                     </div>
                     <group>
                         <group>
-                            <field name="clinic_id" readonly="state in ('waiting', 'approved')" force_save="1"
-                                   options="{'no_create': True, 'no_create_edit': True}"/>
-                            <field name="payee_type" widget="radio" readonly="state in ('waiting', 'approved')"/>
-                            <field name="payee_id" invisible="payee_type == 'external'"
-                                   required="payee_type == 'internal'" readonly="state in ('waiting', 'approved')"
-                                   options="{'no_create': True, 'no_create_edit': True}"/>
-                            <field name="vendor_name" invisible="payee_type == 'internal'"
-                                   required="payee_type == 'external'" readonly="state in ('waiting', 'approved')"/>
-                            <field name="amount" readonly="state in ('waiting', 'approved')"/>
+                            <field name="clinic_id" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="payee_type" widget="radio" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
+                            <field name="payee_id" invisible="payee_type == 'external'" required="payee_type == 'internal'" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="vendor_name" invisible="payee_type == 'internal'" required="payee_type == 'external'" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
+                            <field name="amount" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
                         </group>
                         <group>
-                            <field name="date" readonly="state in ('waiting', 'approved')"/>
-                            <field name="category" readonly="state in ('waiting', 'approved')"/>
-                            <field name="other_expense_details" invisible="category != 'other'"
-                                   required="category == 'other'" readonly="state in ('waiting', 'approved')"/>
-                            <field name="receipt_file" filename="receipt_filename"
-                                   readonly="state in ('waiting', 'approved')"/>
+                            <field name="date" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
+                            <field name="category" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
+                            <field name="other_expense_details" invisible="category != 'other'" required="category == 'other'" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
+                            <field name="receipt_file" filename="receipt_filename" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
                             <field name="receipt_filename" invisible="1"/>
                         </group>
                     </group>
 
-                    <group string="Compliance &amp; Signatures"
-                           invisible="state in ('waiting', 'approved') and signed_voucher_file == False">
-                        <field name="signed_voucher_file" filename="signed_voucher_filename"
-                               readonly="state in ('waiting', 'approved')" widget="Work_Permit_Upload"
-                               style="width: 50%;"/>
-                        <field name="signed_voucher_filename" invisible="1"/>
+                    <group string="Compliance &amp; Signatures" invisible="state in ('waiting', 'approved', 'refund_requested', 'refunded') and signed_voucher_file == False and old_signed_voucher_file == False">
+                        <group>
+                            <field name="signed_voucher_file" filename="signed_voucher_filename" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" widget="Work_Permit_Upload" invisible="state == 'refunded'"/>
+                            <field name="signed_voucher_filename" invisible="1"/>
+                        </group>
                     </group>
 
                     <notebook>
                         <page string="Business Purpose">
-                            <field name="description" readonly="state in ('waiting', 'approved')"
-                                   placeholder="Specify the exact purpose of this disbursement..."/>
+                            <field name="description" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" placeholder="Specify the exact purpose of this disbursement..."/>
+                        </page>
+                        <page string="Current Signed Document" invisible="signed_voucher_file == False">
+                            <field name="signed_voucher_file" widget="pdf_viewer" readonly="1"/>
+                        </page>
+                        <page string="Archived Original Document" invisible="old_signed_voucher_file == False">
+                            <field name="old_signed_voucher_file" widget="pdf_viewer" readonly="1"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -136,17 +131,14 @@
         <field name="name">operational.fund.disbursement.tree</field>
         <field name="model">operational.fund.disbursement</field>
         <field name="arch" type="xml">
-            <tree decoration-info="state == 'draft'" decoration-warning="state == 'waiting'"
-                  decoration-success="state == 'approved'" delete="0">
+            <tree decoration-info="state == 'draft'" decoration-warning="state == 'waiting'" decoration-success="state == 'approved'" decoration-muted="state == 'refunded'" delete="0">
                 <field name="name"/>
                 <field name="date"/>
                 <field name="clinic_id"/>
                 <field name="payee_display"/>
                 <field name="category"/>
                 <field name="amount" sum="Total"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'"
-                       decoration-warning="state == 'waiting'" decoration-success="state == 'approved'"
-                       decoration-danger="state == 'rejected'"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting'" decoration-success="state == 'approved'" decoration-danger="state == 'rejected'" decoration-muted="state == 'refunded'"/>
             </tree>
         </field>
     </record>
@@ -178,8 +170,7 @@
         <field name="view_mode">tree</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Allocate funds directly to a clinic.</p>
-            <p>You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of
-                the month.</p>
+            <p>You can also import a CSV file from Favorites > Import Records to allocate funds in bulk at the start of the month.</p>
         </field>
     </record>
 
@@ -219,13 +210,11 @@
         <field name="arch" type="xml">
             <tree string="Fund Balances" create="0" delete="0" editable="bottom">
                 <field name="name" string="Branch / Clinic" readonly="1"/>
-                <field name="master_fund_id" string="Shared Wallet (Master Clinic)"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="master_fund_id" string="Shared Wallet (Master Clinic)" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="wallet_group_name" column_invisible="1"/>
                 <field name="total_allocated" sum="Total Funded" decoration-info="1" readonly="1"/>
                 <field name="total_spent" sum="Total Spent" decoration-warning="1" readonly="1"/>
-                <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0"
-                       decoration-danger="op_fund_balance == 0" readonly="1"/>
+                <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0" decoration-danger="op_fund_balance == 0" readonly="1"/>
             </tree>
         </field>
     </record>
@@ -243,8 +232,7 @@
         <field name="name">operational.fund.audit.tree</field>
         <field name="model">operational.fund.audit</field>
         <field name="arch" type="xml">
-            <tree string="Fund Audit Ledger" create="0" edit="0" delete="0"
-                  decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'">
+            <tree string="Fund Audit Ledger" create="0" edit="0" delete="0" decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'">
                 <field name="date"/>
                 <field name="clinic_id"/>
                 <field name="transaction_type"/>
