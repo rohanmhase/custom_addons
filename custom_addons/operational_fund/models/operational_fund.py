@@ -34,7 +34,6 @@ class Clinic(models.Model):
             else:
                 clinic.wallet_group_name = clinic.name
 
-    # THE CHRONOLOGICAL CASCADE (Handles Leftover Rollovers)
     @api.depends('allocation_ids.amount', 'allocation_ids.period_start', 'allocation_ids.period_end',
                  'disbursement_ids.amount', 'disbursement_ids.state', 'disbursement_ids.date',
                  'child_clinic_ids.disbursement_ids.amount', 'child_clinic_ids.disbursement_ids.state',
@@ -50,7 +49,9 @@ class Clinic(models.Model):
 
             allocations = clinic.allocation_ids.sorted(key=lambda a: a.period_start)
             all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
-            approved_disbs = all_disbursements.filtered(lambda d: d.state == 'approved')
+
+            # NOTE: "refund_requested" is still technically spent until the manager approves the refund!
+            approved_disbs = all_disbursements.filtered(lambda d: d.state in ('approved', 'refund_requested'))
 
             running_rollover = 0.0
             current_allocated = 0.0
@@ -59,16 +60,13 @@ class Clinic(models.Model):
             found_active = False
 
             for alloc in allocations:
-                # Find expenses strictly within this allocation's time window
                 period_disbs = approved_disbs.filtered(
                     lambda d: d.date and alloc.period_start <= d.date <= alloc.period_end)
                 period_spent = sum(period_disbs.mapped('amount'))
 
-                # Math: Old Leftovers + New Money - Money Spent
                 total_available = running_rollover + alloc.amount
                 period_ending_balance = total_available - period_spent
 
-                # If this is the current active month, update the dashboard display
                 if alloc.period_start <= today <= alloc.period_end:
                     current_allocated = total_available
                     current_spent = period_spent
@@ -82,7 +80,6 @@ class Clinic(models.Model):
                 clinic.total_spent = 0.0
                 clinic.op_fund_balance = 0.0
             elif not found_active and today > allocations[-1].period_end:
-                # If we are between months, show the unspent rollover sitting in the bank
                 clinic.total_allocated = running_rollover
                 clinic.total_spent = 0.0
                 clinic.op_fund_balance = running_rollover
@@ -119,7 +116,6 @@ class OperationalFundConfig(models.Model):
         default=0.0,
         help="Disbursements at or below this amount are automatically approved."
     )
-    # TIER 2 ASSIGNMENT: Multi-Manager Routing
     manager_ids = fields.Many2many('res.users', string='Approving Managers',
                                    help="Select all managers (Group, Regional, Head) who can approve and should be notified.")
 
@@ -153,7 +149,6 @@ class OperationalFundAllocation(models.Model):
             if rec.period_start and rec.period_end and rec.period_start > rec.period_end:
                 raise ValidationError(_("The Period End date cannot be earlier than the Period Start date."))
 
-    # NEW: OVERLAP PROTECTION
     @api.constrains('period_start', 'period_end', 'clinic_id')
     def _check_overlap(self):
         for rec in self:
@@ -237,12 +232,16 @@ class OperationalFundDisbursement(models.Model):
     receipt_filename = fields.Char(string='Receipt Filename')
     signed_voucher_file = fields.Binary(string='Signed Voucher (Upload)')
     signed_voucher_filename = fields.Char(string='Signed Voucher Filename')
+    old_signed_voucher_file = fields.Binary(string='Original Signed Voucher (Archived)', readonly=True)
+    old_signed_voucher_filename = fields.Char(string='Original Signed Voucher Filename')
 
     state = fields.Selection([
         ('draft', 'Draft'),
         ('waiting', 'Waiting Approval'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('refund_requested', 'Refund Requested'),  # NEW WORKFLOW STATE
+        ('refunded', 'Refunded'),
     ], string='Status', default='draft', tracking=True)
 
     @api.depends('payee_type', 'payee_id', 'vendor_name')
@@ -315,7 +314,6 @@ class OperationalFundDisbursement(models.Model):
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
-            # NEW: NO MAN'S LAND PROTECTION
             if not self._verify_active_period(active_clinic, rec.date):
                 raise ValidationError(
                     _("No active funding period found for this date. Please contact management to log this month's allocation."))
@@ -335,7 +333,6 @@ class OperationalFundDisbursement(models.Model):
                 )
             else:
                 rec.state = 'waiting'
-                # MULTI-MANAGER PING
                 if config and config.manager_ids:
                     for manager in config.manager_ids:
                         rec.activity_schedule(
@@ -377,13 +374,76 @@ class OperationalFundDisbursement(models.Model):
 
     def action_reset_to_draft(self):
         for rec in self:
+            if rec.state == 'approved':
+                active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+                self.env['operational.fund.audit'].sudo().create({
+                    'clinic_id': active_clinic.id,
+                    'date': fields.Date.context_today(self),
+                    'transaction_type': 'credit',
+                    'amount': rec.amount,
+                    'reference': f'Reversal: Reset Approved Voucher {rec.name} to Draft',
+                    'user_id': self.env.user.id
+                })
+                rec.old_signed_voucher_file = rec.signed_voucher_file
+                rec.old_signed_voucher_filename = rec.signed_voucher_filename
+                rec.signed_voucher_file = False
+                rec.signed_voucher_filename = False
+
+            elif rec.state == 'rejected':
+                rec.signed_voucher_file = False
+                rec.signed_voucher_filename = False
+                rec.old_signed_voucher_file = False
+                rec.old_signed_voucher_filename = False
+
             rec.state = 'draft'
+
+    # --- NEW 2-STEP REFUND WORKFLOW ---
+    def action_request_refund(self):
+        for rec in self:
+            if rec.state != 'approved':
+                raise ValidationError(_("Only fully approved disbursements can be submitted for a refund."))
+            rec.state = 'refund_requested'
+
+            active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+            config = self.env['operational.fund.config'].search([('clinic_id', '=', active_clinic.id)], limit=1)
+            if config and config.manager_ids:
+                for manager in config.manager_ids:
+                    rec.activity_schedule(
+                        'mail.mail_activity_data_todo',
+                        user_id=manager.id,
+                        summary='Review Refund Request',
+                        note=f'A refund has been requested for Voucher {rec.name} (₹{rec.amount}). Please approve or deny.'
+                    )
+
+    def action_approve_refund(self):
+        for rec in self:
+            if rec.state != 'refund_requested':
+                raise ValidationError(_("Refund must be requested first."))
+            active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+
+            # Log full recovery entry in the ledger
+            self.env['operational.fund.audit'].sudo().create({
+                'clinic_id': active_clinic.id,
+                'date': fields.Date.context_today(self),
+                'transaction_type': 'credit',
+                'amount': rec.amount,
+                'reference': f'Refund: Fully Reclaimed Voucher {rec.name}',
+                'user_id': self.env.user.id
+            })
+            rec.state = 'refunded'
+            rec.activity_unlink(['mail.mail_activity_data_todo'])
+
+    def action_cancel_refund(self):
+        for rec in self:
+            rec.state = 'approved'
+            rec.activity_unlink(['mail.mail_activity_data_todo'])
 
     @api.constrains('amount', 'state')
     def _check_balance(self):
         for rec in self:
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            if rec.state == 'approved' and rec.amount > (active_clinic.op_fund_balance + rec.amount):
+            if rec.state in ('approved', 'refund_requested') and rec.amount > (
+                    active_clinic.op_fund_balance + rec.amount):
                 raise ValidationError(_("Cannot approve. This disbursement exceeds the available clinic balance."))
 
     def unlink(self):
