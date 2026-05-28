@@ -83,7 +83,6 @@ class PatientAssessment(models.Model):
                         'cramps_especially_calves_or_thighs',
                         'osteophytes',
                         'varicose_veins',
-                        'heel_pain',
                         ]
 
         for symptom in all_symptoms:
@@ -254,7 +253,6 @@ class PatientAssessmentLine(models.Model):
         ('cramps_especially_calves_or_thighs', 'Cramps especially calves / thighs (Vaat Vridhi)'),
         ('osteophytes', 'Osteophytes (Vikrut vaata, Saam Medha, Saam Asthi)'),
         ('varicose_veins', 'Varicose veins (Vaat Rakta)'),
-        ('heel_pain', 'Heel Pain (Vaat Rakta)'),
 
     ], string="Symptom")
 

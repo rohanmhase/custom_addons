@@ -1018,10 +1018,6 @@
                                                                     <t t-if="sym['symptom'] == 'varicose_veins'">
                                                                         Varicose veins (Vaat Rakta)
                                                                     </t>
-                                                                    <t t-if="sym['symptom'] == 'heel_pain'">
-                                                                        Heel Pain (Vaat Rakta)
-                                                                    </t>
-
                                                                 </td>
                                                                 <td>
                                                                     <t t-esc="sym['value']"/>
