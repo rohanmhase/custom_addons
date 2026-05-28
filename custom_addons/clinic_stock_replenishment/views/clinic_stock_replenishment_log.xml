@@ -1,19 +1,22 @@
-<record id="view_clinic_stock_replenishment_log_tree" model="ir.ui.view">
-    <field name="name">clinic.stock.replenishment.log.tree</field>
-    <field name="model">clinic.stock.replenishment.log</field>
-    <field name="arch" type="xml">
-        <tree>
-            <field name="replenishment_id" string="Replenishment"/>
-            <field name="source_warehouse_id" string="Source"/>
-            <field name="destination_warehouse_id" string="Destination Clinic"/>
-            <field name="product_id" string="Medicine"/>
-            <field name="day_1_count" string="Day -1"/>
-            <field name="day_2_count" string="Day -2"/>
-            <field name="day_3_count" string="Day -3"/>
-            <field name="max_therapy_count" string="Max Count"/>
-            <field name="target_qty" string="Target"/>
-            <field name="current_stock" string="Stock"/>
-            <field name="shortage_qty" string="Shortage"/>
-        </tree>
-    </field>
-</record>
+<odoo>
+    <record id="view_clinic_stock_replenishment_log_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.replenishment.log.tree</field>
+        <field name="model">clinic.stock.replenishment.log</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="replenishment_id" string="Replenishment"/>
+                <field name="source_warehouse_id" string="Source"/>
+                <field name="destination_warehouse_id" string="Destination Clinic"/>
+                <field name="product_id" string="Medicine"/>
+                <field name="day_1_count" string="Day -1"/>
+                <field name="day_2_count" string="Day -2"/>
+                <field name="day_3_count" string="Day -3"/>
+                <field name="max_therapy_count" string="Max Count"/>
+                <field name="gender_session_count" optional="show"/>
+                <field name="target_qty" string="Target"/>
+                <field name="current_stock" string="Stock"/>
+                <field name="shortage_qty" string="Shortage"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

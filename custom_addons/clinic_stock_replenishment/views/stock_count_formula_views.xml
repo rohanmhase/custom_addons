@@ -15,6 +15,12 @@
                                 class="oe_stat_button" icon="fa-archive"
                                 string="Unarchive"
                                 invisible="active == True"/>
+                        <button name="action_apply_to_all_clinics"
+                                type="object"
+                                string="Apply to All Clinics"
+                                class="oe_stat_button"
+                                icon="fa-share-alt"
+                                invisible="not id"/>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
                     <field name="active" invisible="1"/>
@@ -22,6 +28,7 @@
                     <group string="Clinic &amp; Product">
                         <field name="clinic_id"/>
                         <field name="product_id"/>
+                        <field name="gender_filter"/>
                     </group>
 
                     <group string="Base Calculation">
@@ -80,6 +87,7 @@
             <tree>
                 <field name="clinic_id"/>
                 <field name="product_id"/>
+                <field name="gender_filter"/>
                 <field name="multiplier"/>
                 <field name="starting_round_up"/>
                 <field name="weekend_factor"/>
@@ -99,6 +107,12 @@
         <field name="res_model">stock.count.formula</field>
         <field name="view_mode">tree,form</field>
     </record>
+
+    <menuitem id="menu_clinic_formula_copy_wizard"
+              name="Copy Clinic Formulas"
+              parent="menu_clinic_stock_configuration"
+              action="action_clinic_formula_copy_wizard"
+              groups="clinic_stock_replenishment.group_clinic_stock_admin"/>
 
     <menuitem id="menu_stock_count_formula"
               name="Stock Count Formula"

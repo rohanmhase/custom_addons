@@ -89,19 +89,49 @@ class ClinicStockReplenishment(models.Model):
             for r in all_rules
         }
 
-        # --- PREFETCH: one query for all quants across all destination warehouses ---
-        all_stock_location_ids = self.destination_warehouse_ids.mapped('lot_stock_id').ids
-        all_quants = self.env['stock.quant'].search([
-            ('product_id', 'in', products.ids),
-            ('location_id', 'child_of', all_stock_location_ids),
-        ])
+        # --- PREFETCH: per warehouse child_of query, accurate for all sub-locations ---
+        def get_kit_stock(product, warehouse_id, lot_stock_id):
+            # Check direct quant first
+            quants = self.env['stock.quant'].search([
+                ('product_id', '=', product.id),
+                ('location_id', 'child_of', lot_stock_id),
+            ])
+            direct_stock = sum(q.quantity - q.reserved_quantity for q in quants)
+            if direct_stock > 0:
+                return direct_stock
+
+            # If 0, check if it's a kit BOM and calculate from components
+            bom = self.env['mrp.bom'].search([
+                ('product_id', '=', product.id),
+                ('type', '=', 'phantom'),
+            ], limit=1)
+            if not bom:
+                bom = self.env['mrp.bom'].search([
+                    ('product_tmpl_id', '=', product.product_tmpl_id.id),
+                    ('type', '=', 'phantom'),
+                ], limit=1)
+            if not bom:
+                return 0.0
+
+            # Calculate how many kits can be assembled from component stock
+            kit_qty = float('inf')
+            for line in bom.bom_line_ids:
+                comp_quants = self.env['stock.quant'].search([
+                    ('product_id', '=', line.product_id.id),
+                    ('location_id', 'child_of', lot_stock_id),
+                ])
+                comp_stock = sum(q.quantity - q.reserved_quantity for q in comp_quants)
+                if line.product_qty > 0:
+                    kit_qty = min(kit_qty, comp_stock / line.product_qty)
+
+            return kit_qty if kit_qty != float('inf') else 0.0
 
         quants_map = defaultdict(float)
-        for q in all_quants:
-            for wh in self.destination_warehouse_ids:
-                if str(wh.lot_stock_id.id) in q.location_id.parent_path.split('/'):
-                    quants_map[(q.product_id.id, wh.id)] += q.quantity - q.reserved_quantity
-                    break
+        for wh in self.destination_warehouse_ids:
+            for product in products:
+                quants_map[(product.id, wh.id)] = get_kit_stock(
+                    product, wh.id, wh.lot_stock_id.id
+                )
 
         for warehouse in self.destination_warehouse_ids:
 
@@ -112,14 +142,33 @@ class ClinicStockReplenishment(models.Model):
                 # --- dict lookup, zero DB queries ---
                 rule = rules_map.get((warehouse.id, product.id))
 
-                therapy_data = rule.get_yesterday_therapy_count() if rule else [0, 0, 0]
+                if rule:
+                    therapy_data, max_day_index, formula_count = rule.get_yesterday_therapy_count()
+                else:
+                    therapy_data, max_day_index, formula_count = [0, 0, 0], 0, 0
+
                 max_count = max(therapy_data) if therapy_data else 0
+
+                # 2 extra queries only for the max day
+                max_day_date = date.today() - timedelta(days=(max_day_index + 1))
+                male_count = self.env['patient.session'].search_count([
+                    ('session_date', '=', max_day_date),
+                    ('patient_id.clinic_id.warehouse_id', '=', warehouse.id),
+                    ('patient_id.gender', '=', 'male'),
+                ])
+                female_count = self.env['patient.session'].search_count([
+                    ('session_date', '=', max_day_date),
+                    ('patient_id.clinic_id.warehouse_id', '=', warehouse.id),
+                    ('patient_id.gender', '=', 'female'),
+                ])
+
+                # therapy_data = rule.get_yesterday_therapy_count() if rule else [0, 0, 0]
+                # max_count = max(therapy_data) if therapy_data else 0
 
                 current_stock = quants_map[(product.id, warehouse.id)]
 
                 if rule:
-                    therapy_count = max(therapy_data)
-                    target_qty = rule.calculate_price(therapy_count)
+                    target_qty = rule.calculate_price(formula_count)
                 else:
                     target_qty = 0.0
 
@@ -134,9 +183,11 @@ class ClinicStockReplenishment(models.Model):
                     'day_2_count': therapy_data[1] if len(therapy_data) > 1 else 0,
                     'day_3_count': therapy_data[2] if len(therapy_data) > 2 else 0,
                     'max_therapy_count': max_count,
-                    'target_qty': (current_stock + shortage) if shortage > 0 else current_stock,
+                    'gender_session_count': f"{male_count}M / {female_count}F",
+                    'target_qty': target_qty,
                     'current_stock': current_stock,
                     'shortage_qty': shortage,
+
                 })
 
                 if shortage > 0:

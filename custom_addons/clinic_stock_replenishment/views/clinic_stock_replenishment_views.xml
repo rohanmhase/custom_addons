@@ -62,6 +62,7 @@
                                     <field name="day_2_count" string="Day -2"/>
                                     <field name="day_3_count" string="Day -3"/>
                                     <field name="max_therapy_count" string="Max Count"/>
+                                    <field name="gender_session_count" string="M / F Sessions"/>
                                     <field name="target_qty" string="Target"/>
                                     <field name="current_stock" string="Stock"/>
                                     <field name="shortage_qty" string="Shortage"/>
@@ -132,6 +133,7 @@
                 <field name="day_2_count" string="Day -2"/>
                 <field name="day_3_count" string="Day -3"/>
                 <field name="max_therapy_count" string="Max Count"/>
+                <field name="gender_session_count" string="M / F Sessions"/>
                 <field name="target_qty" string="Target"/>
                 <field name="current_stock" string="Stock"/>
                 <field name="shortage_qty" string="Shortage"/>
