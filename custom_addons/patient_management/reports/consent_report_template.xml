@@ -23,24 +23,24 @@
                 font-family: 'NotoTelugu';
                 src: url('file:///usr/share/fonts/noto/NotoSansTelugu-Regular.ttf');
                 }
-<!--                body, .page, p, li, h2, h5 {-->
-<!--                font-family: 'NotoDevanagari', 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoSans', sans-serif-->
-<!--                !important;-->
-<!--                line-height: 1.8 !important;-->
-<!--                }-->
+                <!--                body, .page, p, li, h2, h5 {-->
+                <!--                font-family: 'NotoDevanagari', 'NotoGujarati', 'NotoKannada', 'NotoTelugu', 'NotoSans', sans-serif-->
+                <!--                !important;-->
+                <!--                line-height: 1.8 !important;-->
+                <!--                }-->
 
-<!--                p {-->
-<!--                margin-bottom: 10px !important;-->
-<!--                }-->
+                <!--                p {-->
+                <!--                margin-bottom: 10px !important;-->
+                <!--                }-->
 
-<!--                li {-->
-<!--                margin-bottom: 5px !important;-->
-<!--                }-->
+                <!--                li {-->
+                <!--                margin-bottom: 5px !important;-->
+                <!--                }-->
 
-<!--                h5 {-->
-<!--                margin-top: 15px !important;-->
-<!--                margin-bottom: 8px !important;-->
-<!--                }-->
+                <!--                h5 {-->
+                <!--                margin-top: 15px !important;-->
+                <!--                margin-bottom: 8px !important;-->
+                <!--                }-->
             </style>
 
             <t t-foreach="docs" t-as="o">
@@ -49,15 +49,15 @@
 
                     <div class="page" style="color: #333;"
                          t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'Noto Sans Gujarati\'' or o.consent_language == 'kn_IN' and '\'Noto Sans Kannada\'' or o.consent_language == 'te_IN' and '\'Noto Sans Telugu\'' or '\'Noto Sans Devanagari\'') + ', sans-serif;'">
-<!--                                             t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">-->
+                        <!--                                             t-att-style="'color: #333; font-family: ' + (o.consent_language == 'gu_IN' and '\'NotoGujarati\'' or o.consent_language == 'kn_IN' and '\'NotoKannada\'' or o.consent_language == 'te_IN' and '\'NotoTelugu\'' or '\'NotoDevanagari\'') + ', sans-serif;'">-->
                         <div style="position: fixed; top: 500px; left: -10%; width: 120%; text-align: center; opacity: 0.35; font-size: 36px; font-weight: bold; color: #888; -webkit-transform: rotate(-45deg); transform: rotate(-45deg); z-index: 0;">
                             ResearchAyu -
-<!--                            -->
+                            <!--                            -->
                             <span t-field="o.patient_name"/>
                             -
                             <span t-field="o.patient_mrn"/>
                         </div>
-<!--                        <p t-esc="o.consent_language"/>-->
+                        <!--                        <p t-esc="o.consent_language"/>-->
                         <!--                remove 1line from below letter-->
 
                         <!-- 1. Absolute Logo: Moves it above the standard 'content' area -->
@@ -96,7 +96,7 @@
                             <t t-if="context.get('report_type') == 'consultation'">
                                 <div>
                                     <h5 style="font-weight: bold;">Purpose of Consultation:</h5>
-                                        <p t-translation="on">I am visiting ResearchAyu for medical consultation,
+                                    <p t-translation="on">I am visiting ResearchAyu for medical consultation,
                                         assessment, and guidance related to my health concerns.
                                     </p>
 
@@ -106,40 +106,61 @@
                                         <li t-translation="on">- Physical assessment</li>
                                         <li t-translation="on">- Review of reports (X-ray/MRI/Blood tests)</li>
                                         <li t-translation="on">- Lifestyle and symptom evaluation</li>
-                                        <li t-translation="on">- Guidance regarding treatment or further investigations</li>
+                                        <li t-translation="on">- Guidance regarding treatment or further
+                                            investigations
+                                        </li>
                                     </ul>
 
                                     <h5 style="font-weight: bold;" class="mt-3">Understanding of Consultation:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
                                         <li t-translation="on">- I understand that:</li>
-                                        <li t-translation="on">- The consultation is meant to provide professional guidance based on the information shared.</li>
-                                        <li t-translation="on">- Additional tests or specialist advice may sometimes be required.</li>
-                                        <li t-translation="on">- Treatment response and recovery may vary from person to person.</li>
+                                        <li t-translation="on">- The consultation is meant to provide professional
+                                            guidance based on the information shared.
+                                        </li>
+                                        <li t-translation="on">- Additional tests or specialist advice may sometimes be
+                                            required.
+                                        </li>
+                                        <li t-translation="on">- Treatment response and recovery may vary from person to
+                                            person.
+                                        </li>
                                     </ul>
 
-<!--                                    <h5 style="font-weight: bold;" class="mt-3">No Guarantee Clause:</h5>-->
-<!--                                    <p t-translation="on">No diagnosis or outcome is guaranteed.</p>-->
+                                    <!--                                    <h5 style="font-weight: bold;" class="mt-3">No Guarantee Clause:</h5>-->
+                                    <!--                                    <p t-translation="on">No diagnosis or outcome is guaranteed.</p>-->
 
                                     <h5 style="font-weight: bold;" class="mt-3">Patient Responsibility:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
                                         <li t-translation="on">- I agree to:</li>
-                                        <li t-translation="on">- Share accurate medical information to the best of my knowledge.</li>
-                                        <li t-translation="on">- Inform the doctor about ongoing medications, medical conditions, surgeries, or allergies.</li>
+                                        <li t-translation="on">- Share accurate medical information to the best of my
+                                            knowledge.
+                                        </li>
+                                        <li t-translation="on">- Inform the doctor about ongoing medications, medical
+                                            conditions, surgeries, or allergies.
+                                        </li>
                                         <li t-translation="on">- Ask questions if any advice is unclear.</li>
                                     </ul>
 
                                     <h5 style="font-weight: bold;" class="mt-3">Outcome Understanding:</h5>
                                     <ul style="list-style-type: none; padding-left: 15px;">
                                         <li t-translation="on">- I understand that:</li>
-                                        <li t-translation="on">- While every effort will be made to provide appropriate care and guidance, specific results or recovery timelines cannot be guaranteed as treatment response may differ from person to person.</li>
-                                        <li t-translation="on">- The consultation does not replace emergency medical care when required.</li>
+                                        <li t-translation="on">- While every effort will be made to provide appropriate
+                                            care and guidance, specific results or recovery timelines cannot be
+                                            guaranteed as treatment response may differ from person to person.
+                                        </li>
+                                        <li t-translation="on">- The consultation does not replace emergency medical
+                                            care when required.
+                                        </li>
                                     </ul>
 
                                     <h5 style="font-weight: bold;" class="mt-3">Confidentiality:</h5>
-                                    <p t-translation="on">My medical information and records will be kept confidential as per applicable healthcare standards.</p>
+                                    <p t-translation="on">My medical information and records will be kept confidential
+                                        as per applicable healthcare standards.
+                                    </p>
 
                                     <h5 style="font-weight: bold;" class="mt-3">Consent:</h5>
-                                    <p t-translation="on">I voluntarily consent to this consultation and related assessment.</p>
+                                    <p t-translation="on">I voluntarily consent to this consultation and related
+                                        assessment.
+                                    </p>
                                 </div>
                             </t>
 
@@ -184,13 +205,16 @@
                         </div>
 
                         <!-- Signature Lines -->
-                        <div style="margin-top: 50px;">
+                        <div style="margin-top: 5px; page-break-inside: avoid !important;">
                             <div class="row">
-                                <!-- Patient Side (Left) -->
-                                <div class="col-6">
-                                    <strong>Patient Signature:</strong>
-                                    <div style="margin-top: 40px; border-top: 1px solid black; width: 200px;"></div>
+                                <div style="margin-top: 15px;">
+                                    <strong>Patient Signature: ___________________________</strong>
                                 </div>
+                                <!-- Patient Side (Left) -->
+                                <!--                                <div class="col-6">-->
+                                <!--                                    <strong>Patient Signature:</strong>-->
+                                <!--                                    <div style="margin-top: 40px; border-top: 1px solid black; width: 200px;"></div>-->
+                                <!--                                </div>-->
 
                                 <!-- Staff Side (Right) -->
                                 <!--                                <div class="col-6 text-right">-->
