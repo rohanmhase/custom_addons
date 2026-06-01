@@ -12,6 +12,6 @@
         'report/voucher_report.xml',
     ],
     'installable': True,
-    'application': True,
+    'application': False,
     'license': 'LGPL-3',
 }
