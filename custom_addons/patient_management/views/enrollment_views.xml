@@ -41,14 +41,12 @@
                         <group>
                             <field name="patient_id"/>
                             <field name="doctor_id"/>
-                            <field name="enrollment_date" readonly="1"/>
+                            <field name="enrollment_date"/>
                             <field name="enrollment_type" widget="radio" options="{'horizontal': true}"/>
                         </group>
                         <group string="Enrollment For">
                             <field name="pain_knee"/>
                             <field name="pain_spine"/>
-                            <field name="pain_other"/>
-                            <field name="pain_multi"/>
                             <field name="enrolled_for" readonly="1"/>
                         </group>
                     </group>

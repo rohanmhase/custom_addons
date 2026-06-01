@@ -1079,9 +1079,7 @@
                                                                         'along_with_milk': 'Along With Milk',
                                                                         'along_with_milk_rock_sugar': 'Along With Milk + Rock Sugar',
                                                                         'along_with_lukewarm_water': 'Along With Lukewarm Water',
-                                                                        '8am_5pm': '8 am - 5 pm',
-                                                                        '7am': '7 am',
-                                                                        'in_between_meal': 'In Between Meal',
+                                                                        '8am_5pm': '8 am - 5 pm'
                                                                     }"/>
                                                                     <t t-esc="inst_labels.get(med['instructions'])"/>
                                                                 </td>
