@@ -1,5 +1,4 @@
 from odoo import models, api
-from datetime import datetime
 
 
 class PatientBillingQueue(models.AbstractModel):
@@ -36,10 +35,7 @@ class PatientBillingQueue(models.AbstractModel):
         # SORT BY DATE DESC
         result = sorted(
             result,
-            key=lambda x: datetime.strptime(
-                x.get('date', '01-01-1900'),
-                '%d-%m-%Y'
-            ),
+            key=lambda x: x.get('date', ''),
             reverse=True
         )
 
