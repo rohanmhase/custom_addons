@@ -120,7 +120,6 @@
                     <button name="action_open_attachment" type="object" string="Attachment"/>
                     <button name="action_open_patient_case_paper" type="object" string="Patient Internal Summary"/>
                     <button name="action_open_patient_xray" type="object" string="View X-Rays"/>
-                    <button name="action_open_patient_xray" type="object" string="View X-Rays"/>
                     <button name="action_open_consent" type="object" string="Consent Form" class="btn-secondary"/>
                 </header>
                 <sheet>
