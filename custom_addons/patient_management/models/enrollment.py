@@ -29,8 +29,10 @@ class Enrollment(models.Model):
         ('active', 'Active'),
         ('completed', 'Completed'),
     ], string="Status", default='active', tracking=True)
-    pain_knee = fields.Boolean(string="Knee Pain")
-    pain_spine = fields.Boolean(string="Spine Pain")
+    pain_knee = fields.Boolean(string="Knee Therapy")
+    pain_spine = fields.Boolean(string="Spine Therapy")
+    pain_other = fields.Boolean(string="Other Therapy")
+    pain_multi = fields.Boolean(string="Multi-Joint Therapy")
     enrolled_for = fields.Char(string="Enrolled For", compute="_compute_enrolled_for", store=True, tracking=True)
     line_ids = fields.One2many(
         'patient.enrollment.line',
@@ -190,14 +192,18 @@ class Enrollment(models.Model):
 
         return res
 
-    @api.depends('pain_knee', 'pain_spine')
+    @api.depends('pain_knee', 'pain_spine', 'pain_other', 'pain_multi')
     def _compute_enrolled_for(self):
         for rec in self:
             selected = []
             if rec.pain_knee:
-                selected.append("Knee Pain")
+                selected.append("Knee Therapy")
             if rec.pain_spine:
-                selected.append("Spine Pain")
+                selected.append("Spine Therapy")
+            if rec.pain_other:
+                selected.append("Other Therapy")
+            if rec.pain_multi:
+                selected.append("Multi-Joint Therapy")
             rec.enrolled_for = ", ".join(selected)
 
     # @api.constrains('used_sessions', 'total_sessions')
