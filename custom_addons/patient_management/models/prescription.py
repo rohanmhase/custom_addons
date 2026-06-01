@@ -344,6 +344,8 @@ class PrescriptionLine(models.Model):
                                      ('along_with_lukewarm_water', 'Along With Lukewarm Water'),
                                      ('10am_6pm', '10 am - 6 pm'),
                                      ('8am_5pm', '8 am - 5 pm'),
+                                     ('7am', '7 am'),
+                                     ('in_between_meals', 'In Between Meals'),
                                      ('local_application', 'Local Application'),
                                      ], string="Instructions")
     dosage = fields.Selection([('2 - 0 - 2', '2 - 0 - 2'),
@@ -357,7 +359,8 @@ class PrescriptionLine(models.Model):
                                ('0 - 0 - 1', '0 - 0 - 1'),
                                ('0 - 0 - 2', '0 - 0 - 2'),
                                ('0 - 0 - 3', '0 - 0 - 3'),
-                               ('0 - 0 - 4', '0 - 0 - 4'), ],
+                               ('0 - 0 - 4', '0 - 0 - 4'),
+                               ('2 - 2 - 10', '2 - 2 - 10'),],
                               string="Dosage")
     qty_available = fields.Float(
         string="Available Qty", compute="_compute_qty_available", readonly=True
