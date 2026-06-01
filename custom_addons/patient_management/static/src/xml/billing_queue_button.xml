@@ -1,5 +1,0 @@
-<t t-name="BillingQueueButtonTemplate" owl="1">
-    <button class="control-button" t-on-click="onClick">
-        Patient Billing Queue
-    </button>
-</t>

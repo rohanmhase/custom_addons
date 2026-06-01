@@ -44,12 +44,3 @@ access_patient_assessment_line_admin,access.patient.assessment.line.admin,model_
 access_patient_assessment_line_user,access.patient.assessment.line.user,model_patient_assessment_line,clinic_management.group_clinic_user,1,1,1,1
 
 access_consent_form_all,consent.form,model_consent_form,base.group_user,1,1,1,1
-
-access_patient_enrollment_line_admin,access.patient.enrollment.line.admin,model_patient_enrollment_line,clinic_management.group_clinic_administrator,1,1,1,1
-access_patient_enrollment_line_user,access.patient.enrollment.line.user,model_patient_enrollment_line,clinic_management.group_clinic_user,1,1,1,1
-
-access_enrollment_bill_popup_admin,access.enrollment.bill.popup.admin,model_enrollment_bill_popup,clinic_management.group_clinic_administrator,1,1,1,1
-access_enrollment_bill_popup_user,access.enrollment.bill.popup.user,model_enrollment_bill_popup,clinic_management.group_clinic_user,1,1,1,0
-
-access_patient_billing_queue_admin,access.patient.billing.queue.admin,model_patient_billing_queue,clinic_management.group_clinic_administrator,1,1,1,1
-access_patient_billing_queue_user,access.patient.billing.queue.user,model_patient_billing_queue,clinic_management.group_clinic_user,1,1,1,0
