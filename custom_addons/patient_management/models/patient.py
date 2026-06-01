@@ -397,13 +397,14 @@ class Patient(models.Model):
             ])
             rec.remaining_sessions = sum(all_enrollments.mapped('remaining_sessions'))
 
-    @api.depends("enrollment_ids.state", "enrollment_ids.active")
+    @api.depends("enrollment_ids.state", "enrollment_ids.active", "enrollment_ids.payment_state",)
     def _compute_active_enrollment_id(self):
         for patient in self:
             all_enrollments = self.env['patient.enrollment'].with_context(active_test=False).search([
                 ('patient_id', '=', patient.id),
                 ('active', '=', True),
                 ('state', '=', 'active'),
+                ('payment_state', '=', 'paid'),
             ])
             patient.active_enrollment_id = all_enrollments[:1] if all_enrollments else False
 
