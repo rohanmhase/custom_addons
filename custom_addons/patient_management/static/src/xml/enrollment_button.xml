@@ -1,0 +1,5 @@
+<t t-name="EnrollmentButtonTemplate" owl="1">
+    <button class="control-button" t-on-click="onClick">
+        Enrollment
+    </button>
+</t>
