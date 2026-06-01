@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- SEQUENCES -->
     <record id="seq_op_fund_disbursement" model="ir.sequence">
         <field name="name">Operational Fund Disbursement</field>
         <field name="code">operational.fund.disbursement</field>
@@ -17,7 +16,6 @@
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- 🚨 NEW: REJECTION REASON WIZARD VIEW 🚨 -->
     <record id="view_op_fund_rejection_wizard_form" model="ir.ui.view">
         <field name="name">operational.fund.rejection.wizard.form</field>
         <field name="model">operational.fund.rejection.wizard</field>
@@ -35,7 +33,6 @@
         </field>
     </record>
 
-    <!-- DISBURSEMENT VIEWS -->
     <record id="view_op_fund_disbursement_kanban" model="ir.ui.view">
         <field name="name">operational.fund.disbursement.kanban</field>
         <field name="model">operational.fund.disbursement</field>
@@ -78,19 +75,17 @@
 
                     <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft'"/>
 
-                    <!-- Approvals & GLOBAL REJECT BUTTON -->
                     <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state == 'rejected'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
-                    <!-- Refunds -->
-                    <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state != 'approved'"/>
-                    <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-                    <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state == 'rejected'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
 
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state != 'approved'" form_novalidate="1"/>
+                    <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
+                    <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
 
-                    <!-- 🚨 NEW: EXPLICIT DRAFT DELETE BUTTON 🚨 -->
-                    <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
+
+                    <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'" form_novalidate="1"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,refunded"/>
                 </header>
@@ -149,19 +144,15 @@
 
                         <page string="Current Documents" invisible="signed_voucher_file == False and receipt_file == False">
                             <div class="row mt-3">
-                                <!-- LEFT COLUMN: SIGNED VOUCHER -->
                                 <div class="col-6" invisible="signed_voucher_file == False">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Signed Voucher</h4>
                                     <field name="signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
                                 </div>
 
-                                <!-- RIGHT COLUMN: VENDOR RECEIPT / BILL -->
                                 <div class="col-6" invisible="receipt_file == False">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Original Receipt / Vendor Bill</h4>
                                     <field name="is_receipt_image" invisible="1"/>
-                                    <!-- If it's an image, use the zoomable image widget -->
                                     <field name="receipt_file" widget="image" options="{'zoom': true}" invisible="is_receipt_image == False" readonly="1" nolabel="1" style="max-width: 100%; max-height: 600px; display: block; margin: auto;"/>
-                                    <!-- If it's a PDF, use the PDF viewer widget -->
                                     <field name="receipt_file" widget="pdf_viewer" invisible="is_receipt_image == True" readonly="1" nolabel="1"/>
                                 </div>
                             </div>
@@ -197,7 +188,6 @@
         <field name="view_mode">kanban,tree,form</field>
     </record>
 
-    <!-- WALLET RECHARGE / TOP-UP VIEWS -->
     <record id="view_op_fund_allocation_form" model="ir.ui.view">
         <field name="name">operational.fund.allocation.form</field>
         <field name="model">operational.fund.allocation</field>
@@ -253,7 +243,6 @@
         </field>
     </record>
 
-    <!-- CONFIGURATION & DASHBOARD VIEWS -->
     <record id="view_op_fund_config_tree" model="ir.ui.view">
         <field name="name">operational.fund.config.tree</field>
         <field name="model">operational.fund.config</field>
@@ -309,7 +298,6 @@
         <field name="context">{'search_default_group_by_wallet': 1}</field>
     </record>
 
-    <!-- NATIVE AUDIT LEDGER VIEWS -->
     <record id="view_op_fund_audit_tree" model="ir.ui.view">
         <field name="name">operational.fund.audit.tree</field>
         <field name="model">operational.fund.audit</field>
@@ -381,7 +369,6 @@
         </field>
     </record>
 
-    <!-- ACTIONS -->
     <record id="action_sync_pending_alerts" model="ir.actions.server">
         <field name="name">Sync Approval Alerts</field>
         <field name="model_id" ref="model_operational_fund_disbursement"/>
