@@ -48,6 +48,19 @@
                                     </td>
                                     <td>
                                         <t t-esc="doc.description"/>
+
+                                        <!-- 🚨 DYNAMIC INJECTIONS FOR PDF 🚨 -->
+                                        <t t-if="doc.category == 'other' and doc.other_expense_details">
+                                            <br/><strong>Specific Expense:</strong> <t t-esc="doc.other_expense_details"/>
+                                        </t>
+
+                                        <t t-if="doc.category == 'clinic_to_clinic'">
+                                            <br/><strong>From:</strong> <t t-esc="doc.from_clinic_id.name"/>
+                                            <br/><strong>To:</strong> <t t-esc="doc.to_clinic_id.name"/>
+                                            <br/><strong>Therapist Type:</strong>
+                                            <t t-if="doc.therapist_type == 'fixed'">Fixed Therapist</t>
+                                            <t t-if="doc.therapist_type == 'floater'">Floater</t>
+                                        </t>
                                     </td>
                                     <td class="text-end fw-bold">₹
                                         <t t-esc="doc.amount"/>

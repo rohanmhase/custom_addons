@@ -33,7 +33,6 @@ class Clinic(models.Model):
 
     op_fund_approval_threshold = fields.Float(string='Auto-Approval Threshold', default=0.0)
 
-    # 🚨 NEW: LOW BALANCE ALERT THRESHOLD & FINANCE TEAM 🚨
     op_fund_alert_threshold = fields.Float(string='Low Balance Alert Threshold', default=0.0)
     is_low_balance_alert_sent = fields.Boolean(string='Alert Sent Flag', default=False)
 
@@ -77,21 +76,17 @@ class Clinic(models.Model):
             clinic.total_spent = total_spent
             clinic.op_fund_balance = total_alloc - total_spent
 
-    # 🚨 NEW: LOW BALANCE NOTIFICATION ENGINE 🚨
     def _check_low_balance_alert(self):
         for clinic in self:
             if clinic.op_fund_alert_threshold > 0:
-                # If balance drops below warning level and we haven't sent an alert yet
                 if clinic.op_fund_balance <= clinic.op_fund_alert_threshold and not clinic.is_low_balance_alert_sent:
                     clinic._send_low_balance_notification()
                     clinic.is_low_balance_alert_sent = True
-                # If balance is restored above warning level, reset the system so it can fire again next time
                 elif clinic.op_fund_balance > clinic.op_fund_alert_threshold and clinic.is_low_balance_alert_sent:
                     clinic.is_low_balance_alert_sent = False
 
     def _send_low_balance_notification(self):
         for clinic in self:
-            # Gather RM, Head Office, and Finance Team
             target_users = clinic.op_fund_manager_ids | clinic.op_fund_ho_manager_ids | clinic.op_fund_finance_ids
             if not target_users:
                 continue
@@ -128,7 +123,6 @@ class ResUsers(models.Model):
                                                   string='Standard Managed Clinics')
     op_fund_ho_managed_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_ho_mgr_rel', 'user_id', 'clinic_id',
                                                      string='HO Managed Clinics')
-    # 🚨 NEW: Added Finance Team routing 🚨
     op_fund_finance_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_fin_rel', 'user_id', 'clinic_id',
                                                   string='Finance Managed Clinics')
 
@@ -180,7 +174,6 @@ class OperationalFundAllocation(models.Model):
                 'reference': f'Wallet Top-up: {rec.name}',
                 'user_id': self.env.user.id
             })
-            # 🚨 Trigger check: If they deposited money, it might reset the alert flag! 🚨
             active_clinic.sudo()._check_low_balance_alert()
         return records
 
@@ -238,15 +231,16 @@ class OperationalFundDisbursement(models.Model):
 
     amount = fields.Float(string='Amount', required=True, tracking=True)
 
+    # 🚨 UPDATED CATEGORIES: Added Clinic to Clinic, Removed Cake/Decorations 🚨
     category = fields.Selection([
         ('therapist_incentive', 'Therapist Incentive'), ('therapist_overtime', 'Therapist Overtime'),
         ('home_visit_travel', 'Home Visit Travelling'), ('fixed_therapist_travel', 'Fixed Therapist Travelling'),
-        ('floater_travel', 'Floater Travelling'),
+        ('floater_travel', 'Floater Travelling'), ('clinic_to_clinic', 'Clinic to Clinic Travelling'),
         ('electricity', 'Electricity Bill'), ('water', 'Water Supply'), ('internet', 'Internet / Phone'),
         ('rent', 'Rent'), ('electrician', 'Electrician Charges'), ('plumber', 'Plumber Charges'),
         ('carpenter', 'Carpenter Charges'),
         ('stationary', 'Stationary'), ('printer_ink', 'Printer Ink'), ('cleaning_materials', 'Cleaning Materials'),
-        ('biowaste_bags', 'Biowaste Bags'), ('cake', 'Cake'), ('decorations', 'Decorations'), ('other', 'Other Expense')
+        ('biowaste_bags', 'Biowaste Bags'), ('other', 'Other Expense')
     ], string='Category', required=True, tracking=True)
 
     home_visit_mrn_search = fields.Char(string='Patient MRN Search', tracking=True)
@@ -254,6 +248,11 @@ class OperationalFundDisbursement(models.Model):
     home_visit_patient_phone = fields.Char(string='Patient Phone', readonly=True)
     home_visit_patient_clinic = fields.Char(string='Registered Clinic', readonly=True)
     is_cross_cluster_visit = fields.Boolean(string='Is Cross-Cluster Visit', readonly=True, store=True)
+
+    # 🚨 NEW: Clinic to Clinic Travel Details 🚨
+    from_clinic_id = fields.Many2one('clinic.clinic', string='From Clinic', tracking=True)
+    to_clinic_id = fields.Many2one('clinic.clinic', string='To Clinic', tracking=True)
+    therapist_type = fields.Selection([('fixed', 'Fixed Therapist'), ('floater', 'Floater')], string='Therapist Role', tracking=True)
 
     other_expense_details = fields.Char(string='Specify Other Expense', tracking=True)
     description = fields.Text(string='Business Purpose')
@@ -278,7 +277,7 @@ class OperationalFundDisbursement(models.Model):
         receipt_required_categories = [
             'electricity', 'water', 'internet', 'rent', 'electrician', 'plumber',
             'carpenter', 'stationary', 'printer_ink', 'cleaning_materials',
-            'biowaste_bags', 'cake', 'decorations', 'other'
+            'biowaste_bags', 'other'
         ]
         for rec in self:
             rec.is_receipt_mandatory = rec.category in receipt_required_categories
@@ -315,7 +314,7 @@ class OperationalFundDisbursement(models.Model):
 
     @api.depends('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
     def _compute_payee_display(self):
-        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel']
+        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
         for rec in self:
             if rec.category in travel_cats and rec.therapist_name:
                 rec.payee_display = rec.therapist_name
@@ -330,7 +329,7 @@ class OperationalFundDisbursement(models.Model):
 
     @api.constrains('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
     def _check_payee(self):
-        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel']
+        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
         for rec in self:
             if rec.category in travel_cats:
                 if not rec.therapist_name:
@@ -365,7 +364,7 @@ class OperationalFundDisbursement(models.Model):
 
     def action_submit_for_approval(self):
         escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
-                                'fixed_therapist_travel', 'floater_travel']
+                                'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
 
         for rec in self:
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
@@ -442,7 +441,6 @@ class OperationalFundDisbursement(models.Model):
             rec.activity_unlink(['mail.mail_activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
 
-            # 🚨 Trigger check: Balance just dropped, send warning email if below threshold! 🚨
             active_clinic.sudo()._check_low_balance_alert()
 
     def action_reject(self):
@@ -519,7 +517,6 @@ class OperationalFundDisbursement(models.Model):
             rec.state = 'refunded'
             rec.activity_unlink(['mail.mail_activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
-            # Trigger Check: Money was refunded, balance might be healthy again!
             active_clinic.sudo()._check_low_balance_alert()
 
     def action_cancel_refund(self):
@@ -530,7 +527,7 @@ class OperationalFundDisbursement(models.Model):
 
     def action_sync_pending_alerts(self):
         escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
-                                'fixed_therapist_travel', 'floater_travel']
+                                'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
         for rec in self:
             if rec.state != 'waiting': continue
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
