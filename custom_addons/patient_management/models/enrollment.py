@@ -294,6 +294,9 @@ class Enrollment(models.Model):
             })
         return result
 
+    def copy(self, default=None):
+        raise UserError(_("⚠️ Duplication of this record is not allowed."))
+
     def _ist_date(self):
 
         utc = (datetime.now())
