@@ -11,7 +11,6 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-# Configure your AWS S3 Bucket Name here
 S3_BUCKET_NAME = 'researchayu-operational-funds-filestore'
 
 
@@ -31,6 +30,19 @@ class Clinic(models.Model):
     total_allocated = fields.Float(string='Total Allocated', compute='_compute_balances', store=True)
     total_spent = fields.Float(string='Total Disbursed', compute='_compute_balances', store=True)
     op_fund_balance = fields.Float(string='Available Balance', compute='_compute_balances', store=True)
+
+    op_fund_approval_threshold = fields.Float(string='Auto-Approval Threshold', default=0.0)
+
+    # 🚨 NEW: LOW BALANCE ALERT THRESHOLD & FINANCE TEAM 🚨
+    op_fund_alert_threshold = fields.Float(string='Low Balance Alert Threshold', default=0.0)
+    is_low_balance_alert_sent = fields.Boolean(string='Alert Sent Flag', default=False)
+
+    op_fund_manager_ids = fields.Many2many('res.users', 'clinic_user_mgr_rel', 'clinic_id', 'user_id',
+                                           string='Standard Approving Managers')
+    op_fund_ho_manager_ids = fields.Many2many('res.users', 'clinic_user_ho_mgr_rel', 'clinic_id', 'user_id',
+                                              string='Head Office Managers')
+    op_fund_finance_ids = fields.Many2many('res.users', 'clinic_user_fin_rel', 'clinic_id', 'user_id',
+                                           string='Finance Team')
 
     @api.constrains('master_fund_id')
     def _check_master_fund(self):
@@ -65,6 +77,61 @@ class Clinic(models.Model):
             clinic.total_spent = total_spent
             clinic.op_fund_balance = total_alloc - total_spent
 
+    # 🚨 NEW: LOW BALANCE NOTIFICATION ENGINE 🚨
+    def _check_low_balance_alert(self):
+        for clinic in self:
+            if clinic.op_fund_alert_threshold > 0:
+                # If balance drops below warning level and we haven't sent an alert yet
+                if clinic.op_fund_balance <= clinic.op_fund_alert_threshold and not clinic.is_low_balance_alert_sent:
+                    clinic._send_low_balance_notification()
+                    clinic.is_low_balance_alert_sent = True
+                # If balance is restored above warning level, reset the system so it can fire again next time
+                elif clinic.op_fund_balance > clinic.op_fund_alert_threshold and clinic.is_low_balance_alert_sent:
+                    clinic.is_low_balance_alert_sent = False
+
+    def _send_low_balance_notification(self):
+        for clinic in self:
+            # Gather RM, Head Office, and Finance Team
+            target_users = clinic.op_fund_manager_ids | clinic.op_fund_ho_manager_ids | clinic.op_fund_finance_ids
+            if not target_users:
+                continue
+
+            subject = f"⚠️ URGENT: Low Balance Alert for {clinic.name}"
+            body = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h2 style="color: #d9534f;">Operational Fund Low Balance Warning</h2>
+                    <p style="color: #555; font-size: 16px;">The operational fund balance for <strong>{clinic.name}</strong> has dropped below the minimum safety threshold.</p>
+                    <table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;">
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Current Balance:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{clinic.op_fund_balance}</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Alert Threshold:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">₹{clinic.op_fund_alert_threshold}</td></tr>
+                    </table>
+                    <div style="background-color: #fcf8e3; color: #8a6d3b; padding: 15px; border-radius: 4px; border: 1px solid #faebcc;">
+                        <strong>Action Required:</strong> Please arrange for a wallet top-up as soon as possible to avoid disruption of clinic operations.
+                    </div>
+                </div>
+            """
+
+            emails = [u.email for u in target_users if u.email]
+            if emails:
+                mail_values = {
+                    'subject': subject,
+                    'email_to': ','.join(emails),
+                    'body_html': body,
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
+
+
+class ResUsers(models.Model):
+    _inherit = 'res.users'
+    op_fund_managed_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_mgr_rel', 'user_id', 'clinic_id',
+                                                  string='Standard Managed Clinics')
+    op_fund_ho_managed_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_ho_mgr_rel', 'user_id', 'clinic_id',
+                                                     string='HO Managed Clinics')
+    # 🚨 NEW: Added Finance Team routing 🚨
+    op_fund_finance_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_fin_rel', 'user_id', 'clinic_id',
+                                                  string='Finance Managed Clinics')
+
 
 class OperationalFundAudit(models.Model):
     _name = 'operational.fund.audit'
@@ -80,23 +147,6 @@ class OperationalFundAudit(models.Model):
     amount = fields.Float(string='Amount', required=True, readonly=True)
     reference = fields.Char(string='Reference', readonly=True)
     user_id = fields.Many2one('res.users', string='Logged By', readonly=True)
-
-
-class OperationalFundConfig(models.Model):
-    _name = 'operational.fund.config'
-    _description = 'Operational Fund Configuration'
-    _rec_name = 'clinic_id'
-
-    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, ondelete='cascade')
-    approval_threshold = fields.Float(string='Auto-Approval Threshold', default=0.0)
-
-    manager_ids = fields.Many2many('res.users', 'op_fund_config_mgr_rel', 'config_id', 'user_id',
-                                   string='Standard Approving Managers')
-    head_office_manager_ids = fields.Many2many('res.users', 'op_fund_config_ho_mgr_rel', 'config_id', 'user_id',
-                                               string='Head Office Managers')
-
-    _sql_constraints = [
-        ('clinic_uniq', 'unique (clinic_id)', 'A clinic can only have one operational fund configuration limit!')]
 
 
 class OperationalFundAllocation(models.Model):
@@ -130,10 +180,11 @@ class OperationalFundAllocation(models.Model):
                 'reference': f'Wallet Top-up: {rec.name}',
                 'user_id': self.env.user.id
             })
+            # 🚨 Trigger check: If they deposited money, it might reset the alert flag! 🚨
+            active_clinic.sudo()._check_low_balance_alert()
         return records
 
 
-# 🚨 NEW WIZARD: MANDATORY REJECTION REASON 🚨
 class OperationalFundRejectionWizard(models.TransientModel):
     _name = 'operational.fund.rejection.wizard'
     _description = 'Disbursement Rejection Wizard'
@@ -144,9 +195,6 @@ class OperationalFundRejectionWizard(models.TransientModel):
     def action_confirm_reject(self):
         for wiz in self:
             disb = wiz.disbursement_id
-
-            # If the manager is using the global kill-switch on an ALREADY APPROVED voucher,
-            # we must refund the money back to the clinic's wallet immediately.
             if disb.state in ('approved', 'refund_requested'):
                 active_clinic = disb.clinic_id.master_fund_id or disb.clinic_id
                 self.env['operational.fund.audit'].sudo().create({
@@ -158,12 +206,10 @@ class OperationalFundRejectionWizard(models.TransientModel):
                     'user_id': self.env.user.id
                 })
 
-            # Post the rejection reason loudly in the chatter history
             disb.message_post(
                 body=f"<div style='color: #d9534f; font-size: 14px;'><i class='fa fa-ban'></i> <strong>VOUCHER REJECTED</strong><br/><strong>Reason:</strong> {wiz.reason}</div>",
                 subtype_xmlid='mail.mt_note'
             )
-
             disb.state = 'rejected'
             disb.activity_unlink(['mail.mail_activity_data_todo'])
             disb._cleanup_todo_tasks('Approve Voucher')
@@ -183,18 +229,22 @@ class OperationalFundDisbursement(models.Model):
     date = fields.Date(string='Date', default=fields.Date.context_today, required=True, tracking=True)
 
     payee_type = fields.Selection([('internal', 'Internal Employee'), ('external', 'External Vendor')],
-                                  string='Payee Type', default='internal', required=True, tracking=True)
+                                  string='Payee Type', default='internal', tracking=True)
     payee_id = fields.Many2one('hr.employee', string='Internal Employee', tracking=True, ondelete='restrict')
     vendor_name = fields.Char(string='External Vendor Name', tracking=True)
+
+    therapist_name = fields.Char(string='Therapist Name', tracking=True)
     payee_display = fields.Char(string='Payee', compute='_compute_payee_display', store=True)
 
     amount = fields.Float(string='Amount', required=True, tracking=True)
+
     category = fields.Selection([
         ('therapist_incentive', 'Therapist Incentive'), ('therapist_overtime', 'Therapist Overtime'),
-        ('home_visit_travel', 'Home Visit Travelling'),
+        ('home_visit_travel', 'Home Visit Travelling'), ('fixed_therapist_travel', 'Fixed Therapist Travelling'),
+        ('floater_travel', 'Floater Travelling'),
         ('electricity', 'Electricity Bill'), ('water', 'Water Supply'), ('internet', 'Internet / Phone'),
-        ('rent', 'Rent'),
-        ('electrician', 'Electrician Charges'), ('plumber', 'Plumber Charges'), ('carpenter', 'Carpenter Charges'),
+        ('rent', 'Rent'), ('electrician', 'Electrician Charges'), ('plumber', 'Plumber Charges'),
+        ('carpenter', 'Carpenter Charges'),
         ('stationary', 'Stationary'), ('printer_ink', 'Printer Ink'), ('cleaning_materials', 'Cleaning Materials'),
         ('biowaste_bags', 'Biowaste Bags'), ('cake', 'Cake'), ('decorations', 'Decorations'), ('other', 'Other Expense')
     ], string='Category', required=True, tracking=True)
@@ -263,23 +313,33 @@ class OperationalFundDisbursement(models.Model):
         elif self.category != 'home_visit_travel':
             self.home_visit_mrn_search, self.home_visit_patient_name, self.home_visit_patient_phone, self.home_visit_patient_clinic, self.is_cross_cluster_visit = False, False, False, False, False
 
-    @api.depends('payee_type', 'payee_id', 'vendor_name')
+    @api.depends('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
     def _compute_payee_display(self):
+        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel']
         for rec in self:
-            if rec.payee_type == 'internal' and rec.payee_id:
+            if rec.category in travel_cats and rec.therapist_name:
+                rec.payee_display = rec.therapist_name
+            elif rec.category in travel_cats and not rec.therapist_name:
+                rec.payee_display = 'Unknown Therapist'
+            elif rec.payee_type == 'internal' and rec.payee_id:
                 rec.payee_display = rec.payee_id.name
             elif rec.payee_type == 'external' and rec.vendor_name:
                 rec.payee_display = rec.vendor_name
             else:
                 rec.payee_display = 'Unknown'
 
-    @api.constrains('payee_type', 'payee_id', 'vendor_name')
+    @api.constrains('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
     def _check_payee(self):
+        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel']
         for rec in self:
-            if rec.payee_type == 'internal' and not rec.payee_id: raise ValidationError(
-                _("Please select an Internal Employee."))
-            if rec.payee_type == 'external' and not rec.vendor_name: raise ValidationError(
-                _("Please specify the External Vendor name."))
+            if rec.category in travel_cats:
+                if not rec.therapist_name:
+                    raise ValidationError(_("Please specify the Therapist Name for this travelling expense."))
+            else:
+                if rec.payee_type == 'internal' and not rec.payee_id:
+                    raise ValidationError(_("Please select an Internal Employee."))
+                if rec.payee_type == 'external' and not rec.vendor_name:
+                    raise ValidationError(_("Please specify the External Vendor name."))
 
     @api.onchange('amount', 'clinic_id')
     def _onchange_budget_warning(self):
@@ -304,7 +364,8 @@ class OperationalFundDisbursement(models.Model):
         return False
 
     def action_submit_for_approval(self):
-        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel']
+        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
+                                'fixed_therapist_travel', 'floater_travel']
 
         for rec in self:
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
@@ -316,19 +377,17 @@ class OperationalFundDisbursement(models.Model):
                     _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            config = self.env['operational.fund.config'].search([('clinic_id', '=', active_clinic.id)], limit=1)
-            threshold = config.approval_threshold if config else 0.0
-
+            threshold = active_clinic.op_fund_approval_threshold
             is_escalated = rec.category in escalated_categories
 
             if is_escalated:
                 can_auto_approve = False
-                target_managers = config.head_office_manager_ids if config else False
+                target_managers = active_clinic.op_fund_ho_manager_ids
                 if not target_managers: raise ValidationError(
-                    _("This category requires Head Office approval, but no Head Office Managers are assigned!"))
+                    _("This category requires Head Office approval, but no Head Office Managers are assigned to this clinic!"))
             else:
                 can_auto_approve = (threshold > 0 and rec.amount <= threshold)
-                target_managers = config.manager_ids if config else False
+                target_managers = active_clinic.op_fund_manager_ids
 
             if can_auto_approve:
                 if rec.amount > active_clinic.op_fund_balance: raise ValidationError(
@@ -383,7 +442,9 @@ class OperationalFundDisbursement(models.Model):
             rec.activity_unlink(['mail.mail_activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
 
-    # 🚨 UPDATED: REDIRECTS TO REASON POPUP 🚨
+            # 🚨 Trigger check: Balance just dropped, send warning email if below threshold! 🚨
+            active_clinic.sudo()._check_low_balance_alert()
+
     def action_reject(self):
         self.ensure_one()
         return {
@@ -395,7 +456,6 @@ class OperationalFundDisbursement(models.Model):
             'context': {'default_disbursement_id': self.id}
         }
 
-    # 🚨 NEW: DELETE DRAFT ONLY ACTION 🚨
     def action_delete_draft(self):
         for rec in self:
             if rec.state != 'draft':
@@ -431,13 +491,12 @@ class OperationalFundDisbursement(models.Model):
                 _("Only fully approved disbursements can be submitted for a refund."))
             rec.state = 'refund_requested'
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            config = self.env['operational.fund.config'].search([('clinic_id', '=', active_clinic.id)], limit=1)
 
-            if config and config.manager_ids:
+            if active_clinic.op_fund_manager_ids:
                 base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
                 deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
                 deadline = fields.Date.context_today(self) + timedelta(days=1)
-                for manager in config.manager_ids:
+                for manager in active_clinic.op_fund_manager_ids:
                     rec.activity_schedule('mail.mail_activity_data_todo', user_id=manager.id,
                                           summary='Review Refund Request',
                                           note=f'A refund has been requested for Voucher {rec.name}.')
@@ -460,6 +519,8 @@ class OperationalFundDisbursement(models.Model):
             rec.state = 'refunded'
             rec.activity_unlink(['mail.mail_activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
+            # Trigger Check: Money was refunded, balance might be healthy again!
+            active_clinic.sudo()._check_low_balance_alert()
 
     def action_cancel_refund(self):
         for rec in self:
@@ -468,15 +529,14 @@ class OperationalFundDisbursement(models.Model):
             self._cleanup_todo_tasks('Review Refund')
 
     def action_sync_pending_alerts(self):
-        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel']
+        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
+                                'fixed_therapist_travel', 'floater_travel']
         for rec in self:
             if rec.state != 'waiting': continue
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            config = self.env['operational.fund.config'].search([('clinic_id', '=', active_clinic.id)], limit=1)
 
             is_escalated = rec.category in escalated_categories
-            target_managers = config.head_office_manager_ids if config and is_escalated else (
-                config.manager_ids if config else False)
+            target_managers = active_clinic.op_fund_ho_manager_ids if is_escalated else active_clinic.op_fund_manager_ids
 
             if target_managers:
                 base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
@@ -523,7 +583,6 @@ class OperationalFundDisbursement(models.Model):
                     active_clinic.op_fund_balance + rec.amount): raise ValidationError(
                 _("Cannot approve. This disbursement exceeds the available clinic balance."))
 
-    # 🚨 UPDATED: STRICT DRAFT DELETION RULE 🚨
     def unlink(self):
         for rec in self:
             if rec.state != 'draft':
@@ -553,9 +612,6 @@ class ProjectTask(models.Model):
         return super().write(vals)
 
 
-# ====================================================================
-# ENTERPRISE EXTENSIONS: S3 STORAGE ENGINE
-# ====================================================================
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
@@ -577,27 +633,15 @@ class IrAttachment(models.Model):
         records = super().create(vals_list)
         if not boto3:
             return records
-
         protected_models = ['operational.fund.disbursement', 'operational.fund.allocation']
-
         for rec in records:
             if rec.res_model in protected_models and rec.type == 'binary' and rec.raw:
                 try:
                     s3_client = boto3.client('s3')
                     file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
                     object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
-
-                    s3_client.put_object(
-                        Bucket=S3_BUCKET_NAME,
-                        Key=object_key,
-                        Body=rec.raw,
-                        ContentType=rec.mimetype
-                    )
-
-                    rec.sudo().write({
-                        'is_s3_stored': True,
-                        's3_object_key': object_key
-                    })
+                    s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+                    rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                     _logger.info(f"Successfully offloaded financial attachment {rec.id} to S3 bucket key: {object_key}")
                 except Exception as e:
                     _logger.error(f"AWS S3 Cloud Offload critical failure for attachment {rec.id}: {str(e)}")
