@@ -13,8 +13,7 @@
                 <field name="remaining_sessions"/>
                 <field name="used_sessions" string="Used Sessions"/>
                 <field name="state"/>
-<!--                <field name="doctor_id" string="Doctor Name"/>-->
-<!--                <field name="write_uid" string="Modified By"/>-->
+                <field name="payment_state"/>
                 <field name="active"/>
             </tree>
         </field>
@@ -24,38 +23,138 @@
         <field name="name">clinic.patient.enrollment.form</field>
         <field name="model">patient.enrollment</field>
         <field name="arch" type="xml">
-            <form string="Enrollment" delete="false">
+            <form string="Patient Enrollment" delete="false">
                 <header>
-                    <field name="state" widget="statusbar"/>
+
+                    <button name="action_open_bill_popup"
+                            string="Create Bill"
+                            type="object"
+                            class="btn-primary"
+                            invisible="payment_state == 'paid'"/>
+                    <field name="payment_state"
+                           widget="statusbar"/>
+
                 </header>
+
                 <sheet>
-                    <sheet>
+                    <group>
                         <group>
-                            <group>
-                                <field name="patient_id"/>
-                                <field name="doctor_id"/>
-                                <field name="enrollment_date"/>
-                                <field name="enrollment_type" widget="radio"/>
-                            </group>
-                            <group string="Enrollment For">
-                                <field name="pain_knee"/>
-                                <field name="pain_spine"/>
-                            </group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                            <field name="enrollment_date" readonly="1"/>
+                            <field name="enrollment_type" widget="radio" options="{'horizontal': true}"/>
                         </group>
-                    </sheet>
-                    <sheet>
+                        <group string="Enrollment For">
+                            <field name="pain_knee"/>
+                            <field name="pain_spine"/>
+                            <field name="pain_other"/>
+                            <field name="pain_multi"/>
+                            <field name="enrolled_for" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Enrollment Summary">
                         <group>
-<!--                            <field name="daily_sheet_ref" widget="char"/>-->
-                            <field name="total_amount"/>
-<!--                            <field name="therapy_amount"/>-->
-<!--                            <field name="first_cons_charges"/>-->
-<!--                            <field name="therapy_medicine"/>-->
-                            <field name="total_sessions"/>
-                            <field name="used_sessions"/>
-                            <field name="notes"/>
+                            <field name="total_amount" readonly="1"/>
+                            <field name="total_sessions" readonly="1" string="Total Sessions"/>
                         </group>
-                    </sheet>
+                        <group>
+                            <field name="used_sessions" readonly="1" string="Used Sessions"/>
+                            <field name="remaining_sessions" readonly="1" string="Remaining"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Enrollment Services">
+                            <field name="line_ids" context="{'show_custom_regeneration_name': True}">
+
+                                <tree string="Enrollment Lines">
+                                    <field name="is_demo_session" column_invisible="1"/>
+                                    <field name="is_complementary" column_invisible="1"/>
+                                    <field name="is_consultation" column_invisible="1"/>
+                                    <field name="is_diabetes_treatment" column_invisible="1"/>
+                                    <field name="is_digestion_improvement" column_invisible="1"/>
+                                    <field name="is_home_visit" column_invisible="1"/>
+                                    <field name="is_pcod" column_invisible="1"/>
+                                    <field name="is_regeneration_therapy" column_invisible="1"/>
+                                    <field name="is_regeneration_treatment" column_invisible="1"/>
+                                    <field name="is_self_therapy" column_invisible="1"/>
+                                    <field name="is_weight_management_treatment" column_invisible="1"/>
+
+                                    <field name="service_product_id" options="{'no_create': True, 'no_open': True}"/>
+
+                                    <field name="total_amount"
+                                           readonly="1"
+                                           force_save="1"/>
+
+                                    <field name="pos_qty"
+                                           readonly="1"
+                                           force_save="1"/>
+
+                                    <field name="used_sessions"
+                                           readonly="1"
+                                           force_save="1"
+                                           optional="hide"/>
+
+                                    <field name="therapy_amount"
+                                           readonly="1"
+                                           force_save="1"
+                                           optional="hide"/>
+                                </tree>
+
+                                <form string="Enrollment Service Line">
+                                    <sheet>
+                                        <div style="font-size:18px; padding-bottom: 10px; font-weight: bold;">
+                                            Service Details
+                                        </div>
+                                        <group>
+                                            <group>
+                                                <field name="is_demo_session" invisible="1"/>
+                                                <field name="is_complementary" invisible="1"/>
+                                                <field name="is_consultation" invisible="1"/>
+                                                <field name="is_diabetes_treatment" invisible="1"/>
+                                                <field name="is_digestion_improvement" invisible="1"/>
+                                                <field name="is_home_visit" invisible="1"/>
+                                                <field name="is_pcod" invisible="1"/>
+                                                <field name="is_regeneration_therapy" invisible="1"/>
+                                                <field name="is_regeneration_treatment" invisible="1"/>
+                                                <field name="is_self_therapy" invisible="1"/>
+                                                <field name="is_weight_management_treatment" invisible="1"/>
+
+                                                <field name="service_product_id"
+                                                       options="{'no_create': True, 'no_open': True}"
+                                                       context="{'show_custom_regeneration_name': True}"/>
+
+                                                <field name="therapy_amount"
+                                                       invisible="is_demo_session
+                                                       or is_complementary
+                                                       or is_consultation"
+                                                       readonly="1"/>
+                                            </group>
+                                            <group>
+                                                <field name="pos_qty"
+                                                       invisible="is_consultation"
+                                                       readonly="is_demo_session"/>
+
+                                                <field name="used_sessions"
+                                                       invisible="1"/>
+
+                                                <field name="total_amount"
+                                                       invisible="is_complementary"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+
+                            </field>
+                        </page>
+                    </notebook>
+
+                    <group>
+                        <field name="notes" placeholder="Add internal notes here..."/>
+                    </group>
                 </sheet>
+
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
                     <field name="activity_ids" widget="mail_activity"/>
@@ -69,5 +168,6 @@
         <field name="name">Enrollment</field>
         <field name="res_model">patient.enrollment</field>
         <field name="view_mode">tree,form</field>
+        <field name="context">{'show_custom_regeneration_name': True}</field>
     </record>
 </odoo>

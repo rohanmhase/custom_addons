@@ -31,6 +31,7 @@
         'views/consent_form_views.xml',
         'reports/consent_report.xml',
         'reports/consent_report_template.xml',
+        'views/enrollment_bill_popup.xml'
     ],
     'assets': {
         'web.assets_backend': [
@@ -40,15 +41,25 @@
 
         ],
         'point_of_sale._assets_pos': [
-            "patient_management/static/src/js/prescription_popup.js",
-            "patient_management/static/src/js/prescription_button.js",
+            "patient_management/static/src/js/billing_queue_popup.js",
+            "patient_management/static/src/js/billing_queue_button.js",
+            # "patient_management/static/src/js/prescription_popup.js",
+            # "patient_management/static/src/js/enrollment_popup.js",
+            # "patient_management/static/src/js/prescription_button.js",
+            # "patient_management/static/src/js/enrollment_button.js",
             "patient_management/static/src/js/order_patch.js",
             "patient_management/static/src/js/restrict_product_click.js",
+            "patient_management/static/src/js/enrollment_restriction_patch.js",
+            "patient_management/static/src/js/enrollment_order_patch.js",
             "patient_management/static/src/js/orderline_patch.js",
             "patient_management/static/src/css/prescription_pos.css",
             "patient_management/static/src/js/pos_bus.js",
-            "patient_management/static/src/xml/prescription_popup.xml",
-            "patient_management/static/src/xml/prescription_button.xml",
+            # "patient_management/static/src/xml/prescription_popup.xml",
+            # "patient_management/static/src/xml/enrollment_popup.xml",
+            # "patient_management/static/src/xml/prescription_button.xml",
+            # "patient_management/static/src/xml/enrollment_button.xml",
+            "patient_management/static/src/xml/billing_queue_popup_template.xml",
+            "patient_management/static/src/xml/billing_queue_button.xml",
         ],
     },
     "installable": True,
