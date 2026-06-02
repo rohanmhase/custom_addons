@@ -326,7 +326,7 @@ class EnrollmentLine(models.Model):
     service_product_id = fields.Many2one(
         'product.product',
         string="Service",
-        domain="[('detailed_type','=','service')]",
+        domain="[('detailed_type','=','service'), ('available_in_pos', '=', True)]",
         required=True
     )
 
