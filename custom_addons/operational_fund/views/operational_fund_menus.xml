@@ -35,9 +35,9 @@
               sequence="100"
               groups="operational_fund.group_op_fund_controller"/>
 
-    <menuitem id="menu_op_fund_config_thresholds"
-              name="Clinic Thresholds"
+    <menuitem id="menu_op_fund_user_approvers"
+              name="User Approver Setup"
               parent="menu_op_fund_configuration_root"
-              action="action_op_fund_config"
+              action="action_op_fund_user_approvers"
               sequence="10"/>
 </odoo>
