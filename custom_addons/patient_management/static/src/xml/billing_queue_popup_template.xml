@@ -100,7 +100,7 @@
 
                                     <t t-foreach="rec.lines"
                                        t-as="l"
-                                       t-key="l.product_id + '_' + l.qty + '_' + l.amount">
+                                       t-key="rec.id + '_' + l_index">
 
                                         <div>
 
