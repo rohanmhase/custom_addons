@@ -261,6 +261,7 @@ class OperationalFundDisbursement(models.Model):
     receipt_filename = fields.Char(string='Receipt Filename')
     is_receipt_mandatory = fields.Boolean(compute='_compute_is_receipt_mandatory')
     is_receipt_image = fields.Boolean(compute='_compute_is_receipt_image', store=True)
+    is_signed_voucher_image = fields.Boolean(compute='_compute_is_signed_voucher_image', store=True)
 
     signed_voucher_file = fields.Binary(string='Signed Voucher (Upload)')
     signed_voucher_filename = fields.Char(string='Signed Voucher Filename')
@@ -290,6 +291,15 @@ class OperationalFundDisbursement(models.Model):
                 rec.is_receipt_image = ext in ['jpg', 'jpeg', 'png', 'webp']
             else:
                 rec.is_receipt_image = False
+
+    @api.depends('signed_voucher_filename')
+    def _compute_is_signed_voucher_image(self):
+        for rec in self:
+            if rec.signed_voucher_filename:
+                ext = rec.signed_voucher_filename.split('.')[-1].lower()
+                rec.is_signed_voucher_image = ext in ['jpg', 'jpeg', 'png', 'webp']
+            else:
+                rec.is_signed_voucher_image = False
 
     @api.onchange('home_visit_mrn_search', 'clinic_id', 'category')
     def _onchange_home_visit_mrn(self):
