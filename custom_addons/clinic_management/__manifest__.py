@@ -7,7 +7,7 @@
         Module to manage Clinics
     """,
     "author": "ResearchAyu",
-    "depends": ["base", "stock", "point_of_sale", "bus", "stock"],
+    "depends": ["base", "stock", "point_of_sale", "bus", "stock","account"],
     "data": [
         'security/clinic_security.xml',
         'security/ir.model.access.csv',
@@ -16,6 +16,8 @@
         'views/clinic_dashboard_view.xml',
         'views/clinic_transfer_views.xml',
         'views/res_company_views.xml',
+        'views/pos_session_edit.xml',
+        # 'views/pos_session_view.xml',
     ],
     "assets": {
         'point_of_sale._assets_pos': [
