@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- SEQUENCES -->
     <record id="seq_op_fund_disbursement" model="ir.sequence">
         <field name="name">Operational Fund Disbursement</field>
         <field name="code">operational.fund.disbursement</field>
@@ -17,7 +16,6 @@
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- REJECTION WIZARD -->
     <record id="view_op_fund_rejection_wizard_form" model="ir.ui.view">
         <field name="name">operational.fund.rejection.wizard.form</field>
         <field name="model">operational.fund.rejection.wizard</field>
@@ -35,7 +33,6 @@
         </field>
     </record>
 
-    <!-- DISBURSEMENT VIEWS -->
     <record id="view_op_fund_disbursement_kanban" model="ir.ui.view">
         <field name="name">operational.fund.disbursement.kanban</field>
         <field name="model">operational.fund.disbursement</field>
@@ -105,7 +102,6 @@
                         <group>
                             <field name="clinic_id" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
 
-                            <!-- 🚨 DYNAMIC PAYEE FIELDS 🚨 -->
                             <field name="payee_type" widget="radio" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" invisible="category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')"/>
                             <field name="payee_id" invisible="payee_type == 'external' or category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')" required="payee_type == 'internal' and category not in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="vendor_name" invisible="payee_type == 'internal' or category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')" required="payee_type == 'external' and category not in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')"/>
@@ -124,7 +120,6 @@
                         </group>
                     </group>
 
-                    <!-- 🚨 NEW: CLINIC TO CLINIC DETAILS BLOCK 🚨 -->
                     <group string="Clinic Transfer Details" invisible="category != 'clinic_to_clinic'">
                         <group>
                             <field name="from_clinic_id" required="category == 'clinic_to_clinic'" readonly="state in ('waiting', 'approved', 'refund_requested', 'refunded')" options="{'no_create': True}"/>
@@ -160,7 +155,9 @@
                             <div class="row mt-3">
                                 <div class="col-6" invisible="signed_voucher_file == False">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Signed Voucher</h4>
-                                    <field name="signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
+                                    <field name="is_signed_voucher_image" invisible="1"/>
+                                    <field name="signed_voucher_file" widget="image" options="{'zoom': true}" invisible="is_signed_voucher_image == False" readonly="1" nolabel="1" style="max-width: 100%; max-height: 600px; display: block; margin: auto;"/>
+                                    <field name="signed_voucher_file" widget="pdf_viewer" invisible="is_signed_voucher_image == True" readonly="1" nolabel="1"/>
                                 </div>
 
                                 <div class="col-6" invisible="receipt_file == False">
@@ -202,7 +199,6 @@
         <field name="view_mode">kanban,tree,form</field>
     </record>
 
-    <!-- WALLET RECHARGE / TOP-UP VIEWS -->
     <record id="view_op_fund_allocation_form" model="ir.ui.view">
         <field name="name">operational.fund.allocation.form</field>
         <field name="model">operational.fund.allocation</field>
@@ -258,7 +254,6 @@
         </field>
     </record>
 
-    <!-- USER APPROVER SETUP VIEW -->
     <record id="view_op_fund_user_approver_tree" model="ir.ui.view">
         <field name="name">res.users.op.fund.tree</field>
         <field name="model">res.users</field>
@@ -284,7 +279,6 @@
         </field>
     </record>
 
-    <!-- FUND DASHBOARD -->
     <record id="view_op_fund_clinic_search" model="ir.ui.view">
         <field name="name">op.fund.clinic.search</field>
         <field name="model">clinic.clinic</field>
@@ -324,7 +318,6 @@
         <field name="context">{'search_default_group_by_wallet': 1}</field>
     </record>
 
-    <!-- AUDIT LEDGER VIEWS -->
     <record id="view_op_fund_audit_tree" model="ir.ui.view">
         <field name="name">operational.fund.audit.tree</field>
         <field name="model">operational.fund.audit</field>
