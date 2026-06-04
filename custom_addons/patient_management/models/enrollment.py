@@ -475,6 +475,27 @@ class EnrollmentLine(models.Model):
             rec.is_self_therapy = (product_name == 'Self Therapy')
             rec.is_weight_management_treatment = (product_name == 'Weight Management Treatment')
 
+    @api.constrains('pos_qty', 'service_product_id')
+    def _check_treatment_qty(self):
+
+        # List of all treatments that require a quantity greater than 0
+        restricted_treatments = [
+            'Regeneration Therapy',
+            'Diabetes Treatment',
+            'Digestion Improvement Treatment',
+            'PCOD Treatment',
+            'Regeneration Treatment',
+            'Weight Management Treatment',
+            'Self Therapy',
+        ]
+
+        for rec in self:
+            if rec.service_product_id and rec.service_product_id.name in restricted_treatments:
+                if rec.pos_qty <= 0:
+                    # Dynamic error message based on the exact product name
+                    raise ValidationError(
+                        _("The quantity (Days) for %s must be greater than 0.") % rec.service_product_id.name
+                    )
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
