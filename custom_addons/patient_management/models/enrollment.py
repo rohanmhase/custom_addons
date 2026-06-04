@@ -12,7 +12,7 @@ class Enrollment(models.Model):
     doctor_id = fields.Many2one('res.users', string="BM", required=True, readonly=True, default=lambda self: self.env.user)
     enrollment_date = fields.Date(string="Enrollment Date", required=True, default=lambda self: self._ist_date(), tracking=True)
     daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", tracking=True)
-    total_amount = fields.Integer(string="Total Therapy Charges", compute="_compute_totals", store=True, tracking=True)
+    total_amount = fields.Integer(string="Total Amount", compute="_compute_totals", store=True, tracking=True)
     therapy_amount = fields.Integer(string="Therapy Amount", tracking=True)
     first_cons_charges = fields.Integer(string="First Consultation Charges", tracking=True)
     therapy_medicine = fields.Integer(string="Therapy + Medicine", tracking=True)
@@ -296,6 +296,12 @@ class Enrollment(models.Model):
 
     def copy(self, default=None):
         raise UserError(_("⚠️ Duplication of this record is not allowed."))
+
+    @api.constrains('line_ids')
+    def _check_empty_lines(self):
+        for rec in self:
+            if not rec.line_ids:
+                raise ValidationError(_("You must add at least one enrollment service line before saving."))
 
     def _ist_date(self):
 
