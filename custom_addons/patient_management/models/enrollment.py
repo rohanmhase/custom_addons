@@ -497,6 +497,17 @@ class EnrollmentLine(models.Model):
                         _("The quantity (Days) for %s must be greater than 0.") % rec.service_product_id.name
                     )
 
+
+    @api.constrains('therapy_amount')
+    def _check_therapy_amount_decimals(self):
+        for rec in self:
+            # Check if the float has a non-zero decimal part (e.g., 1200.02)
+            if rec.therapy_amount and not rec.therapy_amount.is_integer():
+                raise ValidationError(
+                    _("The Per Session Amount must be a whole number. Decimal values like %s are not allowed.") % rec.therapy_amount
+                )
+
+
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
