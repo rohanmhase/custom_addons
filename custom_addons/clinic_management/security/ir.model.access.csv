@@ -15,3 +15,4 @@ access_clinic_dashboard_daily_followup_line_user,access.clinic.dashboard.daily_f
 access_clinic_dashboard_enrollment_line_user,access.clinic.dashboard.enrollment.line.user,model_clinic_dashboard_enrollment_line,group_clinic_user,1,0,0,0
 access_clinic_dashboard_assessment_line_user,access.clinic.dashboard.assessment.line.user,model_clinic_dashboard_assessment_line,group_clinic_administrator,1,0,0,0
 access_clinic_dashboard_assessment_line_user,access.clinic.dashboard.assessment.line.user,model_clinic_dashboard_assessment_line,group_clinic_user,1,0,0,0
+pos_session_edit,pos.session.edit,model_pos_session_edit,clinic_management.group_clinic_administrator,1,1,1,1

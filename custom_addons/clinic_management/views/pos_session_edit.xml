@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_pos_session_edit_form" model="ir.ui.view">
+            <field name="name">pos.session.edit.form</field>
+            <field name="model">pos.session.edit</field>
+            <field name="arch" type="xml">
+                <form string="Adjust Cash Entry">
+                    <group>
+                        <field name="pos_session_id" invisible="1"/>
+                        <field name="action_type" widget="radio"/>
+                        <field name="statement_line_id"
+                               invisible="action_type != 'edit'"
+                               required="action_type == 'edit'"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="transaction_type" widget="radio"/>
+                        <field name="amount"/>
+                        <field name="payment_ref"
+                               string="Reference"
+                               placeholder="e.g. Petty cash for supplies"/>
+                    </group>
+                    <footer>
+                        <button string="Apply"
+                                name="action_apply_adjustment"
+                                type="object"
+                                class="btn-danger"/>
+                        <button string="Cancel"
+                                class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_open_pos_session_edit" model="ir.actions.act_window">
+            <field name="name">Adjust Cash Entry</field>
+            <field name="res_model">pos.session.edit</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_pos_session_id': active_id}</field>
+        </record>
+
+        <record id="view_pos_session_form_inherit_edit" model="ir.ui.view">
+            <field name="name">pos.session.form.inherit.edit</field>
+            <field name="model">pos.session</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button name="%(clinic_management.action_open_pos_session_edit)d"
+                            string="Adjust Cash Entry"
+                            type="action"
+                            class="btn-danger"
+                            groups="clinic_management.group_clinic_administrator"
+                            invisible="state != 'closed'"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
