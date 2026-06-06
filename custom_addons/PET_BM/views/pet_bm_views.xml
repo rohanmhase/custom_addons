@@ -1,5 +1,252 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <record id="view_pet_escalation_ticket_form" model="ir.ui.view">
+        <field name="name">pet.escalation.ticket.form</field>
+        <field name="model">pet.escalation.ticket</field>
+        <field name="arch" type="xml">
+            <form string="Escalation Ticket" create="0" delete="0">
+                <header>
+                    <button name="action_resolve" string="Mark Resolved" type="object" class="oe_highlight" invisible="status == 'resolved'"/>
+                    <button name="action_reopen" string="Reopen Ticket (PET)" type="object" class="btn-danger" invisible="status != 'resolved'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="pending,overdue,resolved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="ticket_sequence"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Assignments">
+                            <field name="patient_id"/>
+                            <field name="pet_agent_id"/>
+                            <field name="assigned_bm_id"/>
+                        </group>
+                        <group string="SLA Tracking">
+                            <field name="create_date" string="Opened On"/>
+                            <field name="deadline"/>
+                            <field name="reopen_count"/>
+                        </group>
+                    </group>
+                    <group string="The Issue">
+                        <field name="issue_description" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="BM Resolution">
+                        <field name="resolution_remarks" nolabel="1" colspan="2" placeholder="BM types how the issue was fixed here..." readonly="status == 'resolved'"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pet_followup_line_form_popup" model="ir.ui.view">
+        <field name="name">pet.followup.line.form.popup</field>
+        <field name="model">pet.followup.line</field>
+        <field name="arch" type="xml">
+            <form string="Log Follow-up">
+                <sheet>
+                    <field name="is_locked" invisible="1"/>
+
+                    <group>
+                        <group string="LOG INFORMATION">
+                            <field name="contact_date" readonly="1" force_save="1"/>
+                            <field name="user_id"/>
+                            <field name="not_connected" readonly="is_locked"/>
+                            <field name="actual_next_followup_date" required="1" readonly="is_locked"/>
+                            <field name="recommended_next_followup" readonly="1" force_save="1" invisible="not_connected"/>
+                        </group>
+
+                        <group string="STATUS UPDATE" invisible="not_connected">
+                            <field name="category_id" required="not not_connected" readonly="is_locked"/>
+                            <field name="subcategory_id" domain="[('category_id', '=', category_id)]" readonly="is_locked"/>
+                            <field name="patient_status" readonly="is_locked" string="Treatment Status"/>
+                            <field name="outcome_status" readonly="is_locked"/>
+                            <field name="reason_not_starting_stopping" readonly="is_locked"/>
+                        </group>
+                    </group>
+
+                    <group string="CLINICAL SNAPSHOT" invisible="not_connected">
+                        <group>
+                            <field name="pain_walking_score" readonly="is_locked"/>
+                            <field name="pain_resting_score" readonly="is_locked"/>
+                            <field name="satisfaction_score" readonly="is_locked"/>
+                        </group>
+                        <group>
+                            <field name="mobility_status" readonly="is_locked"/>
+                            <field name="therapy_kit_status" readonly="is_locked"/>
+                        </group>
+                    </group>
+
+                    <group string="FEEDBACK &amp; REFERRALS" invisible="not_connected">
+                        <group>
+                            <field name="referral_given" readonly="is_locked"/>
+                            <field name="referral_name" invisible="not referral_given" readonly="is_locked"/>
+                            <field name="referral_contact" invisible="not referral_given" readonly="is_locked"/>
+                        </group>
+                        <group>
+                            <field name="review_given" readonly="is_locked"/>
+                            <field name="review_link" widget="url" invisible="not review_given" readonly="is_locked"/>
+                        </group>
+                    </group>
+
+                    <group string="COMMERCIALS &amp; DISCOUNT" style="background-color:#e8f4f8; border-radius:5px; padding:10px;" invisible="not_connected">
+                        <field name="discount_offered" readonly="is_locked"/>
+                        <div class="text-muted" colspan="2" invisible="is_locked">
+                            Entering a percentage here (0-100) will automatically calculate and apply the discount to the BM's latest quote!
+                        </div>
+                    </group>
+
+                    <group string="BM ESCALATION" style="background-color:#fff3cd; border-radius:5px; padding:10px;" invisible="not_connected">
+                        <field name="escalate_to_bm" readonly="is_locked" string="Escalate to BM"/>
+                        <field name="escalation_description" placeholder="Describe the issue. This creates a 24-Hour SLA Ticket for the BM..." invisible="not escalate_to_bm" required="escalate_to_bm" readonly="is_locked"/>
+                    </group>
+
+                    <group string="LATEST ACTIONS &amp; REMARKS">
+                        <field name="action_taken" placeholder="Type specific action taken..." readonly="is_locked"/>
+                        <field name="remarks" placeholder="Type general remarks..." readonly="is_locked"/>
+                    </group>
+                </sheet>
+                <footer invisible="is_locked">
+                    <button name="action_save_log" type="object" string="Save &amp; Close" class="btn-primary"/>
+                    <button string="Discard" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pet_record_form" model="ir.ui.view">
+        <field name="name">pet.record.form</field>
+        <field name="model">pet.record</field>
+        <field name="arch" type="xml">
+            <form string="Patient Experience Tracker" create="0">
+                <header>
+                    <button name="action_create_followup" type="object" string="Log Follow-up" class="oe_highlight" icon="fa-plus"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="patient_id" string="Patient Name"/>
+                        <h1>
+                            <field name="patient_id" readonly="1" force_save="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="PATIENT INFO">
+                            <field name="patient_mrn"/>
+                            <field name="phone_number"/>
+                            <field name="alternate_number"/>
+                            <field name="clinic_id"/>
+                            <field name="advisor_id" readonly="1" force_save="1"/>
+                        </group>
+                        <group string="TRACKING STATUS">
+                            <field name="category_id" readonly="1" force_save="1"/>
+                            <field name="subcategory_id" readonly="1" force_save="1"/>
+                            <field name="patient_status" readonly="1" force_save="1" string="Current Treatment Status"/>
+                            <field name="priority" readonly="1" force_save="1"/>
+                            <field name="escalation_needed" readonly="1" force_save="1"/>
+                            <field name="task_status" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="DATES">
+                            <field name="start_date" readonly="1" force_save="1"/>
+                            <field name="last_visit_date" readonly="1" force_save="1"/>
+                            <field name="last_contact_date" readonly="1" force_save="1"/>
+                        </group>
+                        <group string="NEXT STEPS">
+                            <field name="suggested_followup_days" readonly="1" force_save="1"/>
+                            <field name="recommended_next_followup" readonly="1" force_save="1"/>
+                            <field name="actual_next_followup_date" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+
+                    <group string="PATIENT OUTCOME MEASURES">
+                        <group>
+                            <field name="pain_walking_score" readonly="1" force_save="1"/>
+                            <field name="pain_resting_score" readonly="1" force_save="1"/>
+                            <field name="satisfaction_score" readonly="1" force_save="1"/>
+                        </group>
+                        <group>
+                            <field name="mobility_status" readonly="1" force_save="1"/>
+                            <field name="therapy_kit_status" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+
+                    <group string="DETAILS">
+                        <field name="reason_not_starting_stopping" readonly="1" force_save="1"/>
+                    </group>
+
+                    <group>
+                        <group string="LATEST ACTIONS &amp; REMARKS">
+                            <field name="action_taken" readonly="1" force_save="1"/>
+                            <field name="remarks" readonly="1" force_save="1"/>
+                        </group>
+                        <group string="FEEDBACK TRACKING">
+                            <field name="referral_given" readonly="1" force_save="1"/>
+                            <field name="referral_name" invisible="not referral_given" readonly="1" force_save="1"/>
+                            <field name="referral_contact" invisible="not referral_given" readonly="1" force_save="1"/>
+                            <field name="review_given" readonly="1" force_save="1"/>
+                            <field name="review_link" widget="url" invisible="not review_given" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+
+                    <group string="COMMERCIALS">
+                        <group>
+                            <field name="latest_bm_offer_price" readonly="1" string="BM Offered Price"/>
+                        </group>
+                        <group>
+                            <field name="discount_offered" readonly="1" string="PET Discount Applied (%)"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Follow-up History">
+                            <field name="followup_line_ids" context="{'default_pet_record_id': active_id}">
+                                <tree edit="0" delete="0" create="0">
+                                    <field name="contact_date"/>
+                                    <field name="user_id"/>
+                                    <field name="not_connected" optional="show"/>
+                                    <field name="category_id"/>
+                                    <field name="subcategory_id"/>
+                                    <field name="discount_offered" optional="show"/>
+                                    <field name="action_taken"/>
+                                    <field name="remarks"/>
+                                    <field name="actual_next_followup_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Escalation Tickets">
+                            <field name="ticket_ids" readonly="1">
+                                <tree create="0" delete="0" edit="0">
+                                    <field name="ticket_sequence"/>
+                                    <field name="create_date" string="Opened On"/>
+                                    <field name="status" widget="badge"
+                                           decoration-warning="status == 'pending'"
+                                           decoration-success="status == 'resolved'"
+                                           decoration-danger="status == 'overdue'"/>
+                                    <field name="assigned_bm_id"/>
+                                    <field name="deadline"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
     <record id="view_pet_record_search" model="ir.ui.view">
         <field name="name">pet.record.search</field>
         <field name="model">pet.record</field>
@@ -9,8 +256,7 @@
                 <field name="patient_mrn"/>
                 <field name="phone_number"/>
                 <separator/>
-                <filter string="High Pain (7+)" name="high_pain"
-                        domain="['|', ('pain_walking_score', '&gt;=', 7), ('pain_resting_score', '&gt;=', 7)]"/>
+                <filter string="High Pain (7+)" name="high_pain" domain="['|', ('pain_walking_score', '&gt;=', 7), ('pain_resting_score', '&gt;=', 7)]"/>
                 <filter string="Low Satisfaction" name="low_sat" domain="[('satisfaction_score', '&lt;', 5)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Clinic" name="group_clinic" context="{'group_by': 'clinic_id'}"/>
@@ -23,7 +269,7 @@
         <field name="name">pet.record.tree</field>
         <field name="model">pet.record</field>
         <field name="arch" type="xml">
-            <tree string="Patient Experience Tracker">
+            <tree string="Patient Experience Tracker" create="0">
                 <field name="patient_id"/>
                 <field name="patient_mrn"/>
                 <field name="category_id"/>
@@ -36,107 +282,13 @@
         </field>
     </record>
 
-    <record id="view_pet_record_form" model="ir.ui.view">
-        <field name="name">pet.record.form</field>
-        <field name="model">pet.record</field>
-        <field name="arch" type="xml">
-            <form string="Patient Experience Tracker">
-                <sheet>
-                    <div class="oe_title">
-                        <label for="patient_id" string="Patient Name"/>
-                        <h1>
-                            <field name="patient_id" readonly="1" force_save="1" placeholder="Patient..."/>
-                        </h1>
-                    </div>
-
-                    <group>
-                        <group string="PATIENT INFO">
-                            <field name="patient_mrn"/>
-                            <field name="phone_number"/>
-                            <field name="alternate_number" force_save="1"/>
-                            <field name="clinic_id"/>
-                            <field name="advisor_id" readonly="1" force_save="1"/>
-                        </group>
-                        <group string="TRACKING STATUS">
-                            <field name="category_id" options="{'no_create': True}" placeholder="Select Category..."/>
-                            <field name="subcategory_id" options="{'no_create': True}"
-                                   domain="[('category_id', '=', category_id)]" placeholder="Select Sub Category..."/>
-
-                            <!-- THE FIX IS IN THESE TWO LINES -->
-                            <field name="allowed_status_ids" invisible="1"/>
-                            <field name="patient_status" domain="[('id', 'in', allowed_status_ids)]"
-                                   options="{'no_create': True}"/>
-
-                            <field name="priority"/>
-                            <field name="escalation_needed"/>
-                            <field name="task_status" readonly="1" force_save="1"/>
-                        </group>
-                    </group>
-
-                    <!--                    <separator string="Treatment &amp; Follow-up"/>-->
-                    <group>
-                        <group string="Dates">
-                            <field name="start_date" readonly="1" force_save="1"/>
-                            <field name="last_visit_date"/>
-                            <field name="last_contact_date"/>
-                        </group>
-                        <group string="Next Steps">
-                            <field name="suggested_followup_days" force_save="1"/>
-                            <field name="recommended_next_followup" force_save="1"/>
-                            <field name="actual_next_followup_date"/>
-                            <field name="followup_overdue" invisible="followup_overdue == 0"/>
-                        </group>
-                    </group>
-
-                    <!--                    <separator string="Clinical Metrics"/>-->
-                    <group string="Patient Outcome Measures:">
-                        <group>
-                            <field name="pain_walking_score"/>
-                            <field name="pain_resting_score"/>
-                            <field name="satisfaction_score"/>
-                        </group>
-                        <group>
-                            <field name="mobility_status"/>
-                            <field name="therapy_kit_status"/>
-                        </group>
-                    </group>
-                    <group string="Details">
-                        <field name="reason_not_starting_stopping" placeholder="Type the Reason here"/>
-                    </group>
-
-                    <!--                    <separator string="Actions &amp; Remarks"/>-->
-                    <group>
-                        <group string="Actions &amp; Remarks">
-                            <field name="action_taken" placeholder="Describe recent actions..."/>
-                            <field name="remarks" placeholder="General notes..."/>
-                        </group>
-                        <group string="Feedback Tracking">
-                            <field name="referral_given"/>
-                            <field name="referral_name" invisible="not referral_given"/>
-                            <field name="referral_contact" invisible="not referral_given"/>
-                            <field name="review_given"/>
-                            <field name="review_link" widget="url" placeholder="e.g. https://g.page/r/..."
-                                   invisible="not review_given"/>
-                        </group>
-
-                    </group>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        </field>
-    </record>
-
     <record id="action_pet_record" model="ir.actions.act_window">
         <field name="name">PET Tracker</field>
         <field name="res_model">pet.record</field>
         <field name="view_mode">tree,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create your first PET record!
+                Click the PET Tracker button on a Patient profile to create a record!
             </p>
         </field>
     </record>
@@ -145,7 +297,7 @@
         <field name="name">bm.followup.log.tree</field>
         <field name="model">bm.followup.log</field>
         <field name="arch" type="xml">
-            <tree string="BM Follow-up Logs">
+            <tree string="BM Follow-up Logs" create="0">
                 <field name="timestamp"/>
                 <field name="patient_id"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
@@ -158,7 +310,7 @@
         <field name="name">bm.followup.log.form</field>
         <field name="model">bm.followup.log</field>
         <field name="arch" type="xml">
-            <form string="BM Follow-up Log">
+            <form string="BM Follow-up Log" create="0">
                 <sheet>
                     <group>
                         <group>
@@ -169,10 +321,43 @@
                             <field name="timestamp"/>
                         </group>
                     </group>
-                    <group string="Log Details">
-                        <field name="action_taken" placeholder="Enter follow-up details here..." nolabel="1"
-                               colspan="2"/>
+
+                    <group string="Offer Details">
+                        <group>
+                            <field name="offered_price"/>
+                            <field name="total_therapies_included"/>
+                        </group>
+                        <group style="background-color:#fff3cd; border-radius:5px; padding:10px;">
+                            <field name="pet_discount_offered"/>
+                            <field name="final_agreed_price" style="font-weight:bold;"/>
+                            <field name="pet_agent_id" invisible="not pet_agent_id"/>
+                        </group>
                     </group>
+
+                    <group string="Log Details">
+                        <field name="action_taken" placeholder="Enter follow-up details here..." nolabel="1" colspan="2"/>
+                    </group>
+
+                    <group string="Remarks">
+                        <field name="remarks" placeholder="Enter additional remarks or negotiation notes here..." nolabel="1" colspan="2"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Patient SLA Tickets">
+                            <field name="ticket_ids">
+                                <tree create="0" delete="0" edit="0">
+                                    <field name="ticket_sequence"/>
+                                    <field name="pet_agent_id" string="Raised By"/>
+                                    <field name="create_date" string="Opened On"/>
+                                    <field name="status" widget="badge"
+                                           decoration-warning="status == 'pending'"
+                                           decoration-success="status == 'resolved'"
+                                           decoration-danger="status == 'overdue'"/>
+                                    <field name="deadline"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <div class="oe_chatter">
                     <field name="message_follower_ids"/>
@@ -182,4 +367,101 @@
             </form>
         </field>
     </record>
+
+    <record id="view_pet_escalation_tree" model="ir.ui.view">
+        <field name="name">pet.escalation.ticket.tree</field>
+        <field name="model">pet.escalation.ticket</field>
+        <field name="arch" type="xml">
+            <tree string="Helpdesk Tickets" create="0" delete="0"
+                  decoration-danger="status == 'overdue'"
+                  decoration-warning="status == 'pending'"
+                  decoration-success="status == 'resolved'">
+                <field name="ticket_sequence"/>
+                <field name="create_date" string="Opened On"/>
+                <field name="patient_id"/>
+                <field name="pet_agent_id" string="Raised By" widget="many2one_avatar_user"/>
+                <field name="assigned_bm_id" string="Assigned BM" widget="many2one_avatar_user"/>
+                <field name="issue_description" string="Issue"/>
+                <field name="deadline"/>
+                <field name="status" widget="badge"
+                       decoration-warning="status == 'pending'"
+                       decoration-success="status == 'resolved'"
+                       decoration-danger="status == 'overdue'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pet_escalation_search" model="ir.ui.view">
+        <field name="name">pet.escalation.ticket.search</field>
+        <field name="model">pet.escalation.ticket</field>
+        <field name="arch" type="xml">
+            <search string="Search Tickets">
+                <field name="ticket_sequence"/>
+                <field name="patient_id"/>
+                <field name="assigned_bm_id"/>
+                <filter string="Active / Overdue" name="active_tickets" domain="[('status', 'in', ['pending', 'overdue'])]"/>
+                <filter string="Resolved" name="resolved_tickets" domain="[('status', '=', 'resolved')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
+                    <filter string="Assigned BM" name="group_bm" context="{'group_by': 'assigned_bm_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_pet_escalation_pivot" model="ir.ui.view">
+        <field name="name">pet.escalation.ticket.pivot</field>
+        <field name="model">pet.escalation.ticket</field>
+        <field name="arch" type="xml">
+            <pivot string="Escalation Analytics" sample="1">
+                <field name="assigned_bm_id" type="row"/>
+                <field name="status" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_pet_escalation_graph" model="ir.ui.view">
+        <field name="name">pet.escalation.ticket.graph</field>
+        <field name="model">pet.escalation.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="SLA Breach &amp; Resolution Trends" type="bar" sample="1">
+                <field name="assigned_bm_id"/>
+                <field name="status" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_pet_escalation_tracker" model="ir.actions.act_window">
+        <field name="name">SLA Tickets</field>
+        <field name="res_model">pet.escalation.ticket</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_pet_escalation_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No tickets have been created yet!
+            </p>
+            <p>
+                When the PET team escalates an issue to a BM, it will appear here.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pet_escalation_root"
+              name="Escalations Tracker"
+              action="action_pet_escalation_tracker"
+              sequence="10"/>
+
+    <record id="action_sync_pet_todos" model="ir.actions.server">
+        <field name="name">Sync Follow-up To-Dos</field>
+        <field name="model_id" ref="model_pet_record"/>
+        <field name="binding_model_id" ref="model_pet_record"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.action_sync_retroactive_todos()
+        </field>
+    </record>
+
 </odoo>

@@ -12,5 +12,28 @@
             <field name="numbercall">-1</field>
             <field name="nextcall" eval="(DateTime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
+
+        <record id="ir_cron_check_sla_tickets" model="ir.cron">
+            <field name="name">PET Ticket SLA Checker</field>
+            <field name="model_id" ref="PET_BM.model_pet_escalation_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_sla()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <record id="ir_cron_eod_ticket_report" model="ir.cron">
+            <field name="name">PET End of Day Ticket Summary</field>
+            <field name="model_id" ref="PET_BM.model_pet_escalation_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_end_of_day_summary()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="nextcall" eval="(DateTime.now().replace(hour=23, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
     </data>
 </odoo>
