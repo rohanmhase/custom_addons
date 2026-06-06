@@ -3,4 +3,6 @@ access_pet_category,pet.category,model_pet_category,base.group_user,1,1,1,1
 access_pet_subcategory,pet.subcategory,model_pet_subcategory,base.group_user,1,1,1,1
 access_pet_record,pet.record,model_pet_record,base.group_user,1,1,1,1
 access_bm_followup_log,bm.followup.log,model_bm_followup_log,base.group_user,1,1,1,1
-access_pet_patient_status,access.pet.patient.status,model_pet_patient_status,base.group_user,1,1,1,1
+access_pet_patient_status,pet.patient.status,model_pet_patient_status,base.group_user,1,1,1,1
+access_pet_followup_line,pet.followup.line,model_pet_followup_line,base.group_user,1,1,1,1
+access_pet_escalation_ticket,pet.escalation.ticket,model_pet_escalation_ticket,base.group_user,1,1,1,1
