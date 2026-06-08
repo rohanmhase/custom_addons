@@ -1,82 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Dashboard Form View -->
-    <record id="view_account_automation_dashboard_form" model="ir.ui.view">
-        <field name="name">account.automation.dashboard.form</field>
-        <field name="model">account.automation.dashboard</field>
+    <record id="view_clinic_psmr_mapping_tree" model="ir.ui.view">
+        <field name="name">clinic.psmr.mapping.tree</field>
+        <field name="model">clinic.psmr.mapping</field>
         <field name="arch" type="xml">
-            <form string="Accountautomation dashboard" create="false" edit="false" delete="false">
-                <sheet>
-                    <div class="oe_title mb-4">
-                        <h1 style="color: #111827; font-size: 28px; font-weight: 700;">Account Automation dashboard</h1>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 col-sm-6 p-2">
-                            <div class="card p-3 shadow-sm border-0" style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
-                                <div>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="text-primary d-flex align-items-center justify-content-center rounded" style="font-size: 20px; background-color: #eff6ff; width: 40px; height: 40px;">
-                                            <i class="fa fa-exchange"/>
-                                        </div>
-                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">Daily Sale Comparison</h3>
-                                    </div>
-                                    <p class="text-muted small m-0" style="line-height: 1.4;">Compare HUB sales statements against parsed PSMR billing metrics.</p>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top" style="border-top: 1px solid #f3f4f6 !important;">
-                                    <button name="action_view_history" string="View History" type="object" class="btn btn-secondary btn-sm"/>
-                                    <button name="action_run_audit" string="Run New" type="object" class="btn btn-primary btn-sm"/>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-sm-6 p-2">
-                            <div class="card p-3 border-0" style="background-color: #ffffff; border: 2px dashed #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; align-items: center; justify-content: center;">
-                                <div class="text-center text-muted">
-                                    <p class="small m-0">More Automations Coming Soon</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- Updated Action with Domain to hide ID 5 -->
-    <record id="action_account_automation_dashboard" model="ir.actions.act_window">
-        <field name="name">Accountautomation dashboard</field>
-        <field name="res_model">account.automation.dashboard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
-        <field name="domain">[('id', '!=', 5)]</field>
-    </record>
-
-    <!-- History Tree View with Archive toggle -->
-    <record id="view_daily_sales_comparison_tree" model="ir.ui.view">
-        <field name="name">daily.sales.comparison.tree</field>
-        <field name="model">daily.sales.comparison</field>
-        <field name="arch" type="xml">
-            <tree string="Daily Sales Comparison History" create="false">
-                <field name="name"/>
-                <field name="date_from"/>
-                <field name="date_to"/>
-                <field name="create_date" string="Generated On"/>
+            <tree string="Clinic PSMR Mapping Rules" editable="bottom">
+                <field name="psmr_name" string="PSMR Name"/>
+                <field name="pos_config_id" string="POS Configuration" context="{'show_name': True}"/>
             </tree>
         </field>
     </record>
 
-    <!-- Search View to access Archive -->
-    <record id="view_daily_sales_comparison_search" model="ir.ui.view">
-        <field name="name">daily.sales.comparison.search</field>
-        <field name="model">daily.sales.comparison</field>
-        <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-            </search>
-        </field>
+    <record id="action_clinic_psmr_mapping" model="ir.actions.act_window">
+        <field name="name">PSMR Clinic Mapping Rules</field>
+        <field name="res_model">clinic.psmr.mapping</field>
+        <field name="view_mode">tree</field>
     </record>
 
-    <menuitem id="menu_account_automation_root" name="Account Automation" action="action_account_automation_dashboard" sequence="45"/>
-    <menuitem id="menu_account_automation_operations" name="Operations" parent="menu_account_automation_root" sequence="10"/>
-    <menuitem id="menu_action_daily_sales_comparison_history" name="Daily Sales Comparison" parent="menu_account_automation_operations" action="action_daily_sales_comparison" sequence="10"/>
+    <menuitem id="menu_action_clinic_psmr_mapping"
+              name="Clinic Mapping Profiles"
+              parent="account_automation.menu_account_automation_config"
+              action="action_clinic_psmr_mapping"
+              sequence="10"/>
 </odoo>

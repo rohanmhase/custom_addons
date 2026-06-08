@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Wizard Execution Form Definition -->
     <record id="view_psmr_reconciliation_wizard_form" model="ir.ui.view">
         <field name="name">psmr.reconciliation.wizard.form</field>
         <field name="model">psmr.reconciliation.wizard</field>
@@ -31,7 +30,6 @@
         <field name="target">new</field>
     </record>
 
-    <!-- History Tree View Log List -->
     <record id="view_daily_sales_comparison_tree" model="ir.ui.view">
         <field name="name">daily.sales.comparison.tree</field>
         <field name="model">daily.sales.comparison</field>
@@ -45,7 +43,6 @@
         </field>
     </record>
 
-    <!-- Search View Filter Layout Configuration (Handles Archive Mode Access) -->
     <record id="view_daily_sales_comparison_search" model="ir.ui.view">
         <field name="name">daily.sales.comparison.search</field>
         <field name="model">daily.sales.comparison</field>
@@ -57,7 +54,6 @@
         </field>
     </record>
 
-    <!-- Audit Log History Sheet Form Views Details -->
     <record id="view_daily_sales_comparison_form" model="ir.ui.view">
         <field name="name">daily.sales.comparison.form</field>
         <field name="model">daily.sales.comparison</field>
@@ -100,7 +96,6 @@
         <field name="search_view_id" ref="view_daily_sales_comparison_search"/>
     </record>
 
-    <!-- Nested Operations Action Links -->
     <menuitem id="menu_action_daily_sales_comparison_history"
               name="Daily Sales Comparison"
               parent="menu_account_automation_operations"

@@ -1,11 +1,10 @@
-from odoo import models, fields, api
+from odoo import models, fields
 
 
 class AccountAutomationDashboard(models.TransientModel):
     _name = 'account.automation.dashboard'
     _description = 'Accountautomation dashboard'
 
-    # Overrides standard naming to force a clean string in all background views/breadcrumbs
     display_name = fields.Char(string='Display Name', compute='_compute_display_name')
 
     def _compute_display_name(self):
@@ -13,7 +12,7 @@ class AccountAutomationDashboard(models.TransientModel):
             record.display_name = "Account Automation Workspace"
 
     def action_view_history(self):
-        # Fetch the regular menu action directly to break the breadcrumb inheritance chain
+        # Bypasses normal form target context to completely wipe technical IDs from the breadcrumb stack
         action = self.env.ref('account_automation.action_daily_sales_comparison').read()[0]
         action.update({
             'target': 'current',
