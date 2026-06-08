@@ -451,17 +451,17 @@ class Patient(models.Model):
         if "mrn" in vals:
             raise ValidationError("⚠️ MRN cannot be modified!")
 
-        if 'patient_status' in vals:
-            for rec in self:
-                if not self.env.su and not self.env.context.get('from_cron'):
-                    if rec.patient_status == 'active' and vals.get('patient_status') == 'inactive':
-                        raise ValidationError(
-                            _("You cannot manually set patient to Inactive. It is system controlled.")
-                        )
+        # if 'patient_status' in vals:
+        #     for rec in self:
+                # if not self.env.su and not self.env.context.get('from_cron'):
+                #     if rec.patient_status == 'active' and vals.get('patient_status') == 'inactive':
+                #         raise ValidationError(
+                #             _("You cannot manually set patient to Inactive. It is system controlled.")
+                #         )
                 # Prevent changing back to 'Visit'
-                if rec.patient_status in ['active', 'inactive'] and vals.get('patient_status') == 'visit':
-                    raise ValidationError(
-                        _("Patient status cannot be changed back to 'Visit' once it is Active or Inactive."))
+                # if rec.patient_status in ['active', 'inactive'] and vals.get('patient_status') == 'visit':
+                #     raise ValidationError(
+                #         _("Patient status cannot be changed back to 'Visit' once it is Active or Inactive."))
 
         res = super(Patient, self).write(vals)
 
@@ -491,16 +491,38 @@ class Patient(models.Model):
         patients = self.search([('patient_status', '=', 'active')])
 
         for patient in patients:
+
+            # 1. If they have no remaining sessions, they should be inactive immediately
+            if patient.remaining_sessions <= 0:
+                patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
+                continue
+
+            # 2. Check for the most recent session
             last_session = self.env['patient.session'].search([
                 ('patient_id', '=', patient.id),
                 ('active', '=', True)
             ], order='session_date desc', limit=1)
 
-            if last_session:
-                diff_days = (today - last_session.session_date).days
+            # 3. Determine the exact date to compare against
+            last_date = False
+            if last_session and last_session.session_date:
+                last_date = last_session.session_date
+            elif patient.active_enrollment_id:
+                # Fallback: They paid but haven't taken a session yet
+                last_date = patient.active_enrollment_id.enrollment_date
+            else:
+                # Absolute fallback if no enrollment is found
+                last_date = patient.enroll_date
 
+            # 4. Calculate difference and update status
+            if last_date:
+                diff_days = (today - last_date).days
+
+                # Use >= 7 to be consistent across both sessions and enrollments
                 if diff_days > 7:
-                    patient.sudo().write({'patient_status': 'inactive'})
+                    patient.with_context(from_cron=True).sudo().write({
+                        'patient_status': 'inactive'
+                    })
 
     @api.constrains('enroll_date')
     def _check_visit_date(self):

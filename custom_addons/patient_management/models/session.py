@@ -100,6 +100,13 @@ class Session(models.Model):
         # Increment used_sessions immediately to prevent overbooking
         enrollment.sudo().write({"used_sessions": enrollment.used_sessions + 1})
 
+        # --- REACTIVATION LOGIC START ---
+        # If the patient was previously marked inactive (e.g., missed 7 days),
+        # registering this new therapy session switches them back to active.
+        if patient.patient_status == 'inactive':
+            patient.sudo().write({'patient_status': 'active'})
+        # --- REACTIVATION LOGIC END ---
+
         return session
 
     @api.onchange('session_type')
