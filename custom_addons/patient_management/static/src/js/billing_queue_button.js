@@ -52,6 +52,18 @@ export class BillingQueueButton extends Component {
             return;
         }
 
+        // BLOCK ANY OTHER BILLING RECORD
+        if (
+            order.prescription_id ||
+            order.enrollment_id
+        ) {
+            this.popup.add(ErrorPopup, {
+                title: "Action Restricted",
+                body: "Please create a new order before loading another prescription or enrollment.",
+            });
+            return;
+        }
+
         // BLOCK MULTIPLE RECORDS
         if (
             (
