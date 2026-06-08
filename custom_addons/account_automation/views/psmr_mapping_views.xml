@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_psmr_mapping_tree" model="ir.ui.view">
+        <field name="name">clinic.psmr.mapping.tree</field>
+        <field name="model">clinic.psmr.mapping</field>
+        <field name="arch" type="xml">
+            <tree string="Clinic PSMR Mapping Rules" editable="bottom">
+                <field name="psmr_name" string="PSMR Name"/>
+                <field name="pos_config_id" string="POS Configuration" context="{'show_name': True}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_psmr_mapping" model="ir.actions.act_window">
+        <field name="name">PSMR Clinic Mapping Rules</field>
+        <field name="res_model">clinic.psmr.mapping</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <menuitem id="menu_action_clinic_psmr_mapping"
+              name="Clinic Mapping Profiles"
+              parent="account_automation.menu_account_automation_config"
+              action="action_clinic_psmr_mapping"
+              sequence="10"/>
+</odoo>
