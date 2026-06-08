@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_comparison_user,daily.sales.comparison.user,model_daily_sales_comparison,group_account_automation_user,1,0,0,0
+access_comparison_line_user,daily.sales.comparison.line.user,model_daily_sales_comparison_line,group_account_automation_user,1,0,0,0
+access_clinic_mapping_user,clinic.psmr.mapping.user,model_clinic_psmr_mapping,group_account_automation_user,1,0,0,0
+access_dashboard_user,account.automation.dashboard.user,model_account_automation_dashboard,group_account_automation_user,1,1,1,1
+
+access_comparison_mod,daily.sales.comparison.mod,model_daily_sales_comparison,group_account_automation_moderator,1,1,1,0
+access_comparison_line_mod,daily.sales.comparison.line.mod,model_daily_sales_comparison_line,group_account_automation_moderator,1,1,1,0
+access_clinic_mapping_mod,clinic.psmr.mapping.mod,model_clinic_psmr_mapping,group_account_automation_moderator,1,1,1,0
+access_wizard_mod,psmr.reconciliation.wizard.mod,model_psmr_reconciliation_wizard,group_account_automation_moderator,1,1,1,1
+
+access_comparison_admin,daily.sales.comparison.admin,model_daily_sales_comparison,group_account_automation_admin,1,1,1,1
+access_comparison_line_admin,daily.sales.comparison.line.admin,model_daily_sales_comparison_line,group_account_automation_admin,1,1,1,1
+access_clinic_mapping_admin,clinic.psmr.mapping.admin,model_clinic_psmr_mapping,group_account_automation_admin,1,1,1,1
+access_wizard_admin,psmr.reconciliation.wizard.admin,model_psmr_reconciliation_wizard,group_account_automation_admin,1,1,1,1
