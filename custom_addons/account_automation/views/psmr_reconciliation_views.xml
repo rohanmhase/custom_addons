@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard Execution Form Definition -->
+    <record id="view_psmr_reconciliation_wizard_form" model="ir.ui.view">
+        <field name="name">psmr.reconciliation.wizard.form</field>
+        <field name="model">psmr.reconciliation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Daily Sales Comparison Generation">
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="csv_file" filename="csv_filename"/>
+                        <field name="csv_filename" invisible="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_reconcile" string="Execute Comparison" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_psmr_reconciliation_wizard" model="ir.actions.act_window">
+        <field name="name">Daily Sales Comparison</field>
+        <field name="res_model">psmr.reconciliation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- History Tree View Log List -->
+    <record id="view_daily_sales_comparison_tree" model="ir.ui.view">
+        <field name="name">daily.sales.comparison.tree</field>
+        <field name="model">daily.sales.comparison</field>
+        <field name="arch" type="xml">
+            <tree string="Daily Sales Comparison History" create="false" edit="false">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="create_date" string="Generated On"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Search View Filter Layout Configuration (Handles Archive Mode Access) -->
+    <record id="view_daily_sales_comparison_search" model="ir.ui.view">
+        <field name="name">daily.sales.comparison.search</field>
+        <field name="model">daily.sales.comparison</field>
+        <field name="arch" type="xml">
+            <search string="Search Logs">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Audit Log History Sheet Form Views Details -->
+    <record id="view_daily_sales_comparison_form" model="ir.ui.view">
+        <field name="name">daily.sales.comparison.form</field>
+        <field name="model">daily.sales.comparison</field>
+        <field name="arch" type="xml">
+            <form string="Daily Sales Comparison" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_from" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date_to" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Comparison Metrics Summary">
+                            <field name="line_ids" readonly="1">
+                                <tree string="Lines" decoration-danger="difference != 0" decoration-success="difference == 0">
+                                    <field name="pos_config_id"/>
+                                    <field name="psmr_name"/>
+                                    <field name="odoo_sales" sum="Total Odoo Revenue"/>
+                                    <field name="psmr_sales" sum="Total PSMR Revenue"/>
+                                    <field name="difference" sum="Total Aggregate Discrepancy"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_daily_sales_comparison" model="ir.actions.act_window">
+        <field name="name">Daily Sales Comparison History</field>
+        <field name="res_model">daily.sales.comparison</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_daily_sales_comparison_search"/>
+    </record>
+
+    <!-- Nested Operations Action Links -->
+    <menuitem id="menu_action_daily_sales_comparison_history"
+              name="Daily Sales Comparison"
+              parent="menu_account_automation_operations"
+              action="action_daily_sales_comparison"
+              sequence="10"/>
+</odoo>
