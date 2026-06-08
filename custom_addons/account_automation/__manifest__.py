@@ -7,9 +7,9 @@
     'data': [
         'security/security_groups.xml',
         'security/ir.model.access.csv',
-        'views/account_automation_views.xml',  # Load main layout container first
-        'views/psmr_reconciliation_views.xml',  # Load apps dependencies second
+        'views/account_automation_views.xml',
         'views/psmr_mapping_views.xml',
+        'views/psmr_reconciliation_views.xml',
     ],
     'installable': True,
     'application': True,

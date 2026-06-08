@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 class ClinicPsmrMapping(models.Model):
     _name = 'clinic.psmr.mapping'
     _description = 'PSMR Clinic Mapping'
+    _rec_name = 'psmr_name'  # Overwrites technical model,id string layout inside the breadcrumbs
 
     psmr_name = fields.Char(string='PSMR Name', required=True)
     pos_config_id = fields.Many2one('pos.config', string='POS Configuration', required=True)
@@ -18,14 +19,11 @@ class DailySalesComparison(models.Model):
     date_from = fields.Date(string='Start Date', required=True)
     date_to = fields.Date(string='End Date', required=True)
     line_ids = fields.One2many('daily.sales.comparison.line', 'comparison_id', string='Comparison Lines', cascade=True)
-
-    # Two-step archiving logic fields
     active = fields.Boolean(default=True, tracking=True)
 
     def unlink(self):
-        """ Two-step deletion logic: Archive first, then permanent delete. """
+        """ Two-step deletion: Archive first, then permanent drop. """
         is_admin = self.env.user.has_group('account_automation.group_account_automation_admin')
-
         if not is_admin:
             raise UserError(_("Only Administrators can delete or archive records."))
 
@@ -34,10 +32,8 @@ class DailySalesComparison(models.Model):
 
         if records_to_archive:
             records_to_archive.write({'active': False})
-
         if records_to_delete:
             super(DailySalesComparison, records_to_delete).unlink()
-
         return True
 
 
@@ -57,7 +53,6 @@ class DailySalesComparisonLine(models.Model):
         ('missing_in_psmr', 'Missing in PSMR'),
         ('unmapped_psmr', 'Unmapped PSMR')
     ], string='Status', readonly=True)
-
     difference_abs = fields.Float(string='Absolute Difference', compute='_compute_difference_abs', store=True)
 
     @api.depends('difference')
