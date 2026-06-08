@@ -314,53 +314,55 @@ class PETFollowupLine(models.Model):
                     })
                 rec.pet_record_id.write(update_vals)
 
-                # --- TICKETING CREATION ENGINE ---
-                if not rec.not_connected and rec.escalate_to_bm and rec.escalation_description:
+                # --- NEW WORKFLOW LOGIC ---
+                if not rec.not_connected:
                     latest_bm_log = self.env['bm.followup.log'].search(
                         [('patient_id', '=', rec.pet_record_id.patient_id.id)], order='timestamp desc', limit=1)
 
                     if latest_bm_log:
-                        # Process Revenue Discount hook
+                        # 1. SYNC REVENUE INSTANTLY: This happens every time a PET Agent saves a discount!
                         if rec.discount_offered > 0:
                             latest_bm_log.write({
                                 'pet_discount_offered': rec.discount_offered,
                                 'pet_agent_id': rec.user_id.id
                             })
 
-                        assigned_bm = latest_bm_log.user_id
+                        # 2. TICKETING ENGINE: This ONLY happens if there is an issue.
+                        if rec.escalate_to_bm and rec.escalation_description:
+                            assigned_bm = latest_bm_log.user_id
 
-                        new_ticket = self.env['pet.escalation.ticket'].create({
-                            'patient_id': rec.pet_record_id.patient_id.id,
-                            'pet_record_id': rec.pet_record_id.id,
-                            'bm_log_id': latest_bm_log.id,
-                            'pet_agent_id': rec.user_id.id,
-                            'assigned_bm_id': assigned_bm.id if assigned_bm else self.env.user.id,
-                            'issue_description': rec.escalation_description,
-                        })
+                            new_ticket = self.env['pet.escalation.ticket'].create({
+                                'patient_id': rec.pet_record_id.patient_id.id,
+                                'pet_record_id': rec.pet_record_id.id,
+                                'bm_log_id': latest_bm_log.id,
+                                'pet_agent_id': rec.user_id.id,
+                                'assigned_bm_id': assigned_bm.id if assigned_bm else self.env.user.id,
+                                'issue_description': rec.escalation_description,
+                            })
 
-                        # Force the BM to follow this ticket
-                        if assigned_bm:
-                            new_ticket.message_subscribe(partner_ids=[assigned_bm.partner_id.id])
+                            # Force the BM to follow this ticket
+                            if assigned_bm:
+                                new_ticket.message_subscribe(partner_ids=[assigned_bm.partner_id.id])
 
-                        # Schedule Activity for BM
-                        new_ticket.activity_schedule(
-                            'mail.mail_activity_data_todo',
-                            user_id=new_ticket.assigned_bm_id.id,
-                            note=f'<strong>Patient Escalation:</strong> {rec.escalation_description}',
-                            summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
-                        )
+                            # Schedule Activity for BM
+                            new_ticket.activity_schedule(
+                                'mail.mail_activity_data_todo',
+                                user_id=new_ticket.assigned_bm_id.id,
+                                note=f'<strong>Patient Escalation:</strong> {rec.escalation_description}',
+                                summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
+                            )
 
-                        # TRIGGER DIRECT EMAIL NOTIFICATION
-                        new_ticket.message_post(
-                            body=f"<h3>New Escalation Ticket Assigned</h3>"
-                                 f"<p>A new ticket has been assigned to you regarding patient <b>{new_ticket.patient_id.name}</b>.</p>"
-                                 f"<p><b>Issue:</b> {rec.escalation_description}</p>"
-                                 f"<p>Please click here to view the ticket: "
-                                 f"<a href='/web#id={new_ticket.id}&model=pet.escalation.ticket&view_type=form'>Open Ticket</a></p>",
-                            message_type="notification",
-                            subtype_xmlid="mail.mt_note",
-                            partner_ids=[assigned_bm.partner_id.id] if assigned_bm else []
-                        )
+                            # TRIGGER DIRECT EMAIL NOTIFICATION
+                            new_ticket.message_post(
+                                body=f"<h3>New Escalation Ticket Assigned</h3>"
+                                     f"<p>A new ticket has been assigned to you regarding patient <b>{new_ticket.patient_id.name}</b>.</p>"
+                                     f"<p><b>Issue:</b> {rec.escalation_description}</p>"
+                                     f"<p>Please click here to view the ticket: "
+                                     f"<a href='/web#id={new_ticket.id}&model=pet.escalation.ticket&view_type=form'>Open Ticket</a></p>",
+                                message_type="notification",
+                                subtype_xmlid="mail.mt_note",
+                                partner_ids=[assigned_bm.partner_id.id] if assigned_bm else []
+                            )
         return records
 
 
@@ -639,12 +641,34 @@ class BMFollowupLog(models.Model):
     action_taken = fields.Text(string="Action History", required=True, tracking=True)
     timestamp = fields.Datetime(string="Timestamp", default=fields.Datetime.now, readonly=True, tracking=True)
 
+    is_locked = fields.Boolean(string="Locked", compute="_compute_is_locked")
+
     @api.depends('offered_price', 'pet_discount_offered')
     def _compute_final_price(self):
         for rec in self:
             price = rec.offered_price or 0.0
             discount_percentage = rec.pet_discount_offered or 0.0
             rec.final_agreed_price = price - (price * (discount_percentage / 100.0))
+
+    # --- ADD THIS NEW METHOD ---
+    def action_back_to_patient(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Patient Profile',
+            'res_model': 'clinic.patient',
+            'view_mode': 'form',
+            'res_id': self.patient_id.id,
+            'target': 'current',
+        }
+
+    def _compute_is_locked(self):
+        for rec in self:
+            if rec.timestamp:
+                # Locks the record if the timestamp is older than 24 hours (86400 seconds)
+                rec.is_locked = (fields.Datetime.now() - rec.timestamp).total_seconds() > 86400
+            else:
+                rec.is_locked = False
 
 
 class PatientInherit(models.Model):
@@ -729,8 +753,88 @@ class PatientInherit(models.Model):
                 'target': 'current',
             }
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # 1. Create the patient normally
+        patients = super(PatientInherit, self).create(vals_list)
+
+        for patient in patients:
+            # 2. TRIGGER BM ACTION: Log the initial quote
+            patient.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=self.env.user.id,  # Assigns to the user registering the patient
+                summary='🛑 BM TASK: Log Initial Quote & Therapies',
+                note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
+            )
+
+            # 3. AUTO-CREATE THE PET RECORD: So the agent doesn't have to do it manually
+            pet_rec = self.env['pet.record'].create({
+                'patient_id': patient.id,
+                'start_date': patient.enroll_date or fields.Date.context_today(self),
+                'last_visit_date': patient.enroll_date or fields.Date.context_today(self),
+            })
+
+            # 4. TRIGGER PET AGENT ACTION: Initiate first contact
+            pet_rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=self.env.user.id,  # NOTE: Change this to your default PET Agent's user ID if needed
+                summary='📞 PET TASK: Initiate First Contact',
+                note=f'New Patient <b>{patient.name}</b> registered. Please initiate the follow-up conversion and experience tracking protocol.'
+            )
+
+        return patients
+
+        # Link the models
+
+    pet_record_ids = fields.One2many('pet.record', 'patient_id', string="PET Records")
+
+    # Bridge the specific fields you want in the custom filter dropdown
+    pet_last_contact_date = fields.Date(string="PET Last Contact", compute="_compute_pet_dates", store=True)
+    pet_next_followup = fields.Date(string="PET Next Follow-up", compute="_compute_pet_dates", store=True)
+
+    @api.depends('pet_record_ids.last_contact_date', 'pet_record_ids.actual_next_followup_date')
+    def _compute_pet_dates(self):
+        for rec in self:
+            # Grab the latest PET tracker for this patient
+            latest_pet = self.env['pet.record'].search([('patient_id', '=', rec.id)], order='create_date desc',
+                                                       limit=1)
+            rec.pet_last_contact_date = latest_pet.last_contact_date if latest_pet else False
+            rec.pet_next_followup = latest_pet.actual_next_followup_date if latest_pet else False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # 1. Create the patient normally
+        patients = super(PatientInherit, self).create(vals_list)
+
+        for patient in patients:
+            # 2. TRIGGER BM ACTION: Log the initial quote
+            patient.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=self.env.user.id,  # Assigns to the user registering the patient
+                summary='🛑 BM TASK: Log Initial Quote & Therapies',
+                note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
+            )
+
+            # 3. AUTO-CREATE THE PET RECORD: So the agent doesn't have to do it manually
+            pet_rec = self.env['pet.record'].create({
+                'patient_id': patient.id,
+                'start_date': patient.enroll_date or fields.Date.context_today(self),
+                'last_visit_date': patient.enroll_date or fields.Date.context_today(self),
+            })
+
+            # 4. TRIGGER PET AGENT ACTION: Initiate first contact
+            pet_rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=self.env.user.id,  # NOTE: Change this to your default PET Agent's user ID if needed
+                summary='📞 PET TASK: Initiate First Contact',
+                note=f'New Patient <b>{patient.name}</b> registered. Please initiate the follow-up conversion and experience tracking protocol.'
+            )
+
+        return patients
+
     def action_open_consent(self):
         return super(PatientInherit, self).action_open_consent()
+
 
     def action_open_patient_xray(self):
         return super(PatientInherit, self).action_open_patient_xray()
