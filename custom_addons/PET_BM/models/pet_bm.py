@@ -14,7 +14,7 @@ class PETPatientStatus(models.Model):
         # FIXED: Ensure only actual Treatment Statuses are generated
         default_statuses = [
             'Continue Treatment', 'Planning to Stop',
-            'Stopped', 'Not Enrolled', 'Completed', 'Maintenance'
+            'Stopped', 'Not Started', 'Completed', 'Maintenance'
         ]
         for status in default_statuses:
             if not self.search([('name', '=', status)]):
@@ -272,7 +272,7 @@ class PETFollowupLine(models.Model):
             elif cat == 'drop-off':
                 days = 1 if sub_cat == 'drop-risk' else 3
             # AIRTIGHT FALLBACK: Catches both variations
-            elif cat in ['not enrolled', 'not enrolled']:
+            elif cat in ['not enrolled', 'not started']:
                 days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
             elif cat == 'completed':
                 days = 7 if sub_cat == 'unsatisfied' else 30
@@ -516,7 +516,7 @@ class PETRecord(models.Model):
             elif cat == 'drop-off':
                 allowed_names = ['Planning to Stop', 'Stopped']
             # AIRTIGHT FALLBACK: Catches both variations
-            elif cat in ['not enrolled', 'not enrolled']:
+            elif cat in ['not enrolled', 'not started']:
                 allowed_names = ['Not Enrolled']
             elif cat == 'completed':
                 allowed_names = ['Completed', 'Maintenance']
@@ -586,7 +586,7 @@ class PETRecord(models.Model):
             elif cat == 'drop-off':
                 days = 1 if sub_cat == 'drop-risk' else 3
             # AIRTIGHT FALLBACK: Catches both variations
-            elif cat in ['not enrolled', 'not enrolled']:
+            elif cat in ['not enrolled', 'not started']:
                 days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
             elif cat == 'completed':
                 days = 7 if sub_cat == 'unsatisfied' else 30
