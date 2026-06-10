@@ -11,9 +11,10 @@ class PETPatientStatus(models.Model):
     active = fields.Boolean(default=True)
 
     def init(self):
+        # FIXED: Ensure only actual Treatment Statuses are generated
         default_statuses = [
-            'Active', 'Continue Treatment', 'Planning to Stop',
-            'Stopped', 'Not Started', 'Completed', 'Maintenance'
+            'Continue Treatment', 'Planning to Stop',
+            'Stopped', 'Not Enrolled', 'Completed', 'Maintenance'
         ]
         for status in default_statuses:
             if not self.search([('name', '=', status)]):
@@ -24,6 +25,18 @@ class PETCategory(models.Model):
     _name = 'pet.category'
     _description = 'PET Category'
     name = fields.Char(string="Category Name", required=True)
+
+    def init(self):
+        # 1. Forcefully rename the incorrect database typo to the proper name
+        incorrect_categories = self.search([('name', 'ilike', 'not enrolled')])
+        for cat in incorrect_categories:
+            cat.write({'name': 'Not Enrolled'})
+
+        # 2. Guarantee the 4 exact master categories exist safely in the database
+        master_categories = ['Active', 'Drop-off', 'Not Enrolled', 'Completed']
+        for cat_name in master_categories:
+            if not self.search([('name', '=', cat_name)]):
+                self.create({'name': cat_name})
 
 
 class PETSubCategory(models.Model):
@@ -69,7 +82,6 @@ class PetEscalationTicket(models.Model):
             if vals.get('ticket_sequence', 'New') == 'New':
                 vals['ticket_sequence'] = self.env['ir.sequence'].next_by_code('pet.escalation.ticket') or 'TKT-NEW'
 
-            # Set Exact 24 Hour SLA Deadline
             vals['deadline'] = fields.Datetime.now() + timedelta(hours=24)
 
         return super().create(vals_list)
@@ -88,7 +100,6 @@ class PetEscalationTicket(models.Model):
                 [('res_model', '=', 'pet.escalation.ticket'), ('res_id', '=', rec.id)])
             activities.action_done()
 
-            # Email notification back to the PET Agent
             rec.message_post(
                 body=f"BM Resolution: {rec.resolution_remarks}",
                 partner_ids=[rec.pet_agent_id.partner_id.id]
@@ -99,12 +110,11 @@ class PetEscalationTicket(models.Model):
         for rec in self:
             rec.status = 'pending'
             rec.reopen_count += 1
-            rec.deadline = fields.Datetime.now() + timedelta(hours=24)  # Reset 24H SLA
+            rec.deadline = fields.Datetime.now() + timedelta(hours=24)
             rec.resolution_remarks = False
 
             rec.message_post(body=f"Ticket REOPENED by {self.env.user.name}. SLA reset to 24 Hours.")
 
-            # Explicitly force the To-Do Activity creation
             rec.activity_schedule(
                 activity_type_id=self.env.ref('mail.mail_activity_data_todo').id,
                 user_id=rec.assigned_bm_id.id,
@@ -114,7 +124,6 @@ class PetEscalationTicket(models.Model):
 
     @api.model
     def _cron_check_sla(self):
-        """ Runs every hour to check exact Datetime SLA breaches """
         now = fields.Datetime.now()
         overdue_tickets = self.search([('status', '=', 'pending'), ('deadline', '<', now)])
         for ticket in overdue_tickets:
@@ -123,7 +132,6 @@ class PetEscalationTicket(models.Model):
 
     @api.model
     def _cron_end_of_day_summary(self):
-        """ Runs at EOD to email managers about pending/overdue tickets """
         pending_count = self.search_count([('status', 'in', ['pending', 'overdue'])])
         if pending_count > 0:
             import logging
@@ -222,26 +230,23 @@ class PETFollowupLine(models.Model):
     def _compute_line_metrics(self):
         today = fields.Date.context_today(self)
         for rec in self:
-            overdue = 0
-            if rec.actual_next_followup_date:
-                diff = (today - rec.actual_next_followup_date).days
-                overdue = max(0, diff)
+            overdue = max(0, (today - rec.actual_next_followup_date).days) if rec.actual_next_followup_date else 0
             rec.followup_overdue = overdue
 
-            sub_name = rec.subcategory_id.name if rec.subcategory_id else ""
-            cat_name = rec.category_id.name if rec.category_id else ""
+            sub_name = (rec.subcategory_id.name or "").strip().lower()
+            cat_name = (rec.category_id.name or "").strip().lower()
             max_pain = max(rec.pain_walking_score or 0, rec.pain_resting_score or 0)
 
-            if sub_name == "Drop-risk" or overdue >= 3 or max_pain >= 8:
+            if sub_name == "drop-risk" or overdue >= 3 or max_pain >= 8:
                 rec.priority = '2'
-            elif sub_name == "Irregular" or overdue >= 1 or max_pain >= 6 or cat_name == "Drop-off":
+            elif sub_name == "irregular" or overdue >= 1 or max_pain >= 6 or cat_name == "drop-off":
                 rec.priority = '1'
             else:
                 rec.priority = '0'
 
-            rem = rec.remarks or ""
+            rem = (rec.remarks or "").strip().lower()
             if (rec.priority == '2' or (
-                    cat_name == 'Completed' and (rec.satisfaction_score or 0) < 7) or rem == 'Lost trust'):
+                    cat_name == 'completed' and (rec.satisfaction_score or 0) < 7) or rem == 'lost trust'):
                 rec.escalation_needed = 'yes'
             else:
                 rec.escalation_needed = 'no'
@@ -259,17 +264,18 @@ class PETFollowupLine(models.Model):
     def _compute_line_followup_logic(self):
         for rec in self:
             days = 0
-            cat = rec.category_id.name if rec.category_id else ""
-            sub_cat = rec.subcategory_id.name if rec.subcategory_id else ""
+            cat = (rec.category_id.name or "").strip().lower()
+            sub_cat = (rec.subcategory_id.name or "").strip().lower()
 
-            if cat == 'Active':
-                days = 2 if sub_cat == 'Irregular' else (1 if sub_cat == 'Drop-risk' else 7)
-            elif cat == 'Drop-off':
-                days = 3
-            elif cat == 'Not Enrolled':
-                days = 1 if sub_cat == 'Hot' else (2 if sub_cat == 'Warm' else (7 if sub_cat == 'Cold' else 3))
-            elif cat == 'Completed':
-                days = 7 if sub_cat == 'Unsatisfied' else 30
+            if cat == 'active':
+                days = 2 if sub_cat == 'irregular' else 7
+            elif cat == 'drop-off':
+                days = 1 if sub_cat == 'drop-risk' else 3
+            # AIRTIGHT FALLBACK: Catches both variations
+            elif cat in ['not enrolled', 'not enrolled']:
+                days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
+            elif cat == 'completed':
+                days = 7 if sub_cat == 'unsatisfied' else 30
             else:
                 days = 0
 
@@ -280,6 +286,17 @@ class PETFollowupLine(models.Model):
     def action_save_log(self):
         self.ensure_one()
         return {'type': 'ir.actions.act_window_close'}
+
+    @api.onchange('category_id')
+    def _onchange_category_id(self):
+        """Clears subcategory and status when category changes"""
+        self.subcategory_id = False
+        self.patient_status = False
+
+    @api.onchange('subcategory_id')
+    def _onchange_subcategory_id(self):
+        """Clears status when subcategory changes to prevent mismatches"""
+        self.patient_status = False
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -314,20 +331,19 @@ class PETFollowupLine(models.Model):
                     })
                 rec.pet_record_id.write(update_vals)
 
-                # --- NEW WORKFLOW LOGIC ---
                 if not rec.not_connected:
                     latest_bm_log = self.env['bm.followup.log'].search(
                         [('patient_id', '=', rec.pet_record_id.patient_id.id)], order='timestamp desc', limit=1)
 
                     if latest_bm_log:
-                        # 1. SYNC REVENUE INSTANTLY: This happens every time a PET Agent saves a discount!
+                        # 1. SYNC REVENUE INSTANTLY
                         if rec.discount_offered > 0:
                             latest_bm_log.write({
                                 'pet_discount_offered': rec.discount_offered,
                                 'pet_agent_id': rec.user_id.id
                             })
 
-                        # 2. TICKETING ENGINE: This ONLY happens if there is an issue.
+                        # 2. TICKETING ENGINE
                         if rec.escalate_to_bm and rec.escalation_description:
                             assigned_bm = latest_bm_log.user_id
 
@@ -340,11 +356,9 @@ class PETFollowupLine(models.Model):
                                 'issue_description': rec.escalation_description,
                             })
 
-                            # Force the BM to follow this ticket
                             if assigned_bm:
                                 new_ticket.message_subscribe(partner_ids=[assigned_bm.partner_id.id])
 
-                            # Schedule Activity for BM
                             new_ticket.activity_schedule(
                                 'mail.mail_activity_data_todo',
                                 user_id=new_ticket.assigned_bm_id.id,
@@ -352,7 +366,6 @@ class PETFollowupLine(models.Model):
                                 summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
                             )
 
-                            # TRIGGER DIRECT EMAIL NOTIFICATION
                             new_ticket.message_post(
                                 body=f"<h3>New Escalation Ticket Assigned</h3>"
                                      f"<p>A new ticket has been assigned to you regarding patient <b>{new_ticket.patient_id.name}</b>.</p>"
@@ -492,20 +505,20 @@ class PETRecord(models.Model):
     @api.depends('category_id', 'subcategory_id')
     def _compute_allowed_statuses(self):
         for rec in self:
-            cat = rec.category_id.name if rec.category_id else False
-            sub = rec.subcategory_id.name if rec.subcategory_id else False
+            cat = (rec.category_id.name or "").strip().lower()
             allowed_names = []
 
             if not cat:
-                allowed_names = ['Continue Treatment', 'Planning to Stop', 'Stopped', 'Not Started', 'Completed',
+                allowed_names = ['Continue Treatment', 'Planning to Stop', 'Stopped', 'Not Enrolled', 'Completed',
                                  'Maintenance']
-            elif cat == 'Active':
-                allowed_names = ['Continue Treatment', 'Not Started']
-            elif cat == 'Drop-off':
+            elif cat == 'active':
+                allowed_names = ['Continue Treatment']
+            elif cat == 'drop-off':
                 allowed_names = ['Planning to Stop', 'Stopped']
-            elif cat == 'Not Enrolled':
-                allowed_names = ['Not Started', 'Maintenance']
-            elif cat == 'Completed':
+            # AIRTIGHT FALLBACK: Catches both variations
+            elif cat in ['not enrolled', 'not enrolled']:
+                allowed_names = ['Not Enrolled']
+            elif cat == 'completed':
                 allowed_names = ['Completed', 'Maintenance']
 
             if allowed_names:
@@ -514,8 +527,15 @@ class PETRecord(models.Model):
             else:
                 rec.allowed_status_ids = False
 
-    @api.onchange('category_id', 'subcategory_id')
-    def _clear_status_on_change(self):
+    @api.onchange('category_id')
+    def _onchange_category_id(self):
+        """Clears subcategory and status when category changes"""
+        self.subcategory_id = False
+        self.patient_status = False
+
+    @api.onchange('subcategory_id')
+    def _onchange_subcategory_id(self):
+        """Clears status when subcategory changes to prevent mismatches"""
         self.patient_status = False
 
     @api.depends('last_contact_date', 'actual_next_followup_date', 'subcategory_id', 'category_id',
@@ -527,19 +547,20 @@ class PETRecord(models.Model):
             overdue = max(0, (today - rec.actual_next_followup_date).days) if rec.actual_next_followup_date else 0
             rec.followup_overdue = overdue
 
-            sub_name = rec.subcategory_id.name if rec.subcategory_id else ""
-            cat_name = rec.category_id.name if rec.category_id else ""
+            sub_name = (rec.subcategory_id.name or "").strip().lower()
+            cat_name = (rec.category_id.name or "").strip().lower()
             max_pain = max(rec.pain_walking_score, rec.pain_resting_score)
 
-            if sub_name == "Drop-risk" or overdue >= 3 or max_pain >= 8:
+            if sub_name == "drop-risk" or overdue >= 3 or max_pain >= 8:
                 rec.priority = '2'
-            elif sub_name == "Irregular" or overdue >= 1 or max_pain >= 6 or cat_name == "Drop-off":
+            elif sub_name == "irregular" or overdue >= 1 or max_pain >= 6 or cat_name == "drop-off":
                 rec.priority = '1'
             else:
                 rec.priority = '0'
 
+            rem = (rec.remarks or "").strip().lower()
             if (rec.priority == '2' or (
-                    cat_name == 'Completed' and rec.satisfaction_score < 7) or rec.remarks == 'Lost trust'):
+                    cat_name == 'completed' and rec.satisfaction_score < 7) or rem == 'lost trust'):
                 rec.escalation_needed = 'yes'
             else:
                 rec.escalation_needed = 'no'
@@ -557,17 +578,18 @@ class PETRecord(models.Model):
     def _compute_followup_logic(self):
         for rec in self:
             days = 0
-            cat = rec.category_id.name if rec.category_id else ""
-            sub_cat = rec.subcategory_id.name if rec.subcategory_id else ""
+            cat = (rec.category_id.name or "").strip().lower()
+            sub_cat = (rec.subcategory_id.name or "").strip().lower()
 
-            if cat == 'Active':
-                days = 2 if sub_cat == 'Irregular' else (1 if sub_cat == 'Drop-risk' else 7)
-            elif cat == 'Drop-off':
-                days = 3
-            elif cat == 'Not Enrolled':
-                days = 1 if sub_cat == 'Hot' else (2 if sub_cat == 'Warm' else (7 if sub_cat == 'Cold' else 3))
-            elif cat == 'Completed':
-                days = 7 if sub_cat == 'Unsatisfied' else 30
+            if cat == 'active':
+                days = 2 if sub_cat == 'irregular' else 7
+            elif cat == 'drop-off':
+                days = 1 if sub_cat == 'drop-risk' else 3
+            # AIRTIGHT FALLBACK: Catches both variations
+            elif cat in ['not enrolled', 'not enrolled']:
+                days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
+            elif cat == 'completed':
+                days = 7 if sub_cat == 'unsatisfied' else 30
             else:
                 days = 0
 
@@ -595,7 +617,6 @@ class PETRecord(models.Model):
             records_to_update.action_sync_retroactive_todos()
 
     def action_sync_retroactive_todos(self):
-        """ Retroactively creates To-Do activities for existing patient records """
         for rec in self:
             target_date = rec.recommended_next_followup or rec.actual_next_followup_date
             if target_date:
@@ -625,8 +646,7 @@ class BMFollowupLog(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, ondelete='cascade', tracking=True)
-    user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True,
-                              tracking=True)
+    user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True, tracking=True)
 
     offered_price = fields.Float(string="Offered Price", tracking=True)
     total_therapies_included = fields.Integer(string="Total Therapies Included", tracking=True)
@@ -650,7 +670,6 @@ class BMFollowupLog(models.Model):
             discount_percentage = rec.pet_discount_offered or 0.0
             rec.final_agreed_price = price - (price * (discount_percentage / 100.0))
 
-    # --- ADD THIS NEW METHOD ---
     def action_back_to_patient(self):
         self.ensure_one()
         return {
@@ -665,7 +684,6 @@ class BMFollowupLog(models.Model):
     def _compute_is_locked(self):
         for rec in self:
             if rec.timestamp:
-                # Locks the record if the timestamp is older than 24 hours (86400 seconds)
                 rec.is_locked = (fields.Datetime.now() - rec.timestamp).total_seconds() > 86400
             else:
                 rec.is_locked = False
@@ -674,9 +692,19 @@ class BMFollowupLog(models.Model):
 class PatientInherit(models.Model):
     _inherit = 'clinic.patient'
 
+    pet_record_ids = fields.One2many('pet.record', 'patient_id', string="PET Records")
+    pet_last_contact_date = fields.Date(string="PET Last Contact", compute="_compute_pet_dates", store=True)
+    pet_next_followup = fields.Date(string="PET Next Follow-up", compute="_compute_pet_dates", store=True)
+
+    @api.depends('pet_record_ids.last_contact_date', 'pet_record_ids.actual_next_followup_date')
+    def _compute_pet_dates(self):
+        for rec in self:
+            latest_pet = self.env['pet.record'].search([('patient_id', '=', rec.id)], order='create_date desc', limit=1)
+            rec.pet_last_contact_date = latest_pet.last_contact_date if latest_pet else False
+            rec.pet_next_followup = latest_pet.actual_next_followup_date if latest_pet else False
+
     def action_open_pet_tracker(self):
-        last_session = self.env['patient.session'].search([('patient_id', '=', self.id)], order='session_date desc',
-                                                          limit=1)
+        last_session = self.env['patient.session'].search([('patient_id', '=', self.id)], order='session_date desc', limit=1)
         last_visit = last_session.session_date if last_session and last_session.session_date else self.enroll_date
 
         existing_records = self.env['pet.record'].search([('patient_id', '=', self.id)], order='create_date desc')
@@ -755,77 +783,25 @@ class PatientInherit(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        # 1. Create the patient normally
         patients = super(PatientInherit, self).create(vals_list)
 
         for patient in patients:
-            # 2. TRIGGER BM ACTION: Log the initial quote
             patient.activity_schedule(
                 'mail.mail_activity_data_todo',
-                user_id=self.env.user.id,  # Assigns to the user registering the patient
+                user_id=self.env.user.id,
                 summary='🛑 BM TASK: Log Initial Quote & Therapies',
                 note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
             )
 
-            # 3. AUTO-CREATE THE PET RECORD: So the agent doesn't have to do it manually
             pet_rec = self.env['pet.record'].create({
                 'patient_id': patient.id,
                 'start_date': patient.enroll_date or fields.Date.context_today(self),
                 'last_visit_date': patient.enroll_date or fields.Date.context_today(self),
             })
 
-            # 4. TRIGGER PET AGENT ACTION: Initiate first contact
             pet_rec.activity_schedule(
                 'mail.mail_activity_data_todo',
-                user_id=self.env.user.id,  # NOTE: Change this to your default PET Agent's user ID if needed
-                summary='📞 PET TASK: Initiate First Contact',
-                note=f'New Patient <b>{patient.name}</b> registered. Please initiate the follow-up conversion and experience tracking protocol.'
-            )
-
-        return patients
-
-        # Link the models
-
-    pet_record_ids = fields.One2many('pet.record', 'patient_id', string="PET Records")
-
-    # Bridge the specific fields you want in the custom filter dropdown
-    pet_last_contact_date = fields.Date(string="PET Last Contact", compute="_compute_pet_dates", store=True)
-    pet_next_followup = fields.Date(string="PET Next Follow-up", compute="_compute_pet_dates", store=True)
-
-    @api.depends('pet_record_ids.last_contact_date', 'pet_record_ids.actual_next_followup_date')
-    def _compute_pet_dates(self):
-        for rec in self:
-            # Grab the latest PET tracker for this patient
-            latest_pet = self.env['pet.record'].search([('patient_id', '=', rec.id)], order='create_date desc',
-                                                       limit=1)
-            rec.pet_last_contact_date = latest_pet.last_contact_date if latest_pet else False
-            rec.pet_next_followup = latest_pet.actual_next_followup_date if latest_pet else False
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        # 1. Create the patient normally
-        patients = super(PatientInherit, self).create(vals_list)
-
-        for patient in patients:
-            # 2. TRIGGER BM ACTION: Log the initial quote
-            patient.activity_schedule(
-                'mail.mail_activity_data_todo',
-                user_id=self.env.user.id,  # Assigns to the user registering the patient
-                summary='🛑 BM TASK: Log Initial Quote & Therapies',
-                note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
-            )
-
-            # 3. AUTO-CREATE THE PET RECORD: So the agent doesn't have to do it manually
-            pet_rec = self.env['pet.record'].create({
-                'patient_id': patient.id,
-                'start_date': patient.enroll_date or fields.Date.context_today(self),
-                'last_visit_date': patient.enroll_date or fields.Date.context_today(self),
-            })
-
-            # 4. TRIGGER PET AGENT ACTION: Initiate first contact
-            pet_rec.activity_schedule(
-                'mail.mail_activity_data_todo',
-                user_id=self.env.user.id,  # NOTE: Change this to your default PET Agent's user ID if needed
+                user_id=self.env.user.id,
                 summary='📞 PET TASK: Initiate First Contact',
                 note=f'New Patient <b>{patient.name}</b> registered. Please initiate the follow-up conversion and experience tracking protocol.'
             )
@@ -834,7 +810,6 @@ class PatientInherit(models.Model):
 
     def action_open_consent(self):
         return super(PatientInherit, self).action_open_consent()
-
 
     def action_open_patient_xray(self):
         return super(PatientInherit, self).action_open_patient_xray()

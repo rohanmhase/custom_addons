@@ -63,9 +63,9 @@
                         </group>
 
                         <group string="STATUS UPDATE" invisible="not_connected">
-                            <field name="category_id" required="not not_connected" readonly="is_locked"/>
-                            <field name="subcategory_id" domain="[('category_id', '=', category_id)]" readonly="is_locked"/>
-                            <field name="patient_status" readonly="is_locked" string="Treatment Status"/>
+                            <field name="category_id" required="not not_connected" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="subcategory_id" domain="[('category_id', '=', category_id)]" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="patient_status" readonly="is_locked" string="Treatment Status" options="{'no_create': True, 'no_open': True}"/>
                             <field name="outcome_status" readonly="is_locked"/>
                             <field name="reason_not_starting_stopping" readonly="is_locked"/>
                         </group>
@@ -145,9 +145,9 @@
                             <field name="advisor_id" readonly="1" force_save="1"/>
                         </group>
                         <group string="TRACKING STATUS">
-                            <field name="category_id" readonly="1" force_save="1"/>
-                            <field name="subcategory_id" readonly="1" force_save="1"/>
-                            <field name="patient_status" readonly="1" force_save="1" string="Current Treatment Status"/>
+                            <field name="category_id" readonly="1" force_save="1" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="subcategory_id" readonly="1" force_save="1" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="patient_status" readonly="1" force_save="1" string="Current Treatment Status" options="{'no_create': True, 'no_open': True}"/>
                             <field name="priority" readonly="1" force_save="1"/>
                             <field name="escalation_needed" readonly="1" force_save="1"/>
                             <field name="task_status" readonly="1" force_save="1"/>
