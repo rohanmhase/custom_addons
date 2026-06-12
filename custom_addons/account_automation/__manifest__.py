@@ -10,6 +10,8 @@
         'views/account_automation_views.xml',
         'views/psmr_mapping_views.xml',
         'views/psmr_reconciliation_views.xml',
+        'views/bank_hub_config_views.xml',
+        'views/bank_hub_audit_views.xml',
     ],
     'installable': True,
     'application': True,

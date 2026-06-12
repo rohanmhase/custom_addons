@@ -29,3 +29,30 @@ class AccountAutomationDashboard(models.TransientModel):
             'target': 'new',
             'context': self.env.context,
         }
+
+    def action_run_bank_vs_hub_audit(self):
+        """Triggers the new Bank vs HUB Collection execution wizard modal"""
+        return {
+            'name': 'BANK VS HUB Collection Audit',
+            'type': 'ir.actions.act_window',
+            'res_model': 'bank.sales.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context,
+        }
+
+    def action_run_bank_hub_audit(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'bank.sales.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_view_bank_hub_history(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'bank.sales.audit',
+            'view_mode': 'tree,form',
+            'target': 'current',
+        }
