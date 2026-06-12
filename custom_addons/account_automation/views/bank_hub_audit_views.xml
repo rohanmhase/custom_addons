@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Wizard Form
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_wizard_form" model="ir.ui.view">
+        <field name="name">bank.sales.audit.wizard.form</field>
+        <field name="model">bank.sales.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Run BANK VS HUB Collection Audit">
+                <sheet>
+                    <group>
+                        <group string="Audit Parameters">
+                            <field name="bank_config_id"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group string="Bank Statement">
+                            <field name="bank_statement_file" filename="file_name"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_bank_vs_hub_audit"
+                            string="Analyze &amp; Generate Matrix"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Discard"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Audit Result Lines Tree
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_line_tree" model="ir.ui.view">
+        <field name="name">bank.sales.audit.line.tree</field>
+        <field name="model">bank.sales.audit.line</field>
+        <field name="arch" type="xml">
+            <tree string="Audit Comparison Matrix"
+                  create="false" edit="false" delete="false"
+                  decoration-danger="difference &lt; 0"
+                  decoration-success="difference == 0"
+                  decoration-warning="difference &gt; 0">
+                <field name="tid_number"      string="TID"/>
+                <field name="clinics_display" string="Clinic(s)"/>
+                <field name="system_mode"     string="Payment Mode"/>
+                <field name="hub_amount"      string="HUB Sales"    sum="Total HUB"/>
+                <field name="bank_amount"     string="Bank Receipt" sum="Total Bank"/>
+                <field name="difference"      string="Difference"     sum="Net Variance"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Audit History — Tree
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_history_tree" model="ir.ui.view">
+        <field name="name">bank.sales.audit.history.tree</field>
+        <field name="model">bank.sales.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Audit History"
+                  create="false" edit="false" delete="false">
+                <field name="name"           string="Audit Run"/>
+                <field name="bank_config_id" string="Bank"/>
+                <field name="start_date"     string="From"/>
+                <field name="end_date"       string="To"/>
+                <field name="file_name"      string="CSV File"/>
+                <field name="run_by"         string="Run By"/>
+                <field name="run_date"       string="Run On"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Audit History — Form (drill into result lines)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_history_form" model="ir.ui.view">
+        <field name="name">bank.sales.audit.history.form</field>
+        <field name="model">bank.sales.audit</field>
+        <field name="arch" type="xml">
+            <form string="Audit Run Details" create="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Audit Info">
+                            <field name="bank_config_id" readonly="1"/>
+                            <field name="start_date"     readonly="1"/>
+                            <field name="end_date"       readonly="1"/>
+                            <field name="file_name"      readonly="1"/>
+                        </group>
+                        <group string="Run Info">
+                            <field name="run_by"   readonly="1"/>
+                            <field name="run_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Results">
+                            <field name="line_ids" readonly="1" nolabel="1">
+                                <tree decoration-danger="difference &lt; 0"
+                                      decoration-success="difference == 0"
+                                      decoration-warning="difference &gt; 0">
+                                    <field name="tid_number"      string="TID"/>
+                                    <field name="clinics_display" string="Clinic(s)"/>
+                                    <field name="system_mode"     string="Payment Mode"/>
+                                    <field name="hub_amount"      string="HUB Sales"    sum="Total HUB"/>
+                                    <field name="bank_amount"     string="Bank Receipt" sum="Total Bank"/>
+                                    <field name="difference"      string="Variance"     sum="Net Variance"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Window Actions
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="action_bank_sales_audit_wizard" model="ir.actions.act_window">
+        <field name="name">Run Bank vs HUB Audit</field>
+        <field name="res_model">bank.sales.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_bank_sales_audit_history" model="ir.actions.act_window">
+        <field name="name">Audit History</field>
+        <field name="res_model">bank.sales.audit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Menu Structure
+         Account Automation
+         ├── Bank vs HUB Audit          (seq 10, parent node — no action)
+         │   ├── Run Audit              (seq 10)
+         │   └── View History           (seq 20)
+         └── Configuration              (seq 100, defined in config views)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_bank_hub_audit_parent"
+              name="Bank vs HUB Audit"
+              parent="menu_account_automation_root"
+              sequence="10"/>
+
+    <menuitem id="menu_sub_bank_vs_hub_audit"
+              name="Run Audit"
+              parent="menu_bank_hub_audit_parent"
+              action="action_bank_sales_audit_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_sub_bank_sales_audit_history"
+              name="View History"
+              parent="menu_bank_hub_audit_parent"
+              action="action_bank_sales_audit_history"
+              sequence="20"/>
+
+</odoo>

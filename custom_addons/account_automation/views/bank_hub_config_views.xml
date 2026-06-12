@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Bank CSV Configuration — Tree + Form
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_statement_parser_config_tree" model="ir.ui.view">
+        <field name="name">bank.statement.parser.config.tree</field>
+        <field name="model">bank.statement.parser.config</field>
+        <field name="arch" type="xml">
+            <tree string="Bank CSV Configurations">
+                <field name="bank_name"/>
+                <field name="col_tid"/>
+                <field name="col_amount"/>
+                <field name="col_mode"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_bank_statement_parser_config_form" model="ir.ui.view">
+        <field name="name">bank.statement.parser.config.form</field>
+        <field name="model">bank.statement.parser.config</field>
+        <field name="arch" type="xml">
+            <form string="Bank CSV Configuration">
+                <sheet>
+                    <group col="2">
+                        <group string="Profile Information">
+                            <field name="bank_name"/>
+                        </group>
+                        <group string="CSV Column Header Mapping">
+                            <field name="col_tid"/>
+                            <field name="col_amount"/>
+                            <field name="col_mode"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Payment Mode Translations">
+                            <!--
+                                Each row: one bank raw value (e.g. 'UPI') →
+                                  label shown in results (e.g. 'ICICI UPI') +
+                                  ALL POS payment methods that represent this
+                                  bank category (global method + every branch's
+                                  local method).  This is what fixes the 0.00
+                                  HUB problem for branches with local methods.
+                            -->
+                            <field name="mapping_ids">
+                                <tree editable="bottom">
+                                    <field name="raw_value"
+                                           string="Bank CSV Value"/>
+                                    <field name="label"
+                                           string="Display Label"/>
+                                    <field name="system_mode_ids"
+                                           string="POS Methods (Global + Local)"
+                                           widget="many2many_tags"
+                                           options="{'no_create': True}"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         TID vs Clinic Mapping — Tree (inline editable)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_tid_clinic_method_mapping_tree" model="ir.ui.view">
+        <field name="name">tid.clinic.method.mapping.tree</field>
+        <field name="model">tid.clinic.method.mapping</field>
+        <field name="arch" type="xml">
+            <tree string="TID Profile Routing Rules" editable="bottom">
+                <field name="bank_config_id"/>
+                <field name="tid_number"/>
+                <field name="clinic_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Window Actions
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="action_bank_statement_parser_config" model="ir.actions.act_window">
+        <field name="name">Bank CSV Configuration</field>
+        <field name="res_model">bank.statement.parser.config</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_tid_clinic_method_mapping" model="ir.actions.act_window">
+        <field name="name">TID vs Clinic Mapping</field>
+        <field name="res_model">tid.clinic.method.mapping</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Root Menu + Configuration Sub-menu
+         (audit sub-menus are defined in bank_hub_audit_views.xml)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_account_automation_root"
+              name="Account Automation"
+              sequence="10"/>
+
+    <menuitem id="menu_account_automation_config"
+              name="Configuration"
+              parent="menu_account_automation_root"
+              sequence="100"/>
+
+    <menuitem id="menu_sub_bank_statement_parser_config"
+              name="Bank CSV Configuration"
+              parent="menu_account_automation_config"
+              action="action_bank_statement_parser_config"
+              sequence="10"/>
+
+    <menuitem id="menu_sub_tid_clinic_method_mapping"
+              name="TID vs Clinic Mapping"
+              parent="menu_account_automation_config"
+              action="action_tid_clinic_method_mapping"
+              sequence="20"/>
+
+</odoo>
