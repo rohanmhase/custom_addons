@@ -43,6 +43,12 @@ class Session(models.Model):
         related='patient_id.clinic_id',
         string="Clinic Context"
     )
+    therapy_clinic_id = fields.Many2one(
+        'clinic.clinic',
+        string="Therapy Clinic",
+        readonly=True,
+        store=True
+    )
     morning_with_time = fields.Char(string="7 AM - 9 AM", required=True)
     lunch_with_time = fields.Char(string="10 AM - 1 PM", required=True)
     evening_with_time = fields.Char(string="4 PM - 6 PM", required=True)
@@ -80,6 +86,9 @@ class Session(models.Model):
             raise UserError("Patient is required to create a session.")
 
         patient = self.env["clinic.patient"].browse(patient_id)
+
+        if not vals.get('therapy_clinic_id'):
+            vals['therapy_clinic_id'] = patient.clinic_id.id
 
         # Re-fetch the enrollment from DB to get latest values
         enrollment = self.env["patient.enrollment"].sudo().search([

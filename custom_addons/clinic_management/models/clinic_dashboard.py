@@ -147,9 +147,14 @@ class ClinicDashboard(models.TransientModel):
 
         # Therapy Sessions
         sessions = self.env['patient.session'].search([
+            '|',
+            ('therapy_clinic_id', '=', self.clinic_id.id),
+            '&',
+            ('therapy_clinic_id', '=', False),
             ('patient_id.clinic_id', '=', self.clinic_id.id),
             ('session_date', '>=', self.from_date),
             ('session_date', '<=', self.to_date),
+            ('active', '=', True),
         ])
 
         self.line_ids = [(0, 0, {
