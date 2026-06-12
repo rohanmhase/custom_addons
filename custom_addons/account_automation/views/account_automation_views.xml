@@ -18,7 +18,7 @@
                                     <div class="d-flex align-items-center mb-2">
                                         <div class="text-primary d-flex align-items-center justify-content-center rounded"
                                              style="font-size: 20px; background-color: #eff6ff; width: 40px; height: 40px;">
-                                            <i class="fa fa-exchange"/>
+                                            <i class="fa fa-exchange" title="Exchange"/>
                                         </div>
                                         <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
                                             Daily Sale Comparison
@@ -49,7 +49,7 @@
                                     <div class="d-flex align-items-center mb-2">
                                         <div class="text-success d-flex align-items-center justify-content-center rounded"
                                              style="font-size: 20px; background-color: #f0fdf4; width: 40px; height: 40px;">
-                                            <i class="fa fa-university"/>
+                                            <i class="fa fa-university" title="Bank"/>
                                         </div>
                                         <h3 class="m-0 font-weight-bold ml-3"
                                             style="font-size: 16px; color: #1f2937;">
@@ -80,7 +80,7 @@
                             <div class="card p-3 border-0"
                                  style="background-color: #ffffff; border: 2px dashed #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; align-items: center; justify-content: center;">
                                 <div class="text-center text-muted">
-                                    <i class="fa fa-plus-circle mb-2" style="font-size: 22px; color: #9ca3af;"/>
+                                    <i class="fa fa-plus-circle mb-2" title="Add New" style="font-size: 22px; color: #9ca3af;"/>
                                     <p class="small m-0" style="color: #6b7280; font-weight: 500;">More Automations
                                         Coming Soon
                                     </p>

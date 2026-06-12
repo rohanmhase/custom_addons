@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Reason Master — Tree + Form
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_reason_tree" model="ir.ui.view">
+        <field name="name">bank.sales.audit.reason.tree</field>
+        <field name="model">bank.sales.audit.reason</field>
+        <field name="arch" type="xml">
+            <tree string="Variance Reasons" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="resolution_type"/>
+                <field name="help_text"/>
+                <field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_bank_sales_audit_reason_form" model="ir.ui.view">
+        <field name="name">bank.sales.audit.reason.form</field>
+        <field name="model">bank.sales.audit.reason</field>
+        <field name="arch" type="xml">
+            <form string="Variance Reason">
+                <sheet>
+                    <group>
+                        <field name="name" placeholder="e.g. Trial Amount — Not Billed (Ignore)"/>
+                        <field name="resolution_type"/>
+                        <field name="help_text" placeholder="Explain when staff should pick this reason"/>
+                        <field name="active"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>How to choose Behavior:</strong>
+                        <ul>
+                            <li>
+                                <strong>Carry Forward (Pending Settlement)</strong>
+                                —
+                                use when the difference will be matched by a
+                                FUTURE transaction (e.g. bill not generated yet,
+                                bank settlement pending, customer re-charged
+                                after a failed payment). Creates a pending
+                                entry that a later audit can settle against.
+                            </li>
+                            <li>
+                                <strong>Settle Against Past Pending</strong>
+                                —
+                                use when THIS difference is the matching
+                                counterpart of an earlier carried-forward
+                                entry (e.g. the bill mentioned above has now
+                                been generated). Staff will pick the old
+                                pending entry to net it off.
+                            </li>
+                            <li>
+                                <strong>Drop / Received via Other Channel
+                                    (No Carry Forward)
+                                </strong>
+                                —
+                                use when the difference will NEVER be matched
+                                and should simply be ignored (e.g. one-time
+                                trial transaction, payment received via
+                                scanner/NEFT outside this bank's CSV).
+                            </li>
+                        </ul>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bank_sales_audit_reason" model="ir.actions.act_window">
+        <field name="name">Variance Reasons</field>
+        <field name="res_model">bank.sales.audit.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Resolve Variance Wizard
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_resolve_wizard_form" model="ir.ui.view">
+        <field name="name">bank.sales.audit.resolve.wizard.form</field>
+        <field name="model">bank.sales.audit.resolve.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Variance">
+                <sheet>
+                    <group string="Variance Details">
+                        <group>
+                            <field name="clinics_display" readonly="1"/>
+
+                        </group>
+                        <group>
+                            <field name="hub_amount" readonly="1"/>
+                            <field name="bank_amount" readonly="1"/>
+                            <field name="difference" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Resolution">
+                        <field name="reason_id"
+                               options="{'no_create': True}"/>
+                        <field name="note"/>
+                        <field name="resolution_type" invisible="1"/>
+
+                    </group>
+
+                    <!-- Only shown when reason behavior = Settle Against Past Pending -->
+                    <group string="Settle Against Past Pending"
+                           invisible="resolution_type != 'settle_pending'">
+                        <field name="pending_ids" nolabel="1" colspan="2">
+                            <tree create="false" delete="false" edit="false">
+                                <field name="create_date" string="Date Created"/>
+                                <field name="bank_config_id" string="Bank"/>
+                                <field name="system_mode" string="Mode"/>
+                                <field name="clinics_display" string="Clinic(s)"/>
+                                <field name="amount" sum="Total Selection"/>
+                                <field name="reason_id" string="Reason Column"/>
+                            </tree>
+                        </field>
+                        <field name="remaining_after_settle" readonly="1"/>
+                        <div class="text-muted" colspan="2">
+                            If "Remaining After Settlement" is not zero, the
+                            leftover amount will automatically be carried
+                            forward as a new pending entry for future matching.
+                        </div>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply"
+                            string="Apply"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Pending Ledger — Tree
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_pending_tree" model="ir.ui.view">
+        <field name="name">bank.sales.audit.pending.tree</field>
+        <field name="model">bank.sales.audit.pending</field>
+        <field name="arch" type="xml">
+            <tree string="Pending Variances" create="false" delete="false"
+                  decoration-success="state == 'settled'"
+                  decoration-info="state == 'open' and amount &gt; 0"
+                  decoration-warning="state == 'open' and amount &lt; 0">
+                <field name="create_date" string="Date Created"/>
+                <field name="bank_config_id" string="Bank"/>
+                <field name="tid_number" string="TID"/>
+                <field name="clinics_display" string="Clinic(s)"/>
+                <field name="system_mode" string="Mode"/>
+                <field name="amount" sum="Net Pending"/>
+                <field name="reason_id"/>
+                <field name="note"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-success="state == 'settled'"
+                       decoration-warning="state == 'open'"/>
+                <field name="settled_audit_date" string="Audit Date Settled"/>
+                <field name="settled_in_audit_id" string="Settled Via Audit Link" widget="many2one_clickable"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_bank_sales_audit_pending_search" model="ir.ui.view">
+        <field name="name">bank.sales.audit.pending.search</field>
+        <field name="model">bank.sales.audit.pending</field>
+        <field name="arch" type="xml">
+            <search string="Pending Variances">
+                <field name="tid_number"/>
+                <field name="clinics_display"/>
+                <field name="bank_config_id"/>
+                <filter string="Open" name="open" domain="[('state','=','open')]"/>
+                <filter string="Settled" name="settled" domain="[('state','=','settled')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Bank" name="group_bank" context="{'group_by':'bank_config_id'}"/>
+                    <filter string="TID" name="group_tid" context="{'group_by':'tid_number'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by':'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bank_sales_audit_pending" model="ir.actions.act_window">
+        <field name="name">Pending Variances</field>
+        <field name="res_model">bank.sales.audit.pending</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_bank_sales_audit_pending_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Menus
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_sub_bank_sales_audit_pending"
+              name="Pending Variances"
+              parent="menu_bank_hub_audit_parent"
+              action="action_bank_sales_audit_pending"
+              sequence="30"/>
+
+    <menuitem id="menu_sub_bank_sales_audit_reason"
+              name="Variance Reasons"
+              parent="menu_account_automation_config"
+              action="action_bank_sales_audit_reason"
+              sequence="30"/>
+
+</odoo>

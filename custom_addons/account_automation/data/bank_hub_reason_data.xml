@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="reason_bill_not_generated" model="bank.sales.audit.reason">
+        <field name="name">Bill Not Generated Yet</field>
+        <field name="sequence">10</field>
+        <field name="resolution_type">carry_forward</field>
+        <field name="help_text">Bank received payment but invoice/bill for this sale has not been created yet. Carries the gap forward until the bill is generated.</field>
+    </record>
+
+    <record id="reason_bank_received_late" model="bank.sales.audit.reason">
+        <field name="name">Bank Settlement Pending / Received Late</field>
+        <field name="sequence">20</field>
+        <field name="resolution_type">carry_forward</field>
+        <field name="help_text">HUB shows the sale but bank hasn't settled it yet. Carries the gap forward until settlement appears.</field>
+    </record>
+
+    <record id="reason_amount_not_received_recollected" model="bank.sales.audit.reason">
+        <field name="name">Amount Not Received — Re-collected from Patient</field>
+        <field name="sequence">30</field>
+        <field name="resolution_type">carry_forward</field>
+        <field name="help_text">Original payment failed/glitched. Agent re-collected from patient on a later date. Carries the gap forward until the re-collection appears.</field>
+    </record>
+
+    <record id="reason_bill_generated_now" model="bank.sales.audit.reason">
+        <field name="name">Bill Generated — Settle Pending</field>
+        <field name="sequence">40</field>
+        <field name="resolution_type">settle_pending</field>
+        <field name="help_text">This sale matches a previously carried-forward gap for the same clinic/TID/mode. Select the pending entry to net it off.</field>
+    </record>
+
+    <record id="reason_recollection_received" model="bank.sales.audit.reason">
+        <field name="name">Re-collected Amount Received — Settle Pending</field>
+        <field name="sequence">50</field>
+        <field name="resolution_type">settle_pending</field>
+        <field name="help_text">The re-collected payment from a prior glitch has now appeared. Select the pending entry to net it off.</field>
+    </record>
+
+    <record id="reason_received_other_channel" model="bank.sales.audit.reason">
+        <field name="name">Received via Other Channel (Scanner / Direct Transfer)</field>
+        <field name="sequence">60</field>
+        <field name="resolution_type">write_off</field>
+        <field name="help_text">Extra bank amount came through a channel not covered by this CSV (e.g. UPI scanner, NEFT). Drop the difference — no carry forward.</field>
+    </record>
+
+</odoo>
