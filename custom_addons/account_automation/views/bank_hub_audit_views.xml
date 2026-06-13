@@ -45,15 +45,23 @@
         <field name="arch" type="xml">
             <tree string="Audit Comparison Matrix"
                   create="false" edit="false" delete="false"
-                  decoration-danger="difference &lt; 0"
-                  decoration-success="difference == 0"
-                  decoration-warning="difference &gt; 0">
-                <field name="tid_number"      string="TID"/>
+                  decoration-danger="difference &lt; 0 and resolution_state == 'open'"
+                  decoration-success="difference == 0 or resolution_state == 'resolved'"
+                  decoration-warning="difference &gt; 0 and resolution_state == 'open'">
+                <field name="tid_number" string="TID"/>
                 <field name="clinics_display" string="Clinic(s)"/>
-                <field name="system_mode"     string="Payment Mode"/>
-                <field name="hub_amount"      string="HUB Sales"    sum="Total HUB"/>
-                <field name="bank_amount"     string="Bank Receipt" sum="Total Bank"/>
-                <field name="difference"      string="Difference"     sum="Net Variance"/>
+                <field name="system_mode" string="Payment Mode"/>
+                <field name="hub_amount" string="HUB Sales" sum="Total HUB"/>
+                <field name="bank_amount" string="Bank Receipt" sum="Total Bank"/>
+                <field name="difference" string="Variance" sum="Net Variance"/>
+                <field name="resolution_state" string="Status"/>
+                <field name="reason_id" string="Reason"/>
+                <field name="note" string="Note"/>
+                <button name="action_open_resolve_wizard"
+                        type="object"
+                        string="Resolve"
+                        class="btn-link"
+                        invisible="difference == 0 or resolution_state == 'resolved'"/>
             </tree>
         </field>
     </record>
@@ -67,13 +75,13 @@
         <field name="arch" type="xml">
             <tree string="Audit History"
                   create="false" edit="false" delete="false">
-                <field name="name"           string="Audit Run"/>
+                <field name="name" string="Audit Run"/>
                 <field name="bank_config_id" string="Bank"/>
-                <field name="start_date"     string="From"/>
-                <field name="end_date"       string="To"/>
-                <field name="file_name"      string="CSV File"/>
-                <field name="run_by"         string="Run By"/>
-                <field name="run_date"       string="Run On"/>
+                <field name="start_date" string="From"/>
+                <field name="end_date" string="To"/>
+                <field name="file_name" string="CSV File"/>
+                <field name="run_by" string="Run By"/>
+                <field name="run_date" string="Run On"/>
             </tree>
         </field>
     </record>
@@ -88,32 +96,44 @@
             <form string="Audit Run Details" create="false">
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
                     </div>
                     <group>
                         <group string="Audit Info">
                             <field name="bank_config_id" readonly="1"/>
-                            <field name="start_date"     readonly="1"/>
-                            <field name="end_date"       readonly="1"/>
-                            <field name="file_name"      readonly="1"/>
+                            <field name="start_date" readonly="1"/>
+                            <field name="end_date" readonly="1"/>
+                            <field name="file_name" readonly="1"/>
                         </group>
                         <group string="Run Info">
-                            <field name="run_by"   readonly="1"/>
+                            <field name="run_by" readonly="1"/>
                             <field name="run_date" readonly="1"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Results">
                             <field name="line_ids" readonly="1" nolabel="1">
-                                <tree decoration-danger="difference &lt; 0"
-                                      decoration-success="difference == 0"
-                                      decoration-warning="difference &gt; 0">
-                                    <field name="tid_number"      string="TID"/>
+                                <tree decoration-danger="difference &lt; 0 and resolution_state == 'open'"
+                                      decoration-success="difference == 0 or resolution_state == 'resolved'"
+                                      decoration-warning="difference &gt; 0 and resolution_state == 'open'">
+                                    <field name="tid_number" string="TID"/>
                                     <field name="clinics_display" string="Clinic(s)"/>
-                                    <field name="system_mode"     string="Payment Mode"/>
-                                    <field name="hub_amount"      string="HUB Sales"    sum="Total HUB"/>
-                                    <field name="bank_amount"     string="Bank Receipt" sum="Total Bank"/>
-                                    <field name="difference"      string="Variance"     sum="Net Variance"/>
+                                    <field name="system_mode" string="Payment Mode"/>
+                                    <field name="hub_amount" string="HUB Sales" sum="Total HUB"/>
+                                    <field name="bank_amount" string="Bank Receipt" sum="Total Bank"/>
+                                    <field name="difference" string="Variance" sum="Net Variance"/>
+                                    <field name="resolution_state" string="Status"/>
+                                    <field name="reason_id" string="Reason"/>
+                                    <field name="note" string="Note"/>
+                                    <field name="resolved_for_date" string="Resolved For (Past Error Date)"/>
+                                    <field name="resolved_on_date" string="Resolved On (Future Action Date)"/>
+                                    <button name="action_open_resolve_wizard"
+                                            type="object"
+                                            string="Resolve"
+                                            class="btn-link"
+                                            invisible="difference == 0 or resolution_state == 'resolved'"/>
                                 </tree>
                             </field>
                         </page>

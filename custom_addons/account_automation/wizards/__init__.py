@@ -2,4 +2,4 @@
 
 from . import psmr_reconciliation_wizard
 from . import bank_hub_audit_wizard
-
+from . import bank_hub_resolve_wizard
