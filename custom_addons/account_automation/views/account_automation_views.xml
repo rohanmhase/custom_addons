@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <record id="action_account_automation_dashboard" model="ir.actions.act_window">
+        <field name="name">Account Automation Workspace</field>
+        <field name="res_model">account.automation.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_bank_sales_audit_pending_view" model="ir.actions.act_window">
+        <field name="name">Pending Variance Audit</field>
+        <field name="res_model">account.automation.dashboard</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
     <record id="view_account_automation_dashboard_form" model="ir.ui.view">
         <field name="name">account.automation.dashboard.form</field>
         <field name="model">account.automation.dashboard</field>
@@ -10,7 +25,6 @@
                         <h1 style="color: #111827; font-size: 28px; font-weight: 700;">Account Automation Workspace</h1>
                     </div>
                     <div class="row">
-                        <!-- Card 1: Daily Sale Comparison -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
                                  style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -38,10 +52,6 @@
                             </div>
                         </div>
 
-                        <!-- Card 2: BANK VS HUB Collection -->
-
-
-                        <!-- Card: Bank vs HUB Audit -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
                                  style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -51,8 +61,7 @@
                                              style="font-size: 20px; background-color: #f0fdf4; width: 40px; height: 40px;">
                                             <i class="fa fa-university" title="Bank"/>
                                         </div>
-                                        <h3 class="m-0 font-weight-bold ml-3"
-                                            style="font-size: 16px; color: #1f2937;">
+                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
                                             Bank vs HUB Audit
                                         </h3>
                                     </div>
@@ -61,26 +70,32 @@
                                         payment mode.
                                     </p>
                                 </div>
-                                <div class="d-flex justify-content-end gap-2 mt-3 pt-2"
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2"
                                      style="border-top: 1px solid #f3f4f6 !important;">
-                                    <button name="action_view_bank_hub_history"
-                                            string="View History"
-                                            type="object"
+                                    <button name="account_automation.action_bank_sales_audit_pending"
+                                            string="Pending Variance"
+                                            type="action"
                                             class="btn btn-secondary btn-sm"/>
-                                    <button name="action_run_bank_hub_audit"
-                                            string="Run New"
-                                            type="object"
-                                            class="btn btn-primary btn-sm"/>
+                                    <div class="d-flex gap-2">
+                                        <button name="action_view_bank_hub_history"
+                                                string="View History"
+                                                type="object"
+                                                class="btn btn-secondary btn-sm"/>
+                                        <button name="action_run_bank_hub_audit"
+                                                string="Run New"
+                                                type="object"
+                                                class="btn btn-primary btn-sm"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Card 3: Placeholder (More Coming Soon) -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 border-0"
                                  style="background-color: #ffffff; border: 2px dashed #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; align-items: center; justify-content: center;">
                                 <div class="text-center text-muted">
-                                    <i class="fa fa-plus-circle mb-2" title="Add New" style="font-size: 22px; color: #9ca3af;"/>
+                                    <i class="fa fa-plus-circle mb-2" title="Add New"
+                                       style="font-size: 22px; color: #9ca3af;"/>
                                     <p class="small m-0" style="color: #6b7280; font-weight: 500;">More Automations
                                         Coming Soon
                                     </p>
@@ -91,13 +106,6 @@
                 </sheet>
             </form>
         </field>
-    </record>
-
-    <record id="action_account_automation_dashboard" model="ir.actions.act_window">
-        <field name="name">Account Automation Workspace</field>
-        <field name="res_model">account.automation.dashboard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
     </record>
 
     <menuitem id="menu_account_automation_root" name="Account Automation" action="action_account_automation_dashboard"

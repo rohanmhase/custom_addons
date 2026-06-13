@@ -37,7 +37,7 @@
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         Audit Result Lines Tree
+         Audit Result Lines Tree (standalone)
     ═══════════════════════════════════════════════════════════════════════ -->
     <record id="view_bank_sales_audit_line_tree" model="ir.ui.view">
         <field name="name">bank.sales.audit.line.tree</field>
@@ -46,7 +46,7 @@
             <tree string="Audit Comparison Matrix"
                   create="false" edit="false" delete="false"
                   decoration-danger="difference &lt; 0 and resolution_state == 'open'"
-                  decoration-success="difference == 0 or resolution_state == 'resolved'"
+                  decoration-success="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"
                   decoration-warning="difference &gt; 0 and resolution_state == 'open'">
                 <field name="tid_number" string="TID"/>
                 <field name="clinics_display" string="Clinic(s)"/>
@@ -57,12 +57,62 @@
                 <field name="resolution_state" string="Status"/>
                 <field name="reason_id" string="Reason"/>
                 <field name="note" string="Note"/>
+                <field name="net_difference" string="Remaining Variance" sum="Total Remaining"/>
+                <field name="pending_status"
+                       string="Remaining Variance "
+                       widget="badge"
+                       decoration-success="pending_status == 'settled'"
+                       decoration-warning="pending_status == 'open'"/>
+                <field name="resolved_for_date" string="Resolved From"/>
+                <field name="resolved_on_date" string="Resolved On"/>
+
+
+                <!--
+                    RESOLVE — visible whenever there is still SOMETHING to
+                    act on. This covers:
+                      - 1st pass: difference != 0, resolution_state='open'
+                      - 2nd+ pass: line already resolved once but
+                        net_difference != 0 (leftover gap still needs a
+                        reason / settlement of its own)
+                -->
                 <button name="action_open_resolve_wizard"
                         type="object"
                         string="Resolve"
                         class="btn-link"
-                        invisible="difference == 0 or resolution_state == 'resolved'"/>
+                        invisible="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"/>
+
+                <!--
+                    RESET — visible whenever this line has been resolved
+                    at least once (resolution_state='resolved'), regardless
+                    of whether a leftover gap remains. Reverts everything
+                    this line did: reopens any pending it settled, deletes
+                    any pending it created (if still open), clears
+                    reason/note, sets resolution_state back to 'open'.
+                -->
+                <button name="action_reset_line_to_open"
+                        type="object"
+                        string="Reset"
+                        class="btn-link text-danger"
+                        confirm="Reset this line back to Open? Any reopened/created pending entries will be reverted."
+                        invisible="resolution_state != 'resolved'"/>
             </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Audit History — Search (Archived filter for soft-delete)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_bank_sales_audit_history_search" model="ir.ui.view">
+        <field name="name">bank.sales.audit.history.search</field>
+        <field name="model">bank.sales.audit</field>
+        <field name="arch" type="xml">
+            <search string="Audit History">
+                <field name="name"/>
+                <field name="bank_config_id"/>
+                <group expand="0" string="Group By">
+                    <filter string="Bank" name="group_bank" context="{'group_by':'bank_config_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -73,8 +123,7 @@
         <field name="name">bank.sales.audit.history.tree</field>
         <field name="model">bank.sales.audit</field>
         <field name="arch" type="xml">
-            <tree string="Audit History"
-                  create="false" edit="false" delete="false">
+            <tree string="Audit History" create="false" edit="false">
                 <field name="name" string="Audit Run"/>
                 <field name="bank_config_id" string="Bank"/>
                 <field name="start_date" string="From"/>
@@ -88,6 +137,8 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          Audit History — Form (drill into result lines)
+         NOTE: no "Reset Entire Audit" header button — resetting is done
+         per-line via the Reset button in the embedded tree below.
     ═══════════════════════════════════════════════════════════════════════ -->
     <record id="view_bank_sales_audit_history_form" model="ir.ui.view">
         <field name="name">bank.sales.audit.history.form</field>
@@ -116,7 +167,7 @@
                         <page string="Results">
                             <field name="line_ids" readonly="1" nolabel="1">
                                 <tree decoration-danger="difference &lt; 0 and resolution_state == 'open'"
-                                      decoration-success="difference == 0 or resolution_state == 'resolved'"
+                                      decoration-success="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"
                                       decoration-warning="difference &gt; 0 and resolution_state == 'open'">
                                     <field name="tid_number" string="TID"/>
                                     <field name="clinics_display" string="Clinic(s)"/>
@@ -127,13 +178,27 @@
                                     <field name="resolution_state" string="Status"/>
                                     <field name="reason_id" string="Reason"/>
                                     <field name="note" string="Note"/>
-                                    <field name="resolved_for_date" string="Resolved For (Past Error Date)"/>
-                                    <field name="resolved_on_date" string="Resolved On (Future Action Date)"/>
+                                    <field name="net_difference" string="Remaining Gap" sum="Total Remaining"/>
+                                    <field name="pending_status"
+                                           string="Remaining Gap Status"
+                                           widget="badge"
+                                           decoration-success="pending_status == 'settled'"
+                                           decoration-warning="pending_status == 'open'"/>
+                                    <field name="resolved_for_date" string="Gap From Date"/>
+                                    <field name="resolved_on_date" string="Cleared On Date"/>
+
+
                                     <button name="action_open_resolve_wizard"
                                             type="object"
                                             string="Resolve"
                                             class="btn-link"
-                                            invisible="difference == 0 or resolution_state == 'resolved'"/>
+                                            invisible="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"/>
+                                    <button name="action_reset_line_to_open"
+                                            type="object"
+                                            string="Reset"
+                                            class="btn-link text-danger"
+                                            confirm="Reset this line back to Open? Any reopened/created pending entries will be reverted."
+                                            invisible="resolution_state != 'resolved'"/>
                                 </tree>
                             </field>
                         </page>
@@ -157,16 +222,12 @@
         <field name="name">Audit History</field>
         <field name="res_model">bank.sales.audit</field>
         <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_bank_sales_audit_history_search"/>
         <field name="target">current</field>
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          Menu Structure
-         Account Automation
-         ├── Bank vs HUB Audit          (seq 10, parent node — no action)
-         │   ├── Run Audit              (seq 10)
-         │   └── View History           (seq 20)
-         └── Configuration              (seq 100, defined in config views)
     ═══════════════════════════════════════════════════════════════════════ -->
     <menuitem id="menu_bank_hub_audit_parent"
               name="Bank vs HUB Audit"
