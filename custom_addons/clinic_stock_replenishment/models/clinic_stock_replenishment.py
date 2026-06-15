@@ -218,36 +218,19 @@ class ClinicStockReplenishment(models.Model):
 
         all_product_ids_needed = list(set(product_ids) | kit_component_ids)
 
-        all_quants = self.env['stock.quant'].search([
-            ('product_id', 'in', all_product_ids_needed),
-            ('location_id', 'child_of', dest_location_ids),
-        ])
-
-        # quant_map[(product_id, location_root_id)] = available_qty
-        # We need per-warehouse totals; map location_id → warehouse
-        loc_to_wh = {
-            wh.lot_stock_id.id: wh.id
-            for wh in self.destination_warehouse_ids
-        }
-        # For child locations we resolve via the quant's location hierarchy.
-        # Build: quant_map[(product_id, warehouse_id)] = total available qty
+        # One search per warehouse — avoids cross-warehouse misattribution
+        # from location walk-up on deep/complex location hierarchies on live.
+        # Still N queries (N = dest warehouses) vs original N×M (warehouses × products).
         quant_map = defaultdict(float)
-        for q in all_quants:
-            # Walk up to find the root lot_stock_id warehouse match
-            loc = q.location_id
-            wh_id = None
-            # Check direct or climb via parent chain (max 5 levels deep)
-            check_loc = loc
-            for _ in range(6):
-                if check_loc.id in loc_to_wh:
-                    wh_id = loc_to_wh[check_loc.id]
-                    break
-                if not check_loc.location_id:
-                    break
-                check_loc = check_loc.location_id
-            if wh_id:
-                quant_map[(q.product_id.id, wh_id)] += (q.quantity - q.reserved_quantity)
-
+        for wh in self.destination_warehouse_ids:
+            wh_quants = self.env['stock.quant'].search([
+                ('product_id', 'in', all_product_ids_needed),
+                ('location_id', 'child_of', wh.lot_stock_id.id),
+            ])
+            for q in wh_quants:
+                quant_map[(q.product_id.id, wh.id)] += (
+                        q.quantity - q.reserved_quantity
+                )
         # ----------------------------------------------------------------
         # STEP 5 — Build final stock map with kit fallback (pure Python)
         # Old: get_kit_stock() ran DB queries per product; New: RAM lookup only
