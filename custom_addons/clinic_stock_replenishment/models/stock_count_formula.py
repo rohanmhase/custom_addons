@@ -63,27 +63,29 @@ class StockCountFormula(models.Model):
         for i in range(1, 4):
             count = self.env['patient.session'].search_count([
                 ('session_date', '=', today - timedelta(days=i)),
-                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+                ('therapy_clinic_id.warehouse_id', '=', self.clinic_id.id),
             ])
             daily_counts.append(count)
 
         max_index = daily_counts.index(max(daily_counts))
         max_day_date = today - timedelta(days=(max_index + 1))
 
+        total_on_max = daily_counts[max_index]
+
         if self.gender_filter == 'male':
             formula_count = self.env['patient.session'].search_count([
                 ('session_date', '=', max_day_date),
-                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+                ('therapy_clinic_id.warehouse_id', '=', self.clinic_id.id),
                 ('patient_id.gender', '=', 'male'),
             ])
         elif self.gender_filter == 'female':
             formula_count = self.env['patient.session'].search_count([
                 ('session_date', '=', max_day_date),
-                ('patient_id.clinic_id.warehouse_id', '=', self.clinic_id.id),
+                ('therapy_clinic_id.warehouse_id', '=', self.clinic_id.id),
                 ('patient_id.gender', '=', 'female'),
             ])
         else:
-            formula_count = max(daily_counts)
+            formula_count = total_on_max
 
         return daily_counts, max_index, formula_count
 

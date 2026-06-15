@@ -9,8 +9,24 @@ class ClinicStockReplenishmentLog(models.Model):
     replenishment_id = fields.Many2one(
         'clinic.stock.replenishment',
         string="Replenishment",
-        ondelete='cascade',
         index=True
+    )
+    active = fields.Boolean(default=True)
+
+    def unlink(self):
+        active_records = self.filtered('active')
+        if active_records:
+            active_records.write({'active': False})
+            return True
+        inactive_records = self.filtered(lambda r: not r.active)
+        if inactive_records:
+            return super(ClinicStockReplenishmentLog, inactive_records).unlink()
+        return True
+
+    snapshot_datetime = fields.Datetime(
+        string="Snapshot Date & Time",
+        readonly=True,
+        default=lambda self: fields.Datetime.now(),
     )
 
     source_warehouse_id = fields.Many2one(

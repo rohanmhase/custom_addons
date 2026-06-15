@@ -4,6 +4,7 @@
         <field name="model">clinic.stock.replenishment.log</field>
         <field name="arch" type="xml">
             <tree>
+                <field name="snapshot_datetime" string="Date &amp; Time"/>
                 <field name="replenishment_id" string="Replenishment"/>
                 <field name="source_warehouse_id" string="Source"/>
                 <field name="destination_warehouse_id" string="Destination Clinic"/>
