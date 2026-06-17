@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 import re
@@ -485,6 +485,9 @@ class Patient(models.Model):
                     rec.partner_id.write(partner_vals)
 
         return res
+
+    def copy(self, default=None):
+        raise UserError(_("⚠️ Duplication of this record is not allowed."))
 
     def _cron_check_inactive_patients(self):
         today = fields.Date.today()
