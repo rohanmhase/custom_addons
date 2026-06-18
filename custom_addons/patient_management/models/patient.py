@@ -35,12 +35,12 @@ class Patient(models.Model):
         string="Clinic",
         required=True, tracking=True
     )  # Clinic name
-    base_clinic_id = fields.Many2one(
-        'clinic.clinic',
-        string="Clinic Tag",
-        tracking=True,
-        default=lambda self: self.env.context.get('default_clinic_id')
-    )
+    # base_clinic_id = fields.Many2one(
+    #     'clinic.clinic',
+    #     string="Clinic Tag",
+    #     tracking=True,
+    #     default=lambda self: self.env.context.get('default_clinic_id')
+    # )
 
     pain_types = fields.Char(string="Pain Types", tracking=True)
 
