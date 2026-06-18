@@ -91,7 +91,7 @@
         <field name="name">clinic.patient.tree</field>
         <field name="model">clinic.patient</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree duplicate="false">
                 <field name="name"/>
                 <!--                <field name="age"/>-->
                 <!--                <field name="gender"/>-->
@@ -113,7 +113,7 @@
         <field name="name">clinic.patient.form</field>
         <field name="model">clinic.patient</field>
         <field name="arch" type="xml">
-            <form string="Patient">
+            <form string="Patient" duplicate="false">
                 <header>
                     <button name="action_open_case_taking" type="object" string="Case Taking"/>
                     <button name="action_open_enrollment" type="object" string="Enrollment"/>
