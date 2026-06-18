@@ -14,6 +14,8 @@
                 <field name="latest_xray_grade"/>
                 <field name="latest_xray_status"/>
                 <field name="patient_status"/>
+                <field name="clinic_id"/>
+                <field name="base_clinic_id"/>
 
                 <templates>
                     <t t-name="kanban-box">
@@ -71,6 +73,12 @@
                                 <t t-else="">
                                     <span class="text-muted">Not Available</span>
                                 </t>
+                            </div>
+                            <div>
+                                <strong>Tag - </strong>
+                                <span t-attf-class="badge rounded-pill {{ record.base_clinic_id.raw_value !== record.clinic_id.raw_value ? 'text-bg-warning text-dark font-weight-bold' : 'text-bg-light' }}">
+                                    <field name="base_clinic_id"/>
+                                </span>
                             </div>
                         </div>
                     </t>
@@ -166,6 +174,7 @@
                                options="{'horizontal': true}"
                                selection="[('active','Active'),('inactive','Inactive')]"
                                invisible="patient_status == 'visit'"/>
+                        <field name="base_clinic_id" required="1"/>
                     </group>
                     <field name="pain_types" invisible="1"/>
                     <group string="Registered For">
