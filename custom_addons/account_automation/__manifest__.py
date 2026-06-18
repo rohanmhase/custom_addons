@@ -7,10 +7,10 @@
     'data': [
         'security/security_groups.xml',
         'security/ir.model.access.csv',
-        'views/account_automation_views.xml',
         'data/bank_hub_reason_data.xml',
         'views/psmr_mapping_views.xml',
         'views/psmr_reconciliation_views.xml',
+        'views/account_automation_views.xml',
         'views/bank_hub_config_views.xml',
         'views/bank_hub_audit_views.xml',
         'views/bank_hub_reconciliation_views.xml',
