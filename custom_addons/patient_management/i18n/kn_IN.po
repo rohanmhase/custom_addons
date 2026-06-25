@@ -45,27 +45,27 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Additional tests or specialist advice may sometimes be required."
-msgstr "- ಕೆಲವೊಮ್ಮೆ ಹೆಚ್ಚುವರಿ ಪರೀಕ್ಷೆಗಳು ಅಥವಾ ತಜ್ಞರ ಸಲಹೆ ಅಗತ್ಯವಾಗಬಹುದು."
+msgstr "-ಕೆಲವು ಸಂದರ್ಭಗಳಲ್ಲಿ ಹೆಚ್ಚುವರಿ ಪರೀಕ್ಷೆಗಳು ಅಥವಾ ತಜ್ಞರ ಸಲಹೆ ಅಗತ್ಯವಾಗಬಹುದು."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Ask questions if any advice is unclear."
-msgstr "- ಯಾವುದಾದರೂ ಸಲಹೆ ಅಸ್ಪಷ್ಟವಾಗಿದ್ದರೆ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಿ."
+msgstr "- ಯಾವುದೇ ಸಲಹೆ ಅಥವಾ ಸೂಚನೆ ಸ್ಪಷ್ಟವಾಗದಿದ್ದರೆ ಅಗತ್ಯ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತೇನೆ."
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Guidance regarding treatment or further investigations"
-msgstr "- ಚಿಕಿತ್ಸೆ ಅಥವಾ ಮುಂದಿನ ತನಿಖೆಗಳ ಬಗ್ಗೆ ಮಾರ್ಗದರ್ಶನ"
+msgstr "- ಚಿಕಿತ್ಸೆ ಅಥವಾ ಹೆಚ್ಚಿನ ತನಿಖೆಗಳ ಕುರಿತು ಮಾರ್ಗದರ್ಶನ"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- I agree to:"
-msgstr "- ನಾನು ಒಪ್ಪುತ್ತೇನೆ:"
+msgstr "- ನಾನು ಈ ಕೆಳಗಿನ ವಿಷಯಗಳಿಗೆ ಒಪ್ಪುತ್ತೇನೆ:"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- I understand that:"
-msgstr "- ನನಗೆ ಅರ್ಥವಾಗಿದೆ:"
+msgstr "-ನಾನು ಈ ಕೆಳಗಿನ ವಿಷಯಗಳನ್ನು ಅರ್ಥಮಾಡಿಕೊಂಡಿದ್ದೇನೆ:"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -73,12 +73,12 @@ msgid ""
 "- Inform the doctor about ongoing medications, medical conditions, "
 "surgeries, or allergies."
 msgstr ""
-"- ಪ್ರಸ್ತುತ ನಡೆಯುತ್ತಿರುವ ಔಷಧಗಳು, ವೈದ್ಯಕೀಯ ಸ್ಥಿತಿ, ಶಸ್ತ್ರಚಿಕಿತ್ಸೆ ಅಥವಾ ಅಲರ್ಜಿಗಳ ಬಗ್ಗೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ.\n"
+"-ನಾನು ತೆಗೆದುಕೊಳ್ಳುತ್ತಿರುವ ಔಷಧಿಗಳು, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಶಸ್ತ್ರಚಿಕಿತ್ಸೆಗಳು ಅಥವಾ ಅಲರ್ಜಿಗಳ ಬಗ್ಗೆ ವೈದ್ಯರಿಗೆ ಮಾಹಿತಿ ನೀಡುತ್ತೇನೆ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Lifestyle and symptom evaluation"
-msgstr "- ಜೀವನಶೈಲಿ ಮತ್ತು ರೋಗಲಕ್ಷಣಗಳ ಮೌಲ್ಯಮಾಪನ"
+msgstr "- ಜೀವನಶೈಲಿ ಹಾಗೂ ರೋಗಲಕ್ಷಣಗಳ ಮೌಲ್ಯಮಾಪನ"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -88,25 +88,25 @@ msgstr "- ವೈದ್ಯಕೀಯ ಇತಿಹಾಸದ ಚರ್ಚೆ"
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Physical assessment"
-msgstr "- ದೈಹಿಕ ತಪಾಸಣೆ"
+msgstr "- ದೈಹಿಕ ಪರೀಕ್ಷೆ"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Review of reports (X-ray/MRI/Blood tests)"
-msgstr "- ವರದಿಗಳ ಪರೀಕ್ಷೆ (X-ರೇ / MRI / ರಕ್ತ ಪರೀಕ್ಷೆಗಳು)"
+msgstr "- ವೈದ್ಯಕೀಯ ವರದಿಗಳ ಪರಿಶೀಲನೆ (ಎಕ್ಸ್-ರೇ, ಎಂಆರ್‌ಐ, ರಕ್ತ ಪರೀಕ್ಷೆಗಳು ಇತ್ಯಾದಿ)"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Share accurate medical information to the best of my knowledge."
 msgstr ""
-"- ನನ್ನ ಅತ್ಯುತ್ತಮ ಜ್ಞಾನಕ್ಕೆ ತಕ್ಕಂತೆ, ನಿಖರವಾದ ವೈದ್ಯಕೀಯ ಮಾಹಿತಿಯನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತೇನೆ.\n"
+"- ನನಗೆ ತಿಳಿದಿರುವ ಮಟ್ಟಿಗೆ ನಿಖರವಾದ ಮತ್ತು ಸಂಪೂರ್ಣ ವೈದ್ಯಕೀಯ ಮಾಹಿತಿಯನ್ನು ಒದಗಿಸುತ್ತೇನೆ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid ""
 "- The consultation does not replace emergency medical care when required."
 msgstr ""
-"- ಅಗತ್ಯವಿದ್ದಾಗ, ಈ ಸಮಾಲೋಚನೆ ತುರ್ತು ವೈದ್ಯಕೀಯ ಆರೈಕೆಯ ಸ್ಥಾನವನ್ನು ತೆಗೆದುಕೊಳ್ಳಲಾಗದು.\n"
+"- ಅಗತ್ಯವಿದ್ದಾಗ ಸಮಾಲೋಚನೆಯು ತುರ್ತು ವೈದ್ಯಕೀಯ ಆರೈಕೆಗೆ ಪರ್ಯಾಯವಾಗಿರುವುದಿಲ್ಲ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -114,13 +114,13 @@ msgid ""
 "- The consultation is meant to provide professional guidance based on the "
 "information shared."
 msgstr ""
-"-ಈ ಸಮಾಲೋಚನಾ ಅಧಿವೇಶನವು ಹಂಚಿಕೊಂಡ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ವೃತ್ತಿಪರ ಮಾರ್ಗದರ್ಶನ ನೀಡಲು ಉದ್ದೇಶಿಸಲಾಗಿದೆ.\n"
+"-ನಾನು ಹಂಚಿಕೊಳ್ಳುವ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ವೃತ್ತಿಪರ ವೈದ್ಯಕೀಯ ಮಾರ್ಗದರ್ಶನವನ್ನು ನೀಡಲಾಗುತ್ತದೆ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "- Treatment response and recovery may vary from person to person."
 msgstr ""
-"- ಚಿಕಿತ್ಸೆಗೆ ಪ್ರತಿಕ್ರಿಯೆ ಮತ್ತು ಚೇತರಿಕೆ ವ್ಯಕ್ತಿಯಿಂದ ವ್ಯಕ್ತಿಗೆ ಭಿನ್ನವಾಗಿರಬಹುದು.\n"
+"- ಚಿಕಿತ್ಸೆಗೆ ಪ್ರತಿಕ್ರಿಯೆ ಹಾಗೂ ಚೇತರಿಕೆಯ ವೇಗ ವ್ಯಕ್ತಿಯಿಂದ ವ್ಯಕ್ತಿಗೆ ಬದಲಾಗಬಹುದು.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -129,7 +129,7 @@ msgid ""
 "specific results or recovery timelines cannot be guaranteed as treatment "
 "response may differ from person to person."
 msgstr ""
-"- ಸೂಕ್ತ ಆರೈಕೆ ಮತ್ತು ಮಾರ್ಗದರ್ಶನ ನೀಡಲು ಎಲ್ಲ ಪ್ರಯತ್ನಗಳನ್ನು ಮಾಡಲಾಗುವುದು, ಆದರೆ ಚಿಕಿತ್ಸೆಗೆ ಪ್ರತಿಕ್ರಿಯೆ ವ್ಯಕ್ತಿಯಿಂದ ವ್ಯಕ್ತಿಗೆ ಭಿನ್ನವಾಗಿರಬಹುದು ಆದ್ದರಿಂದ ನಿರ್ದಿಷ್ಟ ಫಲಿತಾಂಶಗಳು ಅಥವಾ ಚೇತರಿಕೆ ಸಮಯ ರೇಖೆಗಳನ್ನು ಖಾತ್ರಿಪಡಿಸಲಾಗದು.\n"
+"- ಸೂಕ್ತ ಆರೈಕೆ ಮತ್ತು ಮಾರ್ಗದರ್ಶನವನ್ನು ಒದಗಿಸಲು ಎಲ್ಲಾ ಪ್ರಯತ್ನಗಳನ್ನು ಮಾಡಲಾಗುತ್ತದೆ. ಚಿಕಿತ್ಸೆಯ ಫಲಿತಾಂಶಗಳು ಮತ್ತು ಚೇತರಿಕೆಯ ಸಮಯವನ್ನು ಖಾತರಿಪಡಿಸಲಾಗುವುದಿಲ್ಲ, ಏಕೆಂದರೆ ಅವು ವ್ಯಕ್ತಿಯಿಂದ ವ್ಯಕ್ತಿಗೆ ಬದಲಾಗಬಹುದು.\n"
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_prescription_line__dosage__0_-_0_-_1
@@ -1010,7 +1010,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Confidentiality:"
-msgstr "ಗೋಪ್ಯತೆ:"
+msgstr "ಗೌಪ್ಯತೆ:"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.view_prescription_form
@@ -1038,7 +1038,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Consent:"
-msgstr "ಒಪ್ಪಿಗೆ:"
+msgstr "ಸಮ್ಮತಿ:"
 
 #. module: patient_management
 #: model:ir.model.fields.selection,name:patient_management.selection__patient_assessment_line__key__constipation_hard_stool_difficult_to_pass
@@ -1841,13 +1841,13 @@ msgid ""
 "I am visiting ResearchAyu for medical consultation,\n"
 "                                        assessment, and guidance related to my health concerns."
 msgstr ""
-"ನನ್ನ ಆರೋಗ್ಯ ಸಮಸ್ಯೆಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ವೈದ್ಯಕೀಯ ಸಮಾಲೋಚನೆ, ಮೌಲ್ಯಮಾಪನ ಮತ್ತು ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ನಾನು ResearchAyu ಗೆ ಭೇಟಿ ನೀಡುತ್ತಿದ್ದೇನೆ.\n"
+"ನನ್ನ ಆರೋಗ್ಯ ಸಮಸ್ಯೆಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ವೈದ್ಯಕೀಯ ಸಮಾಲೋಚನೆ, ಮೌಲ್ಯಮಾಪನ ಮತ್ತು ಮಾರ್ಗದರ್ಶನ ಪಡೆಯುವ ಉದ್ದೇಶದಿಂದ ನಾನು ರಿಸರ್ಚ್ ಆಯುಗೆ ಭೇಟಿ ನೀಡುತ್ತಿದ್ದೇನೆ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "I voluntarily consent to this consultation and related assessment."
 msgstr ""
-"ನಾನು ಈ ಸಮಾಲೋಚನೆ ಮತ್ತು ಸಂಬಂಧಿತ ಮೌಲ್ಯಮಾಪನಕ್ಕೆ ಸ್ವಯಂಪ್ರೇರಿತವಾಗಿ ಒಪ್ಪಿಗೆ ನೀಡುತ್ತೇನೆ.\n"
+"ಮೇಲಿನ ಮಾಹಿತಿಯನ್ನು ಓದಿ ಅರ್ಥಮಾಡಿಕೊಂಡ ನಂತರ, ಈ ಸಮಾಲೋಚನೆ ಮತ್ತು ಸಂಬಂಧಿತ ಮೌಲ್ಯಮಾಪನಗಳಿಗೆ ನಾನು ಸ್ವಯಂಪ್ರೇರಿತವಾಗಿ ಸಮ್ಮತಿಸುತ್ತೇನೆ.\n"
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
@@ -2405,7 +2405,7 @@ msgid ""
 "My medical information and records will be kept confidential as per "
 "applicable healthcare standards."
 msgstr ""
-"ನನ್ನ ವೈದ್ಯಕೀಯ ಮಾಹಿತಿ ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ಅನ್ವಯವಾಗುವ ಆರೋಗ್ಯಸೇವಾ ಮಾನದಂಡಗಳ ಪ್ರಕಾರ ಗೋಪ್ಯವಾಗಿ ಇಡಲಾಗುವುದು.\n"
+"ನನ್ನ ವೈದ್ಯಕೀಯ ಮಾಹಿತಿ ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ಅನ್ವಯವಾಗುವ ಆರೋಗ್ಯ ಸೇವಾ ಮಾನದಂಡಗಳು ಹಾಗೂ ಗೌಪ್ಯತಾ ನಿಯಮಗಳ ಪ್ರಕಾರ ಸುರಕ್ಷಿತವಾಗಿ ಮತ್ತು ಗೌಪ್ಯವಾಗಿ ನಿರ್ವಹಿಸಲಾಗುತ್ತದೆ.\n"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__nakta
@@ -2676,7 +2676,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Outcome Understanding:"
-msgstr "ಫಲಿತಾಂಶದ ತಿಳುವಳಿಕೆ"
+msgstr "ಫಲಿತಾಂಶಗಳ ಕುರಿತು ತಿಳುವಳಿಕೆ"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_patient_case_taking__p_h_o
@@ -2838,7 +2838,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Patient Responsibility:"
-msgstr "ರೋಗಿಯ ಜವಾಬ್ದಾರಿ:"
+msgstr "ರೋಗಿಯ ಜವಾಬ್ದಾರಿಗಳ:"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__patient_source
@@ -3453,7 +3453,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "The consultation may include:"
-msgstr "ಸಮಾಲೋಚನೆಯಲ್ಲಿ ಈ ಕೆಳಗಿನವು ಸೇರಿರಬಹುದು:"
+msgstr "ಸಮಾಲೋಚನೆಯು ಕೆಳಗಿನ ವಿಷಯಗಳನ್ನು ಒಳಗೊಂಡಿರಬಹುದು:"
 
 #. module: patient_management
 #. odoo-python
@@ -3663,7 +3663,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Understanding of Consultation:"
-msgstr "ಸಮಾಲೋಚನೆಯ ತಿಳುವಳಿಕೆ"
+msgstr "ಸಮಾಲೋಚನೆಯ ಕುರಿತು ನನ್ನ ತಿಳುವಳಿಕೆ:"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
