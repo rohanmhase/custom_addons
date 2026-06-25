@@ -3684,7 +3684,7 @@ msgstr ""
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid "Understanding of Consultation:"
-msgstr ""
+msgstr "सल्लामसलती बाबतची समज:"
 
 #. module: patient_management
 #: model:ir.model.fields,field_description:patient_management.field_clinic_patient__treatment_updated_by
