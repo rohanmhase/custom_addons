@@ -72,6 +72,7 @@
                                 <tree create="false" edit="false" delete="false">
                                     <field name="patient_name" string="Patient Name"/>
                                     <field name="doctor_name" string="Doctor Name"/>
+                                    <field name="base_clinic_name" string="Sub Clinic"/>
                                 </tree>
                             </field>
                         </page>
