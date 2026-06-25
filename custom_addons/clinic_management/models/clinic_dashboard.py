@@ -208,6 +208,7 @@ class ClinicDashboard(models.TransientModel):
         self.daily_followup_line_ids = [(0, 0, {
             'patient_name':d.patient_id.name,
             'doctor_name':d.doctor_id.name,
+            'base_clinic_name': d.patient_id.base_clinic_id.name,
         }) for d in daily_followups]
 
         # Patient Assessment
