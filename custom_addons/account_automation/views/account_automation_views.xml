@@ -25,6 +25,8 @@
                         <h1 style="color: #111827; font-size: 28px; font-weight: 700;">Account Automation Workspace</h1>
                     </div>
                     <div class="row">
+
+                        <!-- ── Card 1: Daily Sale Comparison ── -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
                                  style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -52,6 +54,7 @@
                             </div>
                         </div>
 
+                        <!-- ── Card 2: Bank vs HUB Audit ── -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
                                  style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -90,28 +93,56 @@
                             </div>
                         </div>
 
+                        <!-- ── Card 3: Clinic Performance Report  (NEW) ── -->
                         <div class="col-md-4 col-sm-6 p-2">
-                            <div class="card p-3 border-0"
-                                 style="background-color: #ffffff; border: 2px dashed #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; align-items: center; justify-content: center;">
-                                <div class="text-center text-muted">
-                                    <i class="fa fa-plus-circle mb-2" title="Add New"
-                                       style="font-size: 22px; color: #9ca3af;"/>
-                                    <p class="small m-0" style="color: #6b7280; font-weight: 500;">More Automations
-                                        Coming Soon
+                            <div class="card p-3 shadow-sm border-0"
+                                 style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-warning d-flex align-items-center justify-content-center rounded"
+                                             style="font-size: 20px; background-color: #fffbeb; width: 40px; height: 40px;">
+                                            <i class="fa fa-bar-chart" title="Clinic Performance"/>
+                                        </div>
+                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
+                                            Clinic Performance
+                                        </h3>
+                                    </div>
+                                    <p class="text-muted small m-0" style="line-height: 1.4;">
+                                        Compare sales, therapy sessions, therapist counts, medicine cost,
+                                        rent, and RS doctors across all clinics for any period.
                                     </p>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-3 pt-2"
+                                     style="border-top: 1px solid #f3f4f6 !important;">
+                                    <button name="action_view_clinic_performance_history"
+                                            string="View History"
+                                            type="object"
+                                            class="btn btn-secondary btn-sm"/>
+                                    <button name="action_run_clinic_performance"
+                                            string="Run Report"
+                                            type="object"
+                                            class="btn btn-primary btn-sm"/>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <menuitem id="menu_account_automation_root" name="Account Automation" action="action_account_automation_dashboard"
+    <menuitem id="menu_account_automation_root"
+              name="Account Automation"
+              action="action_account_automation_dashboard"
               sequence="45"/>
-    <menuitem id="menu_account_automation_operations" name="Operations" parent="menu_account_automation_root"
+    <menuitem id="menu_account_automation_operations"
+              name="Operations"
+              parent="menu_account_automation_root"
               sequence="10"/>
-    <menuitem id="menu_account_automation_config" name="Configuration" parent="menu_account_automation_root"
+    <menuitem id="menu_account_automation_config"
+              name="Configuration"
+              parent="menu_account_automation_root"
               sequence="20"/>
+
 </odoo>
