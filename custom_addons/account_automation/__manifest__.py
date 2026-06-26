@@ -3,7 +3,7 @@
     'version': '17.0.1.0.0',
     'category': 'Accounting',
     'summary': 'Custom financial automations, PSMR reconciliations, and internal data audits.',
-    'depends': ['account', 'point_of_sale', 'mail'],
+    'depends': ['account', 'point_of_sale', 'mail','clinic_management'],
     'data': [
         'security/security_groups.xml',
         'security/ir.model.access.csv',
@@ -13,7 +13,8 @@
         'views/bank_hub_reconciliation_views.xml',  
         'views/account_automation_views.xml',          
         'views/psmr_mapping_views.xml',             
-        'views/psmr_reconciliation_views.xml',      
+        'views/psmr_reconciliation_views.xml',
+        'views/clinic_performance_views.xml',
     ],
     'installable': True,
     'application': False,
