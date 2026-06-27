@@ -301,7 +301,9 @@ class ClinicPerformanceReport(models.Model):
         """Always exclude UI-hidden rows from every search / view."""
         domain = list(domain or [])
         if not self.env.context.get('include_ui_hidden'):
-            domain = ['&', ('ui_hidden', '=', False)] + domain
+            # Append the leaf; a flat list of leaves is implicitly AND-ed,
+            # so this stays valid even when `domain` is empty.
+            domain = domain + [('ui_hidden', '=', False)]
         return super()._search(
             domain, offset=offset, limit=limit, order=order,
             access_rights_uid=access_rights_uid,
