@@ -107,6 +107,10 @@ class ClinicPerformanceRent(models.Model):
 
     @api.constrains('owner_ids')
     def _check_owners(self):
+        # Skip during CSV/data import: Odoo may validate the parent before the
+        # owner one2many lines are linked, causing a false "no owner" error.
+        if self.env.context.get('import_file'):
+            return
         for rec in self:
             if not rec.owner_ids:
                 raise models.ValidationError(
