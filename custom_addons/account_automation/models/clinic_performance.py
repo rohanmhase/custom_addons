@@ -29,7 +29,7 @@ class ClinicPerformanceMedicineCost(models.Model):
     unit_cost = fields.Float(
         string='Unit Cost',
         required=True,
-        digits=(16, 4),
+        digits=(16, 2),
         help='This cost is used instead of standard price when calculating medicine cost in the Clinic Performance Report.',
     )
     currency_id = fields.Many2one(
