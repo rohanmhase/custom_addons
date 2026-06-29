@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         1.  MANUAL MEDICINE COST
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_clinic_performance_medicine_cost_tree" model="ir.ui.view">
+        <field name="name">clinic.performance.medicine.cost.tree</field>
+        <field name="model">clinic.performance.medicine.cost</field>
+        <field name="arch" type="xml">
+            <tree string="Medicine Costs" editable="bottom">
+                <field name="product_id" string="Product"/>
+                <field name="unit_cost" string="Unit Cost"/>
+                <field name="currency_id" string="Currency" optional="show"/>
+                <field name="notes" string="Notes" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_medicine_cost_form" model="ir.ui.view">
+        <field name="name">clinic.performance.medicine.cost.form</field>
+        <field name="model">clinic.performance.medicine.cost</field>
+        <field name="arch" type="xml">
+            <form string="Medicine Unit Cost">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_id" placeholder="Select Product…"/></h1>
+                    </div>
+                    <group>
+                        <group string="Cost">
+                            <field name="unit_cost" string="Unit Cost"/>
+                            <field name="currency_id" string="Currency"/>
+                        </group>
+                        <group string="Info">
+                            <field name="notes" string="Notes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_medicine_cost_search" model="ir.ui.view">
+        <field name="name">clinic.performance.medicine.cost.search</field>
+        <field name="model">clinic.performance.medicine.cost</field>
+        <field name="arch" type="xml">
+            <search string="Medicine Costs">
+                <field name="product_id"/>
+                <field name="notes"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_clinic_performance_medicine_cost" model="ir.actions.act_window">
+        <field name="name">Medicine Costs</field>
+        <field name="res_model">clinic.performance.medicine.cost</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         2.  CLINIC RENT AGREEMENTS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_clinic_performance_rent_tree" model="ir.ui.view">
+        <field name="name">clinic.performance.rent.tree</field>
+        <field name="model">clinic.performance.rent</field>
+        <field name="arch" type="xml">
+            <tree string="Rent Agreements">
+                <field name="clinic_id" string="Clinic"/>
+                <field name="address" string="Address" optional="show"/>
+                <field name="amount" string="Monthly Rent"/>
+                <field name="currency_id" string="Currency" optional="show"/>
+                <field name="effective_date" string="Effective From" optional="show"/>
+                <field name="expiry_date" string="Expiry Date" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_rent_form" model="ir.ui.view">
+        <field name="name">clinic.performance.rent.form</field>
+        <field name="model">clinic.performance.rent</field>
+        <field name="arch" type="xml">
+            <form string="Rent Agreement">
+                <sheet>
+                    <div class="oe_title" style="width: 100%;">
+                        <label for="clinic_id" string="Clinic"/>
+                        <h1><field name="clinic_id" placeholder="Select a clinic…"
+                                   options="{'no_open': True, 'no_create': True}"
+                                   style="width: 100%;"/></h1>
+                    </div>
+                    <group>
+                        <group string="Rent Details">
+                            <field name="amount" string="Monthly Rent Amount"/>
+                            <field name="currency_id" string="Currency"/>
+                        </group>
+                        <group string="Validity">
+                            <field name="effective_date" string="Effective From"/>
+                            <field name="expiry_date"    string="Expiry Date"/>
+                        </group>
+                    </group>
+                    <separator string="Address"/>
+                    <field name="address" nolabel="1"
+                           placeholder="Premises address…"
+                           class="o_field_text w-100"/>
+                    <notebook>
+                        <page string="Owners" name="owners">
+                            <field name="owner_ids" widget="one2many">
+                                <tree editable="bottom" create="true" delete="true">
+                                    <field name="name" string="Owner Name" required="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" nolabel="1" placeholder="Internal notes…"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_rent_search" model="ir.ui.view">
+        <field name="name">clinic.performance.rent.search</field>
+        <field name="model">clinic.performance.rent</field>
+        <field name="arch" type="xml">
+            <search string="Rent Agreements">
+                <field name="clinic_id"/>
+                <field name="address"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_clinic_performance_rent" model="ir.actions.act_window">
+        <field name="name">Rent Agreements</field>
+        <field name="res_model">clinic.performance.rent</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         3.  CLINIC PERFORMANCE REPORT  –  Wizard
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_clinic_performance_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.performance.wizard.form</field>
+        <field name="model">clinic.performance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Clinic Performance Report">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2 style="color: #1f2937;">Clinic Performance Report</h2>
+                        <p class="text-muted small">Select the reporting period and optionally filter by clinic name.</p>
+                    </div>
+                    <group>
+                        <group string="Period">
+                            <field name="start_date" string="From Date"/>
+                            <field name="end_date"   string="To Date"/>
+                        </group>
+                        <group string="Filter (optional)">
+                            <field name="clinic_ids"
+                                   string="Clinics"
+                                   widget="many2many_tags"
+                                   placeholder="Leave blank for all clinics"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group string="Employee Cost (optional)">
+                        <field name="employee_cost_filename" invisible="1"/>
+                        <field name="employee_cost_file"
+                               filename="employee_cost_filename"
+                               widget="binary"
+                               string="Upload CSV"/>
+                        <div class="text-muted small" colspan="2">
+                            CSV columns required: <strong>Clinic Name</strong>, <strong>Employee cost</strong>.
+                            Rows are matched to clinics by name (case-insensitive). Leave blank to skip.
+                        </div>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_report"
+                            string="Generate Report"
+                            type="object"
+                            class="btn btn-primary"
+                            icon="fa-bar-chart"/>
+                    <button string="Cancel"
+                            class="btn btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_clinic_performance_wizard" model="ir.actions.act_window">
+        <field name="name">Clinic Performance Report</field>
+        <field name="res_model">clinic.performance.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         3b. CLINIC PERFORMANCE REPORT  –  Result (form + embedded tree)
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_clinic_performance_report_line_tree" model="ir.ui.view">
+        <field name="name">clinic.performance.report.line.tree</field>
+        <field name="model">clinic.performance.report.line</field>
+        <field name="arch" type="xml">
+            <tree string="Clinic Performance" create="false" delete="false"
+                  decoration-muted="therapy_count == 0">
+                <field name="clinic_name"     string="Clinic"/>
+                <field name="total_sales"     string="Sales"          sum="Total"/>
+                <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
+                <field name="home_count"      string="↳ Home"         sum="Total" optional="show"/>
+                <field name="clinic_count"    string="↳ Clinic"       sum="Total" optional="show"/>
+                <field name="self_count"      string="↳ Self"         sum="Total" optional="show"/>
+                <field name="therapist_count" string="Therapist #"    sum="Total"/>
+                <field name="medicine_cost"   string="Medicine Cost"  sum="Total"/>
+                <field name="rs_doctor_count" string="RS Numbers"     sum="Total"/>
+                <field name="total_rent"      string="Rent"           sum="Total"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_report_form" model="ir.ui.view">
+        <field name="name">clinic.performance.report.form</field>
+        <field name="model">clinic.performance.report</field>
+        <field name="arch" type="xml">
+            <form string="Clinic Performance Report"
+                  create="false" edit="false" delete="false">
+                <sheet style="max-width: 100%;">
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                            invisible="active == True"/>
+                    <!-- Header info bar -->
+                    <div class="oe_title mb-3" style="width: 100%;">
+                        <h1 style="color: #111827; font-size: 24px; font-weight: 700;">
+                            Clinic Performance Report
+                        </h1>
+                        <div class="d-flex gap-3 mt-1 small" style="color:#374151;">
+                            <span>
+                                <i class="fa fa-calendar-o mr-1"/>
+                                Period:
+                                <strong><field name="start_date" readonly="1" nolabel="1"/></strong>
+                                to
+                                <strong><field name="end_date"   readonly="1" nolabel="1"/></strong>
+                            </span>
+                            <span invisible="not clinic_name_filter">
+                                <i class="fa fa-filter mr-1"/>
+                                Filter: <field name="clinic_name_filter" readonly="1" nolabel="1"/>
+                            </span>
+                            <span>
+                                <i class="fa fa-clock-o mr-1"/>
+                                Generated:
+                                <field name="run_on" readonly="1" nolabel="1"/>
+                                by <field name="run_by_id" readonly="1" nolabel="1"/>
+                            </span>
+                        </div>
+                        <button name="action_open_lines"
+                                type="object"
+                                class="btn btn-sm btn-primary mt-2"
+                                icon="fa-search">
+                            Search / Filter Clinics
+                        </button>
+                    </div>
+
+                    <!-- Inline result table (clinics as rows, metrics as columns) -->
+                    <field name="line_ids"
+                           nolabel="1"
+                           widget="one2many_list"
+                           mode="tree">
+                        <tree string="Results" create="false" delete="false"
+                              decoration-muted="therapy_count == 0 and total_sales == 0"
+                              decoration-success="profit_loss &gt; 0"
+                              decoration-danger="profit_loss &lt; 0">
+                            <field name="profit_loss" column_invisible="1"/>
+                            <field name="clinic_name"     string="Clinic"/>
+                            <field name="total_sales"     string="Sales"           sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
+                            <field name="home_count"      string="↳ Home"          sum="Total"/>
+                            <field name="clinic_count"    string="↳ Clinic"        sum="Total"/>
+                            <field name="self_count"      string="↳ Self"          sum="Total"/>
+                            <field name="therapist_count" string="Therapist #"     sum="Total"/>
+                            <field name="medicine_cost"   string="Medicine Cost"   sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="rs_doctor_count" string="RS Numbers"      sum="Total"/>
+                            <field name="total_rent"      string="Rent"            sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="employee_cost"   string="Employee Cost"   sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="profit_loss"     string="Profit / Loss"   sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"
+                                   decoration-success="profit_loss &gt; 0"
+                                   decoration-danger="profit_loss &lt; 0"
+                                   decoration-bf="1"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Standalone searchable list of report lines (real search bar) -->
+    <record id="view_clinic_performance_report_line_search" model="ir.ui.view">
+        <field name="name">clinic.performance.report.line.search</field>
+        <field name="model">clinic.performance.report.line</field>
+        <field name="arch" type="xml">
+            <search string="Clinic Performance Lines">
+                <field name="clinic_name" string="Clinic"
+                       filter_domain="[('clinic_name','ilike',self)]"/>
+                <filter name="profit" string="Profit" domain="[('profit_loss','&gt;',0)]"/>
+                <filter name="loss" string="Loss" domain="[('profit_loss','&lt;',0)]"/>
+                <filter name="has_sales" string="Has Sales" domain="[('total_sales','&gt;',0)]"/>
+                <filter name="has_therapy" string="Has Therapy" domain="[('therapy_count','&gt;',0)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_clinic_performance_report_line_full_tree" model="ir.ui.view">
+        <field name="name">clinic.performance.report.line.full.tree</field>
+        <field name="model">clinic.performance.report.line</field>
+        <field name="arch" type="xml">
+            <tree string="Clinic Performance" create="false" delete="false"
+                  decoration-success="profit_loss &gt; 0"
+                  decoration-danger="profit_loss &lt; 0">
+                <field name="clinic_name"     string="Clinic"/>
+                <field name="total_sales"     string="Sales"          sum="Total"/>
+                <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
+                <field name="home_count"      string="↳ Home"         sum="Total" optional="hide"/>
+                <field name="clinic_count"    string="↳ Clinic"       sum="Total" optional="hide"/>
+                <field name="self_count"      string="↳ Self"         sum="Total" optional="hide"/>
+                <field name="therapist_count" string="Therapist #"    sum="Total"/>
+                <field name="medicine_cost"   string="Medicine Cost"  sum="Total"/>
+                <field name="rs_doctor_count" string="RS Numbers"     sum="Total"/>
+                <field name="total_rent"      string="Rent"           sum="Total"/>
+                <field name="employee_cost"   string="Employee Cost"  sum="Total"/>
+                <field name="profit_loss" string="Profit / Loss" sum="Total"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- History tree: list of past report runs -->
+    <record id="view_clinic_performance_report_tree" model="ir.ui.view">
+        <field name="name">clinic.performance.report.tree</field>
+        <field name="model">clinic.performance.report</field>
+        <field name="arch" type="xml">
+            <tree string="Report History" create="false"
+                  decoration-muted="active == False">
+                <field name="active" column_invisible="1"/>
+                <field name="run_on" string="Generated On"/>
+                <field name="start_date" string="From"/>
+                <field name="end_date" string="To"/>
+                <field name="clinic_name_filter" string="Clinic Filter"/>
+                <field name="run_by_id" string="Generated By"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- History search with Active / Archived filters -->
+    <record id="view_clinic_performance_report_search" model="ir.ui.view">
+        <field name="name">clinic.performance.report.search</field>
+        <field name="model">clinic.performance.report</field>
+        <field name="arch" type="xml">
+            <search string="Report History">
+                <field name="clinic_name_filter" string="Clinic Filter"/>
+                <field name="run_by_id" string="Generated By"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_run_by" string="Generated By"
+                            context="{'group_by': 'run_by_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: Report History -->
+    <record id="action_clinic_performance_report_history" model="ir.actions.act_window">
+        <field name="name">Clinic Performance – History</field>
+        <field name="res_model">clinic.performance.report</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_clinic_performance_report_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MENU ITEMS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- History under Operations -->
+    <menuitem id="menu_clinic_performance_report_history"
+              name="Clinic Performance History"
+              parent="menu_account_automation_operations"
+              action="action_clinic_performance_report_history"
+              sequence="30"/>
+
+    <!-- Configuration sub-menu -->
+    <menuitem id="menu_clinic_performance_medicine_cost"
+              name="Medicine Costs"
+              parent="menu_account_automation_config"
+              action="action_clinic_performance_medicine_cost"
+              sequence="10"/>
+
+    <menuitem id="menu_clinic_performance_rent"
+              name="Rent Agreements"
+              parent="menu_account_automation_config"
+              action="action_clinic_performance_rent"
+              sequence="20"/>
+
+</odoo>
