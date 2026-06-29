@@ -82,15 +82,22 @@ class Enrollment(models.Model):
     def _compute_remaining_sessions(self):
         for rec in self:
             new_remaining = rec.total_sessions - rec.used_sessions
+            status_needs_update = False
             # Only update if value actually changed
             if rec.remaining_sessions != new_remaining:
                 rec.remaining_sessions = new_remaining
+                status_needs_update = False
 
             # Update state only if needed
             if new_remaining == 0 and rec.state != 'completed':
                 rec.state = 'completed'
+                status_needs_update = False
             elif new_remaining > 0 and rec.state != 'active':
                 rec.state = 'active'
+                status_needs_update = False
+
+            if status_needs_update and rec.id:
+                rec._update_patient_status()
 
     @api.model
     def create(self, vals):
@@ -105,52 +112,105 @@ class Enrollment(models.Model):
         return rec
 
     def _update_patient_status(self):
-
         for rec in self:
-
             if not rec.patient_id:
                 continue
 
             patient = rec.patient_id
 
-            # 1. UNPAID
-            if rec.payment_state != 'paid':
+            # Fetch ALL paid enrollments for this patient, ordered by newest first
+            paid_enrollments = self.env['patient.enrollment'].search([
+                ('patient_id', '=', patient.id),
+                ('payment_state', '=', 'paid'),
+                ('active', '=', True)
+            ], order='enrollment_date desc, id desc')
 
-                if patient.patient_status not in ['active', 'inactive']:
+            # If they have zero paid enrollments
+            if not paid_enrollments:
+                if patient.patient_status not in ['active', 'on_medicine', 'inactive']:
                     patient.patient_status = 'visit'
-
                 continue
 
-            product_names = rec.line_ids.mapped(
-                'service_product_id.name'
-            )
+            has_active_therapy = False
+            has_active_medicine = False
 
             therapy_products = [
-                'Regeneration Therapy',
                 'Complementary Therapy',
-                'Self Therapy',
+                'Demo Session',
+                'Regeneration Therapy',
+                'Self Therapy'
             ]
 
-            # 2. ACTIVE THERAPY
-            if any(product in product_names for product in therapy_products):
+            medicine_products = [
+                'Diabetes Treatment',
+                'Digestion Improvement Treatment',
+                'PCOD Treatment',
+                'Regeneration Treatment',
+                'Weight Management Treatment'
+            ]
 
-                # Therapy completed
-                if rec.total_sessions > 0 and rec.total_sessions == rec.used_sessions:
-                    patient.patient_status = 'inactive'
+            today = fields.Date.today()
 
-                else:
-                    patient.patient_status = 'active'
+            # Find the patient's most recent session date
+            last_session = self.env['patient.session'].search([
+                ('patient_id', '=', patient.id),
+                ('active', '=', True)
+            ], order='session_date desc', limit=1)
 
-            # 3. CONSULTATION ONLY
-            elif 'Consultation Charges' in product_names:
+            last_session_date = last_session.session_date if last_session else False
 
-                # Never downgrade active/inactive to visit
-                if patient.patient_status not in ['active', 'inactive']:
-                    patient.patient_status = 'visit'
+            # Check ALL lines across ALL paid enrollments
+            for enr in paid_enrollments:
+                product_names = enr.line_ids.mapped('service_product_id.name')
 
-            # 4. OTHER SERVICES
+                # 1. Check for Active Therapies (Must have sessions AND be within the 7-day window)
+                if any(p in product_names for p in therapy_products):
+                    if enr.total_sessions > enr.used_sessions:
+
+                        # Determine if this therapy is abandoned or active
+                        active_date = last_session_date if last_session_date else enr.enrollment_date
+                        if active_date:
+                            diff_days = (today - active_date).days
+                            if diff_days <= 7:
+                                has_active_therapy = True
+
+                # 2. Check for Medicine/Treatments (Must be within the 30-day window)
+                if any(p in product_names for p in medicine_products):
+                    if enr.enrollment_date:
+                        diff_days = (today - enr.enrollment_date).days
+                        if diff_days < 30:
+                            has_active_medicine = True
+
+            # Apply Status based on Highest Priority Hierarchy
+            if has_active_therapy:
+                patient.patient_status = 'active'
+
+            elif has_active_medicine:
+                patient.patient_status = 'on_medicine'
+
             else:
-                patient.patient_status = 'inactive'
+                # No valid active therapies and no active medicines.
+                latest_enr = paid_enrollments[0]
+                latest_products = latest_enr.line_ids.mapped('service_product_id.name')
+
+                # If their most recent transaction was ONLY a consultation
+                if 'Consultation Charges' in latest_products and not any(
+                        p in latest_products for p in therapy_products + medicine_products):
+
+                    # BULLETPROOF CHECK: Have they EVER bought a therapy or medicine in their history?
+                    past_major_enrollments = paid_enrollments.filtered(
+                        lambda e: any(p in therapy_products + medicine_products for p in
+                                      e.line_ids.mapped('service_product_id.name'))
+                    )
+
+                    if past_major_enrollments:
+                        # They are an old patient whose packages expired.
+                        patient.patient_status = 'inactive'
+                    else:
+                        # They are a brand new patient who only ever bought a consultation.
+                        patient.patient_status = 'visit'
+                else:
+                    patient.patient_status = 'inactive'
 
     def write(self, vals):
 
@@ -176,19 +236,8 @@ class Enrollment(models.Model):
             if rec.patient_id:
                 rec.patient_id._compute_active_enrollment_id()
 
-            if vals.get('payment_state') == 'paid':
+            if any(key in vals for key in ['payment_state', 'state', 'used_sessions', 'active']):
                 rec._update_patient_status()
-
-            if rec.patient_id:
-                active_enrollments = self.search([
-                    ('patient_id', '=', rec.patient_id.id),
-                    ('state', '=', 'active'),
-                    ('active', '=', True),
-                ])
-
-                # Safely downgrade to inactive if therapies run out
-                if not active_enrollments and rec.patient_id.patient_status == 'active':
-                    rec.patient_id.patient_status = 'inactive'
 
         return res
 

@@ -26,7 +26,7 @@
                                     <field name="name"/>
                                 </strong>
 
-                                <span t-attf-class="badge rounded-pill {{ record.patient_status.raw_value === 'active' ? 'text-bg-success' : record.patient_status.raw_value === 'inactive' ? 'text-bg-danger' : 'text-bg-secondary' }}">
+                                <span t-attf-class="badge rounded-pill {{ record.patient_status.raw_value === 'active' ? 'text-bg-success' : record.patient_status.raw_value === 'inactive' ? 'text-bg-danger' : record.patient_status.raw_value === 'on_medicine' ? 'text-bg-warning' : 'text-bg-secondary' }}">
                                     <t t-esc="record.patient_status.value || 'visit'"/>
                                 </span>
 
