@@ -5,14 +5,13 @@
             <div style="text-align: center; font-weight: bold; font-size: 14px; margin-top: -40px;">
                 MEDICINE DISPATCHED
             </div>
+            <!-- ============ NEW: DATE LINE (only addition) ============ -->
+            <div style="text-align: center; font-size: 12px; margin-top: 6px;" t-if="props.data.date">
+                <b>Date:</b> <t t-esc="new Date(props.data.date).toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric'})"/>
+            </div>
+            <!-- ====================================================== -->
             <div t-if="props.data.partner_name_only" style="text-align: center; margin-bottom: 10px; margin-top: 20px; font-size:18px">
                 <b>Patient:</b>  <t t-esc="props.data.partner_name_only"/>
-            </div>
-        </xpath>
-        <xpath expr="//div[hasclass('pos-receipt')]//OrderWidget" position="before">
-            <div style="display: flex; justify-content: space-between;  padding-bottom: 3px; font-weight: bold; margin-bottom: 10px;">
-                <span>Medicine</span>
-                <span>Qty</span>
             </div>
         </xpath>
 <!--        <xpath expr="//div[hasclass('pos-receipt')]//OrderWidget" position="before">-->
@@ -22,6 +21,13 @@
 <!--            </div>-->
 <!--        </xpath>-->
 
+
+        <xpath expr="//div[hasclass('pos-receipt')]//OrderWidget" position="before">
+            <div style="display: flex; justify-content: space-between;  padding-bottom: 3px; font-weight: bold; margin-bottom: 10px;">
+                <span>Medicine</span>
+                <span>Qty</span>
+            </div>
+        </xpath>
 
         <xpath expr="//div[hasclass('pos-receipt')]//Orderline" position="inside">
             <span class="custom-qty-display" style="float: right;">
