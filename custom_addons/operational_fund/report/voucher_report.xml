@@ -9,6 +9,10 @@
         <field name="print_report_name">'Voucher - %s' % (object.name)</field>
         <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
         <field name="binding_type">report</field>
+
+        <!-- Auto-cache PDF mapping pointer logic -->
+        <field name="attachment_use">True</field>
+        <field name="attachment">(object.state in ('approved', 'paid', 'refund_requested', 'refunded')) and ('Voucher_' + object.name.replace('/', '_') + '.pdf')</field>
     </record>
 
     <template id="report_voucher_template">
@@ -16,29 +20,41 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
                     <div class="page">
-                        <div class="text-center mt-4 mb-4">
-                            <h2>DISBURSEMENT VOUCHER</h2>
-                            <h4>
-                                <t t-esc="doc.name"/>
-                            </h4>
+                        <!-- Voucher Header Status Node -->
+                        <div class="row mt-4 mb-4">
+                            <div class="col-8">
+                                <h2>DISBURSEMENT VOUCHER</h2>
+                                <h4><t t-esc="doc.name"/></h4>
+                            </div>
+                            <div class="col-4 text-end" style="padding-top: 15px;">
+                                <!-- 🚨 NEW: Absolute Clear Status Badges for S3 Accounting Audits 🚨 -->
+                                <span t-if="doc.state == 'draft'" style="padding: 8px 15px; background-color: #f1f2f3; color: #333; font-weight: bold; border-radius: 4px;">DRAFT VOUCHER</span>
+                                <span t-if="doc.state == 'waiting'" style="padding: 8px 15px; background-color: #f0ad4e; color: white; font-weight: bold; border-radius: 4px;">WAITING APPROVAL</span>
+                                <span t-if="doc.state == 'approved'" style="padding: 8px 15px; background-color: #0275d8; color: white; font-weight: bold; border-radius: 4px;">APPROVED (UNPAID)</span>
+                                <span t-if="doc.state == 'paid'" style="padding: 8px 15px; background-color: #5cb85c; color: white; font-weight: bold; border-radius: 4px;">PAID VOUCHER</span>
+                                <span t-if="doc.state == 'rejected'" style="padding: 8px 15px; background-color: #d9534f; color: white; font-weight: bold; border-radius: 4px;">REJECTED</span>
+                                <span t-if="doc.state == 'refunded'" style="padding: 8px 15px; background-color: #292b2c; color: white; font-weight: bold; border-radius: 4px;">REFUNDED</span>
+                            </div>
                         </div>
 
+                        <!-- Core Meta Table -->
                         <table class="table table-bordered mt-4">
                             <tr>
                                 <td>
                                     <strong>Date:</strong> <t t-esc="doc.date"/><br/>
                                     <strong>Fund Account:</strong> <t t-esc="doc.clinic_id.name"/><br/>
-                                    <strong>Category:</strong> <t t-esc="dict(doc.fields_get(allfields=['category'])['category']['selection'])[doc.category]"/>
+                                    <strong>Category:</strong> <t t-esc="doc.display_category"/>
                                 </td>
                             </tr>
                         </table>
 
+                        <!-- Main Financial Description Table -->
                         <table class="table mt-4">
                             <thead>
                                 <tr>
-                                    <th>Payee / Vendor</th>
-                                    <th>Business Purpose</th>
-                                    <th class="text-end">Amount Disbursed</th>
+                                    <th style="width: 30%;">Payee / Vendor</th>
+                                    <th style="width: 50%;">Business Purpose &amp; Details</th>
+                                    <th class="text-end" style="width: 20%;">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -46,22 +62,67 @@
                                     <td>
                                         <t t-esc="doc.payee_display"/>
                                     </td>
-                                    <td>
-                                        <t t-esc="doc.description"/>
 
-                                        <!-- 🚨 DYNAMIC INJECTIONS FOR PDF 🚨 -->
-                                        <t t-if="doc.category == 'other' and doc.other_expense_details">
-                                            <br/><strong>Specific Expense:</strong> <t t-esc="doc.other_expense_details"/>
+                                    <td>
+                                        <!-- Base Description Text -->
+                                        <t t-if="doc.description">
+                                            <t t-esc="doc.description"/>
                                         </t>
 
-                                        <t t-if="doc.category == 'clinic_to_clinic'">
-                                            <br/><strong>From:</strong> <t t-esc="doc.from_clinic_id.name"/>
-                                            <br/><strong>To:</strong> <t t-esc="doc.to_clinic_id.name"/>
-                                            <br/><strong>Therapist Type:</strong>
-                                            <t t-if="doc.therapist_type == 'fixed'">Fixed Therapist</t>
-                                            <t t-if="doc.therapist_type == 'floater'">Floater</t>
+                                        <!-- Custom Context Specific Details -->
+                                        <t t-if="(doc.expense_category == 'other' or doc.category == 'other') and doc.other_expense_details">
+                                            <div class="mt-2">
+                                                <strong>Specific Expense:</strong> <t t-esc="doc.other_expense_details"/>
+                                            </div>
+                                        </t>
+
+                                        <!-- Therapist Explicit Metadata Layout Blocks -->
+                                        <t t-if="doc.expense_category in ['incentive', 'overtime'] and doc.therapist_role">
+                                            <div class="mt-2">
+                                                <strong>Role:</strong>
+                                                <t t-if="doc.therapist_role == 'fixed'">Fixed Therapist</t>
+                                                <t t-if="doc.therapist_role == 'floater'">Floater Therapist</t>
+                                                <t t-if="doc.therapist_role == 'home'">Home Therapist</t>
+                                            </div>
+                                        </t>
+                                        <t t-if="doc.expense_category == 'travel' and doc.travel_type">
+                                            <div class="mt-2">
+                                                <strong>Travel Route:</strong>
+                                                <t t-if="doc.travel_type == 'home'">Home Visit</t>
+                                                <t t-if="doc.travel_type == 'fixed'">Fixed Therapist Travel</t>
+                                                <t t-if="doc.travel_type == 'floater'">Floater Travel</t>
+                                                <t t-if="doc.travel_type == 'c2c'">Clinic to Clinic</t>
+                                            </div>
+                                        </t>
+
+                                        <!-- Clinic Transfer Mapping Layout Panel -->
+                                        <t t-if="doc.travel_type == 'c2c' or doc.category == 'clinic_to_clinic'">
+                                            <div class="mt-2" style="border-left: 3px solid #00a09d; padding-left: 10px; background-color: #f8f9fa;">
+                                                <strong>Transfer Details:</strong><br/>
+                                                <strong>From:</strong> <t t-esc="doc.from_clinic_id.name"/><br/>
+                                                <strong>To:</strong> <t t-esc="doc.to_clinic_id.name"/><br/>
+                                                <strong>Type:</strong>
+                                                <t t-if="doc.therapist_role == 'fixed' or doc.therapist_type == 'fixed'">Fixed Therapist</t>
+                                                <t t-if="doc.therapist_role == 'floater' or doc.therapist_type == 'floater'">Floater</t>
+                                            </div>
+                                        </t>
+
+                                        <!-- Home Visit Core Patients Verification Dataset -->
+                                        <t t-if="doc.show_home_visit or doc.category == 'home_visit_travel'">
+                                            <div class="mt-2" style="border-left: 3px solid #d9534f; padding-left: 10px; background-color: #f8f9fa;">
+                                                <strong>Home Visit Patient Details:</strong><br/>
+                                                <strong>MRN:</strong> <t t-esc="doc.home_visit_mrn_search"/><br/>
+                                                <strong>Patient Name:</strong> <t t-esc="doc.home_visit_patient_name"/><br/>
+                                                <strong>Phone No:</strong> <t t-esc="doc.home_visit_patient_phone"/><br/>
+                                                <strong>Registered At:</strong> <t t-esc="doc.home_visit_patient_clinic"/>
+
+                                                <t t-if="doc.is_cross_cluster_visit">
+                                                    <br/><span style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Visit</span>
+                                                </t>
+                                            </div>
                                         </t>
                                     </td>
+
                                     <td class="text-end fw-bold">₹
                                         <t t-esc="doc.amount"/>
                                     </td>
@@ -69,8 +130,8 @@
                             </tbody>
                         </table>
 
+                        <!-- Verification Signatures Sign-Off Segment -->
                         <div class="row mt-5" style="page-break-inside: avoid;">
-
                             <div class="col-6 text-center">
                                 <br/><br/><br/> <p>___________________________</p>
                                 <p><strong>Payee Signature</strong></p>
@@ -82,7 +143,6 @@
                                 <p><strong>Authorized Admin</strong></p>
                                 <p t-field="doc.create_uid.name"/>
                             </div>
-
                         </div>
                     </div>
                 </t>

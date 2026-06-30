@@ -7,16 +7,12 @@
     <menuitem id="menu_op_fund_disbursement"
               name="Disbursements"
               parent="menu_operational_fund_root"
-              action="action_op_fund_disbursement"
-              sequence="5"/>
-
-    <menuitem id="menu_op_fund_dashboard"
+              action="action_router_disbursements_intercept"
+              sequence="5"/> <menuitem id="menu_op_fund_dashboard"
               name="Fund Dashboard"
               parent="menu_operational_fund_root"
-              action="action_op_fund_clinic_balance"
-              sequence="10"/>
-
-    <menuitem id="menu_op_fund_allocation"
+              action="action_router_dashboard_intercept"
+              sequence="10"/> <menuitem id="menu_op_fund_allocation"
               name="Allocations (Funding)"
               parent="menu_operational_fund_root"
               action="action_op_fund_allocation"
@@ -40,4 +36,10 @@
               parent="menu_op_fund_configuration_root"
               action="action_op_fund_user_approvers"
               sequence="10"/>
+
+    <menuitem id="menu_op_fund_settings"
+              name="Settings"
+              parent="menu_op_fund_configuration_root"
+              action="action_op_fund_config_settings"
+              sequence="20"/>
 </odoo>

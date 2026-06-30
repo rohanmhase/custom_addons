@@ -1,5 +1,9 @@
+import io
 import logging
 import mimetypes
+import zipfile
+import base64
+import csv
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import timedelta
@@ -10,8 +14,6 @@ except ImportError:
     boto3 = None
 
 _logger = logging.getLogger(__name__)
-
-S3_BUCKET_NAME = 'researchayu-operational-funds-filestore'
 
 
 class Clinic(models.Model):
@@ -32,7 +34,6 @@ class Clinic(models.Model):
     op_fund_balance = fields.Float(string='Available Balance', compute='_compute_balances', store=True)
 
     op_fund_approval_threshold = fields.Float(string='Auto-Approval Threshold', default=0.0)
-
     op_fund_alert_threshold = fields.Float(string='Low Balance Alert Threshold', default=0.0)
     is_low_balance_alert_sent = fields.Boolean(string='Alert Sent Flag', default=False)
 
@@ -55,10 +56,11 @@ class Clinic(models.Model):
         for clinic in self:
             clinic.wallet_group_name = clinic.master_fund_id.name if clinic.master_fund_id else clinic.name
 
-    @api.depends('allocation_ids.amount', 'disbursement_ids.amount', 'disbursement_ids.state',
+    @api.depends('allocation_ids.amount', 'allocation_ids.state', 'disbursement_ids.amount', 'disbursement_ids.state',
                  'child_clinic_ids.disbursement_ids.amount', 'child_clinic_ids.disbursement_ids.state',
                  'master_fund_id')
     def _compute_balances(self):
+        """🚨 LEGACY SAFEGUARD: Treats old records (False) as cleared to protect existing balances 🚨"""
         for clinic in self:
             if clinic.master_fund_id and clinic.master_fund_id != clinic:
                 clinic.total_allocated = 0.0
@@ -66,10 +68,11 @@ class Clinic(models.Model):
                 clinic.op_fund_balance = 0.0
                 continue
 
-            total_alloc = sum(clinic.allocation_ids.mapped('amount'))
+            cleared_allocations = clinic.allocation_ids.filtered(lambda a: a.state in ('cleared', False))
+            total_alloc = sum(cleared_allocations.mapped('amount'))
 
             all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
-            approved_disbs = all_disbursements.filtered(lambda d: d.state in ('approved', 'refund_requested'))
+            approved_disbs = all_disbursements.filtered(lambda d: d.state in ('approved', 'paid', 'refund_requested'))
             total_spent = sum(approved_disbs.mapped('amount'))
 
             clinic.total_allocated = total_alloc
@@ -158,24 +161,75 @@ class OperationalFundAllocation(models.Model):
     controller_id = fields.Many2one('res.users', string='Allocated By', default=lambda self: self.env.user,
                                     readonly=True)
 
+    state = fields.Selection([
+        ('pending', 'Pending Acknowledgment'),
+        ('cleared', 'Cleared')
+    ], string='Status', default='pending', required=True, tracking=True)
+
+    ack_proof_file = fields.Binary(string='Bank Statement/Proof Asset')
+    ack_proof_filename = fields.Char(string='Proof Filename')
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('operational.fund.allocation') or 'New'
-        records = super().create(vals_list)
-        for rec in records:
-            active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            self.env['operational.fund.audit'].sudo().create({
-                'clinic_id': active_clinic.id,
-                'date': rec.date,
-                'transaction_type': 'credit',
-                'amount': rec.amount,
-                'reference': f'Wallet Top-up: {rec.name}',
-                'user_id': self.env.user.id
-            })
-            active_clinic.sudo()._check_low_balance_alert()
-        return records
+        return super().create(vals_list)
+
+    def action_clear_allocation(self, file_data, filename):
+        self.ensure_one()
+        if not file_data:
+            raise ValidationError(
+                _("Auditing Error: You must attach a bank proof file to confirm the deposit receipt."))
+
+        self.write({
+            'ack_proof_file': file_data,
+            'ack_proof_filename': filename,
+            'state': 'cleared'
+        })
+
+        active_clinic = self.clinic_id.master_fund_id or self.clinic_id
+        self.env['operational.fund.audit'].sudo().create({
+            'clinic_id': active_clinic.id,
+            'date': self.date,
+            'transaction_type': 'credit',
+            'amount': self.amount,
+            'reference': f'Wallet Top-up: {self.name} (Acknowledged)',
+            'user_id': self.env.user.id
+        })
+        active_clinic.sudo()._check_low_balance_alert()
+
+
+class OperationalFundAllocationWizard(models.TransientModel):
+    _name = 'operational.fund.allocation.wizard'
+    _description = 'Top-up Acknowledgment Popup Wizard'
+
+    allocation_id = fields.Many2one('operational.fund.allocation', string='Allocation Target', required=True)
+    amount = fields.Float(related='allocation_id.amount', string='Amount Transferred', readonly=True)
+    notes = fields.Text(related='allocation_id.notes', string='HQ Recharge Notes', readonly=True)
+
+    ack_proof_file = fields.Binary(string='Upload Bank Snippet / Screenshot')
+    ack_proof_filename = fields.Char(string='Filename')
+
+    def _get_return_action(self):
+        """Dynamically routes the user back securely without triggering Access Errors."""
+        action_ref = self.env.context.get('return_action', 'operational_fund.action_op_fund_disbursement')
+        # 🚨 THE SECURE FIX: This bypasses the ir.actions.act_window read block
+        return self.env['ir.actions.act_window']._for_xml_id(action_ref)
+
+    def action_confirm_receipt(self):
+        """🚨 MANUAL VALIDATION: Enforces the file upload ONLY when they click Verify 🚨"""
+        self.ensure_one()
+        if not self.ack_proof_file:
+            raise ValidationError(
+                _("Auditing Restriction: You must attach an image verification snapshot of the bank statement payout rollout to acknowledge this allocation."))
+
+        self.allocation_id.sudo().action_clear_allocation(self.ack_proof_file, self.ack_proof_filename)
+        return self._get_return_action()
+
+    def action_close_and_continue(self):
+        """🚨 MULTI-CLINIC ADMIN BYPASS: Closes popup to access records 🚨"""
+        return self._get_return_action()
 
 
 class OperationalFundRejectionWizard(models.TransientModel):
@@ -188,7 +242,7 @@ class OperationalFundRejectionWizard(models.TransientModel):
     def action_confirm_reject(self):
         for wiz in self:
             disb = wiz.disbursement_id
-            if disb.state in ('approved', 'refund_requested'):
+            if disb.state in ('approved', 'paid', 'refund_requested'):
                 active_clinic = disb.clinic_id.master_fund_id or disb.clinic_id
                 self.env['operational.fund.audit'].sudo().create({
                     'clinic_id': active_clinic.id,
@@ -204,7 +258,7 @@ class OperationalFundRejectionWizard(models.TransientModel):
                 subtype_xmlid='mail.mt_note'
             )
             disb.state = 'rejected'
-            disb.activity_unlink(['mail.mail_activity_data_todo'])
+            disb.activity_unlink(['mail.activity_data_todo'])
             disb._cleanup_todo_tasks('Approve Voucher')
             disb._cleanup_todo_tasks('Review Refund')
 
@@ -221,27 +275,56 @@ class OperationalFundDisbursement(models.Model):
                                                                                            'clinic_id') else False)
     date = fields.Date(string='Date', default=fields.Date.context_today, required=True, tracking=True)
 
-    payee_type = fields.Selection([('internal', 'Internal Employee'), ('external', 'External Vendor')],
-                                  string='Payee Type', default='internal', tracking=True)
-    payee_id = fields.Many2one('hr.employee', string='Internal Employee', tracking=True, ondelete='restrict')
-    vendor_name = fields.Char(string='External Vendor Name', tracking=True)
+    expense_category = fields.Selection([
+        ('incentive', 'Therapist Incentive'),
+        ('overtime', 'Therapist Overtime'),
+        ('travel', 'Travel & Commute'),
+        ('office', 'Office & Clinic Expenses'),
+        ('other', 'Other Expense')
+    ], string='Main Category', tracking=True)
 
-    therapist_name = fields.Char(string='Therapist Name', tracking=True)
-    payee_display = fields.Char(string='Payee', compute='_compute_payee_display', store=True)
+    therapist_role = fields.Selection([
+        ('home', 'Home Therapist'),
+        ('fixed', 'Fixed Therapist'),
+        ('floater', 'Floater Therapist')
+    ], string='Therapist Role', tracking=True)
 
-    amount = fields.Float(string='Amount', required=True, tracking=True)
+    travel_type = fields.Selection([
+        ('home', 'Home Visit Travel'),
+        ('fixed', 'Fixed Therapist Travel'),
+        ('floater', 'Floater Travel'),
+        ('c2c', 'Clinic to Clinic Travel')
+    ], string='Travel Route', tracking=True)
 
-    # 🚨 UPDATED CATEGORIES: Added Clinic to Clinic, Removed Cake/Decorations 🚨
+    office_expense_type = fields.Selection([
+        ('electricity', 'Electricity Bill'), ('water', 'Water Supply'), ('internet', 'Internet / Phone'),
+        ('rent', 'Rent'), ('electrician', 'Electrician Charges'), ('plumber', 'Plumber Charges'),
+        ('carpenter', 'Carpenter Charges'), ('stationary', 'Stationary'), ('printer_ink', 'Printer Ink'),
+        ('cleaning_materials', 'Cleaning Materials'), ('biowaste_bags', 'Biowaste Bags')
+    ], string='Expense Type', tracking=True)
+
+    display_category = fields.Char(string='Category', compute='_compute_display_category', store=True)
+
     category = fields.Selection([
         ('therapist_incentive', 'Therapist Incentive'), ('therapist_overtime', 'Therapist Overtime'),
         ('home_visit_travel', 'Home Visit Travelling'), ('fixed_therapist_travel', 'Fixed Therapist Travelling'),
         ('floater_travel', 'Floater Travelling'), ('clinic_to_clinic', 'Clinic to Clinic Travelling'),
         ('electricity', 'Electricity Bill'), ('water', 'Water Supply'), ('internet', 'Internet / Phone'),
         ('rent', 'Rent'), ('electrician', 'Electrician Charges'), ('plumber', 'Plumber Charges'),
-        ('carpenter', 'Carpenter Charges'),
-        ('stationary', 'Stationary'), ('printer_ink', 'Printer Ink'), ('cleaning_materials', 'Cleaning Materials'),
-        ('biowaste_bags', 'Biowaste Bags'), ('other', 'Other Expense')
-    ], string='Category', required=True, tracking=True)
+        ('carpenter', 'Carpenter Charges'), ('stationary', 'Stationary'), ('printer_ink', 'Printer Ink'),
+        ('cleaning_materials', 'Cleaning Materials'), ('biowaste_bags', 'Biowaste Bags'),
+        ('cake', 'Cake (Legacy)'), ('decorations', 'Decorations (Legacy)'), ('other', 'Other Expense')
+    ], string='Legacy Category', tracking=True)
+
+    payee_type = fields.Selection([('internal', 'Internal Employee'), ('external', 'External Vendor')],
+                                  string='Legacy Payee Type', tracking=True)
+
+    payee_id = fields.Many2one('hr.employee', string='Select Employee', tracking=True, ondelete='restrict')
+    therapist_name = fields.Char(string='Therapist Name', tracking=True)
+    vendor_name = fields.Char(string='Vendor / Payee Name', tracking=True)
+
+    payee_display = fields.Char(string='Payee', compute='_compute_payee_display', store=True)
+    amount = fields.Float(string='Amount', required=True, tracking=True)
 
     home_visit_mrn_search = fields.Char(string='Patient MRN Search', tracking=True)
     home_visit_patient_name = fields.Char(string='Patient Name', readonly=True)
@@ -249,10 +332,11 @@ class OperationalFundDisbursement(models.Model):
     home_visit_patient_clinic = fields.Char(string='Registered Clinic', readonly=True)
     is_cross_cluster_visit = fields.Boolean(string='Is Cross-Cluster Visit', readonly=True, store=True)
 
-    # 🚨 NEW: Clinic to Clinic Travel Details 🚨
     from_clinic_id = fields.Many2one('clinic.clinic', string='From Clinic', tracking=True)
     to_clinic_id = fields.Many2one('clinic.clinic', string='To Clinic', tracking=True)
-    therapist_type = fields.Selection([('fixed', 'Fixed Therapist'), ('floater', 'Floater')], string='Therapist Role', tracking=True)
+
+    therapist_type = fields.Selection([('fixed', 'Fixed Therapist'), ('floater', 'Floater')], string='Therapist Role',
+                                      tracking=True)
 
     other_expense_details = fields.Char(string='Specify Other Expense', tracking=True)
     description = fields.Text(string='Business Purpose')
@@ -261,27 +345,247 @@ class OperationalFundDisbursement(models.Model):
     receipt_filename = fields.Char(string='Receipt Filename')
     is_receipt_mandatory = fields.Boolean(compute='_compute_is_receipt_mandatory')
     is_receipt_image = fields.Boolean(compute='_compute_is_receipt_image', store=True)
-    is_signed_voucher_image = fields.Boolean(compute='_compute_is_signed_voucher_image', store=True)
 
     signed_voucher_file = fields.Binary(string='Signed Voucher (Upload)')
     signed_voucher_filename = fields.Char(string='Signed Voucher Filename')
+    is_signed_voucher_image = fields.Boolean(compute='_compute_is_signed_voucher_image', store=True)
+
     old_signed_voucher_file = fields.Binary(string='Original Signed Voucher (Archived)', readonly=True)
     old_signed_voucher_filename = fields.Char(string='Original Signed Voucher Filename')
 
     state = fields.Selection([
         ('draft', 'Draft'), ('waiting', 'Waiting Approval'), ('approved', 'Approved'),
-        ('rejected', 'Rejected'), ('refund_requested', 'Refund Requested'), ('refunded', 'Refunded'),
+        ('paid', 'Paid'), ('rejected', 'Rejected'), ('refund_requested', 'Refund Requested'), ('refunded', 'Refunded'),
     ], string='Status', default='draft', tracking=True)
 
-    @api.depends('category')
-    def _compute_is_receipt_mandatory(self):
-        receipt_required_categories = [
-            'electricity', 'water', 'internet', 'rent', 'electrician', 'plumber',
-            'carpenter', 'stationary', 'printer_ink', 'cleaning_materials',
-            'biowaste_bags', 'other'
-        ]
+    payment_screenshot = fields.Binary(string='Transaction Proof Screenshot')
+    payment_screenshot_filename = fields.Char(string='Payment Proof Filename')
+    is_payment_screenshot_image = fields.Boolean(compute='_compute_is_payment_image', store=True)
+
+    receipt_preview_image = fields.Binary(related='receipt_file', string="Receipt Preview Image")
+    receipt_preview_pdf = fields.Binary(related='receipt_file', string="Receipt Preview PDF")
+
+    signed_voucher_preview_image = fields.Binary(related='signed_voucher_file', string="Voucher Preview Image")
+    signed_voucher_preview_pdf = fields.Binary(related='signed_voucher_file', string="Voucher Preview PDF")
+
+    payment_screenshot_preview_image = fields.Binary(related='payment_screenshot', string="Payment Preview Image")
+    payment_screenshot_preview_pdf = fields.Binary(related='payment_screenshot', string="Payment Preview PDF")
+
+    s3_receipt_url = fields.Char(string="S3 Direct Receipt Link", compute="_compute_s3_export_urls")
+    s3_voucher_url = fields.Char(string="S3 Direct Voucher Link", compute="_compute_s3_export_urls")
+    s3_payment_url = fields.Char(string="S3 Direct Payment Link", compute="_compute_s3_export_urls")
+
+    show_employee_payee = fields.Boolean(compute='_compute_ui_visibility')
+    show_therapist_name_input = fields.Boolean(compute='_compute_ui_visibility')
+    show_vendor_payee = fields.Boolean(compute='_compute_ui_visibility')
+    show_clinic_transfer = fields.Boolean(compute='_compute_ui_visibility')
+    show_home_visit = fields.Boolean(compute='_compute_ui_visibility')
+
+    show_therapist_role = fields.Boolean(compute='_compute_ui_visibility')
+    show_travel_type = fields.Boolean(compute='_compute_ui_visibility')
+    show_office_type = fields.Boolean(compute='_compute_ui_visibility')
+    show_other_expense = fields.Boolean(compute='_compute_ui_visibility')
+
+    has_pending_allocation = fields.Boolean(string="Has Pending Funds", compute='_compute_has_pending_allocation')
+
+    @api.depends('clinic_id')
+    def _compute_has_pending_allocation(self):
         for rec in self:
-            rec.is_receipt_mandatory = rec.category in receipt_required_categories
+            if rec.clinic_id:
+                pending = self.env['operational.fund.allocation'].sudo().search_count([
+                    ('clinic_id', '=', rec.clinic_id.id),
+                    ('state', '=', 'pending')
+                ])
+                rec.has_pending_allocation = bool(pending)
+            else:
+                rec.has_pending_allocation = False
+
+    @api.model
+    def action_check_pending_allocations(self):
+        """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Disbursements."""
+        user = self.env.user
+        domain = [('state', '=', 'pending')]
+
+        clinic_ids = set()
+        if hasattr(user, 'clinic_id') and user.clinic_id:
+            clinic_ids.add(user.clinic_id.id)
+        if hasattr(user, 'op_fund_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
+        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
+
+        if clinic_ids:
+            domain.append(('clinic_id', 'in', list(clinic_ids)))
+
+        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
+        if pending_alloc:
+            return {
+                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'operational.fund.allocation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_allocation_id': pending_alloc.id,
+                    'return_action': 'operational_fund.action_op_fund_disbursement'
+                },
+                'flags': {'headless': True}
+            }
+        # 🚨 THE SECURE FIX: Safely loads the view for non-admins
+        return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_disbursement')
+
+    @api.model
+    def action_check_pending_allocations_dashboard(self):
+        """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Dashboard."""
+        user = self.env.user
+        domain = [('state', '=', 'pending')]
+
+        clinic_ids = set()
+        if hasattr(user, 'clinic_id') and user.clinic_id:
+            clinic_ids.add(user.clinic_id.id)
+        if hasattr(user, 'op_fund_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
+        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
+
+        if clinic_ids:
+            domain.append(('clinic_id', 'in', list(clinic_ids)))
+
+        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
+        if pending_alloc:
+            return {
+                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'operational.fund.allocation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_allocation_id': pending_alloc.id,
+                    'return_action': 'operational_fund.action_op_fund_clinic_balance'
+                },
+                'flags': {'headless': True}
+            }
+        # 🚨 THE SECURE FIX: Safely loads the view for non-admins
+        return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_clinic_balance')
+
+    @api.model
+    def action_open_acknowledgment_wizard_from_banner(self):
+        """ 🚨 This securely powers the native tree view Red Warning Button to handle multi-clinic popups globally 🚨 """
+        user = self.env.user
+        domain = [('state', '=', 'pending')]
+
+        clinic_ids = set()
+        if hasattr(user, 'clinic_id') and user.clinic_id:
+            clinic_ids.add(user.clinic_id.id)
+        if hasattr(user, 'op_fund_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
+        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
+            clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
+
+        if clinic_ids:
+            domain.append(('clinic_id', 'in', list(clinic_ids)))
+
+        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
+        if pending_alloc:
+            return {
+                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'operational.fund.allocation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_allocation_id': pending_alloc.id,
+                    'return_action': 'operational_fund.action_op_fund_disbursement'
+                },
+            }
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Up to Date'),
+                'message': _('There are no pending HQ deposits to acknowledge at this time.'),
+                'sticky': False,
+                'type': 'success'
+            }
+        }
+
+    @api.depends('category', 'expense_category', 'therapist_role', 'travel_type', 'payee_type')
+    def _compute_ui_visibility(self):
+        for rec in self:
+            emp, ther, vend, trans, home = False, False, False, False, False
+            role, trav, off, oth = False, False, False, False
+
+            if rec.category and not rec.expense_category:
+                if rec.category == 'home_visit_travel':
+                    home, ther = True, True
+                elif rec.category == 'clinic_to_clinic':
+                    trans, ther = True, True
+                elif rec.category in ['fixed_therapist_travel', 'floater_travel']:
+                    ther = True
+                elif rec.category == 'other':
+                    oth, vend = True, True
+                else:
+                    if rec.payee_type == 'internal':
+                        emp = True
+                    elif rec.payee_type == 'external':
+                        vend = True
+            else:
+                if rec.expense_category in ['incentive', 'overtime']:
+                    role = True
+                    ther = True
+                    if rec.therapist_role == 'home': home = True
+                elif rec.expense_category == 'travel':
+                    trav = True
+                    if rec.travel_type in ['fixed', 'home', 'floater']:
+                        ther = True
+                    elif rec.travel_type == 'c2c':
+                        role, trans, ther = True, True, True
+                    if rec.travel_type == 'home': home = True
+                elif rec.expense_category == 'office':
+                    off, vend = True, True
+                elif rec.expense_category == 'other':
+                    oth, vend = True, True
+
+            rec.show_employee_payee = emp
+            rec.show_therapist_name_input = ther
+            rec.show_vendor_payee = vend
+            rec.show_clinic_transfer = trans
+            rec.show_home_visit = home
+            rec.show_therapist_role = role
+            rec.show_travel_type = trav
+            rec.show_office_type = off
+            rec.show_other_expense = oth
+
+    @api.depends('category', 'expense_category', 'therapist_role', 'travel_type', 'office_expense_type')
+    def _compute_display_category(self):
+        for rec in self:
+            if rec.expense_category:
+                if rec.expense_category == 'incentive':
+                    role = dict(self._fields['therapist_role'].selection).get(rec.therapist_role, '')
+                    rec.display_category = f"Incentive ({role})" if role else "Therapist Incentive"
+                elif rec.expense_category == 'overtime':
+                    role = dict(self._fields['therapist_role'].selection).get(rec.therapist_role, '')
+                    rec.display_category = f"Overtime ({role})" if role else "Therapist Overtime"
+                elif rec.expense_category == 'travel':
+                    ttype = dict(self._fields['travel_type'].selection).get(rec.travel_type, '')
+                    rec.display_category = f"Travel ({ttype})" if ttype else "Travel & Commute"
+                elif rec.expense_category == 'office':
+                    otype = dict(self._fields['office_expense_type'].selection).get(rec.office_expense_type, '')
+                    rec.display_category = f"Office ({otype})" if otype else "Office Expenses"
+                else:
+                    rec.display_category = "Other Expense"
+            else:
+                rec.display_category = dict(self._fields['category'].selection).get(rec.category, 'Unknown Category')
+
+    @api.depends('expense_category', 'category')
+    def _compute_is_receipt_mandatory(self):
+        legacy_receipt_required = ['electricity', 'water', 'internet', 'rent', 'electrician', 'plumber', 'carpenter',
+                                   'stationary', 'printer_ink', 'cleaning_materials', 'biowaste_bags', 'other']
+        for rec in self:
+            if rec.expense_category:
+                rec.is_receipt_mandatory = rec.expense_category in ['office', 'other']
+            else:
+                rec.is_receipt_mandatory = rec.category in legacy_receipt_required
 
     @api.depends('receipt_filename')
     def _compute_is_receipt_image(self):
@@ -301,9 +605,44 @@ class OperationalFundDisbursement(models.Model):
             else:
                 rec.is_signed_voucher_image = False
 
-    @api.onchange('home_visit_mrn_search', 'clinic_id', 'category')
+    @api.depends('payment_screenshot_filename')
+    def _compute_is_payment_image(self):
+        for rec in self:
+            if rec.payment_screenshot_filename:
+                ext = rec.payment_screenshot_filename.split('.')[-1].lower()
+                rec.is_payment_screenshot_image = ext in ['jpg', 'jpeg', 'png', 'webp']
+            else:
+                rec.is_payment_screenshot_image = False
+
+    @api.depends('name')
+    def _compute_s3_export_urls(self):
+        bucket = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_bucket')
+        region = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_region', 'ap-south-1')
+        base_url = f"https://{bucket}.s3.{region}.amazonaws.com/" if bucket else False
+
+        for rec in self:
+            receipt, voucher, payment = False, False, False
+            if base_url:
+                attachments = self.env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'operational.fund.disbursement'),
+                    ('res_id', '=', rec.id),
+                    ('is_s3_stored', '=', True)
+                ])
+                for att in attachments:
+                    if att.res_field == 'receipt_file':
+                        receipt = f"{base_url}{att.s3_object_key}"
+                    elif att.res_field == 'signed_voucher_file':
+                        voucher = f"{base_url}{att.s3_object_key}"
+                    elif att.res_field == 'payment_screenshot':
+                        payment = f"{base_url}{att.s3_object_key}"
+
+            rec.s3_receipt_url = receipt
+            rec.s3_voucher_url = voucher
+            rec.s3_payment_url = payment
+
+    @api.onchange('home_visit_mrn_search', 'clinic_id', 'category', 'expense_category', 'travel_type', 'therapist_role')
     def _onchange_home_visit_mrn(self):
-        if self.home_visit_mrn_search and self.category == 'home_visit_travel':
+        if self.home_visit_mrn_search and self.show_home_visit:
             patient = self.env['clinic.patient'].sudo().search([('mrn', '=', self.home_visit_mrn_search)], limit=1)
             if patient:
                 self.home_visit_patient_name = patient.name
@@ -319,45 +658,33 @@ class OperationalFundDisbursement(models.Model):
                 self.home_visit_patient_name, self.home_visit_patient_phone, self.home_visit_patient_clinic, self.is_cross_cluster_visit = False, False, False, False
                 return {'warning': {'title': "Patient Not Found",
                                     'message': f"No patient found globally with MRN: {self.home_visit_mrn_search}"}}
-        elif self.category != 'home_visit_travel':
+        elif not self.show_home_visit:
             self.home_visit_mrn_search, self.home_visit_patient_name, self.home_visit_patient_phone, self.home_visit_patient_clinic, self.is_cross_cluster_visit = False, False, False, False, False
 
-    @api.depends('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
+    @api.depends('category', 'expense_category', 'payee_type', 'payee_id', 'vendor_name', 'therapist_name',
+                 'therapist_role', 'travel_type')
     def _compute_payee_display(self):
-        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
         for rec in self:
-            if rec.category in travel_cats and rec.therapist_name:
-                rec.payee_display = rec.therapist_name
-            elif rec.category in travel_cats and not rec.therapist_name:
-                rec.payee_display = 'Unknown Therapist'
-            elif rec.payee_type == 'internal' and rec.payee_id:
-                rec.payee_display = rec.payee_id.name
-            elif rec.payee_type == 'external' and rec.vendor_name:
-                rec.payee_display = rec.vendor_name
+            if rec.category and not rec.expense_category:
+                if rec.category in ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel',
+                                    'clinic_to_clinic'] and rec.therapist_name:
+                    rec.payee_display = rec.therapist_name
+                elif rec.payee_type == 'internal' and rec.payee_id:
+                    rec.payee_display = rec.payee_id.name
+                elif rec.payee_type == 'external' and rec.vendor_name:
+                    rec.payee_display = rec.vendor_name
+                else:
+                    rec.payee_display = 'Unknown Payee'
             else:
-                rec.payee_display = 'Unknown'
-
-    @api.constrains('payee_type', 'payee_id', 'vendor_name', 'category', 'therapist_name')
-    def _check_payee(self):
-        travel_cats = ['home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
-        for rec in self:
-            if rec.category in travel_cats:
-                if not rec.therapist_name:
-                    raise ValidationError(_("Please specify the Therapist Name for this travelling expense."))
-            else:
-                if rec.payee_type == 'internal' and not rec.payee_id:
-                    raise ValidationError(_("Please select an Internal Employee."))
-                if rec.payee_type == 'external' and not rec.vendor_name:
-                    raise ValidationError(_("Please specify the External Vendor name."))
-
-    @api.onchange('amount', 'clinic_id')
-    def _onchange_budget_warning(self):
-        if self.clinic_id and self.amount > 0:
-            active_clinic = self.clinic_id.master_fund_id or self.clinic_id
-            available_balance = active_clinic.op_fund_balance
-            if self.amount > available_balance:
-                return {'warning': {'title': "Insufficient Funds!",
-                                    'message': f"This request (₹{self.amount}) exceeds the available balance (₹{available_balance}) for {active_clinic.name}."}}
+                if rec.expense_category in ['incentive', 'overtime', 'travel']:
+                    if rec.therapist_name:
+                        rec.payee_display = rec.therapist_name
+                    else:
+                        rec.payee_display = 'Unknown Payee'
+                elif rec.expense_category in ['office', 'other'] and rec.vendor_name:
+                    rec.payee_display = rec.vendor_name
+                else:
+                    rec.payee_display = 'Unknown Payee'
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -373,21 +700,49 @@ class OperationalFundDisbursement(models.Model):
         return False
 
     def action_submit_for_approval(self):
-        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
-                                'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
+        legacy_escalated_cats = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
+                                 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
 
         for rec in self:
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
+
+            if rec.show_employee_payee and not rec.payee_id:
+                raise ValidationError(_("Missing Parameter: Please select an Employee Profile."))
+            if rec.show_therapist_name_input and not rec.therapist_name:
+                raise ValidationError(_("Missing Parameter: Please type the Therapist Name."))
+            if rec.show_vendor_payee and not rec.vendor_name:
+                raise ValidationError(_("Missing Parameter: Please specify the Vendor or Payee Name."))
+            if rec.show_home_visit and not rec.home_visit_mrn_search:
+                raise ValidationError(
+                    _("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
+
             if not rec.signed_voucher_file: raise ValidationError(
-                _("Hold on! You must download, sign, and upload the Disbursement Voucher before you can submit it."))
+                _("Hold on! You must download, sign, and upload the physical Disbursement Voucher before you can submit it."))
 
             if rec.is_receipt_mandatory and not rec.receipt_file:
                 raise ValidationError(
                     _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+
+            pending_recharge = self.env['operational.fund.allocation'].sudo().search([
+                ('clinic_id', '=', active_clinic.id),
+                ('state', '=', 'pending')
+            ], limit=1)
+            if pending_recharge:
+                raise ValidationError(
+                    _("Access Denied: The clinic '%s' has a pending capital deposit from HQ. You must upload the bank proof and acknowledge receipt of these funds before submitting new vouchers.") % active_clinic.name)
+
+            if rec.amount > active_clinic.op_fund_balance:
+                raise ValidationError(
+                    _("Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
+
             threshold = active_clinic.op_fund_approval_threshold
-            is_escalated = rec.category in escalated_categories
+
+            if rec.expense_category:
+                is_escalated = rec.expense_category in ['incentive', 'overtime', 'travel']
+            else:
+                is_escalated = rec.category in legacy_escalated_cats
 
             if is_escalated:
                 can_auto_approve = False
@@ -399,8 +754,6 @@ class OperationalFundDisbursement(models.Model):
                 target_managers = active_clinic.op_fund_manager_ids
 
             if can_auto_approve:
-                if rec.amount > active_clinic.op_fund_balance: raise ValidationError(
-                    _("Cannot auto-approve. Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
                 rec.action_approve()
                 rec.message_post(
                     body=f"System Auto-Approved: The requested amount (₹{rec.amount}) is within the safe threshold of ₹{threshold}.",
@@ -415,7 +768,7 @@ class OperationalFundDisbursement(models.Model):
                     cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
 
                     for manager in target_managers:
-                        rec.activity_schedule('mail.mail_activity_data_todo', user_id=manager.id, summary=task_summary,
+                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary=task_summary,
                                               note=f'Voucher {rec.name} for ₹{rec.amount} requires your approval. <a href="{deep_link}">Click here to view</a>')
                         if 'project.task' in self.env:
                             self.env['project.task'].sudo().create({
@@ -424,10 +777,9 @@ class OperationalFundDisbursement(models.Model):
                                 'description': f'<p>Voucher <strong>{rec.name}</strong> for ₹{rec.amount} has been submitted by {active_clinic.name}.</p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 10px;">Click Here to Review &amp; Action</a></div>',
                             })
                         if manager.email:
-                            category_label = dict(self._fields['category'].selection).get(rec.category)
                             mail_values = {
                                 'subject': f'Action Required: Approve Voucher {rec.name}', 'email_to': manager.email,
-                                'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {manager.name},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{active_clinic.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{category_label}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
+                                'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {manager.name},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{active_clinic.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.display_category}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
                             }
                             self.env['mail.mail'].sudo().create(mail_values)
 
@@ -445,13 +797,25 @@ class OperationalFundDisbursement(models.Model):
             rec.state = 'approved'
             self.env['operational.fund.audit'].sudo().create({
                 'clinic_id': active_clinic.id, 'date': rec.date, 'transaction_type': 'debit', 'amount': rec.amount,
-                'reference': f'Disbursement: {rec.name} - {dict(self._fields["category"].selection).get(rec.category)}',
+                'reference': f'Disbursement: {rec.name} - {rec.display_category}',
                 'user_id': self.env.user.id
             })
-            rec.activity_unlink(['mail.mail_activity_data_todo'])
+            rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
-
             active_clinic.sudo()._check_low_balance_alert()
+
+    def action_mark_as_paid(self):
+        for rec in self:
+            if not rec.payment_screenshot:
+                raise ValidationError(
+                    _("Auditing Restriction: You must attach an image or PDF copy of the finalized bank transaction rollout receipt to mark this voucher as Paid."))
+            rec.state = 'paid'
+
+    def action_unlock_for_correction(self):
+        self.ensure_one()
+        if not self.env.user.has_group('operational_fund.group_op_fund_manager'):
+            raise ValidationError(_("Security Error: Only authorized Fund Managers can unlock processed records."))
+        self.state = 'draft'
 
     def action_reject(self):
         self.ensure_one()
@@ -466,8 +830,7 @@ class OperationalFundDisbursement(models.Model):
 
     def action_delete_draft(self):
         for rec in self:
-            if rec.state != 'draft':
-                raise ValidationError(_("Only draft vouchers can be deleted."))
+            if rec.state != 'draft': raise ValidationError(_("Only draft vouchers can be deleted."))
         self.unlink()
         return {
             'type': 'ir.actions.act_window',
@@ -479,12 +842,12 @@ class OperationalFundDisbursement(models.Model):
 
     def action_reset_to_draft(self):
         for rec in self:
-            if rec.state == 'approved':
+            if rec.state in ('approved', 'paid'):
                 active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
                 self.env['operational.fund.audit'].sudo().create({
                     'clinic_id': active_clinic.id, 'date': fields.Date.context_today(self),
                     'transaction_type': 'credit', 'amount': rec.amount,
-                    'reference': f'Reversal: Reset Approved Voucher {rec.name} to Draft', 'user_id': self.env.user.id
+                    'reference': f'Reversal: Reset Processed Voucher {rec.name} to Draft', 'user_id': self.env.user.id
                 })
                 rec.old_signed_voucher_file, rec.old_signed_voucher_filename = rec.signed_voucher_file, rec.signed_voucher_filename
                 rec.signed_voucher_file, rec.signed_voucher_filename = False, False
@@ -495,8 +858,8 @@ class OperationalFundDisbursement(models.Model):
 
     def action_request_refund(self):
         for rec in self:
-            if rec.state != 'approved': raise ValidationError(
-                _("Only fully approved disbursements can be submitted for a refund."))
+            if rec.state not in ('approved', 'paid'): raise ValidationError(
+                _("Only authorized or paid vouchers can be submitted for a refund."))
             rec.state = 'refund_requested'
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
@@ -505,7 +868,7 @@ class OperationalFundDisbursement(models.Model):
                 deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
                 deadline = fields.Date.context_today(self) + timedelta(days=1)
                 for manager in active_clinic.op_fund_manager_ids:
-                    rec.activity_schedule('mail.mail_activity_data_todo', user_id=manager.id,
+                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id,
                                           summary='Review Refund Request',
                                           note=f'A refund has been requested for Voucher {rec.name}.')
                     if 'project.task' in self.env:
@@ -525,24 +888,28 @@ class OperationalFundDisbursement(models.Model):
                 'reference': f'Refund: Fully Reclaimed Voucher {rec.name}', 'user_id': self.env.user.id
             })
             rec.state = 'refunded'
-            rec.activity_unlink(['mail.mail_activity_data_todo'])
+            rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
             active_clinic.sudo()._check_low_balance_alert()
 
     def action_cancel_refund(self):
         for rec in self:
             rec.state = 'approved'
-            rec.activity_unlink(['mail.mail_activity_data_todo'])
+            rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
 
     def action_sync_pending_alerts(self):
-        escalated_categories = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
-                                'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
+        legacy_escalated_cats = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
+                                 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
         for rec in self:
             if rec.state != 'waiting': continue
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
-            is_escalated = rec.category in escalated_categories
+            if rec.expense_category:
+                is_escalated = rec.expense_category in ['incentive', 'overtime', 'travel']
+            else:
+                is_escalated = rec.category in legacy_escalated_cats
+
             target_managers = active_clinic.op_fund_ho_manager_ids if is_escalated else active_clinic.op_fund_manager_ids
 
             if target_managers:
@@ -559,7 +926,7 @@ class OperationalFundDisbursement(models.Model):
                             [('name', '=', f'Approve Voucher {rec.name}'), ('user_ids', 'in', manager.id),
                              ('active', '=', True)]) > 0
                     if not task_exists:
-                        rec.activity_schedule('mail.mail_activity_data_todo', user_id=manager.id, summary=task_summary,
+                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary=task_summary,
                                               note=f'Voucher {rec.name} requires your approval. <a href="{deep_link}">Click here to view</a>')
                         if 'project.task' in self.env:
                             self.env['project.task'].sudo().create({
@@ -568,7 +935,6 @@ class OperationalFundDisbursement(models.Model):
                                 'description': f'<p>Voucher <strong>{rec.name}</strong> for ₹{rec.amount} has been submitted by {active_clinic.name}.</p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 10px;">Click Here to Review &amp; Action</a></div>',
                             })
                         if manager.email:
-                            category_label = dict(self._fields['category'].selection).get(rec.category)
                             mail_values = {
                                 'subject': f'Action Required: Approve Voucher {rec.name} (Synced)',
                                 'email_to': manager.email,
@@ -582,19 +948,129 @@ class OperationalFundDisbursement(models.Model):
                                                                                        'sticky': False,
                                                                                        'type': 'success'}}
 
-    @api.constrains('amount', 'state')
-    def _check_balance(self):
+    def action_backup_to_s3(self):
         for rec in self:
-            active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            if rec.state in ('approved', 'refund_requested') and rec.amount > (
-                    active_clinic.op_fund_balance + rec.amount): raise ValidationError(
-                _("Cannot approve. This disbursement exceeds the available clinic balance."))
+            pdf_name = f"Voucher_{rec.name.replace('/', '_')}.pdf"
+            attachment = self.env['ir.attachment'].search([
+                ('res_model', '=', 'operational.fund.disbursement'),
+                ('res_id', '=', rec.id),
+                ('name', '=', pdf_name)
+            ], limit=1)
+
+            if not attachment and rec.state in ['approved', 'paid', 'refunded', 'refund_requested']:
+                try:
+                    report = self.env['ir.actions.report']._get_report_from_name(
+                        'operational_fund.report_voucher_template')
+                    pdf_content, _ = report.sudo()._render_qweb_pdf(rec.id)
+                    self.env['ir.attachment'].sudo().create({
+                        'name': pdf_name, 'type': 'binary', 'raw': pdf_content,
+                        'res_model': 'operational.fund.disbursement', 'res_id': rec.id, 'mimetype': 'application/pdf'
+                    })
+                except Exception as e:
+                    _logger.error(f"Failed to generate backup PDF for {rec.name}: {str(e)}")
+
+            local_attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'operational.fund.disbursement'),
+                ('res_id', '=', rec.id),
+                ('is_s3_stored', '=', False),
+                ('type', '=', 'binary')
+            ])
+            if local_attachments: local_attachments._force_s3_upload()
+
+        return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Backup Complete'),
+                                                                                       'message': _(
+                                                                                           'Missing PDFs were generated and files safely mirrored to S3.'),
+                                                                                       'sticky': False,
+                                                                                       'type': 'success'}}
+
+    def action_bulk_download_assets(self):
+        if not self:
+            return False
+
+        zip_buffer = io.BytesIO()
+        csv_buffer = io.StringIO()
+        csv_writer = csv.writer(csv_buffer)
+
+        csv_writer.writerow([
+            'Voucher Number', 'Date', 'Clinic Branch', 'Amount', 'Status',
+            'S3 Receipt URL', 'S3 Voucher URL', 'S3 Payment URL'
+        ])
+
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for rec in self:
+                clean_code = rec.name.replace('/', '_')
+                clinic_name = rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'
+
+                csv_writer.writerow([
+                    rec.name,
+                    str(rec.date or ''),
+                    clinic_name,
+                    rec.amount,
+                    rec.state or 'draft',
+                    rec.s3_receipt_url or 'N/A',
+                    rec.s3_voucher_url or 'N/A',
+                    rec.s3_payment_url or 'N/A'
+                ])
+
+                def write_document_or_placeholder(field_data, field_name, filename_suffix, default_ext='pdf'):
+                    data = field_data
+                    filename = f"{clean_code}_{filename_suffix}.{default_ext}"
+
+                    if not data:
+                        att = self.env['ir.attachment'].sudo().search([
+                            ('res_model', '=', 'operational.fund.disbursement'),
+                            ('res_id', '=', rec.id),
+                            ('res_field', '=', field_name)
+                        ], limit=1)
+                        if att and (att.raw or att.datas):
+                            data = att.raw or base64.b64decode(att.datas)
+                            if att.name and '.' in att.name:
+                                filename = f"{clean_code}_{filename_suffix}.{att.name.split('.')[-1]}"
+
+                    if data:
+                        if isinstance(data, str):
+                            try:
+                                data = base64.b64decode(data)
+                            except Exception:
+                                data = data.encode('utf-8')
+                        zip_file.writestr(filename, data)
+                    else:
+                        missing_filename = f"{clean_code}_{filename_suffix}_MISSING.txt"
+                        msg = f"Auditing Notice: No physical document or file payload was uploaded for {filename_suffix} under voucher reference {rec.name} at the time of export.\n"
+                        if filename_suffix == 'receipt':
+                            msg += f"S3 Link Route: {rec.s3_receipt_url or 'N/A'}\n"
+                        elif filename_suffix == 'voucher':
+                            msg += f"S3 Link Route: {rec.s3_voucher_url or 'N/A'}\n"
+                        elif filename_suffix == 'payment_proof':
+                            msg += f"S3 Link Route: {rec.s3_payment_url or 'N/A'}\n"
+                        zip_file.writestr(missing_filename, msg.encode('utf-8'))
+
+                write_document_or_placeholder(rec.receipt_file, 'receipt_file', 'receipt', 'jpg')
+                write_document_or_placeholder(rec.signed_voucher_file, 'signed_voucher_file', 'voucher', 'pdf')
+                write_document_or_placeholder(rec.payment_screenshot, 'payment_screenshot', 'payment_proof', 'jpg')
+
+            csv_buffer.seek(0)
+            zip_file.writestr('audit_manifest.csv', csv_buffer.getvalue().encode('utf-8'))
+
+        zip_buffer.seek(0)
+        archive_attachment = self.env['ir.attachment'].sudo().create({
+            'name': 'OFD_Bulk_Financial_Export.zip',
+            'type': 'binary',
+            'raw': zip_buffer.read(),
+            'mimetype': 'application/zip',
+            'public': False
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{archive_attachment.id}?download=true',
+            'target': 'self'
+        }
 
     def unlink(self):
         for rec in self:
             if rec.state != 'draft':
                 raise ValidationError(
-                    _("Auditing Security: You can only delete disbursement vouchers that are still in the 'Draft' state. For all other states, please use the 'Reject' workflow."))
+                    _("Auditing Security: You can only delete disbursement vouchers that are still in the 'Draft' state."))
         return super().unlink()
 
 
@@ -615,8 +1091,18 @@ class ProjectTask(models.Model):
             if task.is_voucher_task or (task.name and ('Approve Voucher' in task.name or 'Review Refund' in task.name)):
                 if any(field in vals for field in protected_fields):
                     if not self.env.su: raise ValidationError(
-                        _("Auditing Security: You cannot alter the title, description, or assignment of an automated financial approval task."))
+                        _("Auditing Security: You cannot alter automated financial approval tasks."))
         return super().write(vals)
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = 'res.config.settings'
+
+    op_fund_s3_bucket = fields.Char(string="S3 Bucket Name", config_parameter='operational_fund.s3_bucket')
+    op_fund_s3_access_key = fields.Char(string="AWS Access Key", config_parameter='operational_fund.s3_access_key')
+    op_fund_s3_secret_key = fields.Char(string="AWS Secret Key", config_parameter='operational_fund.s3_secret_key')
+    op_fund_s3_region = fields.Char(string="AWS Region", default='ap-south-1',
+                                    config_parameter='operational_fund.s3_region')
 
 
 class IrAttachment(models.Model):
@@ -625,44 +1111,96 @@ class IrAttachment(models.Model):
     is_s3_stored = fields.Boolean(string="Stored in AWS S3", default=False, index=True)
     s3_object_key = fields.Char(string="AWS S3 Object Key")
 
+    @api.model
+    def _get_s3_credentials(self):
+        bucket = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_bucket')
+        access_key = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_access_key')
+        secret_key = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_secret_key')
+        region = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_region', 'ap-south-1')
+
+        if not bucket: return None, None
+        try:
+            if access_key and secret_key:
+                s3_client = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key,
+                                         region_name=region)
+            else:
+                s3_client = boto3.client('s3', region_name=region)
+            return s3_client, bucket
+        except Exception as e:
+            _logger.error(f"AWS S3 Client Initialization Failed: {str(e)}")
+            return None, None
+
     def unlink(self):
         for attachment in self:
             if attachment.res_model == 'operational.fund.disbursement' and attachment.res_id:
                 disb = self.env['operational.fund.disbursement'].browse(attachment.res_id)
-                if disb.exists() and disb.state in ('approved', 'refund_requested', 'refunded'):
+                if disb.exists() and disb.state in ('approved', 'paid', 'refund_requested', 'refunded'):
                     if not self.env.su:
                         raise ValidationError(
-                            _("Auditing Security: You cannot delete attachments from a finalized operational disbursement. This record is sealed."))
+                            _("Auditing Security: You cannot delete attachments from a finalized operational disbursement."))
         return super().unlink()
 
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        if not boto3:
-            return records
+        if not boto3: return records
+
+        s3_client, bucket = self._get_s3_credentials()
+        if not s3_client or not bucket: return records
+
         protected_models = ['operational.fund.disbursement', 'operational.fund.allocation']
         for rec in records:
             if rec.res_model in protected_models and rec.type == 'binary' and rec.raw:
                 try:
-                    s3_client = boto3.client('s3')
                     file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
                     object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
-                    s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
-                    _logger.info(f"Successfully offloaded financial attachment {rec.id} to S3 bucket key: {object_key}")
                 except Exception as e:
-                    _logger.error(f"AWS S3 Cloud Offload critical failure for attachment {rec.id}: {str(e)}")
+                    _logger.error(f"AWS S3 Cloud Upload Failure for asset {rec.id}: {str(e)}")
         return records
 
     @api.depends('store_fname', 'db_datas', 'file_size')
     def _compute_raw(self):
         super()._compute_raw()
         if boto3:
-            s3_client = boto3.client('s3')
-            for attach in self:
-                if attach.is_s3_stored and attach.s3_object_key:
-                    try:
-                        s3_object = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=attach.s3_object_key)
-                        attach.raw = s3_object['Body'].read()
-                    except Exception as e:
-                        _logger.error(f"Failed to pull asset from S3 key {attach.s3_object_key}: {str(e)}")
+            s3_client, bucket = self._get_s3_credentials()
+            if s3_client and bucket:
+                for attach in self:
+                    if attach.is_s3_stored and attach.s3_object_key:
+                        try:
+                            s3_object = s3_client.get_object(Bucket=bucket, Key=attach.s3_object_key)
+                            attach.raw = s3_object['Body'].read()
+                        except Exception as e:
+                            _logger.error(
+                                f"Failed to stream down asset from S3 bucket via key {attach.s3_object_key}: {str(e)}")
+
+    def _force_s3_upload(self):
+        if not boto3: return
+        s3_client, bucket = self._get_s3_credentials()
+        if not s3_client or not bucket: return
+
+        for rec in self:
+            if not rec.is_s3_stored and rec.raw:
+                try:
+                    file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
+                    object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
+                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+                    rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
+                except Exception as e:
+                    _logger.error(f"Force Migration Failure for asset {rec.id}: {str(e)}")
+
+    @api.model
+    def action_migrate_local_attachments_to_s3(self):
+        local_attachments = self.search(
+            [('res_model', 'in', ['operational.fund.disbursement', 'operational.fund.allocation']),
+             ('is_s3_stored', '=', False), ('type', '=', 'binary')])
+        if local_attachments:
+            local_attachments._force_s3_upload()
+            return {'type': 'ir.actions.client', 'tag': 'display_notification',
+                    'params': {'title': _('Migration Successful'),
+                               'message': _('%s attachments safely synced to S3 bucket.') % len(local_attachments),
+                               'sticky': False, 'type': 'success'}}
+        return {'type': 'ir.actions.client', 'tag': 'display_notification',
+                'params': {'title': _('System Synced'), 'message': _('No outstanding unmigrated files were found.'),
+                           'sticky': False, 'type': 'warning'}}

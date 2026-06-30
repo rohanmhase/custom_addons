@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_clinic_schedule_dashboard_client" model="ir.actions.client">
+        <field name="name">Clinic Matrix Dashboard</field>
+        <field name="tag">clinic_schedule.matrix_dashboard_action</field>
+    </record>
+
+    <record id="view_clinic_schedule_appointment_form" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.form</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <form string="Book Appointment or Block Slot">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="New Entry"/></h1>
+                    </div>
+                    <group>
+                        <field name="slot_type" widget="radio" options="{'horizontal': True}"/>
+                        <field name="visit_type" widget="radio" options="{'horizontal': True}" invisible="slot_type != 'patient'"/>
+                        <field name="attendance_state" widget="radio" options="{'horizontal': True}"/>
+                    </group>
+
+                    <field name="allowed_patient_ids" invisible="1"/>
+
+                    <group>
+                        <group>
+                            <field name="clinic_id" options="{'no_create': True}"/>
+                            <field name="therapist_id" options="{'no_create': True}" domain="['|', ('allowed_branch_ids', '=', False), ('allowed_branch_ids', 'in', clinic_id)]"/>
+                            <field name="patient_id" options="{'no_create': True}" invisible="slot_type != 'patient'" required="slot_type == 'patient'" domain="[('id', 'in', allowed_patient_ids)]"/>
+                        </group>
+                        <group>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_therapist_form" model="ir.ui.view">
+        <field name="name">clinic.therapist.form</field>
+        <field name="model">clinic.therapist</field>
+        <field name="arch" type="xml">
+            <form string="Therapist Profile">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Therapist Name"/>
+                        <h1><field name="name" placeholder="e.g. John Doe"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="active" invisible="1"/>
+                            <field name="is_buffer" widget="boolean_toggle"/>
+                            <field name="designation"/>
+                            <field name="vendor_id" invisible="designation == 'fixed'"/>
+                            <field name="employee_id" invisible="designation != 'fixed'"/>
+                        </group>
+                        <group>
+                            <field name="contact_number" widget="phone"/>
+                            <field name="gender" widget="radio" options="{'horizontal': True}"/>
+                            <field name="transport_type"/>
+                            <field name="allowed_branch_ids" widget="many2many_tags" placeholder="Limit to specific clinics..."/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_therapist_tree" model="ir.ui.view">
+        <field name="name">clinic.therapist.tree</field>
+        <field name="model">clinic.therapist</field>
+        <field name="arch" type="xml">
+            <tree string="Therapists" decoration-muted="not active" editable="bottom">
+                <field name="name"/>
+                <field name="contact_number"/>
+                <field name="is_buffer" widget="boolean_toggle"/>
+                <field name="designation"/>
+                <field name="gender"/>
+                <field name="transport_type"/>
+                <field name="allowed_branch_ids" widget="many2many_tags"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_therapist_directory" model="ir.actions.act_window">
+        <field name="name">Master Therapist Directory</field>
+        <field name="res_model">clinic.therapist</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_clinic_region_form" model="ir.ui.view">
+        <field name="name">clinic.region.form</field>
+        <field name="model">clinic.region</field>
+        <field name="arch" type="xml">
+            <form string="Region / Zone">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Region Name"/>
+                        <h1><field name="name" placeholder="e.g. North Zone"/></h1>
+                    </div>
+                    <group>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                    <notebook>
+                        <page string="Assigned Clinics">
+                            <field name="clinic_ids" context="{'default_region_id': id}">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_region_tree" model="ir.ui.view">
+        <field name="name">clinic.region.tree</field>
+        <field name="model">clinic.region</field>
+        <field name="arch" type="xml">
+            <tree string="Regions" editable="bottom">
+                <field name="name"/>
+                <field name="clinic_ids" widget="many2many_tags" placeholder="Add Clinics to this Zone..."/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_region" model="ir.actions.act_window">
+        <field name="name">Regions &amp; Zones</field>
+        <field name="res_model">clinic.region</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_clinic_therapist_import_log_form" model="ir.ui.view">
+        <field name="name">clinic.therapist.import.log.form</field>
+        <field name="model">clinic.therapist.import.log</field>
+        <field name="arch" type="xml">
+            <form string="Import Roster Spreadsheet">
+                <header>
+                    <button name="action_process_csv" type="object" string="Execute Roster Sync" class="btn-primary" invisible="state == 'done'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Spreadsheet Selection">
+                            <field name="csv_file" filename="file_name" widget="binary"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                        <group string="Audit Parameters">
+                            <field name="execution_date"/>
+                            <field name="records_processed" invisible="state == 'draft'"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_therapist_import_log_tree" model="ir.ui.view">
+        <field name="name">clinic.therapist.import.log.tree</field>
+        <field name="model">clinic.therapist.import.log</field>
+        <field name="arch" type="xml">
+            <tree string="Import History">
+                <field name="execution_date"/>
+                <field name="file_name"/>
+                <field name="records_processed"/>
+                <field name="state" widget="badge" decoration-success="state == 'done'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_therapist_import_log" model="ir.actions.act_window">
+        <field name="name">Upload Staff Roster</field>
+        <field name="res_model">clinic.therapist.import.log</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

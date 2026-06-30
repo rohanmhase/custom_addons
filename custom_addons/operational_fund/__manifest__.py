@@ -3,7 +3,7 @@
     'version': '1.0',
     'category': 'Accounting/Localizations',
     'summary': 'Manage clinic operational accounts, local disbursements, and generate vouchers.',
-    'depends': ['base', 'mail','hr','clinic_management','project'],
+    'depends': ['base', 'mail','hr','clinic_management','project','web'],
     'data': [
         'security/operational_fund_security.xml',
         'security/ir.model.access.csv',
