@@ -158,7 +158,7 @@ class ClinicDashboard(models.TransientModel):
         ])
 
         self.line_ids = [(0, 0, {
-            'patient_name': s.patient_id.name,
+            'patient_name': s.sudo().patient_id.name,
             'session_day': s.session_day,
             'doctor_name' : s.doctor_id.name,
             'therapist_name' : s.therapist_id.name,
