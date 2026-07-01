@@ -69,4 +69,12 @@
         </field>
     </record>
 
+    <record id="group_franchise_billing" model="res.groups">
+        <field name="name">Franchise Billing User</field>
+        <field name="category_id" ref="clinic_management.module_category_clinic"/>
+        <field name="comment">
+            Can mark patient enrollments as paid without using POS or Accounting.
+        </field>
+    </record>
+
 </odoo>

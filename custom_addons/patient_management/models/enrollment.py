@@ -285,6 +285,23 @@ class Enrollment(models.Model):
                     _("The enrollment date must be today or earlier.")
                 )
 
+    def action_mark_as_paid(self):
+        self.ensure_one()
+
+        if self.payment_state == 'paid':
+            raise UserError(_("This enrollment is already marked as paid."))
+
+        self.write({
+            'payment_state': 'paid',
+            'payment_date': fields.Date.today(),
+        })
+
+        self.message_post(
+            body=_("Enrollment marked as paid by %s.") % self.env.user.name
+        )
+
+        return True
+
     def action_open_bill_popup(self):
 
         self.ensure_one()
