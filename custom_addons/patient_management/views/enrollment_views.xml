@@ -31,6 +31,12 @@
                             type="object"
                             class="btn-primary"
                             invisible="payment_state == 'paid'"/>
+                    <button name="action_mark_as_paid"
+                            type="object"
+                            string="Mark as Paid"
+                            class="btn-primary"
+                            invisible="payment_state == 'paid'"
+                            groups="clinic_management.group_franchise_billing"/>
                     <field name="payment_state"
                            widget="statusbar"/>
 
