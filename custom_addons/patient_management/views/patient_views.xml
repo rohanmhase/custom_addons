@@ -15,7 +15,7 @@
                 <field name="latest_xray_status"/>
                 <field name="patient_status"/>
                 <field name="clinic_id"/>
-<!--                <field name="base_clinic_id"/>-->
+                <field name="base_clinic_id"/>
 
                 <templates>
                     <t t-name="kanban-box">
@@ -26,7 +26,7 @@
                                     <field name="name"/>
                                 </strong>
 
-                                <span t-attf-class="badge rounded-pill {{ record.patient_status.raw_value === 'active' ? 'text-bg-success' : record.patient_status.raw_value === 'inactive' ? 'text-bg-danger' : 'text-bg-secondary' }}">
+                                <span t-attf-class="badge rounded-pill {{ record.patient_status.raw_value === 'active' ? 'text-bg-success' : record.patient_status.raw_value === 'inactive' ? 'text-bg-danger' : record.patient_status.raw_value === 'on_medicine' ? 'text-bg-warning' : 'text-bg-secondary' }}">
                                     <t t-esc="record.patient_status.value || 'visit'"/>
                                 </span>
 
@@ -75,10 +75,11 @@
                                 </t>
                             </div>
                             <div>
-                                <strong>Tag - </strong>
-<!--                                <span t-attf-class="badge rounded-pill {{ record.base_clinic_id.raw_value !== record.clinic_id.raw_value ? 'text-bg-warning text-dark font-weight-bold' : 'text-bg-light' }}">-->
-<!--&lt;!&ndash;                                    <field name="base_clinic_id"/>&ndash;&gt;-->
-<!--                                </span>-->
+                                <strong>Sub Clinic -</strong>
+                                <span class="badge rounded-pill font-weight-bold"
+                                      t-attf-style="background-color: {{ record.base_clinic_id.raw_value !== record.clinic_id.raw_value ? '#FFD700' : '#007BFF' }}; color: {{ record.base_clinic_id.raw_value !== record.clinic_id.raw_value ? '#000000' : '#FFFFFF' }};">
+                                    <field name="base_clinic_id"/>
+                                </span>
                             </div>
                         </div>
                     </t>
@@ -174,7 +175,7 @@
                                options="{'horizontal': true}"
                                selection="[('active','Active'),('inactive','Inactive')]"
                                invisible="patient_status == 'visit'"/>
-<!--                        <field name="base_clinic_id" required="1"/>-->
+                        <field name="base_clinic_id" required="1"/>
                     </group>
                     <field name="pain_types" invisible="1"/>
                     <group string="Registered For">

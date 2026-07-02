@@ -35,12 +35,12 @@ class Patient(models.Model):
         string="Clinic",
         required=True, tracking=True
     )  # Clinic name
-    # base_clinic_id = fields.Many2one(
-    #     'clinic.clinic',
-    #     string="Clinic Tag",
-    #     tracking=True,
-    #     default=lambda self: self.env.context.get('default_clinic_id')
-    # )
+    base_clinic_id = fields.Many2one(
+        'clinic.clinic',
+        string="Sub Clinic",
+        tracking=True,
+        default=lambda self: self.env.context.get('default_clinic_id')
+    )
 
     pain_types = fields.Char(string="Pain Types", tracking=True)
 
@@ -165,7 +165,8 @@ class Patient(models.Model):
 
     patient_status = fields.Selection([
         ('visit', 'Visit'),
-        ('active', 'Active'),
+        ('active', 'On Therapy'),
+        ('on_medicine', 'On Medicine'),
         ('inactive', 'Inactive')
     ], string="Patient Status", default='visit', tracking=True)
 
@@ -497,41 +498,80 @@ class Patient(models.Model):
 
     def _cron_check_inactive_patients(self):
         today = fields.Date.today()
-        patients = self.search([('patient_status', '=', 'active')])
+        # Fetch patients who are either on therapy or on medicine
+        patients = self.search([('patient_status', 'in', ['active', 'on_medicine'])])
+
+        medicine_products = [
+            'Diabetes Treatment',
+            'Digestion Improvement Treatment',
+            'PCOD Treatment',
+            'Regeneration Treatment',
+            'Weight Management Treatment'
+        ]
 
         for patient in patients:
 
-            # 1. If they have no remaining sessions, they should be inactive immediately
-            if patient.remaining_sessions <= 0:
-                patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
-                continue
+            # ==========================================
+            # 1. LOGIC FOR ACTIVE/ON THERAPY (7 DAYS)
+            # ==========================================
+            if patient.patient_status == 'active':
 
-            # 2. Check for the most recent session
-            last_session = self.env['patient.session'].search([
-                ('patient_id', '=', patient.id),
-                ('active', '=', True)
-            ], order='session_date desc', limit=1)
+                # Check for the most recent session
+                last_session = self.env['patient.session'].search([
+                    ('patient_id', '=', patient.id),
+                    ('active', '=', True)
+                ], order='session_date desc', limit=1)
 
-            # 3. Determine the exact date to compare against
-            last_date = False
-            if last_session and last_session.session_date:
-                last_date = last_session.session_date
-            elif patient.active_enrollment_id:
-                # Fallback: They paid but haven't taken a session yet
-                last_date = patient.active_enrollment_id.enrollment_date
-            else:
-                # Absolute fallback if no enrollment is found
-                last_date = patient.enroll_date
+                # Determine the exact date to compare against
+                last_date = False
+                if last_session and last_session.session_date:
+                    last_date = last_session.session_date
+                elif patient.active_enrollment_id:
+                    # Fallback: They paid but haven't taken a session yet
+                    last_date = patient.active_enrollment_id.enrollment_date
+                else:
+                    # Absolute fallback if no enrollment is found
+                    last_date = patient.enroll_date
 
-            # 4. Calculate difference and update status
-            if last_date:
-                diff_days = (today - last_date).days
+                # Check if 7 days have passed OR if they ran out of remaining sessions
+                if patient.remaining_sessions <= 0 or (last_date and (today - last_date).days >= 7):
 
-                # Use >= 7 to be consistent across both sessions and enrollments
-                if diff_days > 7:
-                    patient.with_context(from_cron=True).sudo().write({
-                        'patient_status': 'inactive'
-                    })
+                    # BEFORE making them inactive, check if they are still within a 30-day medicine window
+                    last_medicine = self.env['patient.enrollment'].search([
+                        ('patient_id', '=', patient.id),
+                        ('payment_state', '=', 'paid'),
+                        ('line_ids.service_product_id.name', 'in', medicine_products)
+                    ], order='enrollment_date desc', limit=1)
+
+                    if last_medicine and last_medicine.enrollment_date:
+                        med_diff_days = (today - last_medicine.enrollment_date).days
+                        if med_diff_days < 30:
+                            # Safely downgrade to medicine
+                            patient.with_context(from_cron=True).sudo().write({'patient_status': 'on_medicine'})
+                            continue
+
+                    # If no valid medicine is found, then they are truly inactive
+                    patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
+
+            # ==========================================
+            # 2. LOGIC FOR ON MEDICINE (30 DAYS)
+            # ==========================================
+            elif patient.patient_status == 'on_medicine':
+                # Find the latest paid enrollment that contains ANY medicine treatment
+                last_medicine_enrollment = self.env['patient.enrollment'].search([
+                    ('patient_id', '=', patient.id),
+                    ('payment_state', '=', 'paid'),
+                    ('line_ids.service_product_id.name', 'in', medicine_products)
+                ], order='enrollment_date desc', limit=1)
+
+                # Use the medicine enrollment date, fallback to general enroll date
+                last_date = last_medicine_enrollment.enrollment_date if last_medicine_enrollment else patient.enroll_date
+
+                # Calculate difference and update status (30 Days Inactivity)
+                if last_date:
+                    diff_days = (today - last_date).days
+                    if diff_days >= 30:
+                        patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
 
     @api.constrains('enroll_date')
     def _check_visit_date(self):

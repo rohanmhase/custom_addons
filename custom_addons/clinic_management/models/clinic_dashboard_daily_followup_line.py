@@ -10,3 +10,4 @@ class ClinicDashboardFollowupLine(models.TransientModel):
 
     patient_name = fields.Char(string="Patient Name")
     doctor_name = fields.Char(string="Doctor Name")
+    base_clinic_name = fields.Char(string="Sub Clinic Name")

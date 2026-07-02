@@ -56,3 +56,29 @@ class AccountAutomationDashboard(models.TransientModel):
             'view_mode': 'tree,form',
             'target': 'current',
         }
+
+    def action_run_clinic_performance(self):
+        """Opens the date-selection wizard for the Clinic Performance Report."""
+        return {
+            'name': 'Clinic Performance Report',
+            'type': 'ir.actions.act_window',
+            'res_model': 'clinic.performance.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context,
+        }
+
+    def action_view_clinic_performance_history(self):
+        """Opens the saved history of past Clinic Performance Report runs.
+
+        Reuses the History action so the breadcrumb / search filters stay
+        consistent with the menu entry under Operations.
+        """
+        action = self.env.ref(
+            'account_automation.action_clinic_performance_report_history'
+        ).read()[0]
+        action.update({
+            'target': 'current',
+            'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
+        })
+        return action
