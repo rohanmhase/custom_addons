@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_clinic_schedule_appointment,clinic.schedule.appointment,model_clinic_schedule_appointment,base.group_user,1,1,1,1
-access_clinic_therapist_import_log,clinic.therapist.import.log,model_clinic_therapist_import_log,base.group_user,1,1,1,1
-access_clinic_therapist,clinic.therapist,model_clinic_therapist,base.group_user,1,1,1,1
-access_clinic_region,clinic.region,model_clinic_region,base.group_user,1,1,1,1
-access_clinic_therapist_daily_state,clinic.therapist.daily.state,model_clinic_therapist_daily_state,base.group_user,1,1,1,1

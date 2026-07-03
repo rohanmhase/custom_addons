@@ -1,1 +1,0 @@
-from . import clinic_schedule
