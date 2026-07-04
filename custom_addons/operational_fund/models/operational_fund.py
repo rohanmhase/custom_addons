@@ -228,8 +228,9 @@ class OperationalFundAllocationWizard(models.TransientModel):
         return self._get_return_action()
 
     def action_close_and_continue(self):
-        """🚨 MULTI-CLINIC ADMIN BYPASS: Closes popup to access records 🚨"""
-        return self._get_return_action()
+        """Restored: Lets the user dismiss the pop-up and freely access their intended screen."""
+        action_ref = self.env.context.get('return_action', 'operational_fund.action_op_fund_disbursement')
+        return self.env['ir.actions.act_window']._for_xml_id(action_ref)
 
 
 class OperationalFundRejectionWizard(models.TransientModel):
@@ -424,7 +425,7 @@ class OperationalFundDisbursement(models.Model):
                 'type': 'ir.actions.act_window',
                 'res_model': 'operational.fund.allocation.wizard',
                 'view_mode': 'form',
-                'target': 'new',
+                'target': 'current',
                 'context': {
                     'default_allocation_id': pending_alloc.id,
                     'return_action': 'operational_fund.action_op_fund_disbursement'
@@ -458,7 +459,7 @@ class OperationalFundDisbursement(models.Model):
                 'type': 'ir.actions.act_window',
                 'res_model': 'operational.fund.allocation.wizard',
                 'view_mode': 'form',
-                'target': 'new',
+                'target': 'current',
                 'context': {
                     'default_allocation_id': pending_alloc.id,
                     'return_action': 'operational_fund.action_op_fund_clinic_balance'
@@ -492,7 +493,7 @@ class OperationalFundDisbursement(models.Model):
                 'type': 'ir.actions.act_window',
                 'res_model': 'operational.fund.allocation.wizard',
                 'view_mode': 'form',
-                'target': 'new',
+                'target': 'current',
                 'context': {
                     'default_allocation_id': pending_alloc.id,
                     'return_action': 'operational_fund.action_op_fund_disbursement'

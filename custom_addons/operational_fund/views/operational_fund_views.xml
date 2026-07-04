@@ -55,29 +55,34 @@
         <field name="name">operational.fund.allocation.wizard.form</field>
         <field name="model">operational.fund.allocation.wizard</field>
         <field name="arch" type="xml">
-            <form string="Confirm Fund Deposit" create="0" edit="0">
-                <div class="alert alert-danger text-center shadow-sm" role="alert" style="font-size:16px;">
-                    <i class="fa fa-university me-2 fa-2x" title="Bank"></i><br/>
-                    <strong>MANDATORY ACTION: PENDING HQ DEPOSIT</strong><br/>
-                    Please upload your bank reference receipt below to clear your wallet and restore dashboard access.
-                </div>
-                <group col="2">
-                    <group>
-                        <field name="allocation_id" invisible="1"/>
-                        <field name="amount" string="Transfer Amount (₹)"/>
+            <form string="Confirm Fund Deposit">
+                <sheet>
+                    <div class="alert alert-danger text-center shadow-sm" role="alert" style="font-size:16px;">
+                        <i class="fa fa-university me-2 fa-2x" title="Bank"></i><br/>
+                        <strong>MANDATORY ACTION: PENDING HQ DEPOSIT</strong><br/>
+                        Please upload your bank reference receipt below to clear your wallet and restore dashboard access.
+                    </div>
+
+                    <group col="2">
+                        <group>
+                            <field name="allocation_id" invisible="1"/>
+                            <field name="amount" string="Transfer Amount (₹)" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="notes" string="HQ Purpose Reference" readonly="1"/>
+                        </group>
                     </group>
-                    <group>
-                        <field name="notes" string="HQ Purpose Reference"/>
+
+                    <group string="Audit Verification Proof">
+                        <field name="ack_proof_file" filename="ack_proof_filename" string="Upload Bank Statement Snippet / Proof"/>
+                        <field name="ack_proof_filename" invisible="1"/>
                     </group>
-                </group>
-                <group string="Audit Verification Proof">
-                    <field name="ack_proof_file" filename="ack_proof_filename" string="Upload Bank Statement Snippet / Proof"/>
-                    <field name="ack_proof_filename" invisible="1"/>
-                </group>
-                <footer>
-                    <button name="action_confirm_receipt" string="Verify &amp; Inject Balance" type="object" class="btn-success btn-lg text-uppercase fw-bold"/>
-                    <button name="action_close_and_continue" string="Close &amp; Continue to Drafts" type="object" class="btn-secondary ms-2" form_novalidate="1"/>
-                </footer>
+
+                    <div class="mt-4 mb-2 d-flex">
+                        <button name="action_confirm_receipt" string="Verify &amp; Inject Balance" type="object" class="btn-success btn-lg text-uppercase fw-bold me-3"/>
+                        <button name="action_close_and_continue" string="Close &amp; Continue to Drafts" type="object" class="btn-secondary btn-lg" form_novalidate="1"/>
+                    </div>
+                </sheet>
             </form>
         </field>
     </record>
@@ -122,18 +127,15 @@
                 <header>
                     <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
 
-                    <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
+
                     <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-
                     <button name="action_mark_as_paid" string="Mark as Paid" type="object" class="oe_highlight" invisible="state != 'approved'"/>
-
                     <button name="action_unlock_for_correction" string="Unlock for Correction" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" groups="operational_fund.group_op_fund_manager" form_novalidate="1"/>
-
                     <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" form_novalidate="1"/>
                     <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-
                     <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved', 'paid')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'" form_novalidate="1"/>
 
@@ -143,13 +145,13 @@
                     <field name="has_pending_allocation" invisible="1"/>
 
                     <div class="alert alert-danger d-flex align-items-center justify-content-between shadow-sm" role="alert" invisible="not has_pending_allocation" style="margin-bottom: 20px; padding: 15px;">
-                            <div>
-                                <i class="fa fa-university me-2 fa-2x align-middle" title="Bank"></i>
-                                <span class="align-middle ms-2">
-                                    <strong>MANDATORY ACTION REQUIRED:</strong> This clinic has an unacknowledged capital deposit from HQ. You cannot submit vouchers until this balance is verified.
-                                </span>
-                            </div>
-                            <button name="action_open_acknowledgment_wizard_from_banner" string="Upload Bank Proof Now" type="object" class="btn btn-danger btn-sm fw-bold text-uppercase border border-light" form_novalidate="1"/>
+                        <div>
+                            <i class="fa fa-university me-2 fa-2x align-middle" title="Bank"></i>
+                            <span class="align-middle ms-2">
+                                <strong>MANDATORY ACTION REQUIRED:</strong> This clinic has an unacknowledged capital deposit from HQ. You cannot submit vouchers until this balance is verified.
+                            </span>
+                        </div>
+                        <button name="action_open_acknowledgment_wizard_from_banner" string="Upload Bank Proof Now" type="object" class="btn btn-danger btn-sm fw-bold text-uppercase border border-light" form_novalidate="1"/>
                     </div>
 
                     <div class="alert alert-info text-center" role="alert" invisible="signed_voucher_file or state in ('waiting', 'approved', 'paid', 'refund_requested', 'refunded')" style="margin-bottom: 20px;">
@@ -231,11 +233,11 @@
                     <group string="Documents &amp; Compliance Attachments">
                         <group>
                             <field name="is_receipt_mandatory" invisible="1"/>
-                            <field name="receipt_file" filename="receipt_filename" string="Vendor Receipt / Bill" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
+                            <field name="receipt_file" filename="receipt_filename" string="Vendor Receipt / Bill" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested') or has_pending_allocation"/>
                             <field name="receipt_filename" invisible="1"/>
                         </group>
                         <group>
-                            <field name="signed_voucher_file" filename="signed_voucher_filename" string="Signed Voucher Asset" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
+                            <field name="signed_voucher_file" filename="signed_voucher_filename" string="Signed Voucher Asset" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested') or has_pending_allocation"/>
                             <field name="signed_voucher_filename" invisible="1"/>
                         </group>
                     </group>
@@ -250,13 +252,11 @@
 
                     <notebook>
                         <page string="Business Purpose"><field name="description" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" placeholder="Specify exact context parameters..."/></page>
-
                         <page string="Current Documents" invisible="not signed_voucher_file and not receipt_file and not payment_screenshot">
                             <div class="row mt-3">
                                 <div class="col-4" invisible="not signed_voucher_file">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Signed Voucher</h4>
                                     <field name="is_signed_voucher_image" invisible="1"/>
-
                                     <div invisible="not is_signed_voucher_image" style="display: flex; justify-content: center; width: 100%;">
                                         <field name="signed_voucher_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
                                     </div>
@@ -264,11 +264,9 @@
                                         <field name="signed_voucher_preview_pdf" widget="pdf_viewer" readonly="1" nolabel="1"/>
                                     </div>
                                 </div>
-
                                 <div class="col-4" invisible="not receipt_file">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Original Receipt / Vendor Bill</h4>
                                     <field name="is_receipt_image" invisible="1"/>
-
                                     <div invisible="not is_receipt_image" style="display: flex; justify-content: center; width: 100%;">
                                         <field name="receipt_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
                                     </div>
@@ -276,11 +274,9 @@
                                         <field name="receipt_preview_pdf" widget="pdf_viewer" readonly="1" nolabel="1"/>
                                     </div>
                                 </div>
-
                                 <div class="col-4" invisible="not payment_screenshot">
                                     <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Transaction Rollout Proof</h4>
                                     <field name="is_payment_screenshot_image" invisible="1"/>
-
                                     <div invisible="not is_payment_screenshot_image" style="display: flex; justify-content: center; width: 100%;">
                                         <field name="payment_screenshot_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
                                     </div>
@@ -321,7 +317,7 @@
     <record id="action_op_fund_disbursement" model="ir.actions.act_window">
         <field name="name">Disbursements</field>
         <field name="res_model">operational.fund.disbursement</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">kanban,form,tree</field>
     </record>
 
     <record id="view_op_fund_allocation_form" model="ir.ui.view">
