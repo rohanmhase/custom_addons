@@ -9,6 +9,7 @@ class Clinic(models.Model):
     address = fields.Text(string="Address", required=True)
     code = fields.Char(string="Clinic Code", required=True)
     phone = fields.Char(string="Phone Number", required=True)
+    region_id = fields.Many2one("clinic.region")
     warehouse_id = fields.Many2one("stock.warehouse", string="Warehouse", readonly=True)
     pos_config_id = fields.Many2one("pos.config", string="Point of Sale", readonly=True)
     date_created = fields.Datetime(string="Date Created", readonly=True, default=lambda self: self._ist_date())
