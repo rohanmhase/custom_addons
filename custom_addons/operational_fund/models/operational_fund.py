@@ -141,15 +141,40 @@ class OperationalFundAudit(models.Model):
         ('credit', 'Credit (Allocation In)'),
         ('debit', 'Debit (Disbursement Out)')
     ], string='Type', required=True, readonly=True)
+
+    # 🚨 ADDON: The Passbook Snapshot Fields
+    opening_balance = fields.Float(string='Opening Balance', readonly=True)
     amount = fields.Float(string='Amount', required=True, readonly=True)
+    closing_balance = fields.Float(string='Closing Balance', readonly=True)
+
     reference = fields.Char(string='Reference', readonly=True)
     user_id = fields.Many2one('res.users', string='Logged By', readonly=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """🚨 ADDON: Automatically calculates Passbook snapshots for any new ledger entry!
+        This cleanly ignores old records (so they don't break) and auto-magics the new ones."""
+        for vals in vals_list:
+            if 'clinic_id' in vals and 'amount' in vals and 'transaction_type' in vals:
+                clinic = self.env['clinic.clinic'].browse(vals['clinic_id'])
+
+                # Snapshot the balance before the transaction applies
+                opening = clinic.op_fund_balance
+                vals['opening_balance'] = opening
+
+                # Calculate the exact closing balance
+                if vals['transaction_type'] == 'credit':
+                    vals['closing_balance'] = opening + vals['amount']
+                else:
+                    vals['closing_balance'] = opening - vals['amount']
+
+        return super().create(vals_list)
 
 
 class OperationalFundAllocation(models.Model):
     _name = 'operational.fund.allocation'
     _description = 'Operational Fund Top-up'
-    _inherit = ['mail.thread']
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Receipt Number', default='New', readonly=True)
     clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, tracking=True,
@@ -161,43 +186,168 @@ class OperationalFundAllocation(models.Model):
     controller_id = fields.Many2one('res.users', string='Allocated By', default=lambda self: self.env.user,
                                     readonly=True)
 
+    # 🚨 ADDON: Introduced the 'review' Maker-Checker state
     state = fields.Selection([
         ('pending', 'Pending Acknowledgment'),
+        ('review', 'Under Manager Review'),
         ('cleared', 'Cleared')
     ], string='Status', default='pending', required=True, tracking=True)
 
     ack_proof_file = fields.Binary(string='Bank Statement/Proof Asset')
     ack_proof_filename = fields.Char(string='Proof Filename')
 
+    # 🚨 ADDON: File Type Detection for Live Preview
+    is_ack_proof_image = fields.Boolean(compute='_compute_ack_proof_type')
+    is_ack_proof_pdf = fields.Boolean(compute='_compute_ack_proof_type')
+
+    @api.depends('ack_proof_filename')
+    def _compute_ack_proof_type(self):
+        """Checks the file extension to tell the XML which preview widget to render."""
+        for rec in self:
+            rec.is_ack_proof_image = False
+            rec.is_ack_proof_pdf = False
+            if rec.ack_proof_filename:
+                ext = rec.ack_proof_filename.lower().split('.')[-1] if '.' in rec.ack_proof_filename else ''
+                if ext in ['jpg', 'jpeg', 'png', 'webp']:
+                    rec.is_ack_proof_image = True
+                elif ext == 'pdf':
+                    rec.is_ack_proof_pdf = True
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('operational.fund.allocation') or 'New'
-        return super().create(vals_list)
+        records = super().create(vals_list)
 
-    def action_clear_allocation(self, file_data, filename):
+        # 🚨 ADDON: Automatically trigger Maker notifications on creation
+        for rec in records:
+            if rec.state == 'pending':
+                rec._notify_custodians_pending()
+        return records
+
+    def _notify_custodians_pending(self):
+        """Finds authorized clinic custodians, assigns a Today deadline To-Do, and emails them."""
+        for rec in self:
+            custodians = self.env['res.users'].sudo().search([
+                ('groups_id', 'in', self.env.ref('operational_fund.group_op_fund_custodian').id),
+                '|', ('clinic_id', '=', rec.clinic_id.id),
+                ('op_fund_managed_clinic_ids', 'in', rec.clinic_id.id)
+            ])
+            if not custodians:
+                continue
+
+            deadline = fields.Date.context_today(self)
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.allocation&view_type=form"
+
+            for user in custodians:
+                rec.activity_schedule(
+                    'mail.activity_data_todo',
+                    user_id=user.id,
+                    summary='Action Required: Acknowledge HQ Deposit',
+                    note=f'A new deposit of ₹{rec.amount} requires your bank proof upload. <a href="{deep_link}">Click here to act</a>',
+                    date_deadline=deadline
+                )
+
+                if user.email:
+                    mail_values = {
+                        'subject': f'Action Required: Pending HQ Deposit for {rec.clinic_id.name}',
+                        'email_to': user.email,
+                        'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #333;">Capital Deposit Pending</h2><p>Hello {user.name},</p><p>HQ has allocated <strong>₹{rec.amount}</strong> to {rec.clinic_id.name}. Please log in and upload the bank verification proof today to unlock your dashboard.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acknowledge Funds</a></div>""",
+                        'state': 'outgoing',
+                    }
+                    self.env['mail.mail'].sudo().create(mail_values)
+
+    def action_submit_for_review(self, file_data, filename):
+        """🚨 ADDON: The Custodian uploads proof, pushing it to the Checker (Manager)."""
         self.ensure_one()
         if not file_data:
-            raise ValidationError(
-                _("Auditing Error: You must attach a bank proof file to confirm the deposit receipt."))
+            raise ValidationError(_("Auditing Error: You must attach a bank proof file to submit for review."))
 
         self.write({
             'ack_proof_file': file_data,
             'ack_proof_filename': filename,
-            'state': 'cleared'
+            'state': 'review'
         })
 
-        active_clinic = self.clinic_id.master_fund_id or self.clinic_id
-        self.env['operational.fund.audit'].sudo().create({
-            'clinic_id': active_clinic.id,
-            'date': self.date,
-            'transaction_type': 'credit',
-            'amount': self.amount,
-            'reference': f'Wallet Top-up: {self.name} (Acknowledged)',
-            'user_id': self.env.user.id
-        })
-        active_clinic.sudo()._check_low_balance_alert()
+        # Clear Custodian's To-Do
+        self.activity_unlink(['mail.activity_data_todo'])
+
+        # Notify Managers for Review
+        target_managers = self.clinic_id.op_fund_manager_ids
+        deadline = fields.Date.context_today(self)
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        deep_link = f"{base_url}/web#id={self.id}&model=operational.fund.allocation&view_type=form"
+
+        for manager in target_managers:
+            self.activity_schedule(
+                'mail.activity_data_todo',
+                user_id=manager.id,
+                summary='Review Required: Verify Bank Proof',
+                note=f'Deposit {self.name} (₹{self.amount}) has bank proof ready for your review. <a href="{deep_link}">Click here</a>',
+                date_deadline=deadline
+            )
+
+    def action_approve_allocation(self):
+        """🚨 ADDON: Manager approves the proof. Money is credited."""
+        for rec in self:
+            rec.state = 'cleared'
+            active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
+
+            # Formally inject the balance into the ledger
+            self.env['operational.fund.audit'].sudo().create({
+                'clinic_id': active_clinic.id,
+                'date': rec.date,
+                'transaction_type': 'credit',
+                'amount': rec.amount,
+                'reference': f'Wallet Top-up: {rec.name} (Approved by Manager)',
+                'user_id': self.env.user.id
+            })
+
+            active_clinic.sudo()._check_low_balance_alert()
+            rec.activity_unlink(['mail.activity_data_todo'])
+
+    def action_reject_allocation(self):
+        """🚨 ADDON: Manager rejects the proof. Sends it back to Custodian."""
+        for rec in self:
+            rec.write({
+                'ack_proof_file': False,
+                'ack_proof_filename': False,
+                'state': 'pending'
+            })
+            rec.activity_unlink(['mail.activity_data_todo'])
+            rec.message_post(
+                body="<div style='color:red;'><strong>REJECTED:</strong> The uploaded bank proof was rejected by the Manager. Please re-upload a valid proof document.</div>")
+            rec._notify_custodians_pending()
+
+    @api.model
+    def _cron_check_overdue_allocations(self):
+        """🚨 ADDON: Cron Job checks for 24h SLA Breaches and escalates to Managers."""
+        overdue_date = fields.Date.context_today(self) - timedelta(days=1)
+        overdue_allocs = self.search([('state', '=', 'pending'), ('date', '<=', overdue_date)])
+
+        for alloc in overdue_allocs:
+            managers = alloc.clinic_id.op_fund_manager_ids
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            deep_link = f"{base_url}/web#id={alloc.id}&model=operational.fund.allocation&view_type=form"
+
+            for manager in managers:
+                alloc.activity_schedule(
+                    'mail.activity_data_todo',
+                    user_id=manager.id,
+                    summary='⚠️ SLA BREACH: Pending Deposit Unacknowledged',
+                    note=f'Clinic Custodian has not acknowledged Deposit {alloc.name} (₹{alloc.amount}) within 24 hours. Please follow up. <a href="{deep_link}">Click here</a>'
+                )
+
+                if manager.email:
+                    mail_values = {
+                        'subject': f'SLA BREACH: Overdue Acknowledgment for {alloc.clinic_id.name}',
+                        'email_to': manager.email,
+                        'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d9534f;"><h2 style="color: #d9534f;">⚠️ 24-Hour SLA Breach Alert</h2><p>Hello {manager.name},</p><p>The Tier 1 Custodians at <strong>{alloc.clinic_id.name}</strong> have failed to acknowledge Deposit {alloc.name} (₹{alloc.amount}) within the mandated 24-hour window.</p><p>Please intervene to ensure the funds are cleared and their dashboard is unlocked.</p><a href="{deep_link}" style="background-color: #d9534f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Record</a></div>""",
+                        'state': 'outgoing',
+                    }
+                    self.env['mail.mail'].sudo().create(mail_values)
 
 
 class OperationalFundAllocationWizard(models.TransientModel):
@@ -211,21 +361,18 @@ class OperationalFundAllocationWizard(models.TransientModel):
     ack_proof_file = fields.Binary(string='Upload Bank Snippet / Screenshot')
     ack_proof_filename = fields.Char(string='Filename')
 
-    def _get_return_action(self):
-        """Dynamically routes the user back securely without triggering Access Errors."""
-        action_ref = self.env.context.get('return_action', 'operational_fund.action_op_fund_disbursement')
-        # 🚨 THE SECURE FIX: This bypasses the ir.actions.act_window read block
-        return self.env['ir.actions.act_window']._for_xml_id(action_ref)
-
     def action_confirm_receipt(self):
-        """🚨 MANUAL VALIDATION: Enforces the file upload ONLY when they click Verify 🚨"""
+        """🚨 ADDON: Submits the proof for Manager Review instead of clearing it."""
         self.ensure_one()
         if not self.ack_proof_file:
             raise ValidationError(
                 _("Auditing Restriction: You must attach an image verification snapshot of the bank statement payout rollout to acknowledge this allocation."))
 
-        self.allocation_id.sudo().action_clear_allocation(self.ack_proof_file, self.ack_proof_filename)
-        return self._get_return_action()
+        # Now routes to Maker-Checker Review instead of immediate clear
+        self.allocation_id.sudo().action_submit_for_review(self.ack_proof_file, self.ack_proof_filename)
+
+        action_ref = self.env.context.get('return_action', 'operational_fund.action_op_fund_disbursement')
+        return self.env['ir.actions.act_window']._for_xml_id(action_ref)
 
     def action_close_and_continue(self):
         """Restored: Lets the user dismiss the pop-up and freely access their intended screen."""

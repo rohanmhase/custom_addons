@@ -324,31 +324,57 @@
         <field name="name">operational.fund.allocation.form</field>
         <field name="model">operational.fund.allocation</field>
         <field name="arch" type="xml">
-            <form string="Wallet Recharge">
+            <form string="Fund Allocation">
                 <header>
-                    <field name="state" widget="statusbar" statusbar_visible="pending,cleared"/>
+                    <button name="action_approve_allocation" string="Approve &amp; Clear Funds" type="object" class="btn-success text-uppercase fw-bold" invisible="state != 'review'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <button name="action_reject_allocation" string="Reject &amp; Request Re-upload" type="object" class="btn-danger" invisible="state != 'review'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,review,cleared"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
                     <group>
                         <group>
-                            <field name="clinic_id" options="{'no_create': True}" readonly="state == 'cleared'"/>
-                            <field name="amount" widget="monetary" string="Deposit Amount" readonly="state == 'cleared'"/>
+                            <field name="clinic_id" readonly="state != 'pending'"/>
+                            <field name="amount" readonly="state != 'pending'"/>
+                            <field name="date" readonly="state != 'pending'"/>
                         </group>
                         <group>
-                            <field name="date" readonly="state == 'cleared'"/>
-                            <field name="controller_id" widget="many2one_avatar_user"/>
+                            <field name="controller_id"/>
+                            <field name="notes" readonly="state != 'pending'"/>
                         </group>
                     </group>
-                    <group>
-                        <field name="notes" placeholder="Recharge notes..." readonly="state == 'cleared'"/>
-                    </group>
-                    <group string="Acknowledgment Verification File" invisible="state != 'cleared'">
-                        <field name="ack_proof_file" filename="ack_proof_filename" widget="pdf_viewer" readonly="1"/>
+
+                    <group string="Audit Verification Proof" invisible="not ack_proof_file">
                         <field name="ack_proof_filename" invisible="1"/>
+                        <field name="is_ack_proof_image" invisible="1"/>
+                        <field name="is_ack_proof_pdf" invisible="1"/>
+                        <field name="ack_proof_file" filename="ack_proof_filename" widget="binary" readonly="1" string="Download Original File"/>
                     </group>
+
+                    <div invisible="not ack_proof_file" class="mt-4">
+                        <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Live Document Preview</h4>
+
+                        <div invisible="not is_ack_proof_image" style="display: flex; justify-content: center; width: 100%; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
+                            <field name="ack_proof_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
+                        </div>
+
+                        <div invisible="not is_ack_proof_pdf" style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                            <field name="ack_proof_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
+                        </div>
+
+                        <div invisible="is_ack_proof_image or is_ack_proof_pdf" class="alert alert-warning text-center mt-2">
+                            <i class="fa fa-info-circle me-2"></i>
+                            Preview is not available for this specific file format. Please click the download link above to view it.
+                        </div>
+                    </div>
                 </sheet>
-                <div class="oe_chatter"><field name="message_follower_ids"/><field name="message_ids"/></div>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -433,18 +459,40 @@
     </record>
 
     <record id="view_op_fund_audit_tree" model="ir.ui.view">
-        <field name="name">operational.fund.audit.tree</field>
+        <field name="name">operational.fund.audit.tree.passbook</field>
         <field name="model">operational.fund.audit</field>
         <field name="arch" type="xml">
-            <tree string="Fund Audit Ledger" create="0" edit="0" delete="0" decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'" default_order="date desc, id desc">
+            <tree string="Passbook Ledger" decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'" default_order="date desc, id desc">
                 <field name="date"/>
                 <field name="clinic_id"/>
-                <field name="transaction_type" widget="badge" decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'"/>
-                <field name="amount" sum="Total Flow" string="Amount (₹)"/>
                 <field name="reference"/>
-                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="transaction_type" column_invisible="1"/>
+
+                <field name="opening_balance" string="Opening (₹)"/>
+                <field name="amount" string="Amount (₹)" decoration-bf="1"/>
+                <field name="closing_balance" string="Closing (₹)" decoration-bf="1"/>
+
+                <field name="user_id" widget="many2one_avatar" string="Logged By"/>
             </tree>
         </field>
+    </record>
+
+    <record id="view_op_fund_audit_search" model="ir.ui.view">
+        <field name="name">operational.fund.audit.search</field>
+        <field name="model">operational.fund.audit</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="clinic_id"/>
+                <filter string="Group by Clinic" name="group_by_clinic" context="{'group_by': 'clinic_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_op_fund_audit" model="ir.actions.act_window">
+        <field name="name">Passbook Ledger</field>
+        <field name="res_model">operational.fund.audit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_group_by_clinic': 1}</field>
     </record>
 
     <record id="view_op_fund_audit_search" model="ir.ui.view">
@@ -546,4 +594,30 @@
             action = env['ir.attachment'].action_migrate_local_attachments_to_s3()
         </field>
     </record>
+
+    <record id="ir_cron_check_overdue_allocations" model="ir.cron">
+        <field name="name">Operational Funds: Check 24h SLA Breaches</field>
+        <field name="model_id" ref="model_operational_fund_allocation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_overdue_allocations()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="action_op_fund_manager_pending_vouchers" model="ir.actions.act_window">
+        <field name="name">Vouchers Awaiting Approval</field>
+        <field name="res_model">operational.fund.disbursement</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'waiting'), ('clinic_id.op_fund_manager_ids', 'in', uid)]</field>
+    </record>
+
+    <record id="action_op_fund_manager_pending_deposits" model="ir.actions.act_window">
+        <field name="name">Pending Capital Deposits</field>
+        <field name="res_model">operational.fund.allocation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'review'), ('clinic_id.op_fund_manager_ids', 'in', uid)]</field>
+    </record>
+
 </odoo>
