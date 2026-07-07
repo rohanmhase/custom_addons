@@ -1,6 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_alloc_custodian,alloc.custodian,model_operational_fund_allocation,group_op_fund_custodian,1,0,0,0
-access_alloc_manager,alloc.manager,model_operational_fund_allocation,group_op_fund_manager,1,0,0,0
+access_alloc_manager,alloc.manager,model_operational_fund_allocation,group_op_fund_manager,1,1,0,0
 access_alloc_controller,alloc.controller,model_operational_fund_allocation,group_op_fund_controller,1,1,1,1
 access_disb_custodian,disb.custodian,model_operational_fund_disbursement,group_op_fund_custodian,1,1,1,0
 access_disb_manager,disb.manager,model_operational_fund_disbursement,group_op_fund_manager,1,1,1,0
@@ -10,3 +10,6 @@ access_op_fund_audit_manager,audit.manager,model_operational_fund_audit,group_op
 access_op_fund_audit_controller,audit.controller,model_operational_fund_audit,group_op_fund_controller,1,0,0,0
 access_rejection_wizard_manager,rejection.wizard.manager,model_operational_fund_rejection_wizard,group_op_fund_manager,1,1,1,1
 access_rejection_wizard_controller,rejection.wizard.controller,model_operational_fund_rejection_wizard,group_op_fund_controller,1,1,1,1
+access_alloc_wizard_custodian,alloc.wizard.custodian,model_operational_fund_allocation_wizard,group_op_fund_custodian,1,1,1,1
+access_alloc_wizard_manager,alloc.wizard.manager,model_operational_fund_allocation_wizard,group_op_fund_manager,1,1,1,1
+access_alloc_wizard_controller,alloc.wizard.controller,model_operational_fund_allocation_wizard,group_op_fund_controller,1,1,1,1
