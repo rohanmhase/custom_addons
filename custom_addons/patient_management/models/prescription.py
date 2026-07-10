@@ -67,9 +67,11 @@ class Prescription(models.Model):
     @api.depends("line_ids.product_id")
     def _compute_medicine_list(self):
         for rec in self:
-            rec.medicine_list = "<br/>".join(
-                rec.line_ids.mapped("product_id.display_name")
+            medicines = "".join(
+                f"<div style='font-size:12px; line-height:16px;'>{line.product_id.display_name}</div>"
+                for line in rec.line_ids
             )
+            rec.medicine_list = medicines
 
     @api.depends("line_ids", "line_ids.qty")
     def _compute_medicine_count(self):
