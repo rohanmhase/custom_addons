@@ -1,0 +1,15 @@
+/* Target Odoo List View Data Rows marked as danger */
+.o_list_renderer .table .o_data_row.text-danger {
+    background-color: #f8d7da !important; /* Soft, visible bootstrap red background */
+    color: #842029 !important;            /* Dark red text for perfect contrast/readability */
+
+    /* Ensure all individual cell text inherits the high-contrast color */
+    td {
+        color: #842029 !important;
+    }
+}
+
+/* Maintain style consistency when hovering over highlighted rows */
+.o_list_renderer .table .o_data_row.text-danger:hover {
+    background-color: #f5c2c7 !important;
+}
