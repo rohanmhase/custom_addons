@@ -7,9 +7,10 @@
             <tree>
                 <field name="patient_id"/>
                 <field name="prescription_date"/>
+                <field name="medicine_count"/>
+                <field name="medicine_list" widget="html" readonly="1"/>
                 <field name="state"/>
                 <field name="doctor_id" string="Doctor/Admin Name"/>
-                <field name="write_uid" string="Modified By"/>
                 <field name="active"/>
             </tree>
         </field>
@@ -74,7 +75,7 @@
                     </sheet>
                     <sheet>
                         <notebook>
-                            <page string="Patient Follow-Ups (View Only)">
+                            <page string="RS Follow-Ups (View Only)">
                                 <field name="latest_followup_id"
                                        nolabel="1"
                                        readonly="1"
