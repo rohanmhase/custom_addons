@@ -772,3 +772,11 @@ class Patient(models.Model):
         for record in self:
             if record.source_event_name not in ('Others', 'Old Event'):
                 record.manual_event_name = False
+
+    def action_archive(self):
+        # 1. Check if the action was triggered from our locked-down dashboard
+        if self.env.context.get('block_archive'):
+            raise UserError("You cannot archive records directly from the Dashboard view.")
+
+        # 2. Otherwise, allow normal archiving behavior
+        return super().action_archive()
