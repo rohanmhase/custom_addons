@@ -131,12 +131,11 @@
 
                     <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
                     <button name="action_mark_as_paid" string="Mark as Paid" type="object" class="oe_highlight" invisible="state != 'approved'"/>
-                    <button name="action_unlock_for_correction" string="Unlock for Correction" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" groups="operational_fund.group_op_fund_manager" form_novalidate="1"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" form_novalidate="1"/>
                     <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved', 'paid')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state != 'rejected'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'" form_novalidate="1"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
@@ -439,7 +438,9 @@
         <field name="name">op.fund.clinic.balance.tree</field>
         <field name="model">clinic.clinic</field>
         <field name="arch" type="xml">
-            <tree string="Fund Balances" create="0" delete="0" editable="bottom">
+            <tree string="Fund Balances" create="0" delete="0" editable="bottom" decoration-danger="is_low_balance" default_order="is_low_balance desc, op_fund_balance asc">
+                <field name="is_low_balance" column_invisible="1"/>
+
                 <field name="name" string="Branch / Clinic" readonly="1"/>
                 <field name="master_fund_id" string="Shared Wallet (Master Clinic)" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="wallet_group_name" column_invisible="1"/>

@@ -37,6 +37,10 @@ class Clinic(models.Model):
     op_fund_alert_threshold = fields.Float(string='Low Balance Alert Threshold', default=0.0)
     is_low_balance_alert_sent = fields.Boolean(string='Alert Sent Flag', default=False)
 
+    use_smart_threshold = fields.Boolean(string='Use Smart Threshold', default=False,
+                                         help="Automatically updates alert floor using a 7-day rolling burn rate forecast.")
+    is_low_balance = fields.Boolean(string='Is Low Balance', compute='_compute_is_low_balance', store=True)
+
     op_fund_manager_ids = fields.Many2many('res.users', 'clinic_user_mgr_rel', 'clinic_id', 'user_id',
                                            string='Standard Approving Managers')
     op_fund_ho_manager_ids = fields.Many2many('res.users', 'clinic_user_ho_mgr_rel', 'clinic_id', 'user_id',
@@ -79,6 +83,18 @@ class Clinic(models.Model):
             clinic.total_spent = total_spent
             clinic.op_fund_balance = total_alloc - total_spent
 
+    @api.depends('op_fund_balance', 'op_fund_alert_threshold')
+    def _compute_is_low_balance(self):
+        """
+        Computes a stored boolean flag indicating if a clinic has hit its alert safety floor.
+        This will drive the visual red rows/indicators on the frontend views.
+        """
+        for clinic in self:
+            if clinic.op_fund_alert_threshold > 0:
+                clinic.is_low_balance = clinic.op_fund_balance <= clinic.op_fund_alert_threshold
+            else:
+                clinic.is_low_balance = False
+
     def _check_low_balance_alert(self):
         for clinic in self:
             if clinic.op_fund_alert_threshold > 0:
@@ -90,7 +106,8 @@ class Clinic(models.Model):
 
     def _send_low_balance_notification(self):
         for clinic in self:
-            target_users = clinic.op_fund_manager_ids | clinic.op_fund_ho_manager_ids | clinic.op_fund_finance_ids
+            # Refined Audit Scope: Only alert standard managers and finance teams directly related to this clinic
+            target_users = clinic.op_fund_manager_ids | clinic.op_fund_finance_ids
             if not target_users:
                 continue
 
@@ -118,6 +135,28 @@ class Clinic(models.Model):
                     'state': 'outgoing',
                 }
                 self.env['mail.mail'].sudo().create(mail_values)
+
+    @api.model
+    def _cron_calculate_smart_thresholds(self):
+        """
+        Option D Automation: Computes daily operational burn rate over a 30-day window
+        and updates safety floors dynamically with a rolling 7-day reserve buffer.
+        """
+        clinics = self.search([('use_smart_threshold', '=', True)])
+        date_30_days_ago = fields.Date.context_today(self) - timedelta(days=30)
+
+        for clinic in clinics:
+            # Map disbursements across both the clinic and any underlying child branches sharing the wallet
+            all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
+            historical_vouchers = all_disbursements.filtered(
+                lambda d: d.date >= date_30_days_ago and d.state in ('approved', 'paid')
+            )
+
+            total_spent_30_days = sum(historical_vouchers.mapped('amount'))
+            avg_daily_burn = total_spent_30_days / 30.0
+
+            # Forecast rolling 7-day protection limit
+            clinic.op_fund_alert_threshold = round(avg_daily_burn * 7, 2)
 
 
 class ResUsers(models.Model):
@@ -961,9 +1000,7 @@ class OperationalFundDisbursement(models.Model):
 
     def action_unlock_for_correction(self):
         self.ensure_one()
-        if not self.env.user.has_group('operational_fund.group_op_fund_manager'):
-            raise ValidationError(_("Security Error: Only authorized Fund Managers can unlock processed records."))
-        self.state = 'draft'
+        raise ValidationError(_("Auditing Restriction: Vouchers cannot be unlocked for correction once they have been approved or paid."))
 
     def action_reject(self):
         self.ensure_one()
@@ -991,14 +1028,7 @@ class OperationalFundDisbursement(models.Model):
     def action_reset_to_draft(self):
         for rec in self:
             if rec.state in ('approved', 'paid'):
-                active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-                self.env['operational.fund.audit'].sudo().create({
-                    'clinic_id': active_clinic.id, 'date': fields.Date.context_today(self),
-                    'transaction_type': 'credit', 'amount': rec.amount,
-                    'reference': f'Reversal: Reset Processed Voucher {rec.name} to Draft', 'user_id': self.env.user.id
-                })
-                rec.old_signed_voucher_file, rec.old_signed_voucher_filename = rec.signed_voucher_file, rec.signed_voucher_filename
-                rec.signed_voucher_file, rec.signed_voucher_filename = False, False
+                raise ValidationError(_("Auditing Restriction: Vouchers cannot be reset to draft once they have been approved or paid."))
             elif rec.state == 'rejected':
                 rec.signed_voucher_file, rec.signed_voucher_filename = False, False
                 rec.old_signed_voucher_file, rec.old_signed_voucher_filename = False, False
