@@ -7,6 +7,7 @@ import csv
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import timedelta
+from odoo.tools.safe_eval import safe_eval
 
 try:
     import boto3
@@ -887,28 +888,20 @@ class OperationalFundDisbursement(models.Model):
         return False
 
     def action_submit_for_approval(self):
-        legacy_escalated_cats = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
-                                 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic']
-
         for rec in self:
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
-
-            if rec.show_employee_payee and not rec.payee_id:
-                raise ValidationError(_("Missing Parameter: Please select an Employee Profile."))
-            if rec.show_therapist_name_input and not rec.therapist_name:
-                raise ValidationError(_("Missing Parameter: Please type the Therapist Name."))
-            if rec.show_vendor_payee and not rec.vendor_name:
-                raise ValidationError(_("Missing Parameter: Please specify the Vendor or Payee Name."))
-            if rec.show_home_visit and not rec.home_visit_mrn_search:
-                raise ValidationError(
-                    _("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
-
+            if rec.show_employee_payee and not rec.payee_id: raise ValidationError(
+                _("Missing Parameter: Please select an Employee Profile."))
+            if rec.show_therapist_name_input and not rec.therapist_name: raise ValidationError(
+                _("Missing Parameter: Please type the Therapist Name."))
+            if rec.show_vendor_payee and not rec.vendor_name: raise ValidationError(
+                _("Missing Parameter: Please specify the Vendor or Payee Name."))
+            if rec.show_home_visit and not rec.home_visit_mrn_search: raise ValidationError(
+                _("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
             if not rec.signed_voucher_file: raise ValidationError(
                 _("Hold on! You must download, sign, and upload the physical Disbursement Voucher before you can submit it."))
-
-            if rec.is_receipt_mandatory and not rec.receipt_file:
-                raise ValidationError(
-                    _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
+            if rec.is_receipt_mandatory and not rec.receipt_file: raise ValidationError(
+                _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
@@ -920,55 +913,84 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("Access Denied: The clinic '%s' has a pending capital deposit from HQ. You must upload the bank proof and acknowledge receipt of these funds before submitting new vouchers.") % active_clinic.name)
 
+            # Validate live balance BEFORE rules
             if rec.amount > active_clinic.op_fund_balance:
                 raise ValidationError(
                     _("Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
 
-            threshold = active_clinic.op_fund_approval_threshold
+            # 🚨 THE RULES ENGINE EVALUATOR 🚨
+            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)],
+                                                                             order='sequence, id')
+            matched_rule = False
 
-            if rec.expense_category:
-                is_escalated = rec.expense_category in ['incentive', 'overtime', 'travel']
-            else:
-                is_escalated = rec.category in legacy_escalated_cats
+            for rule in rules:
+                # Safely evaluate the dynamic domain string against the current voucher record
+                rule_domain = safe_eval(rule.domain or '[]')
+                if rec.filtered_domain(rule_domain):
+                    matched_rule = rule
+                    break  # Stop at the highest priority matching rule
 
-            if is_escalated:
-                can_auto_approve = False
-                target_managers = active_clinic.op_fund_ho_manager_ids
-                if not target_managers: raise ValidationError(
-                    _("This category requires Head Office approval, but no Head Office Managers are assigned to this clinic!"))
-            else:
-                can_auto_approve = (threshold > 0 and rec.amount <= threshold)
-                target_managers = active_clinic.op_fund_manager_ids
+            if not matched_rule:
+                raise ValidationError(
+                    _("System Error: No financial routing rule matches this voucher's criteria. Please contact an Administrator to configure an Approval Rule."))
 
-            if can_auto_approve:
+            # Add CC Followers silently for auditing
+            if matched_rule.cc_user_ids:
+                rec.message_subscribe(partner_ids=matched_rule.cc_user_ids.mapped('partner_id').ids)
+
+            # --- EXECUTE THE RULE OUTCOME ---
+            if matched_rule.action_type == 'block':
+                raise ValidationError(matched_rule.block_message or _(
+                    "This voucher violates operational policies and has been blocked by a system rule."))
+
+            elif matched_rule.action_type == 'auto_approve':
                 rec.action_approve()
                 rec.message_post(
-                    body=f"System Auto-Approved: The requested amount (₹{rec.amount}) is within the safe threshold of ₹{threshold}.",
-                    subtype_xmlid='mail.mt_note', author_id=self.env.ref('base.partner_root').id)
-            else:
-                rec.state = 'waiting'
-                if target_managers:
-                    base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                    deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
-                    deadline = fields.Date.context_today(self) + timedelta(days=1)
-                    task_summary = '🏢 Head Office: Review Voucher' if is_escalated else 'Review Urgent Voucher'
-                    cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
+                    body=f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{matched_rule.name}'</em>.",
+                    subtype_xmlid='mail.mt_note',
+                    author_id=self.env.ref('base.partner_root').id
+                )
 
-                    for manager in target_managers:
-                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary=task_summary,
-                                              note=f'Voucher {rec.name} for ₹{rec.amount} requires your approval. <a href="{deep_link}">Click here to view</a>')
-                        if 'project.task' in self.env:
-                            self.env['project.task'].sudo().create({
-                                'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                                'date_deadline': deadline, 'is_voucher_task': True,
-                                'description': f'<p>Voucher <strong>{rec.name}</strong> for ₹{rec.amount} has been submitted by {active_clinic.name}.</p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 10px;">Click Here to Review &amp; Action</a></div>',
-                            })
-                        if manager.email:
-                            mail_values = {
-                                'subject': f'Action Required: Approve Voucher {rec.name}', 'email_to': manager.email,
-                                'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {manager.name},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{active_clinic.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.display_category}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
-                            }
-                            self.env['mail.mail'].sudo().create(mail_values)
+
+            elif matched_rule.action_type == 'require_approval':
+
+                # SMART FALLBACK: Use rule approvers if set, otherwise route to the clinic's standard managers
+
+                final_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
+
+                if not final_approvers:
+                    raise ValidationError(
+
+                        _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but there are no Assigned Approvers on the rule, and '{active_clinic.name}' has no Standard Managers set up."))
+
+                rec.state = 'waiting'
+
+                base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
+                deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+
+                deadline = fields.Date.context_today(self) + timedelta(days=1)
+
+                cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
+
+                for manager in final_approvers:
+                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
+                                          note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
+
+                    if 'project.task' in self.env:
+                        self.env['project.task'].sudo().create({
+                            'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
+                            'date_deadline': deadline, 'is_voucher_task': True,
+                            'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
+                        })
+
+                    if manager.email:
+                        mail_values = {
+                            'subject': f'Action Required: Approve Voucher {rec.name}',
+                            'email_to': manager.email,
+                            'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {manager.name},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{matched_rule.name}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{active_clinic.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.display_category}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
+                        }
+                        self.env['mail.mail'].sudo().create(mail_values)
 
     def _cleanup_todo_tasks(self, task_name_prefix):
         if 'project.task' in self.env:
@@ -1382,3 +1404,35 @@ class IrAttachment(models.Model):
         return {'type': 'ir.actions.client', 'tag': 'display_notification',
                 'params': {'title': _('System Synced'), 'message': _('No outstanding unmigrated files were found.'),
                            'sticky': False, 'type': 'warning'}}
+
+
+class OperationalFundApprovalRule(models.Model):
+    _name = 'operational.fund.approval.rule'
+    _description = 'Disbursement Approval Rule Engine'
+    _order = 'sequence, id'
+
+    name = fields.Char(string='Rule Name', required=True, help="e.g., 'Auto-Approve Office Expenses < 500'")
+    sequence = fields.Integer(string='Priority Sequence', default=10, help="Lower numbers are evaluated first.")
+    active = fields.Boolean(default=True)
+
+    # The Ultimate Customization Trigger: Odoo's Native Domain Builder
+    model_id = fields.Many2one('ir.model', string='Model', default=lambda self: self.env.ref(
+        'operational_fund.model_operational_fund_disbursement').id, readonly=True)
+    model_name = fields.Char(related='model_id.model', string='Model Name', readonly=True)
+    domain = fields.Char(string='Conditions (IF)', default='[]', required=True,
+                         help="Define the exact conditions for this rule to trigger.")
+
+    # The Outcomes (THEN)
+    action_type = fields.Selection([
+        ('auto_approve', 'Auto-Approve (Bypass Review)'),
+        ('require_approval', 'Require Human Approval'),
+        ('block', 'Block & Reject Submission')
+    ], string='Action Outcome', required=True, default='require_approval')
+
+    approver_ids = fields.Many2many('res.users', 'op_fund_rule_approver_rel', string='Assigned Approvers',
+                                    help="Users who must approve this voucher.")
+    cc_user_ids = fields.Many2many('res.users', 'op_fund_rule_cc_rel', string='CC / Notify Users',
+                                   help="Users who will be silently added as followers for auditing.")
+
+    block_message = fields.Text(string='Rejection Message',
+                                help="The error message shown to the user if this rule blocks their submission.")
