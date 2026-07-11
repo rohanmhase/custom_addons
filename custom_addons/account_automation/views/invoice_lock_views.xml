@@ -200,11 +200,10 @@
         <field name="target">current</field>
     </record>
 
-    <menuitem id="menu_invoice_lock_wizard"
-              name="Invoice Lock Management"
-              parent="account.menu_finance_configuration"
-              action="action_invoice_lock_wizard"
-              sequence="95"
-              groups="base.group_system"/>
-
+   <menuitem id="menu_invoice_lock_wizard"
+          name="Invoice Lock Management"
+          parent="account.menu_finance_configuration"
+          action="action_invoice_lock_wizard"
+          sequence="95"
+          groups="account_automation.group_account_automation_admin"/>
 </odoo>
