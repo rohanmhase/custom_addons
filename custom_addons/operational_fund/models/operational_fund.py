@@ -951,19 +951,29 @@ class OperationalFundDisbursement(models.Model):
                     author_id=self.env.ref('base.partner_root').id
                 )
 
+
             elif matched_rule.action_type == 'require_approval':
-                if not matched_rule.approver_ids:
+
+                # SMART FALLBACK: Use rule approvers if set, otherwise route to the clinic's standard managers
+
+                final_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
+
+                if not final_approvers:
                     raise ValidationError(
-                        _(f"Configuration Error: Rule '{matched_rule.name}' requires approval but has no Assigned Approvers."))
+
+                        _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but there are no Assigned Approvers on the rule, and '{active_clinic.name}' has no Standard Managers set up."))
 
                 rec.state = 'waiting'
+
                 base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
                 deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+
                 deadline = fields.Date.context_today(self) + timedelta(days=1)
 
                 cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
 
-                for manager in matched_rule.approver_ids:
+                for manager in final_approvers:
                     rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
                                           note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
 
