@@ -62,6 +62,7 @@ class Prescription(models.Model):
     medicine_list = fields.Html(
         string="Medicines",
         compute="_compute_medicine_list",
+        store=True,
     )
 
     @api.depends("line_ids.product_id")
