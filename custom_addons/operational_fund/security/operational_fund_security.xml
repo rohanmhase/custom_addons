@@ -25,16 +25,16 @@
         </record>
 
         <record id="rule_op_fund_allocation_custodian" model="ir.rule">
-            <field name="name">Allocations: Custodian (Own Clinic Only)</field>
+            <field name="name">Allocations: Custodian (Assigned Clinics &amp; Own Records)</field>
             <field name="model_id" ref="model_operational_fund_allocation"/>
-            <field name="domain_force">['|', ('clinic_id', '=', user.clinic_id.id), ('create_uid', '=', user.id)]</field>
+            <field name="domain_force">['|', ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('create_uid', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
         </record>
 
         <record id="rule_op_fund_allocation_manager" model="ir.rule">
             <field name="name">Allocations: Manager (Managed Clinics)</field>
             <field name="model_id" ref="model_operational_fund_allocation"/>
-            <field name="domain_force">['|', '|', '|', ('clinic_id', '=', user.clinic_id.id), ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
+            <field name="domain_force">['|', '|', ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_manager'))]"/>
         </record>
 
@@ -46,16 +46,16 @@
         </record>
 
         <record id="rule_op_fund_disbursement_custodian" model="ir.rule">
-            <field name="name">Disbursements: Custodian (Own Clinic Only)</field>
+            <field name="name">Disbursements: Custodian (Assigned Clinics &amp; Own Records)</field>
             <field name="model_id" ref="model_operational_fund_disbursement"/>
-            <field name="domain_force">['|', ('clinic_id', '=', user.clinic_id.id), ('create_uid', '=', user.id)]</field>
+            <field name="domain_force">['|', ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('create_uid', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
         </record>
 
         <record id="rule_op_fund_disbursement_manager" model="ir.rule">
             <field name="name">Disbursements: Manager (Managed Clinics)</field>
             <field name="model_id" ref="model_operational_fund_disbursement"/>
-            <field name="domain_force">['|', '|', '|', ('clinic_id', '=', user.clinic_id.id), ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
+            <field name="domain_force">['|', '|', ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_manager'))]"/>
         </record>
 
@@ -67,16 +67,16 @@
         </record>
 
         <record id="rule_op_fund_audit_custodian" model="ir.rule">
-            <field name="name">Audit Ledger: Custodian (Own Clinic Only)</field>
+            <field name="name">Audit Ledger: Custodian (Assigned Clinics Only)</field>
             <field name="model_id" ref="model_operational_fund_audit"/>
-            <field name="domain_force">[('clinic_id', '=', user.clinic_id.id)]</field>
+            <field name="domain_force">[('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_custodian'))]"/>
         </record>
 
         <record id="rule_op_fund_audit_manager" model="ir.rule">
             <field name="name">Audit Ledger: Manager (Managed Clinics)</field>
             <field name="model_id" ref="model_operational_fund_audit"/>
-            <field name="domain_force">['|', '|', '|', ('clinic_id', '=', user.clinic_id.id), ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
+            <field name="domain_force">['|', '|', ('clinic_id', 'in', user.op_fund_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_ho_managed_clinic_ids.ids), ('clinic_id', 'in', user.op_fund_finance_clinic_ids.ids)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_manager'))]"/>
         </record>
 
@@ -86,6 +86,5 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_op_fund_controller'))]"/>
         </record>
-
     </data>
 </odoo>
