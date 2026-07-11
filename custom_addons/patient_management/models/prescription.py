@@ -14,7 +14,8 @@ class Prescription(models.Model):
                                 readonly=True)
     prescription_date = fields.Date(string="Prescription Date",
                                     default=lambda self: self._ist_date(),
-                                    readonly=True)
+                                    readonly=True,
+                                    index=True)
     clinic_id = fields.Many2one(
         "clinic.clinic",
         string="Clinic",
@@ -37,6 +38,7 @@ class Prescription(models.Model):
         ],
         string="Status",
         default="draft",
+        index=True
     )
 
     latest_followup_id = fields.Many2one(
@@ -58,21 +60,6 @@ class Prescription(models.Model):
         compute="_compute_medicine_count",
         store=True,
     )
-
-    medicine_list = fields.Html(
-        string="Medicines",
-        compute="_compute_medicine_list",
-        store=True,
-    )
-
-    @api.depends("line_ids.product_id")
-    def _compute_medicine_list(self):
-        for rec in self:
-            medicines = "".join(
-                f"<div style='font-size:12px; line-height:16px;'>{line.product_id.display_name}</div>"
-                for line in rec.line_ids
-            )
-            rec.medicine_list = medicines
 
     @api.depends("line_ids", "line_ids.qty")
     def _compute_medicine_count(self):
@@ -105,7 +92,7 @@ class Prescription(models.Model):
             else:
                 rec.latest_blood_report_id = False
 
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(default=True, index=True)
 
 
     def _check_has_lines(self):
@@ -360,7 +347,7 @@ class PrescriptionLine(models.Model):
 
     prescription_id = fields.Many2one(
         "patient.prescription", string="Prescription", required=True)
-    product_id = fields.Many2one("product.product", string="Medicine", required=True)
+    product_id = fields.Many2one("product.product", string="Medicine", required=True, index=True)
     qty = fields.Float(string="Quantity", default=1.0)
     instructions = fields.Selection([('before_food', 'Before Food'),
                                      ('after_food', 'After Food'),
