@@ -40,7 +40,7 @@ class Prescription(models.Model):
     )
 
     latest_followup_id = fields.Many2one(
-        'patient.followup',
+        'patient.assessment',
         string='Latest Follow Up',
         compute='_compute_latest_followup',
         store=False
@@ -53,14 +53,39 @@ class Prescription(models.Model):
         store=False
     )
 
+    medicine_count = fields.Integer(
+        string="Count",
+        compute="_compute_medicine_count",
+        store=True,
+    )
+
+    medicine_list = fields.Html(
+        string="Medicines",
+        compute="_compute_medicine_list",
+    )
+
+    @api.depends("line_ids.product_id")
+    def _compute_medicine_list(self):
+        for rec in self:
+            medicines = "".join(
+                f"<div style='font-size:12px; line-height:16px;'>{line.product_id.display_name}</div>"
+                for line in rec.line_ids
+            )
+            rec.medicine_list = medicines
+
+    @api.depends("line_ids", "line_ids.qty")
+    def _compute_medicine_count(self):
+        for rec in self:
+            rec.medicine_count = len(rec.line_ids)
+
     @api.depends('patient_id')
     def _compute_latest_followup(self):
-        Followup = self.env['patient.followup']
+        Followup = self.env['patient.assessment']
         for rec in self:
             if rec.patient_id:
                 rec.latest_followup_id = Followup.search(
                     [('patient_id', '=', rec.patient_id.id), ('active', '=', 'true')],
-                    order='weekly_followup_date desc',
+                    order='assessment_date desc',
                     limit=1
                 )
             else:

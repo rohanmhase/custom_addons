@@ -67,6 +67,7 @@
                         <field name="code"/>
                         <field name="address"/>
                         <field name="phone"/>
+                        <field name="region_id"/>
                     </group>
                 </sheet>
             </form>

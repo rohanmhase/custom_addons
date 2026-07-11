@@ -16,3 +16,4 @@ access_clinic_dashboard_enrollment_line_user,access.clinic.dashboard.enrollment.
 access_clinic_dashboard_assessment_line_user,access.clinic.dashboard.assessment.line.user,model_clinic_dashboard_assessment_line,group_clinic_administrator,1,0,0,0
 access_clinic_dashboard_assessment_line_user,access.clinic.dashboard.assessment.line.user,model_clinic_dashboard_assessment_line,group_clinic_user,1,0,0,0
 pos_session_edit,pos.session.edit,model_pos_session_edit,clinic_management.group_clinic_administrator,1,1,1,1
+access_clinic_region_administrator,access.clinic.region.administrator,model_clinic_region,group_clinic_administrator,1,1,1,1
