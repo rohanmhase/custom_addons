@@ -49,7 +49,6 @@ class Enrollment(models.Model):
         string="Clinic",
         required=True,
         related="patient_id.clinic_id",
-        store=True,
         index=True
     )
     payment_date = fields.Date()
