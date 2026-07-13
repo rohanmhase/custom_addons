@@ -212,7 +212,7 @@ class StockCountFormula(models.Model):
     # Empty field = skip that phase
     # -------------------------------------------------
 
-    def calculate_price(self, therapy_count):
+    def calculate_price(self, therapy_count, reference_date=None):
         self.ensure_one()
 
         if self.fixed_value:
@@ -239,7 +239,10 @@ class StockCountFormula(models.Model):
         if self.starting_round_up:
             result = ceil(result)
         if self.weekend_factor:
-            result = result * self.weekend_factor
+            check_date = reference_date or date.today()
+            is_weekend = check_date.weekday() in (4, 5)  # 5=Saturday, 4=Friday
+            if is_weekend:
+                result = result * self.weekend_factor
         if self.buffer:
             result = result + self.buffer
 
