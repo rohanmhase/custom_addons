@@ -298,7 +298,7 @@ class ClinicStockReplenishment(models.Model):
                     else:
                         formula_count = max_count
 
-                    target_qty = rule.calculate_price(formula_count)
+                    target_qty = rule.calculate_price(formula_count, reference_date=today)
                 else:
                     formula_count = max_count
                     target_qty = 0.0
