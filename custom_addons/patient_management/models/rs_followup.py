@@ -12,7 +12,7 @@ class PatientAssessment(models.Model):
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, default=lambda self: self.env.user,
                                 readonly=True)
     assessment_date = fields.Date(string="Date", required=True, default=lambda self: self._ist_date(),
-                                  readonly=True)
+                                  readonly=True, index=True)
     weight = fields.Float(string="Weight", digits=(3, 3), required=True)
     diagnosis = fields.Char(string="Diagnosis", required=True)
     k_c_o = fields.Char(string="K/C/O", required=True)  # Known case of

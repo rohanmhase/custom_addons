@@ -131,12 +131,11 @@
 
                     <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
                     <button name="action_mark_as_paid" string="Mark as Paid" type="object" class="oe_highlight" invisible="state != 'approved'"/>
-                    <button name="action_unlock_for_correction" string="Unlock for Correction" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" groups="operational_fund.group_op_fund_manager" form_novalidate="1"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" form_novalidate="1"/>
                     <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'approved', 'paid')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state != 'rejected'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                     <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'" form_novalidate="1"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
@@ -439,7 +438,9 @@
         <field name="name">op.fund.clinic.balance.tree</field>
         <field name="model">clinic.clinic</field>
         <field name="arch" type="xml">
-            <tree string="Fund Balances" create="0" delete="0" editable="bottom">
+            <tree string="Fund Balances" create="0" delete="0" editable="bottom" decoration-danger="is_low_balance" default_order="is_low_balance desc, op_fund_balance asc">
+                <field name="is_low_balance" column_invisible="1"/>
+
                 <field name="name" string="Branch / Clinic" readonly="1"/>
                 <field name="master_fund_id" string="Shared Wallet (Master Clinic)" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="wallet_group_name" column_invisible="1"/>
@@ -618,6 +619,73 @@
         <field name="res_model">operational.fund.allocation</field>
         <field name="view_mode">tree,form</field>
         <field name="domain">[('state', '=', 'review'), ('clinic_id.op_fund_manager_ids', 'in', uid)]</field>
+    </record>
+
+    <record id="view_op_fund_approval_rule_form" model="ir.ui.view">
+        <field name="name">operational.fund.approval.rule.form</field>
+        <field name="model">operational.fund.approval.rule</field>
+        <field name="arch" type="xml">
+            <form string="Approval Routing Rule">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active == True"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Reject Travel > ₹50,000"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="1. Triggers (IF)">
+                            <div class="alert alert-info" role="alert">
+                                <strong>Condition Builder:</strong> Define the exact parameters for when this rule should execute. If left empty, this rule will apply to ALL vouchers.
+                            </div>
+                            <field name="model_id" invisible="1"/>
+                            <field name="model_name" invisible="1"/>
+                            <field name="domain" widget="domain" options="{'model': 'model_name'}" style="min-height: 200px;"/>
+                        </page>
+                        <page string="2. Outcomes (THEN)">
+                            <group>
+                                <field name="action_type" widget="radio"/>
+                            </group>
+                            <group invisible="action_type != 'require_approval'">
+                                <field name="approver_ids" widget="many2many_tags_avatar" placeholder="Select mandatory approvers..."/>
+                            </group>
+                            <group invisible="action_type != 'block'">
+                                <field name="block_message" placeholder="Provide a reason to the user as to why this voucher is structurally blocked..."/>
+                            </group>
+                            <group string="Auditing &amp; Notifications">
+                                <field name="cc_user_ids" widget="many2many_tags_avatar" placeholder="These users will be silently added as followers..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_op_fund_approval_rule_tree" model="ir.ui.view">
+        <field name="name">operational.fund.approval.rule.tree</field>
+        <field name="model">operational.fund.approval.rule</field>
+        <field name="arch" type="xml">
+            <tree string="Approval Rules" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="action_type"/>
+                <field name="approver_ids" widget="many2many_tags_avatar" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_op_fund_approval_rule" model="ir.actions.act_window">
+        <field name="name">Routing Matrix</field>
+        <field name="res_model">operational.fund.approval.rule</field>
+        <field name="view_mode">tree,form</field>
     </record>
 
 </odoo>

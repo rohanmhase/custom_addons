@@ -59,3 +59,8 @@ access_perf_report_line_admin,clinic.performance.report.line.admin,model_clinic_
 access_rent_owner_user,clinic.performance.rent.owner.user,model_clinic_performance_rent_owner,group_account_automation_user,1,0,0,0
 access_rent_owner_moderator,clinic.performance.rent.owner.moderator,model_clinic_performance_rent_owner,group_account_automation_moderator,1,1,1,1
 access_rent_owner_admin,clinic.performance.rent.owner.admin,model_clinic_performance_rent_owner,group_account_automation_admin,1,1,1,1
+
+access_invoice_lock_wizard_admin,invoice.lock.wizard.admin,model_invoice_lock_wizard,group_account_automation_admin,1,1,1,1
+access_invoice_lock_wizard_line_admin,invoice.lock.wizard.line.admin,model_invoice_lock_wizard_line,group_account_automation_admin,1,1,1,1
+access_invoice_lock_template_admin,invoice.lock.template.admin,model_invoice_lock_template,group_account_automation_admin,1,1,1,1
+access_invoice_lock_audit_admin,invoice.lock.audit.admin,model_invoice_lock_audit,group_account_automation_admin,1,1,1,1
