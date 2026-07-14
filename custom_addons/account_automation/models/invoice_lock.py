@@ -3,7 +3,6 @@ from datetime import timedelta
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-
 AUTO_LOCK_DAYS = 10
 
 
@@ -92,10 +91,25 @@ class AccountMove(models.Model):
 
     def _safe_fields(self):
         return {
+            # Chatter fields
             'message_main_attachment_id',
             'message_follower_ids',
             'activity_ids',
             'message_ids',
+
+            # Report / PDF / Send fields
+            'invoice_pdf_report_id',
+            'invoice_pdf_report_file',
+            'is_move_sent',
+            'access_token',
+            'access_url',
+            'access_warning',
+
+            # Email tracking
+            'email_cc',
+
+            # Attachment reference updates
+            'attachment_ids',
         }
 
     def _check_lock(self, move, new_vals=None):
