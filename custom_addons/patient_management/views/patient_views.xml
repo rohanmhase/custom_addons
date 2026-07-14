@@ -110,6 +110,22 @@
         </field>
     </record>
 
+
+    <record id="view_clinic_patient_dashboard_tree" model="ir.ui.view">
+        <field name="name">clinic.patient.dashboard.tree</field>
+        <field name="model">clinic.patient</field>
+
+        <!-- ADD THIS LINE: High priority hides it from standard menus -->
+        <field name="priority" eval="999"/>
+
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false">
+                <field name="name" string="Patient Name"/>
+                <field name="phone" string="Mobile"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="view_patient_form" model="ir.ui.view">
         <field name="name">clinic.patient.form</field>
         <field name="model">clinic.patient</field>

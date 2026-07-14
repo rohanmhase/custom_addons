@@ -385,6 +385,14 @@ class Enrollment(models.Model):
         # Do not call super() → prevents actual deletion
         return True
 
+    def action_archive(self):
+        # 1. Check if the action was triggered from our locked-down dashboard
+        if self.env.context.get('block_archive'):
+            raise UserError("You cannot archive records directly from the Dashboard view.")
+
+        # 2. Otherwise, allow normal archiving behavior
+        return super().action_archive()
+
 class EnrollmentLine(models.Model):
     _name = 'patient.enrollment.line'
     _description = 'Patient Enrollment Line'
