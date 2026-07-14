@@ -167,10 +167,6 @@ class AccountMove(models.Model):
         return records
 
     def write(self, vals):
-        import logging
-        _logger = logging.getLogger(__name__)
-        _logger.warning(f"INVOICE LOCK write() called with fields: {list(vals.keys())}")
-
         if set(vals.keys()).issubset(self._safe_fields()):
             return super().write(vals)
 
