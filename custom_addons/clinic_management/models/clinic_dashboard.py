@@ -43,42 +43,6 @@ class ClinicDashboard(models.TransientModel):
         compute="_compute_dashboard_counts"
     )
 
-    line_ids = fields.One2many(
-        'clinic.dashboard.therapy.line',
-        'dashboard_id',
-        string="Therapy List"
-    )
-
-    patient_line_ids = fields.One2many(
-        'clinic.dashboard.patient.line',
-        'dashboard_id',
-        string="Registered Patients"
-    )
-
-    followup_line_ids = fields.One2many(
-        'clinic.dashboard.followup.line',
-        'dashboard_id',
-        string="Followups"
-    )
-
-    enrollment_line_ids = fields.One2many(
-        'clinic.dashboard.enrollment.line',
-        'dashboard_id',
-        string="Enrollments"
-    )
-
-    daily_followup_line_ids = fields.One2many(
-        'clinic.dashboard.daily.followup.line',
-        'dashboard_id',
-        string="CS Followups"
-    )
-
-    assessment_line_ids = fields.One2many(
-        'clinic.dashboard.assessment.line',
-        'dashboard_id',
-        string="RS Followups"
-    )
-
     @api.constrains('from_date', 'to_date')
     def _check_date_range(self):
         for rec in self:
