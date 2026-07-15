@@ -10,7 +10,7 @@ class Enrollment(models.Model):
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, readonly=True)
     doctor_id = fields.Many2one('res.users', string="BM", required=True, readonly=True, default=lambda self: self.env.user)
-    enrollment_date = fields.Date(string="Enrollment Date", required=True, default=lambda self: self._ist_date(), tracking=True)
+    enrollment_date = fields.Date(string="Enrollment Date", required=True, default=lambda self: self._ist_date(), tracking=True, index=True)
     daily_sheet_ref = fields.Integer(string="Daily Sheet Reference", tracking=True)
     total_amount = fields.Integer(string="Total Amount", compute="_compute_totals", store=True, tracking=True)
     therapy_amount = fields.Integer(string="Therapy Amount", tracking=True)
@@ -43,12 +43,13 @@ class Enrollment(models.Model):
         ('draft', 'Draft'),
         ('bill_created', 'Bill Created'),
         ('paid', 'Paid'),
-    ], default='draft', tracking=True)
+    ], default='draft', tracking=True, index=True)
     clinic_id = fields.Many2one(
         "clinic.clinic",
         string="Clinic",
         required=True,
-        related="patient_id.clinic_id"
+        related="patient_id.clinic_id",
+        index=True
     )
     payment_date = fields.Date()
 
@@ -56,7 +57,7 @@ class Enrollment(models.Model):
         "pos.order",
         string="POS Order"
     )
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(default=True, index=True)
 
     @api.depends(
         'line_ids.total_amount',
@@ -383,6 +384,14 @@ class Enrollment(models.Model):
             record.active = False
         # Do not call super() → prevents actual deletion
         return True
+
+    def action_archive(self):
+        # 1. Check if the action was triggered from our locked-down dashboard
+        if self.env.context.get('block_archive'):
+            raise UserError("You cannot archive records directly from the Dashboard view.")
+
+        # 2. Otherwise, allow normal archiving behavior
+        return super().action_archive()
 
 class EnrollmentLine(models.Model):
     _name = 'patient.enrollment.line'

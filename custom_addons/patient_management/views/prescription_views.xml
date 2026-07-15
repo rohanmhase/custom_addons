@@ -8,7 +8,6 @@
                 <field name="patient_id"/>
                 <field name="prescription_date"/>
                 <field name="medicine_count"/>
-                <field name="medicine_list" widget="html" readonly="1"/>
                 <field name="state"/>
                 <field name="doctor_id" string="Doctor/Admin Name"/>
                 <field name="active"/>

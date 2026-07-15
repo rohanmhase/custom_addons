@@ -8,7 +8,7 @@ class BloodReport(models.Model):
 
     patient_id = fields.Many2one('clinic.patient', string='Patient', required=True, readonly=True)
     doctor_id = fields.Many2one('res.users', string='Doctor', required=True, readonly=True, default=lambda self: self.env.user)
-    blood_report_date = fields.Date(string='Blood Report Date', required=True, readonly=True, default=lambda self: self._ist_date())
+    blood_report_date = fields.Date(string='Blood Report Date', required=True, readonly=True, index=True, default=lambda self: self._ist_date())
     blood_report_day = fields.Selection([("1", "1st Day"),
                                          ("30", "30th Day"),
                                          ("60", "60th Day"),

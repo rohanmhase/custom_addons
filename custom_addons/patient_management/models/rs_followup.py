@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 from datetime import datetime, timedelta
 from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
 
 
 class PatientAssessment(models.Model):
@@ -11,7 +12,7 @@ class PatientAssessment(models.Model):
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, default=lambda self: self.env.user,
                                 readonly=True)
     assessment_date = fields.Date(string="Date", required=True, default=lambda self: self._ist_date(),
-                                  readonly=True)
+                                  readonly=True, index=True)
     weight = fields.Float(string="Weight", digits=(3, 3), required=True)
     diagnosis = fields.Char(string="Diagnosis", required=True)
     k_c_o = fields.Char(string="K/C/O", required=True)  # Known case of
@@ -190,6 +191,14 @@ class PatientAssessment(models.Model):
         # Do not call super() → prevents actual deletion
         return True
 
+
+    def action_archive(self):
+        # 1. Check if the action was triggered from our locked-down dashboard
+        if self.env.context.get('block_archive'):
+            raise UserError("You cannot archive records directly from the Dashboard view.")
+
+        # 2. Otherwise, allow normal archiving behavior
+        return super().action_archive()
 
 class PatientAssessmentLine(models.Model):
     _name = 'patient.assessment.line'

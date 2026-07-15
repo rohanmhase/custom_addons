@@ -15,6 +15,21 @@
         </field>
     </record>
 
+    <record id="view_clinic_daily_followup_dashboard_tree" model="ir.ui.view">
+        <field name="name">clinic.daily_followup.dashboard.tree</field>
+        <field name="model">patient.daily_followup</field>
+
+        <!-- ADD THIS LINE: High priority hides it from standard menus -->
+        <field name="priority" eval="999"/>
+
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false">
+                <field name="patient_id" string="Patient Name"/>
+                <field name="doctor_id" string="Doctor Name"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="patient_daily_followup_form" model="ir.ui.view">
         <field name="name">clinic.patient.daily_followup.form</field>
         <field name="model">patient.daily_followup</field>

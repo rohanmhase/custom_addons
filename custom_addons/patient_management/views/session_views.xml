@@ -19,6 +19,23 @@
         </field>
     </record>
 
+    <record id="view_clinic_session_dashboard_tree" model="ir.ui.view">
+        <field name="name">clinic.session.dashboard.tree</field>
+        <field name="model">patient.session</field>
+
+        <!-- ADD THIS LINE: High priority hides it from standard menus -->
+        <field name="priority" eval="999"/>
+
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false">
+                <field name="patient_id" string="Patient Name"/>
+                <field name="session_day" string="Session Day"/>
+                <field name="doctor_id" string="Doctor Name"/>
+                <field name="therapist_id" string="Therapist Name"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="patient_session_form" model="ir.ui.view">
         <field name="name">clinic.patient.session.form</field>
         <field name="model">patient.session</field>

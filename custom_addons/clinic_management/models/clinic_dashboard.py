@@ -2,6 +2,7 @@ from odoo import models, fields, api
 from datetime import timedelta
 from odoo.exceptions import ValidationError
 
+
 class ClinicDashboard(models.TransientModel):
     _name = 'clinic.dashboard'
     _description = 'Clinic Dashboard'
@@ -14,68 +15,32 @@ class ClinicDashboard(models.TransientModel):
 
     total_patients = fields.Integer(
         string="Total Registered Patients",
-        compute="_compute_total_patients"
-    )
-
-    total_therapies = fields.Integer(
-        string="Total Therapies",
-        compute="_compute_total_therapies"
+        compute="_compute_dashboard_counts"
     )
 
     today_registered_patients = fields.Integer(
         string="New Registered Patients",
-        compute="_compute_today_registered_patients"
+        compute="_compute_dashboard_counts"
+    )
+
+    total_therapies = fields.Integer(
+        string="Total Therapies",
+        compute="_compute_dashboard_counts"
     )
 
     total_followups = fields.Integer(
         string="Total RS Followups",
-        compute="_compute_total_followups"
+        compute="_compute_dashboard_counts"
     )
 
     total_enrollment = fields.Integer(
         string="Total Enrollment",
-        compute="_compute_total_enrollment"
-    )
-
-    line_ids = fields.One2many(
-        'clinic.dashboard.therapy.line',
-        'dashboard_id',
-        string="Therapy List"
+        compute="_compute_dashboard_counts"
     )
 
     total_daily_followups = fields.Integer(
         string="Total CS Followups",
-        compute="_compute_total_daily_followups"
-    )
-
-    patient_line_ids = fields.One2many(
-        'clinic.dashboard.patient.line',
-        'dashboard_id',
-        string="Registered Patients"
-    )
-
-    followup_line_ids = fields.One2many(
-        'clinic.dashboard.followup.line',
-        'dashboard_id',
-        string="Followups"
-    )
-
-    enrollment_line_ids = fields.One2many(
-        'clinic.dashboard.enrollment.line',
-        'dashboard_id',
-        string="Enrollments"
-    )
-
-    daily_followup_line_ids = fields.One2many(
-        'clinic.dashboard.daily.followup.line',
-        'dashboard_id',
-        string="CS Followups"
-    )
-
-    assessment_line_ids = fields.One2many(
-        'clinic.dashboard.assessment.line',
-        'dashboard_id',
-        string="RS Followups"
+        compute="_compute_dashboard_counts"
     )
 
     @api.constrains('from_date', 'to_date')
@@ -84,155 +49,135 @@ class ClinicDashboard(models.TransientModel):
             if rec.from_date and rec.to_date and rec.from_date > rec.to_date:
                 raise ValidationError("From Date cannot be later than To Date.")
 
-    @api.depends('clinic_id')
-    def _compute_total_patients(self):
-        for rec in self:
-            rec.total_patients = self.env['clinic.patient'].search_count([
-                ('clinic_id', '=', rec.clinic_id.id)
-            ])
-
     @api.depends('clinic_id', 'from_date', 'to_date')
-    def _compute_today_registered_patients(self):
+    def _compute_dashboard_counts(self):
         for rec in self:
-            if rec.from_date and rec.to_date:
-                # Convert date to datetime for comparison
-                start = fields.Datetime.to_datetime(rec.from_date)
-                end = fields.Datetime.to_datetime(rec.to_date) + timedelta(days=1)
+            if not (rec.clinic_id and rec.from_date and rec.to_date):
+                rec.update({
+                    'total_patients': 0,
+                    'today_registered_patients': 0,
+                    'total_therapies': 0,
+                    'total_followups': 0,
+                    'total_enrollment': 0,
+                    'total_daily_followups': 0,
+                })
+                continue
 
-                rec.today_registered_patients = self.env['clinic.patient'].search_count([
-                    ('clinic_id', '=', rec.clinic_id.id),
-                    ('create_date', '>=', start),
-                    ('create_date', '<', end)
-                ])
-            else:
-                rec.today_registered_patients = 0
+            rec.total_patients = self.env['clinic.patient'].search_count(
+                [('clinic_id', '=', rec.clinic_id.id), ('active', '=', True)])
 
-    @api.depends('line_ids')
-    def _compute_total_therapies(self):
-        for rec in self:
-            rec.total_therapies = len(rec.line_ids)
+            rec.today_registered_patients = self.env['clinic.patient'].search_count(
+                [('clinic_id', '=', rec.clinic_id.id), ('enroll_date', '>=', rec.from_date),
+                 ('enroll_date', '<=', rec.to_date), ('active', '=', True)])
 
-    @api.depends('followup_line_ids')
-    def _compute_total_followups(self):
-        for rec in self:
-            rec.total_followups = len(rec.followup_line_ids)
+            rec.total_therapies = self.env['patient.session'].search_count([
+                '|', ('therapy_clinic_id', '=', rec.clinic_id.id),
+                '&', ('therapy_clinic_id', '=', False), ('patient_id.clinic_id', '=', rec.clinic_id.id),
+                ('session_date', '>=', rec.from_date), ('session_date', '<=', rec.to_date), ('active', '=', True)])
 
-    @api.depends('enrollment_line_ids')
-    def _compute_total_enrollment(self):
-        for rec in self:
-            rec.total_enrollment = len(rec.enrollment_line_ids)
+            f_count = self.env['patient.followup'].search_count([
+                ('patient_id.clinic_id', '=', rec.clinic_id.id), ('weekly_followup_date', '>=', rec.from_date),
+                ('weekly_followup_date', '<=', rec.to_date), ('active', '=', True)])
+            a_count = self.env['patient.assessment'].search_count([
+                ('patient_id.clinic_id', '=', rec.clinic_id.id), ('assessment_date', '>=', rec.from_date),
+                ('assessment_date', '<=', rec.to_date), ('active', '=', True)])
+            rec.total_followups = f_count + a_count
 
-    @api.depends('daily_followup_line_ids')
-    def _compute_total_daily_followups(self):
-        for rec in self:
-            rec.total_daily_followups = len(rec.daily_followup_line_ids)
+            rec.total_enrollment = self.env['patient.enrollment'].search_count([
+                ('patient_id.clinic_id', '=', rec.clinic_id.id), ('enrollment_date', '>=', rec.from_date),
+                ('enrollment_date', '<=', rec.to_date), ('active', '=', True)])
+
+            rec.total_daily_followups = self.env['patient.daily_followup'].search_count([
+                ('patient_id.clinic_id', '=', rec.clinic_id.id), ('followup_date', '>=', rec.from_date),
+                ('followup_date', '<=', rec.to_date), ('active', '=', True)])
 
     # --------------------------------------------------
-    # ONCHANGE LOAD DASHBOARD (DATE RANGE)
+    # SMART BUTTON ACTIONS
     # --------------------------------------------------
 
-    @api.onchange('clinic_id', 'from_date', 'to_date')
-    def _onchange_load_dashboard(self):
-        self.line_ids = [(5, 0, 0)]
-        self.patient_line_ids = [(5, 0, 0)]
-        self.followup_line_ids = [(5, 0, 0)]
-        self.enrollment_line_ids = [(5, 0, 0)]
-        self.daily_followup_line_ids = [(5, 0, 0)]
+    def action_view_therapies(self):
+        self.ensure_one()
+        tree_view_id = self.env.ref('patient_management.view_clinic_session_dashboard_tree').id
+        return {
+            'name': 'Therapy Sessions',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.session',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                '|', ('therapy_clinic_id', '=', self.clinic_id.id),
+                '&', ('therapy_clinic_id', '=', False), ('patient_id.clinic_id', '=', self.clinic_id.id),
+                ('session_date', '>=', self.from_date), ('session_date', '<=', self.to_date), ('active', '=', True)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }
 
-        if not self.clinic_id or not self.from_date or not self.to_date:
-            return
+    def action_view_new_patients(self):
+        self.ensure_one()
+        tree_view_id = self.env.ref('patient_management.view_clinic_patient_dashboard_tree').id
+        return {
+            'name': 'New Registered Patients',
+            'type': 'ir.actions.act_window',
+            'res_model': 'clinic.patient',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                ('clinic_id', '=', self.clinic_id.id),
+                ('enroll_date', '>=', self.from_date),
+                ('enroll_date', '<=', self.to_date)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }
 
-        start_date = fields.Datetime.to_datetime(self.from_date)
-        end_date = fields.Datetime.to_datetime(self.to_date) + timedelta(days=1)
+    def action_view_enrollments(self):
+        self.ensure_one()
+        tree_view_id = self.env.ref('patient_management.view_clinic_enrollment_dashboard_tree').id
+        return {
+            'name': 'Enrollments',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.enrollment',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                ('patient_id.clinic_id', '=', self.clinic_id.id),
+                ('enrollment_date', '>=', self.from_date),
+                ('enrollment_date', '<=', self.to_date)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }
 
-        # Therapy Sessions
-        sessions = self.env['patient.session'].search([
-            '|',
-            ('therapy_clinic_id', '=', self.clinic_id.id),
-            '&',
-            ('therapy_clinic_id', '=', False),
-            ('patient_id.clinic_id', '=', self.clinic_id.id),
-            ('session_date', '>=', self.from_date),
-            ('session_date', '<=', self.to_date),
-            ('active', '=', True),
-        ])
+    def action_view_cs_followups(self):
+        self.ensure_one()
+        tree_view_id = self.env.ref('patient_management.view_clinic_daily_followup_dashboard_tree').id
+        return {
+            'name': 'CS Followups',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.daily_followup',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                ('patient_id.clinic_id', '=', self.clinic_id.id),
+                ('followup_date', '>=', self.from_date),
+                ('followup_date', '<=', self.to_date)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }
 
-        self.line_ids = [(0, 0, {
-            'patient_name': s.sudo().patient_id.name,
-            'session_day': s.session_day,
-            'doctor_name' : s.doctor_id.name,
-            'therapist_name' : s.therapist_id.name,
-        }) for s in sessions]
+    def action_view_rs_followups(self):
+        self.ensure_one()
 
-        # New Registered Patients
+        tree_view_id = self.env.ref('patient_management.view_clinic_assessment_dashboard_tree').id
 
-        new_patients = self.env['clinic.patient'].search([
-            ('clinic_id', '=', self.clinic_id.id),
-            ('create_date', '>=', start_date),
-            ('create_date', '<', end_date)
-        ])
-
-        self.patient_line_ids = [(0, 0, {
-            'patient_name': p.name,
-            'mobile': p.phone,
-        }) for p in new_patients]
-
-        # Followups
-
-        followups = self.env['patient.followup'].search([
-            ('patient_id.clinic_id', '=', self.clinic_id.id),
-            ('weekly_followup_date', '>=', self.from_date),
-            ('weekly_followup_date', '<=', self.to_date),
-        ])
-
-        # Enrollments
-
-        enrollments = self.env['patient.enrollment'].search([
-            ('patient_id.clinic_id', '=', self.clinic_id.id),
-            ('enrollment_date', '>=', self.from_date),
-            ('enrollment_date', '<=', self.to_date),
-        ])
-        self.enrollment_line_ids = [(0, 0, {
-            'patient_name': e.patient_id.name,
-            'total_sessions': e.total_sessions,
-            'enrolled_for': e.enrolled_for,
-        }) for e in enrollments]
-
-        # Daily Followups
-
-        daily_followups = self.env['patient.daily_followup'].search([
-            ('patient_id.clinic_id', '=', self.clinic_id.id),
-            ('followup_date', '>=', self.from_date),
-            ('followup_date', '<=', self.to_date),
-        ])
-        self.daily_followup_line_ids = [(0, 0, {
-            'patient_name':d.patient_id.name,
-            'doctor_name':d.doctor_id.name,
-            'base_clinic_name': d.patient_id.base_clinic_id.name,
-        }) for d in daily_followups]
-
-        # Patient Assessment
-
-        assessment = self.env['patient.assessment'].search([
-            ('patient_id.clinic_id', '=', self.clinic_id.id),
-            ('assessment_date', '>=', self.from_date),
-            ('assessment_date', '<=', self.to_date),
-        ])
-
-        merged_lines = []
-
-        # From patient.followup
-        for f in followups:
-            merged_lines.append((0, 0, {
-                'patient_name': f.patient_id.name,
-                'doctor_name': f.doctor_id.name,
-            }))
-
-        # From patient.assessment (RS Followups)
-        for a in assessment:
-            merged_lines.append((0, 0, {
-                'patient_name': a.patient_id.name,
-                'doctor_name': a.doctor_id.name,
-            }))
-
-        self.followup_line_ids = merged_lines
+        return {
+            'name': 'RS Followups',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.assessment',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                ('patient_id.clinic_id', '=', self.clinic_id.id),
+                ('assessment_date', '>=', self.from_date),
+                ('assessment_date', '<=', self.to_date)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }

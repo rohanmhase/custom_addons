@@ -8,7 +8,7 @@ class Session(models.Model):
     _description = "Session Details"
 
     patient_id = fields.Many2one("clinic.patient", string="Patient", required=True, readonly=True)
-    session_date = fields.Date(string="Session Date", default=lambda self: self._ist_date(), readonly=True)
+    session_date = fields.Date(string="Session Date", default=lambda self: self._ist_date(), readonly=True, index=True)
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, default=lambda self: self.env.user,
                                 readonly=True)
     type_of_therapy = fields.Selection([("detox", "Detox"),
@@ -54,7 +54,7 @@ class Session(models.Model):
     evening_with_time = fields.Char(string="4 PM - 6 PM", required=True)
     dinner_with_time = fields.Char(string="7 PM - 10 PM", required=True)
     comments = fields.Char(string="Comments")
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(default=True, index=True)
 
     @api.model
     def default_get(self, fields_list):
@@ -142,3 +142,11 @@ class Session(models.Model):
             record.active = False
         # Do not call super() → prevents actual deletion
         return True
+
+    def action_archive(self):
+        # 1. Check if the action was triggered from our locked-down dashboard
+        if self.env.context.get('block_archive'):
+            raise UserError("You cannot archive records directly from the Dashboard view.")
+
+        # 2. Otherwise, allow normal archiving behavior
+        return super().action_archive()
