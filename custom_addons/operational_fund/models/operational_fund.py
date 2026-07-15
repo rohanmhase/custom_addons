@@ -592,6 +592,8 @@ class OperationalFundDisbursement(models.Model):
     def action_check_pending_allocations(self):
         """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Disbursements."""
         user = self.env.user
+
+        # 🚨 THE FIX: Removed legacy_record. We only need to look for 'pending' state.
         domain = [('state', '=', 'pending')]
 
         clinic_ids = set()
@@ -602,30 +604,33 @@ class OperationalFundDisbursement(models.Model):
         if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
             clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
 
+        # Only trigger the search if the user actually has assigned clinics.
         if clinic_ids:
             domain.append(('clinic_id', 'in', list(clinic_ids)))
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
 
-        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-        if pending_alloc:
-            return {
-                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'operational.fund.allocation.wizard',
-                'view_mode': 'form',
-                'target': 'current',
-                'context': {
-                    'default_allocation_id': pending_alloc.id,
-                    'return_action': 'operational_fund.action_op_fund_disbursement'
-                },
-                'flags': {'headless': True}
-            }
-        # 🚨 THE SECURE FIX: Safely loads the view for non-admins
+            if pending_alloc:
+                return {
+                    'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'operational.fund.allocation.wizard',
+                    'view_mode': 'form',
+                    'target': 'current',
+                    'context': {
+                        'default_allocation_id': pending_alloc.id,
+                        'return_action': 'operational_fund.action_op_fund_disbursement'
+                    },
+                    'flags': {'headless': True}
+                }
+
+        # If they have no clinics, or no pending allocations in their network, proceed safely:
         return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_disbursement')
 
     @api.model
     def action_check_pending_allocations_dashboard(self):
         """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Dashboard."""
         user = self.env.user
+
         domain = [('state', '=', 'pending')]
 
         clinic_ids = set()
@@ -638,28 +643,32 @@ class OperationalFundDisbursement(models.Model):
 
         if clinic_ids:
             domain.append(('clinic_id', 'in', list(clinic_ids)))
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
 
-        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-        if pending_alloc:
-            return {
-                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'operational.fund.allocation.wizard',
-                'view_mode': 'form',
-                'target': 'current',
-                'context': {
-                    'default_allocation_id': pending_alloc.id,
-                    'return_action': 'operational_fund.action_op_fund_clinic_balance'
-                },
-                'flags': {'headless': True}
-            }
-        # 🚨 THE SECURE FIX: Safely loads the view for non-admins
+            if pending_alloc:
+                return {
+                    'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'operational.fund.allocation.wizard',
+                    'view_mode': 'form',
+                    'target': 'current',
+                    'context': {
+                        'default_allocation_id': pending_alloc.id,
+                        # 🚨 THE FIX: Using the correct XML ID from your views file
+                        'return_action': 'operational_fund.action_op_fund_clinic_balance'
+                    },
+                    'flags': {'headless': True}
+                }
+
+        # 🚨 THE FIX: Using the correct XML ID for the fallback route
         return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_clinic_balance')
 
     @api.model
     def action_open_acknowledgment_wizard_from_banner(self):
-        """ 🚨 This securely powers the native tree view Red Warning Button to handle multi-clinic popups globally 🚨 """
+        """Triggered when user clicks the red banner to acknowledge a deposit."""
         user = self.env.user
+
+        # 🚨 THE FIX: Removed legacy_record. Look only for 'pending'.
         domain = [('state', '=', 'pending')]
 
         clinic_ids = set()
@@ -670,32 +679,25 @@ class OperationalFundDisbursement(models.Model):
         if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
             clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
 
+        # 🚨 THE FIX: Safe search
         if clinic_ids:
             domain.append(('clinic_id', 'in', list(clinic_ids)))
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
 
-        pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-        if pending_alloc:
-            return {
-                'name': _('MANDATORY ACTION: Pending Capital Deposit'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'operational.fund.allocation.wizard',
-                'view_mode': 'form',
-                'target': 'current',
-                'context': {
-                    'default_allocation_id': pending_alloc.id,
-                    'return_action': 'operational_fund.action_op_fund_disbursement'
-                },
-            }
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Up to Date'),
-                'message': _('There are no pending HQ deposits to acknowledge at this time.'),
-                'sticky': False,
-                'type': 'success'
-            }
-        }
+            if pending_alloc:
+                return {
+                    'name': _('MANDATORY ACTION: Pending Capital Deposit'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'operational.fund.allocation.wizard',
+                    'view_mode': 'form',
+                    'target': 'new',  # Banner popup opens in a standard modal (new)
+                    'context': {
+                        'default_allocation_id': pending_alloc.id,
+                    }
+                }
+
+        # Failsafe: if they clicked it but no record exists, just refresh the page
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     @api.depends('category', 'expense_category', 'therapist_role', 'travel_type', 'payee_type')
     def _compute_ui_visibility(self):
@@ -1050,10 +1052,16 @@ class OperationalFundDisbursement(models.Model):
     def action_reset_to_draft(self):
         for rec in self:
             if rec.state in ('approved', 'paid'):
-                raise ValidationError(_("Auditing Restriction: Vouchers cannot be reset to draft once they have been approved or paid."))
+                raise ValidationError(
+                    _("Auditing Restriction: Vouchers cannot be reset to draft once they have been approved or paid."))
             elif rec.state == 'rejected':
-                rec.signed_voucher_file, rec.signed_voucher_filename = False, False
-                rec.old_signed_voucher_file, rec.old_signed_voucher_filename = False, False
+                # 🚨 DEAD CODE FIXED: Actually archive the old file before clearing!
+                rec.old_signed_voucher_file = rec.signed_voucher_file
+                rec.old_signed_voucher_filename = rec.signed_voucher_filename
+
+                # Now clear the main field so the user is forced to upload a new one
+                rec.signed_voucher_file = False
+                rec.signed_voucher_filename = False
             rec.state = 'draft'
 
     def action_request_refund(self):
