@@ -115,8 +115,6 @@ class ClinicDashboard(models.TransientModel):
     def action_view_new_patients(self):
         self.ensure_one()
         tree_view_id = self.env.ref('patient_management.view_clinic_patient_dashboard_tree').id
-        start = fields.Datetime.to_datetime(self.from_date)
-        end = fields.Datetime.to_datetime(self.to_date) + timedelta(days=1)
         return {
             'name': 'New Registered Patients',
             'type': 'ir.actions.act_window',
@@ -125,8 +123,8 @@ class ClinicDashboard(models.TransientModel):
             'views': [(tree_view_id, 'tree')],
             'domain': [
                 ('clinic_id', '=', self.clinic_id.id),
-                ('create_date', '>=', start),
-                ('create_date', '<', end)
+                ('enroll_date', '>=', self.from_date),
+                ('enroll_date', '<=', self.to_date)
             ],
             'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
         }
