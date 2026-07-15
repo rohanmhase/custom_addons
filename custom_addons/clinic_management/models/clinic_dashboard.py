@@ -68,7 +68,7 @@ class ClinicDashboard(models.TransientModel):
 
             rec.today_registered_patients = self.env['clinic.patient'].search_count(
                 [('clinic_id', '=', rec.clinic_id.id), ('enroll_date', '>=', rec.from_date),
-                 ('enroll_date', '<', rec.to_date), ('active', '=', True)])
+                 ('enroll_date', '<=', rec.to_date), ('active', '=', True)])
 
             rec.total_therapies = self.env['patient.session'].search_count([
                 '|', ('therapy_clinic_id', '=', rec.clinic_id.id),
