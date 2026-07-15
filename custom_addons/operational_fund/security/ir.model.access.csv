@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_alloc_custodian,alloc.custodian,model_operational_fund_allocation,group_op_fund_custodian,1,0,0,0
+access_alloc_custodian,alloc.custodian,model_operational_fund_allocation,group_op_fund_custodian,1,1,0,0
 access_alloc_manager,alloc.manager,model_operational_fund_allocation,group_op_fund_manager,1,1,0,0
 access_alloc_controller,alloc.controller,model_operational_fund_allocation,group_op_fund_controller,1,1,1,1
 access_disb_custodian,disb.custodian,model_operational_fund_disbursement,group_op_fund_custodian,1,1,1,0
