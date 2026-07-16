@@ -20,6 +20,7 @@
                     <group>
                         <group string="Assignments">
                             <field name="patient_id"/>
+                            <field name="ticket_type"/>
                             <field name="pet_agent_id"/>
                             <field name="assigned_bm_id"/>
                         </group>
@@ -29,11 +30,11 @@
                             <field name="reopen_count"/>
                         </group>
                     </group>
-                    <group string="The Issue">
+                    <group string="The Issue Description">
                         <field name="issue_description" nolabel="1" colspan="2"/>
                     </group>
-                    <group string="BM Resolution">
-                        <field name="resolution_remarks" nolabel="1" colspan="2" placeholder="BM types how the issue was fixed here..." readonly="status == 'resolved'"/>
+                    <group string="Action &amp; Resolution Details">
+                        <field name="resolution_remarks" nolabel="1" colspan="2" placeholder="Provide complete technical or operational resolution remarks here..." readonly="status == 'resolved'"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter">
@@ -102,9 +103,18 @@
                         </div>
                     </group>
 
-                    <group string="BM ESCALATION" style="background-color:#fff3cd; border-radius:5px; padding:10px;" invisible="not_connected">
-                        <field name="escalate_to_bm" readonly="is_locked" string="Escalate to BM"/>
-                        <field name="escalation_description" placeholder="Describe the issue. This creates a 24-Hour SLA Ticket for the BM..." invisible="not escalate_to_bm" required="escalate_to_bm" readonly="is_locked"/>
+                    <group string="DEPARTMENTAL ESCALATION DASHBOARD" style="background-color:#fff3cd; border-radius:5px; padding:10px;" invisible="not_connected">
+                        <group col="4" colspan="2">
+                            <field name="escalate_to_bm" readonly="is_locked"/>
+                            <field name="escalate_to_cs" readonly="is_locked"/>
+                            <field name="escalate_to_admin" readonly="is_locked"/>
+                            <field name="escalate_to_rs" readonly="is_locked"/>
+                            <field name="escalate_to_therapist" readonly="is_locked"/>
+                        </group>
+                        <field name="escalation_description" placeholder="Provide explicit details regarding the issue. This spins up a 24-Hour strict SLA ticket for the checked department(s)..."
+                               invisible="not escalate_to_bm and not escalate_to_cs and not escalate_to_admin and not escalate_to_rs and not escalate_to_therapist"
+                               required="escalate_to_bm or escalate_to_cs or escalate_to_admin or escalate_to_rs or escalate_to_therapist"
+                               readonly="is_locked"/>
                     </group>
 
                     <group string="LATEST ACTIONS &amp; REMARKS">
@@ -226,6 +236,7 @@
                             <field name="ticket_ids" readonly="1">
                                 <tree create="0" delete="0" edit="0">
                                     <field name="ticket_sequence"/>
+                                    <field name="ticket_type"/>
                                     <field name="create_date" string="Opened On"/>
                                     <field name="status" widget="badge"
                                            decoration-warning="status == 'pending'"
@@ -285,7 +296,7 @@
     <record id="action_pet_record" model="ir.actions.act_window">
         <field name="name">PET Tracker</field>
         <field name="res_model">pet.record</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Click the PET Tracker button on a Patient profile to create a record!
@@ -380,10 +391,11 @@
                   decoration-warning="status == 'pending'"
                   decoration-success="status == 'resolved'">
                 <field name="ticket_sequence"/>
+                <field name="ticket_type"/>
                 <field name="create_date" string="Opened On"/>
                 <field name="patient_id"/>
                 <field name="pet_agent_id" string="Raised By" widget="many2one_avatar_user"/>
-                <field name="assigned_bm_id" string="Assigned BM" widget="many2one_avatar_user"/>
+                <field name="assigned_bm_id" string="Assigned To" widget="many2one_avatar_user"/>
                 <field name="issue_description" string="Issue"/>
                 <field name="deadline"/>
                 <field name="status" widget="badge"
@@ -402,12 +414,20 @@
                 <field name="ticket_sequence"/>
                 <field name="patient_id"/>
                 <field name="assigned_bm_id"/>
+                <field name="ticket_type"/>
                 <filter string="Active / Overdue" name="active_tickets" domain="[('status', 'in', ['pending', 'overdue'])]"/>
                 <filter string="Resolved" name="resolved_tickets" domain="[('status', '=', 'resolved')]"/>
                 <separator/>
+                <filter string="Business Manager" name="type_bm" domain="[('ticket_type', '=', 'bm')]"/>
+                <filter string="Consultation Specialist" name="type_cs" domain="[('ticket_type', '=', 'cs')]"/>
+                <filter string="Administrative" name="type_admin" domain="[('ticket_type', '=', 'admin')]"/>
+                <filter string="Regeneration Specialist" name="type_rs" domain="[('ticket_type', '=', 'rs')]"/>
+                <filter string="Therapist" name="type_therapist" domain="[('ticket_type', '=', 'therapist')]"/>
+                <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
-                    <filter string="Assigned BM" name="group_bm" context="{'group_by': 'assigned_bm_id'}"/>
+                    <filter string="Department" name="group_type" context="{'group_by': 'ticket_type'}"/>
+                    <filter string="Assigned To" name="group_bm" context="{'group_by': 'assigned_bm_id'}"/>
                 </group>
             </search>
         </field>
@@ -419,6 +439,7 @@
         <field name="arch" type="xml">
             <pivot string="Escalation Analytics" sample="1">
                 <field name="assigned_bm_id" type="row"/>
+                <field name="ticket_type" type="col"/>
                 <field name="status" type="col"/>
             </pivot>
         </field>
@@ -429,7 +450,7 @@
         <field name="model">pet.escalation.ticket</field>
         <field name="arch" type="xml">
             <graph string="SLA Breach &amp; Resolution Trends" type="bar" sample="1">
-                <field name="assigned_bm_id"/>
+                <field name="ticket_type"/>
                 <field name="status" type="measure"/>
             </graph>
         </field>
@@ -438,14 +459,14 @@
     <record id="action_pet_escalation_tracker" model="ir.actions.act_window">
         <field name="name">SLA Tickets</field>
         <field name="res_model">pet.escalation.ticket</field>
-        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="view_mode">list,form,pivot,graph</field>
         <field name="search_view_id" ref="view_pet_escalation_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No tickets have been created yet!
             </p>
             <p>
-                When the PET team escalates an issue to a BM, it will appear here.
+                When the PET team escalates an issue to a department, it will appear here.
             </p>
         </field>
     </record>

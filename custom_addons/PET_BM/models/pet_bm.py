@@ -47,7 +47,7 @@ class PETSubCategory(models.Model):
 
 
 # =========================================================================
-# THE NEW DEDICATED SLA TICKETING SYSTEM
+# THE UNIFIED SLA TICKETING SYSTEM
 # =========================================================================
 class PetEscalationTicket(models.Model):
     _name = 'pet.escalation.ticket'
@@ -61,17 +61,27 @@ class PetEscalationTicket(models.Model):
     pet_record_id = fields.Many2one('pet.record', string="PET Dashboard", required=True, readonly=True)
     bm_log_id = fields.Many2one('bm.followup.log', string="BM Log", readonly=True)
 
+    ticket_type = fields.Selection([
+        ('bm', 'Business Manager'),
+        ('cs', 'Consultation Specialist'),
+        ('admin', 'Admini'),
+        ('rs', 'Regeneration Specialist'),
+        ('therapist', 'Therapist')
+    ], string="Ticket Department", default='bm', required=True, tracking=True)
+
     pet_agent_id = fields.Many2one('res.users', string="Raised By (PET)", readonly=True)
-    assigned_bm_id = fields.Many2one('res.users', string="Assigned BM", readonly=True)
+
+    # DATABASE INTEGRITY SAFEGUARD: Kept exact column name to protect historical rows
+    assigned_bm_id = fields.Many2one('res.users', string="Assigned To", readonly=True)
 
     status = fields.Selection([
-        ('pending', 'Pending BM Action'),
+        ('pending', 'Pending Action'),
         ('overdue', 'Overdue (SLA Breached)'),
         ('resolved', 'Resolved')
     ], string="Ticket Status", default='pending', tracking=True)
 
     issue_description = fields.Text(string="Issue Description", required=True, readonly=True)
-    resolution_remarks = fields.Text(string="BM Resolution Remarks", tracking=True)
+    resolution_remarks = fields.Text(string="Resolution Remarks", tracking=True)
 
     deadline = fields.Datetime(string="SLA Deadline (24 Hrs)", readonly=True, tracking=True)
     reopen_count = fields.Integer(string="Times Reopened", default=0, readonly=True)
@@ -81,13 +91,11 @@ class PetEscalationTicket(models.Model):
         for vals in vals_list:
             if vals.get('ticket_sequence', 'New') == 'New':
                 vals['ticket_sequence'] = self.env['ir.sequence'].next_by_code('pet.escalation.ticket') or 'TKT-NEW'
-
             vals['deadline'] = fields.Datetime.now() + timedelta(hours=24)
-
         return super().create(vals_list)
 
     def action_resolve(self):
-        """ BM resolves the ticket """
+        """ Responsible agent resolves the ticket """
         for rec in self:
             if not rec.resolution_remarks:
                 raise ValidationError("You must provide Resolution Remarks before closing this ticket.")
@@ -95,18 +103,18 @@ class PetEscalationTicket(models.Model):
             rec.status = 'resolved'
             rec.message_post(body=f"Ticket marked as RESOLVED by {self.env.user.name}.")
 
-            # Clear BM's To-Do list
+            # Clear assigned To-Do list activities
             activities = self.env['mail.activity'].search(
                 [('res_model', '=', 'pet.escalation.ticket'), ('res_id', '=', rec.id)])
             activities.action_done()
 
             rec.message_post(
-                body=f"BM Resolution: {rec.resolution_remarks}",
+                body=f"Resolution Details: {rec.resolution_remarks}",
                 partner_ids=[rec.pet_agent_id.partner_id.id]
             )
 
     def action_reopen(self):
-        """ PET Team rejects resolution and bounces it back to BM """
+        """ PET Team rejects resolution and bounces it back to assigned agent """
         for rec in self:
             rec.status = 'pending'
             rec.reopen_count += 1
@@ -118,7 +126,7 @@ class PetEscalationTicket(models.Model):
             rec.activity_schedule(
                 activity_type_id=self.env.ref('mail.mail_activity_data_todo').id,
                 user_id=rec.assigned_bm_id.id,
-                note='<strong>Ticket Reopened:</strong> Patient still has an issue.',
+                note='<strong>Ticket Reopened:</strong> Patient issue unresolved.',
                 summary='Ticket Reopened'
             )
 
@@ -172,14 +180,16 @@ class PETFollowupLine(models.Model):
                                          compute="_compute_line_metrics", store=True)
     task_status = fields.Selection(
         [('no_set', 'No follow-up set'), ('overdue', 'Overdue Follow-up'), ('today', 'Due Today'),
-         ('on_track', 'On Track')], string="Task Status", compute="_compute_line_metrics", store=True)
+         ('on_track', 'On Track')],
+        string="Task Status", compute="_compute_line_metrics", store=True)
 
     category_id = fields.Many2one('pet.category', string="Category")
     subcategory_id = fields.Many2one('pet.subcategory', string="Sub Category")
     patient_status = fields.Many2one('pet.patient.status', string="Treatment Status")
     outcome_status = fields.Selection(
         [('On Track', 'On Track'), ('Improving', 'Improving'), ('Plateau', 'Plateau'), ('Stopped', 'Stopped'),
-         ('completed', 'Completed')], string="Outcome Status")
+         ('completed', 'Completed')],
+        string="Outcome Status")
     reason_not_starting_stopping = fields.Text(string="Reason for Not Starting / Stopping")
 
     pain_walking_score = fields.Integer(string="Pain Walking (0-10)")
@@ -187,12 +197,19 @@ class PETFollowupLine(models.Model):
     satisfaction_score = fields.Integer(string="Satisfaction (0-10)")
     mobility_status = fields.Selection(
         [('Severe Limitation', 'Severe'), ('Moderate Limitation', 'Moderate'), ('Mild Limitation', 'Mild'),
-         ('Independent', 'Independent')], string="Mobility Status")
+         ('Independent', 'Independent')],
+        string="Mobility Status")
     therapy_kit_status = fields.Selection([('yes', 'Yes'), ('no', 'No'), ('maybe', 'Maybe')], string="Home Therapy Kit")
 
     discount_offered = fields.Float(string="Discount Offered (%)")
 
-    escalate_to_bm = fields.Boolean(string="Escalate Issue to BM")
+    # UNIFIED DEPARTMENTS ESCALATION CHECKBOXES
+    escalate_to_bm = fields.Boolean(string="Escalate to BM")
+    escalate_to_cs = fields.Boolean(string="Escalate to CS")
+    escalate_to_admin = fields.Boolean(string="Escalate to Admin")
+    escalate_to_rs = fields.Boolean(string="Escalate to RS")
+    escalate_to_therapist = fields.Boolean(string="Escalate to Therapist")
+
     escalation_description = fields.Text(string="Issue Description")
 
     referral_given = fields.Boolean(string="Referral Given")
@@ -271,7 +288,6 @@ class PETFollowupLine(models.Model):
                 days = 2 if sub_cat == 'irregular' else 7
             elif cat == 'drop-off':
                 days = 1 if sub_cat == 'drop-risk' else 3
-            # AIRTIGHT FALLBACK: Catches both variations
             elif cat in ['not enrolled', 'not started']:
                 days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
             elif cat == 'completed':
@@ -297,6 +313,24 @@ class PETFollowupLine(models.Model):
     def _onchange_subcategory_id(self):
         """Clears status when subcategory changes to prevent mismatches"""
         self.patient_status = False
+
+    def _discover_and_route_fallback(self, clinic_id):
+        """ Defensive Discovery Engine: dynamically scans the database schema to locate
+            how local users are assigned to clinic branches without tracebacks. """
+        UserObj = self.env['res.users']
+        clinic_field = False
+        for fname, field in UserObj._fields.items():
+            if field.type in ['many2one', 'many2many'] and field.comodel_name == 'clinic.clinic':
+                clinic_field = fname
+                break
+
+        if clinic_field and clinic_id:
+            match_domain = [(clinic_field, 'in',
+                             [clinic_id.id] if UserObj._fields[clinic_field].type == 'many2many' else clinic_id.id)]
+            local_user = UserObj.search(match_domain, limit=1)
+            if local_user:
+                return local_user.id
+        return self.env.user.id
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -343,38 +377,49 @@ class PETFollowupLine(models.Model):
                                 'pet_agent_id': rec.user_id.id
                             })
 
-                        # 2. TICKETING ENGINE
-                        if rec.escalate_to_bm and rec.escalation_description:
-                            assigned_bm = latest_bm_log.user_id
+                    # 2. DYNAMIC BROADCAST TICKETING PIPELINE
+                    escalations = [
+                        ('escalate_to_bm', 'bm',
+                         latest_bm_log.user_id.id if latest_bm_log and latest_bm_log.user_id else self.env.user.id),
+                        ('escalate_to_cs', 'cs', False),
+                        ('escalate_to_admin', 'admin', False),
+                        ('escalate_to_rs', 'rs', False),
+                        ('escalate_to_therapist', 'therapist', False),
+                    ]
+
+                    for field_name, t_type, default_user_id in escalations:
+                        if getattr(rec, field_name) and rec.escalation_description:
+                            assigned_target_id = default_user_id if default_user_id else self._discover_and_route_fallback(
+                                rec.pet_record_id.clinic_id)
 
                             new_ticket = self.env['pet.escalation.ticket'].create({
                                 'patient_id': rec.pet_record_id.patient_id.id,
                                 'pet_record_id': rec.pet_record_id.id,
-                                'bm_log_id': latest_bm_log.id,
+                                'bm_log_id': latest_bm_log.id if latest_bm_log else False,
+                                'ticket_type': t_type,
                                 'pet_agent_id': rec.user_id.id,
-                                'assigned_bm_id': assigned_bm.id if assigned_bm else self.env.user.id,
+                                'assigned_bm_id': assigned_target_id,
                                 'issue_description': rec.escalation_description,
                             })
 
-                            if assigned_bm:
-                                new_ticket.message_subscribe(partner_ids=[assigned_bm.partner_id.id])
-
+                            # Schedule Odoo push notification activity & email follow up
                             new_ticket.activity_schedule(
                                 'mail.mail_activity_data_todo',
                                 user_id=new_ticket.assigned_bm_id.id,
-                                note=f'<strong>Patient Escalation:</strong> {rec.escalation_description}',
+                                note=f'<strong>New {t_type.upper()} Escalation:</strong> {rec.escalation_description}',
                                 summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
                             )
 
+                            target_partner = new_ticket.assigned_bm_id.partner_id.id
+                            new_ticket.message_subscribe(partner_ids=[target_partner])
                             new_ticket.message_post(
-                                body=f"<h3>New Escalation Ticket Assigned</h3>"
-                                     f"<p>A new ticket has been assigned to you regarding patient <b>{new_ticket.patient_id.name}</b>.</p>"
-                                     f"<p><b>Issue:</b> {rec.escalation_description}</p>"
-                                     f"<p>Please click here to view the ticket: "
-                                     f"<a href='/web#id={new_ticket.id}&model=pet.escalation.ticket&view_type=form'>Open Ticket</a></p>",
+                                body=f"<h3>New {new_ticket.fields_get(['ticket_type'])['ticket_type']['selection'][[x[0] for x in new_ticket.fields_get(['ticket_type'])['ticket_type']['selection']].index(t_type)][1]} Ticket Assigned</h3>"
+                                     f"<p>A new SLA escalation has been routed to you for patient <b>{new_ticket.patient_id.name}</b>.</p>"
+                                     f"<p><b>Issue Details:</b> {rec.escalation_description}</p>"
+                                     f"<p><a href='/web#id={new_ticket.id}&model=pet.escalation.ticket&view_type=form'>👉 Click here to open and resolve the ticket</a></p>",
                                 message_type="notification",
                                 subtype_xmlid="mail.mt_note",
-                                partner_ids=[assigned_bm.partner_id.id] if assigned_bm else []
+                                partner_ids=[target_partner]
                             )
         return records
 
@@ -416,7 +461,8 @@ class PETRecord(models.Model):
     patient_status = fields.Many2one('pet.patient.status', string="Current Treatment Status", tracking=True)
     outcome_status = fields.Selection(
         [('On Track', 'On Track'), ('Improving', 'Improving'), ('Plateau', 'Plateau'), ('Stopped', 'Stopped'),
-         ('completed', 'Completed')], string="Outcome Status", tracking=True)
+         ('completed', 'Completed')],
+        string="Outcome Status", tracking=True)
     reason_not_starting_stopping = fields.Text(string="Reason for Not Starting / Stopping", tracking=True)
 
     pain_walking_score = fields.Integer(string="Pain While Walking (0-10)", tracking=True)
@@ -424,7 +470,8 @@ class PETRecord(models.Model):
     satisfaction_score = fields.Integer(string="Satisfaction Score (0-10)", tracking=True)
     mobility_status = fields.Selection(
         [('Severe Limitation', 'Severe'), ('Moderate Limitation', 'Moderate'), ('Mild Limitation', 'Mild'),
-         ('Independent', 'Independent')], string="Mobility Status", tracking=True)
+         ('Independent', 'Independent')],
+        string="Mobility Status", tracking=True)
     therapy_kit_status = fields.Selection([('yes', 'Yes'), ('no', 'No'), ('maybe', 'Maybe')], string="Home Therapy Kit",
                                           tracking=True)
 
@@ -450,8 +497,8 @@ class PETRecord(models.Model):
                                          compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
     task_status = fields.Selection(
         [('no_set', 'No follow-up set'), ('overdue', 'Overdue Follow-up'), ('today', 'Due Today'),
-         ('on_track', 'On Track')], string="Task Status", compute="_compute_all_metrics", store=True, readonly=True,
-        compute_sudo=True)
+         ('on_track', 'On Track')],
+        string="Task Status", compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
 
     def init(self):
         self.env.cr.execute(
@@ -515,9 +562,8 @@ class PETRecord(models.Model):
                 allowed_names = ['Continue Treatment']
             elif cat == 'drop-off':
                 allowed_names = ['Planning to Stop', 'Stopped']
-            # AIRTIGHT FALLBACK: Catches both variations
             elif cat in ['not enrolled', 'not started']:
-                allowed_names = ['Not Enrolled']
+                allowed_names = ['Not Started']
             elif cat == 'completed':
                 allowed_names = ['Completed', 'Maintenance']
 
@@ -559,8 +605,7 @@ class PETRecord(models.Model):
                 rec.priority = '0'
 
             rem = (rec.remarks or "").strip().lower()
-            if (rec.priority == '2' or (
-                    cat_name == 'completed' and rec.satisfaction_score < 7) or rem == 'lost trust'):
+            if (rec.priority == '2' or (cat_name == 'completed' and rec.satisfaction_score < 7) or rem == 'lost trust'):
                 rec.escalation_needed = 'yes'
             else:
                 rec.escalation_needed = 'no'
@@ -585,7 +630,6 @@ class PETRecord(models.Model):
                 days = 2 if sub_cat == 'irregular' else 7
             elif cat == 'drop-off':
                 days = 1 if sub_cat == 'drop-risk' else 3
-            # AIRTIGHT FALLBACK: Catches both variations
             elif cat in ['not enrolled', 'not started']:
                 days = 1 if sub_cat == 'hot' else (2 if sub_cat == 'warm' else (7 if sub_cat == 'cold' else 3))
             elif cat == 'completed':
@@ -646,7 +690,8 @@ class BMFollowupLog(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, ondelete='cascade', tracking=True)
-    user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True, tracking=True)
+    user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True,
+                              tracking=True)
 
     offered_price = fields.Float(string="Offered Price", tracking=True)
     total_therapies_included = fields.Integer(string="Total Therapies Included", tracking=True)
@@ -704,7 +749,8 @@ class PatientInherit(models.Model):
             rec.pet_next_followup = latest_pet.actual_next_followup_date if latest_pet else False
 
     def action_open_pet_tracker(self):
-        last_session = self.env['patient.session'].search([('patient_id', '=', self.id)], order='session_date desc', limit=1)
+        last_session = self.env['patient.session'].search([('patient_id', '=', self.id)], order='session_date desc',
+                                                          limit=1)
         last_visit = last_session.session_date if last_session and last_session.session_date else self.enroll_date
 
         existing_records = self.env['pet.record'].search([('patient_id', '=', self.id)], order='create_date desc')
@@ -786,13 +832,18 @@ class PatientInherit(models.Model):
         patients = super(PatientInherit, self).create(vals_list)
 
         for patient in patients:
-            patient.activity_schedule(
-                'mail.mail_activity_data_todo',
-                user_id=self.env.user.id,
-                summary='🛑 BM TASK: Log Initial Quote & Therapies',
-                note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
-            )
+            # AIRTIGHT ONBOARDING ENGINE: Bypass the BM Initial Quote task if patient is marked as existing
+            is_existing_patient = hasattr(patient, 'is_existing') and patient.is_existing
 
+            if not is_existing_patient:
+                patient.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=self.env.user.id,
+                    summary='🛑 BM TASK: Log Initial Quote & Therapies',
+                    note=f'Patient <b>{patient.name}</b> just registered. Please contact them and log the offered price in the BM Follow-up Log.'
+                )
+
+            # PET first contact onboarding is preserved 100% for experience tracking data pipeline
             pet_rec = self.env['pet.record'].create({
                 'patient_id': patient.id,
                 'start_date': patient.enroll_date or fields.Date.context_today(self),
