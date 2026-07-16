@@ -663,12 +663,11 @@ class OperationalFundDisbursement(models.Model):
         # 🚨 THE FIX: Using the correct XML ID for the fallback route
         return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_clinic_balance')
 
-    @api.model
+        # 🚨 THE FIX: Removed @api.model so it accepts the recordset from the form view
     def action_open_acknowledgment_wizard_from_banner(self):
         """Triggered when user clicks the red banner to acknowledge a deposit."""
         user = self.env.user
 
-        # 🚨 THE FIX: Removed legacy_record. Look only for 'pending'.
         domain = [('state', '=', 'pending')]
 
         clinic_ids = set()
@@ -679,7 +678,6 @@ class OperationalFundDisbursement(models.Model):
         if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
             clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
 
-        # 🚨 THE FIX: Safe search
         if clinic_ids:
             domain.append(('clinic_id', 'in', list(clinic_ids)))
             pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
@@ -690,13 +688,12 @@ class OperationalFundDisbursement(models.Model):
                     'type': 'ir.actions.act_window',
                     'res_model': 'operational.fund.allocation.wizard',
                     'view_mode': 'form',
-                    'target': 'new',  # Banner popup opens in a standard modal (new)
+                    'target': 'new',
                     'context': {
                         'default_allocation_id': pending_alloc.id,
                     }
                 }
 
-        # Failsafe: if they clicked it but no record exists, just refresh the page
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     @api.depends('category', 'expense_category', 'therapist_role', 'travel_type', 'payee_type')
