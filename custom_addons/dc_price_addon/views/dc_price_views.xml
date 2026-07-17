@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dc_picking_form_inherit_price" model="ir.ui.view">
+        <field name="name">stock.picking.form.dc.price</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Invisible field so we can reference it in column_invisible -->
+            <xpath expr="//field[@name='scheduled_date']" position="after">
+                <field name="show_price_columns" invisible="1"/>
+            </xpath>
+
+            <!-- ✅ FIX #2: Show columns ONLY for outgoing deliveries -->
+            <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='product_uom']" position="after">
+                <field name="unit_price"
+                       string="Unit Price"
+                       optional="hide"
+                       column_invisible="not parent.show_price_columns"/>
+                <field name="price_subtotal"
+                       string="Subtotal"
+                       optional="hide"
+                       readonly="1"
+                       column_invisible="not parent.show_price_columns"/>
+            </xpath>
+
+            <!-- Grand Total footer -->
+            <xpath expr="//field[@name='move_ids_without_package']" position="after">
+                <group class="oe_subtotal_footer oe_right"
+                       invisible="amount_total == 0 or not show_price_columns">
+                    <field name="amount_total"
+                           class="oe_subtotal_footer_separator"
+                           string="Grand Total"
+                           readonly="1"/>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
