@@ -1162,6 +1162,10 @@
                                                 <t t-if="sess['session_type'] == 'home'">Home</t>
                                                 <t t-if="sess['session_type'] == 'self'">Self</t>
                                             </div>
+                                            <div class="info-text">
+                                                <strong>Body Parts:</strong>
+                                                <t t-esc="sess['body_parts']"/>
+                                            </div>
                                             <div class="row">
                                                 <span>
                                                     <i>Therapy Information</i>

@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import datetime, timedelta
+from odoo.exceptions import ValidationError
 
 
 class Session(models.Model):
@@ -55,6 +56,17 @@ class Session(models.Model):
     dinner_with_time = fields.Char(string="7 PM - 10 PM", required=True)
     comments = fields.Char(string="Comments")
     active = fields.Boolean(default=True, index=True)
+
+    b_cervical = fields.Boolean(string='Cervical')
+    b_lumbar = fields.Boolean(string='Lumbar')
+    b_knee = fields.Boolean(string='Knee')
+    b_shoulder = fields.Boolean(string='Shoulder')
+    b_hip = fields.Boolean(string='Hip')
+    b_ankle = fields.Boolean(string='Ankle')
+    b_tibia = fields.Boolean(string='Tibia')
+    b_other = fields.Boolean(string='Other')
+    b_if_other = fields.Char(string='If Other')
+    body_parts = fields.Char(compute="_compute_body_parts", store=True)
 
     @api.model
     def default_get(self, fields_list):
@@ -150,3 +162,42 @@ class Session(models.Model):
 
         # 2. Otherwise, allow normal archiving behavior
         return super().action_archive()
+
+    @api.constrains('b_cervical', 'b_lumbar', 'b_knee', 'b_shoulder', 'b_hip', 'b_ankle', 'b_tibia', 'b_other')
+    def _check_body_part_selection(self):
+        for rec in self:
+            if not any([
+                rec.b_cervical,
+                rec.b_lumbar,
+                rec.b_knee,
+                rec.b_shoulder,
+                rec.b_hip,
+                rec.b_ankle,
+                rec.b_tibia,
+                rec.b_other
+            ]):
+                raise ValidationError(_("Please select at least one body part."))
+
+
+    @api.depends('b_cervical', 'b_lumbar', 'b_knee', 'b_shoulder', 'b_hip', 'b_ankle', 'b_tibia', 'b_other', 'b_if_other')
+    def _compute_body_parts(self):
+        for rec in self:
+            selected = []
+            if rec.b_cervical:
+                selected.append('Cervical')
+            if rec.b_lumbar:
+                selected.append('Lumbar')
+            if rec.b_knee:
+                selected.append('Knee')
+            if rec.b_shoulder:
+                selected.append('Shoulder')
+            if rec.b_hip:
+                selected.append('Hip')
+            if rec.b_ankle:
+                selected.append('Ankle')
+            if rec.b_tibia:
+                selected.append('Tibia')
+            if rec.b_other:
+                selected.append(f"Other ({rec.b_if_other})" if rec.b_if_other else "Other")
+
+            rec.body_parts = ", ".join(selected)
