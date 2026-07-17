@@ -13,3 +13,31 @@
 .o_list_renderer .table .o_data_row.text-danger:hover {
     background-color: #f5c2c7 !important;
 }
+
+/* 🚨 Expand Search Panel Width & Enable Multi-Line Text Wrapping for Long Clinic Names 🚨 */
+.o_search_panel {
+    width: auto !important;
+    min-width: 280px !important;
+    max-width: 420px !important;
+    flex: 0 0 auto !important;
+
+    .o_search_panel_label {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        word-break: break-word !important;
+        line-height: 1.25 !important;
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+
+    .list-group-item {
+        align-items: flex-start !important;
+        padding: 6px 12px !important;
+    }
+
+    .o_search_panel_counter {
+        margin-left: 8px !important;
+        flex-shrink: 0 !important;
+    }
+}
