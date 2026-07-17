@@ -56,6 +56,16 @@ class Session(models.Model):
     comments = fields.Char(string="Comments")
     active = fields.Boolean(default=True, index=True)
 
+    b_cervical = fields.Boolean(string='Cervical')
+    b_lumbar = fields.Boolean(string='Lumbar')
+    b_knee = fields.Boolean(string='Knee')
+    b_shoulder = fields.Boolean(string='Shoulder')
+    b_hip = fields.Boolean(string='Hip')
+    b_ankle = fields.Boolean(string='Ankle')
+    b_tibia = fields.Boolean(string='Tibia')
+    b_other = fields.Boolean(string='Other')
+    b_if_other = fields.Char(string='If/Other')
+
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
