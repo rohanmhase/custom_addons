@@ -66,6 +66,27 @@ class Clinic(models.Model):
                  'master_fund_id')
     def _compute_balances(self):
         """🚨 LEGACY SAFEGUARD: Treats old records (False) as cleared to protect existing balances 🚨"""
+        # Batch SQL optimization: fetch all allocation and disbursement sums in 2 read_group queries
+        active_clinics = self.filtered(lambda c: not (c.master_fund_id and c.master_fund_id != c))
+        all_relevant_clinics = active_clinics | active_clinics.mapped('child_clinic_ids')
+
+        alloc_map = {}
+        disb_map = {}
+        if all_relevant_clinics:
+            alloc_groups = self.env['operational.fund.allocation'].sudo().read_group(
+                [('clinic_id', 'in', all_relevant_clinics.ids), ('state', 'in', ['cleared', False])],
+                ['clinic_id', 'amount:sum'],
+                ['clinic_id']
+            )
+            alloc_map = {g['clinic_id'][0]: g['amount'] for g in alloc_groups if g['clinic_id']}
+
+            disb_groups = self.env['operational.fund.disbursement'].sudo().read_group(
+                [('clinic_id', 'in', all_relevant_clinics.ids), ('state', 'in', ['approved', 'paid', 'refund_requested'])],
+                ['clinic_id', 'amount:sum'],
+                ['clinic_id']
+            )
+            disb_map = {g['clinic_id'][0]: g['amount'] for g in disb_groups if g['clinic_id']}
+
         for clinic in self:
             if clinic.master_fund_id and clinic.master_fund_id != clinic:
                 clinic.total_allocated = 0.0
@@ -73,12 +94,8 @@ class Clinic(models.Model):
                 clinic.op_fund_balance = 0.0
                 continue
 
-            cleared_allocations = clinic.allocation_ids.filtered(lambda a: a.state in ('cleared', False))
-            total_alloc = sum(cleared_allocations.mapped('amount'))
-
-            all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
-            approved_disbs = all_disbursements.filtered(lambda d: d.state in ('approved', 'paid', 'refund_requested'))
-            total_spent = sum(approved_disbs.mapped('amount'))
+            total_alloc = alloc_map.get(clinic.id, 0.0)
+            total_spent = disb_map.get(clinic.id, 0.0) + sum(disb_map.get(child.id, 0.0) for child in clinic.child_clinic_ids)
 
             clinic.total_allocated = total_alloc
             clinic.total_spent = total_spent
@@ -169,6 +186,49 @@ class ResUsers(models.Model):
     op_fund_finance_clinic_ids = fields.Many2many('clinic.clinic', 'clinic_user_fin_rel', 'user_id', 'clinic_id',
                                                   string='Finance Managed Clinics')
 
+    @api.onchange('groups_id', 'clinic_ids')
+    def _onchange_sync_tier1_clinics(self):
+        """Live UI autofill: When Tier 1 is checked or clinics change, auto-populate Standard Managed Clinics."""
+        tier1_group = self.env.ref('operational_fund.group_op_fund_custodian', raise_if_not_found=False)
+        if tier1_group and tier1_group in self.groups_id and hasattr(self, 'clinic_ids') and self.clinic_ids:
+            self.op_fund_managed_clinic_ids = [(6, 0, self.clinic_ids.ids)]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        users = super().create(vals_list)
+        users._sync_tier1_clinics()
+        return users
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'groups_id' in vals or 'clinic_ids' in vals:
+            self._sync_tier1_clinics()
+        return res
+
+    def _sync_tier1_clinics(self):
+        """Backend Safeguard: Ensures any Tier 1 user has their clinic_ids synced to op_fund_managed_clinic_ids."""
+        tier1_group = self.env.ref('operational_fund.group_op_fund_custodian', raise_if_not_found=False)
+        if not tier1_group:
+            return
+        for user in self:
+            if hasattr(user, 'clinic_ids') and tier1_group in user.groups_id and user.clinic_ids:
+                if set(user.op_fund_managed_clinic_ids.ids) != set(user.clinic_ids.ids):
+                    user.op_fund_managed_clinic_ids = [(6, 0, user.clinic_ids.ids)]
+
+    def _auto_init(self):
+        """Auto-sync existing accounts right during module upgrade/installation!"""
+        res = super()._auto_init()
+        try:
+            tier1_group = self.env.ref('operational_fund.group_op_fund_custodian', raise_if_not_found=False)
+            if tier1_group and tier1_group.users:
+                for user in tier1_group.users:
+                    if hasattr(user, 'clinic_ids') and user.clinic_ids:
+                        if set(user.op_fund_managed_clinic_ids.ids) != set(user.clinic_ids.ids):
+                            user.op_fund_managed_clinic_ids = [(6, 0, user.clinic_ids.ids)]
+        except Exception:
+            pass  # Guard during initial db table setup or early registry boot
+        return res
+
 
 class OperationalFundAudit(models.Model):
     _name = 'operational.fund.audit'
@@ -217,21 +277,23 @@ class OperationalFundAllocation(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Receipt Number', default='New', readonly=True)
-    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, tracking=True,
+    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, tracking=True, index=True,
                                 default=lambda self: self.env.user.clinic_id.id if hasattr(self.env.user,
                                                                                            'clinic_id') else False)
     amount = fields.Float(string='Amount Deposited', required=True, tracking=True)
-    date = fields.Date(string='Deposit Date', default=fields.Date.context_today, required=True, tracking=True)
+    date = fields.Date(string='Deposit Date', default=fields.Date.context_today, required=True, tracking=True, index=True)
     notes = fields.Text(string='Recharge Notes / Purpose', tracking=True)
     controller_id = fields.Many2one('res.users', string='Allocated By', default=lambda self: self.env.user,
                                     readonly=True)
+    
+    allocated_to_id = fields.Many2one('res.users', string='Allocated To', tracking=True, help="Specific user responsible for this deposit. They will be notified instantly.")
 
     # 🚨 ADDON: Introduced the 'review' Maker-Checker state
     state = fields.Selection([
         ('pending', 'Pending Acknowledgment'),
         ('review', 'Under Manager Review'),
         ('cleared', 'Cleared')
-    ], string='Status', default='pending', required=True, tracking=True)
+    ], string='Status', default='pending', required=True, tracking=True, index=True)
 
     ack_proof_file = fields.Binary(string='Bank Statement/Proof Asset')
     ack_proof_filename = fields.Char(string='Proof Filename')
@@ -264,24 +326,55 @@ class OperationalFundAllocation(models.Model):
         for rec in records:
             if rec.state == 'pending':
                 rec._notify_custodians_pending()
+                if rec.allocated_to_id:
+                    rec._notify_allocated_user()
         return records
+
+    def _notify_allocated_user(self):
+        for rec in self:
+            user = rec.allocated_to_id
+            if not user or not user.email: continue
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.allocation&view_type=form"
+            mail_values = {
+                'subject': f'Direct Allocation: Pending HQ Deposit for {rec.clinic_id.name}',
+                'email_to': user.email,
+                'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #333;">Direct Capital Deposit</h2><p>Hello {user.name},</p><p>HQ has directly allocated <strong>₹{rec.amount}</strong> to {rec.clinic_id.name} under your name. Please log in and upload the bank verification proof to clear it.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acknowledge Funds</a></div>""",
+                'state': 'outgoing',
+            }
+            self.env['mail.mail'].sudo().create(mail_values)
 
     def _notify_custodians_pending(self):
         """Finds authorized clinic custodians, assigns a Today deadline To-Do, and emails them."""
+        # Batch collect all clinic IDs for efficient querying
+        clinic_ids = self.mapped('clinic_id').ids
+        if not clinic_ids:
+            return
+
+        custodians = self.env['res.users'].sudo().search([
+            ('groups_id', 'in', self.env.ref('operational_fund.group_op_fund_custodian').id),
+            '|', ('clinic_ids', 'in', clinic_ids),
+            ('op_fund_managed_clinic_ids', 'in', clinic_ids)
+        ])
+        
+        # Pre-fetch base URL
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        deadline = fields.Date.context_today(self)
+        
+        # Batch email values to send emails in one go
+        mail_values_list = []
+        
         for rec in self:
-            custodians = self.env['res.users'].sudo().search([
-                ('groups_id', 'in', self.env.ref('operational_fund.group_op_fund_custodian').id),
-                '|', ('clinic_id', '=', rec.clinic_id.id),
-                ('op_fund_managed_clinic_ids', 'in', rec.clinic_id.id)
-            ])
-            if not custodians:
+            # Filter custodians relevant for this specific record
+            rec_custodians = custodians.filtered(
+                lambda u: rec.clinic_id in u.clinic_ids or rec.clinic_id in u.op_fund_managed_clinic_ids
+            )
+            if not rec_custodians:
                 continue
 
-            deadline = fields.Date.context_today(self)
-            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
             deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.allocation&view_type=form"
 
-            for user in custodians:
+            for user in rec_custodians:
                 rec.activity_schedule(
                     'mail.activity_data_todo',
                     user_id=user.id,
@@ -291,13 +384,15 @@ class OperationalFundAllocation(models.Model):
                 )
 
                 if user.email:
-                    mail_values = {
+                    mail_values_list.append({
                         'subject': f'Action Required: Pending HQ Deposit for {rec.clinic_id.name}',
                         'email_to': user.email,
                         'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #333;">Capital Deposit Pending</h2><p>Hello {user.name},</p><p>HQ has allocated <strong>₹{rec.amount}</strong> to {rec.clinic_id.name}. Please log in and upload the bank verification proof today to unlock your dashboard.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acknowledge Funds</a></div>""",
                         'state': 'outgoing',
-                    }
-                    self.env['mail.mail'].sudo().create(mail_values)
+                    })
+        
+        if mail_values_list:
+            self.env['mail.mail'].sudo().create(mail_values_list)
 
     def action_submit_for_review(self, file_data, filename):
         """🚨 ADDON: The Custodian uploads proof, pushing it to the Checker (Manager)."""
@@ -347,6 +442,17 @@ class OperationalFundAllocation(models.Model):
 
             active_clinic.sudo()._check_low_balance_alert()
             rec.activity_unlink(['mail.activity_data_todo'])
+            
+            # Send Notification
+            target_user = rec.allocated_to_id or rec.create_uid
+            if target_user and target_user.email:
+                mail_values = {
+                    'subject': f'Approved: Deposit for {rec.clinic_id.name}',
+                    'email_to': target_user.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Deposit Approved</h2><p>Hello,</p><p>The bank proof for your deposit of <strong>₹{rec.amount}</strong> for {rec.clinic_id.name} has been approved by the Manager.</p><p>The funds are now available in the clinic wallet.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     def action_reject_allocation(self):
         """🚨 ADDON: Manager rejects the proof. Sends it back to Custodian."""
@@ -360,6 +466,17 @@ class OperationalFundAllocation(models.Model):
             rec.message_post(
                 body="<div style='color:red;'><strong>REJECTED:</strong> The uploaded bank proof was rejected by the Manager. Please re-upload a valid proof document.</div>")
             rec._notify_custodians_pending()
+            
+            # Send Notification
+            target_user = rec.allocated_to_id or rec.create_uid
+            if target_user and target_user.email:
+                mail_values = {
+                    'subject': f'Rejected: Bank Proof for {rec.clinic_id.name}',
+                    'email_to': target_user.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Proof Rejected</h2><p>Hello,</p><p>The bank proof for your deposit of <strong>₹{rec.amount}</strong> for {rec.clinic_id.name} was rejected by the Manager.</p><p>Please re-upload a valid proof document.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     @api.model
     def _cron_check_overdue_allocations(self):
@@ -394,7 +511,12 @@ class OperationalFundAllocationWizard(models.TransientModel):
     _name = 'operational.fund.allocation.wizard'
     _description = 'Top-up Acknowledgment Popup Wizard'
 
-    allocation_id = fields.Many2one('operational.fund.allocation', string='Allocation Target', required=True)
+    allocation_id = fields.Many2one(
+        'operational.fund.allocation', 
+        string='Pending Deposit (Select Clinic)', 
+        required=True,
+        domain="[('state', '=', 'pending')]"
+    )
     amount = fields.Float(related='allocation_id.amount', string='Amount Transferred', readonly=True)
     notes = fields.Text(related='allocation_id.notes', string='HQ Recharge Notes', readonly=True)
 
@@ -449,19 +571,30 @@ class OperationalFundRejectionWizard(models.TransientModel):
             disb.activity_unlink(['mail.activity_data_todo'])
             disb._cleanup_todo_tasks('Approve Voucher')
             disb._cleanup_todo_tasks('Review Refund')
+            
+            if disb.create_uid and disb.create_uid.email:
+                mail_values = {
+                    'subject': f'Rejected: Voucher {disb.name}',
+                    'email_to': disb.create_uid.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Voucher Rejected</h2><p>Hello,</p><p>Your voucher <strong>{disb.name}</strong> for ₹{disb.amount} was rejected.</p><p><strong>Reason:</strong> {wiz.reason}</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
 
 class OperationalFundDisbursement(models.Model):
     _name = 'operational.fund.disbursement'
     _description = 'Operational Fund Disbursement'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'id desc'
 
     name = fields.Char(string='Voucher Number', default='New', readonly=True)
 
-    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, tracking=True,
+    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True, tracking=True, index=True,
                                 default=lambda self: self.env.user.clinic_id.id if hasattr(self.env.user,
                                                                                            'clinic_id') else False)
-    date = fields.Date(string='Date', default=fields.Date.context_today, required=True, tracking=True)
+    date = fields.Date(string='Date', default=fields.Date.context_today, required=True, tracking=True, index=True)
+    is_today = fields.Boolean(string="Is Today's Voucher", compute='_compute_is_today', search='_search_is_today')
 
     expense_category = fields.Selection([
         ('incentive', 'Therapist Incentive'),
@@ -469,7 +602,7 @@ class OperationalFundDisbursement(models.Model):
         ('travel', 'Travel & Commute'),
         ('office', 'Office & Clinic Expenses'),
         ('other', 'Other Expense')
-    ], string='Main Category', tracking=True)
+    ], string='Main Category', tracking=True, index=True)
 
     therapist_role = fields.Selection([
         ('home', 'Home Therapist'),
@@ -507,7 +640,7 @@ class OperationalFundDisbursement(models.Model):
     payee_type = fields.Selection([('internal', 'Internal Employee'), ('external', 'External Vendor')],
                                   string='Legacy Payee Type', tracking=True)
 
-    payee_id = fields.Many2one('hr.employee', string='Select Employee', tracking=True, ondelete='restrict')
+    payee_id = fields.Many2one('hr.employee', string='Select Employee', tracking=True, ondelete='restrict', index=True)
     therapist_name = fields.Char(string='Therapist Name', tracking=True)
     vendor_name = fields.Char(string='Vendor / Payee Name', tracking=True)
 
@@ -544,7 +677,7 @@ class OperationalFundDisbursement(models.Model):
     state = fields.Selection([
         ('draft', 'Draft'), ('waiting', 'Waiting Approval'), ('approved', 'Approved'),
         ('paid', 'Paid'), ('rejected', 'Rejected'), ('refund_requested', 'Refund Requested'), ('refunded', 'Refunded'),
-    ], string='Status', default='draft', tracking=True)
+    ], string='Status', default='draft', tracking=True, index=True)
 
     payment_screenshot = fields.Binary(string='Transaction Proof Screenshot')
     payment_screenshot_filename = fields.Char(string='Payment Proof Filename')
@@ -576,26 +709,42 @@ class OperationalFundDisbursement(models.Model):
 
     has_pending_allocation = fields.Boolean(string="Has Pending Funds", compute='_compute_has_pending_allocation')
 
+    @api.depends('date')
+    def _compute_is_today(self):
+        today = fields.Date.context_today(self)
+        for record in self:
+            record.is_today = (record.date == today)
+
+    def _search_is_today(self, operator, value):
+        today = fields.Date.context_today(self)
+        if (operator == '=' and value) or (operator == '!=' and not value):
+            return [('date', '=', today)]
+        return [('date', '!=', today)]
+
     @api.depends('clinic_id')
     def _compute_has_pending_allocation(self):
+        # Optimization: Fetch all pending allocations in a single query instead of a loop
+        clinics = self.mapped('clinic_id')
+        if clinics:
+            pending_allocs = self.env['operational.fund.allocation'].sudo().read_group(
+                [('clinic_id', 'in', clinics.ids), ('state', '=', 'pending')],
+                ['clinic_id'],
+                ['clinic_id']
+            )
+            pending_clinic_ids = {alloc['clinic_id'][0] for alloc in pending_allocs if alloc['clinic_id_count'] > 0}
+        else:
+            pending_clinic_ids = set()
+
         for rec in self:
             if rec.clinic_id:
-                pending = self.env['operational.fund.allocation'].sudo().search_count([
-                    ('clinic_id', '=', rec.clinic_id.id),
-                    ('state', '=', 'pending')
-                ])
-                rec.has_pending_allocation = bool(pending)
+                rec.has_pending_allocation = rec.clinic_id.id in pending_clinic_ids
             else:
                 rec.has_pending_allocation = False
 
     @api.model
-    def action_check_pending_allocations(self):
-        """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Disbursements."""
-        user = self.env.user
-
-        # 🚨 THE FIX: Removed legacy_record. We only need to look for 'pending' state.
-        domain = [('state', '=', 'pending')]
-
+    def _get_user_clinic_ids(self, user=None):
+        """DRY Helper: Returns list of clinic IDs assigned/managed by the given user (or current user)."""
+        user = user or self.env.user
         clinic_ids = set()
         if hasattr(user, 'clinic_id') and user.clinic_id:
             clinic_ids.add(user.clinic_id.id)
@@ -603,12 +752,17 @@ class OperationalFundDisbursement(models.Model):
             clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
         if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
             clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
+        return list(clinic_ids)
 
-        # Only trigger the search if the user actually has assigned clinics.
+    @api.model
+    def action_check_pending_allocations(self):
+        """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Disbursements."""
+        clinic_ids = self._get_user_clinic_ids()
         if clinic_ids:
-            domain.append(('clinic_id', 'in', list(clinic_ids)))
-            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search([
+                ('state', '=', 'pending'),
+                ('clinic_id', 'in', clinic_ids)
+            ], limit=1)
             if pending_alloc:
                 return {
                     'name': _('MANDATORY ACTION: Pending Capital Deposit'),
@@ -622,29 +776,17 @@ class OperationalFundDisbursement(models.Model):
                     },
                     'flags': {'headless': True}
                 }
-
-        # If they have no clinics, or no pending allocations in their network, proceed safely:
         return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_disbursement')
 
     @api.model
     def action_check_pending_allocations_dashboard(self):
         """Menu Interceptor: Checks for funds, opens popup if needed, otherwise opens Dashboard."""
-        user = self.env.user
-
-        domain = [('state', '=', 'pending')]
-
-        clinic_ids = set()
-        if hasattr(user, 'clinic_id') and user.clinic_id:
-            clinic_ids.add(user.clinic_id.id)
-        if hasattr(user, 'op_fund_managed_clinic_ids'):
-            clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
-        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
-            clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
-
+        clinic_ids = self._get_user_clinic_ids()
         if clinic_ids:
-            domain.append(('clinic_id', 'in', list(clinic_ids)))
-            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search([
+                ('state', '=', 'pending'),
+                ('clinic_id', 'in', clinic_ids)
+            ], limit=1)
             if pending_alloc:
                 return {
                     'name': _('MANDATORY ACTION: Pending Capital Deposit'),
@@ -654,34 +796,20 @@ class OperationalFundDisbursement(models.Model):
                     'target': 'current',
                     'context': {
                         'default_allocation_id': pending_alloc.id,
-                        # 🚨 THE FIX: Using the correct XML ID from your views file
                         'return_action': 'operational_fund.action_op_fund_clinic_balance'
                     },
                     'flags': {'headless': True}
                 }
-
-        # 🚨 THE FIX: Using the correct XML ID for the fallback route
         return self.env['ir.actions.act_window']._for_xml_id('operational_fund.action_op_fund_clinic_balance')
 
-        # 🚨 THE FIX: Removed @api.model so it accepts the recordset from the form view
     def action_open_acknowledgment_wizard_from_banner(self):
         """Triggered when user clicks the red banner to acknowledge a deposit."""
-        user = self.env.user
-
-        domain = [('state', '=', 'pending')]
-
-        clinic_ids = set()
-        if hasattr(user, 'clinic_id') and user.clinic_id:
-            clinic_ids.add(user.clinic_id.id)
-        if hasattr(user, 'op_fund_managed_clinic_ids'):
-            clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
-        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
-            clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
-
+        clinic_ids = self._get_user_clinic_ids()
         if clinic_ids:
-            domain.append(('clinic_id', 'in', list(clinic_ids)))
-            pending_alloc = self.env['operational.fund.allocation'].sudo().search(domain, limit=1)
-
+            pending_alloc = self.env['operational.fund.allocation'].sudo().search([
+                ('state', '=', 'pending'),
+                ('clinic_id', 'in', clinic_ids)
+            ], limit=1)
             if pending_alloc:
                 return {
                     'name': _('MANDATORY ACTION: Pending Capital Deposit'),
@@ -693,7 +821,6 @@ class OperationalFundDisbursement(models.Model):
                         'default_allocation_id': pending_alloc.id,
                     }
                 }
-
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     @api.depends('category', 'expense_category', 'therapist_role', 'travel_type', 'payee_type')
@@ -807,15 +934,29 @@ class OperationalFundDisbursement(models.Model):
         region = self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_region', 'ap-south-1')
         base_url = f"https://{bucket}.s3.{region}.amazonaws.com/" if bucket else False
 
+        # Pre-assign False to all to avoid issues
         for rec in self:
-            receipt, voucher, payment = False, False, False
-            if base_url:
-                attachments = self.env['ir.attachment'].sudo().search([
-                    ('res_model', '=', 'operational.fund.disbursement'),
-                    ('res_id', '=', rec.id),
-                    ('is_s3_stored', '=', True)
-                ])
-                for att in attachments:
+            rec.s3_receipt_url = False
+            rec.s3_voucher_url = False
+            rec.s3_payment_url = False
+
+        if base_url and self.ids:
+            # Optimization: Fetch all related attachments in a single query
+            attachments = self.env['ir.attachment'].sudo().search([
+                ('res_model', '=', 'operational.fund.disbursement'),
+                ('res_id', 'in', self.ids),
+                ('is_s3_stored', '=', True)
+            ])
+            
+            att_map = {}
+            for att in attachments:
+                if att.res_id not in att_map:
+                    att_map[att.res_id] = []
+                att_map[att.res_id].append(att)
+
+            for rec in self:
+                receipt, voucher, payment = False, False, False
+                for att in att_map.get(rec.id, []):
                     if att.res_field == 'receipt_file':
                         receipt = f"{base_url}{att.s3_object_key}"
                     elif att.res_field == 'signed_voucher_file':
@@ -823,9 +964,9 @@ class OperationalFundDisbursement(models.Model):
                     elif att.res_field == 'payment_screenshot':
                         payment = f"{base_url}{att.s3_object_key}"
 
-            rec.s3_receipt_url = receipt
-            rec.s3_voucher_url = voucher
-            rec.s3_payment_url = payment
+                rec.s3_receipt_url = receipt
+                rec.s3_voucher_url = voucher
+                rec.s3_payment_url = payment
 
     @api.onchange('home_visit_mrn_search', 'clinic_id', 'category', 'expense_category', 'travel_type', 'therapist_role')
     def _onchange_home_visit_mrn(self):
@@ -881,12 +1022,25 @@ class OperationalFundDisbursement(models.Model):
         return super().create(vals_list)
 
     def action_print_voucher(self):
-        report = self.env['ir.actions.report'].search(
-            [('report_name', '=', 'operational_fund.report_voucher_template')], limit=1)
-        if report: return report.report_action(self)
+        report = self.env.ref('operational_fund.action_report_op_fund_voucher', raise_if_not_found=False)
+        if not report:
+            report = self.env['ir.actions.report'].search([('report_name', '=', 'operational_fund.report_voucher_template')], limit=1)
+        if report:
+            return report.report_action(self)
         return False
 
     def action_submit_for_approval(self):
+        # Optimization: Pre-fetch active clinics and pending allocations
+        clinic_ids = (self.mapped('clinic_id') | self.mapped('clinic_id.master_fund_id')).ids
+        pending_recharges = self.env['operational.fund.allocation'].sudo().search([
+            ('clinic_id', 'in', clinic_ids),
+            ('state', '=', 'pending')
+        ])
+        pending_recharge_clinics = pending_recharges.mapped('clinic_id').ids
+
+        # Optimization: Fetch rules once
+        rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
+
         for rec in self:
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
             if rec.show_employee_payee and not rec.payee_id: raise ValidationError(
@@ -904,11 +1058,7 @@ class OperationalFundDisbursement(models.Model):
 
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
-            pending_recharge = self.env['operational.fund.allocation'].sudo().search([
-                ('clinic_id', '=', active_clinic.id),
-                ('state', '=', 'pending')
-            ], limit=1)
-            if pending_recharge:
+            if active_clinic.id in pending_recharge_clinics:
                 raise ValidationError(
                     _("Access Denied: The clinic '%s' has a pending capital deposit from HQ. You must upload the bank proof and acknowledge receipt of these funds before submitting new vouchers.") % active_clinic.name)
 
@@ -918,8 +1068,6 @@ class OperationalFundDisbursement(models.Model):
                     _("Insufficient funds in the clinic's operational fund! Available balance is ₹%s") % active_clinic.op_fund_balance)
 
             # 🚨 THE RULES ENGINE EVALUATOR 🚨
-            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)],
-                                                                             order='sequence, id')
             matched_rule = False
 
             for rule in rules:
@@ -950,7 +1098,6 @@ class OperationalFundDisbursement(models.Model):
                     author_id=self.env.ref('base.partner_root').id
                 )
 
-
             elif matched_rule.action_type == 'require_approval':
 
                 # SMART FALLBACK: Use rule approvers if set, otherwise route to the clinic's standard managers
@@ -972,24 +1119,30 @@ class OperationalFundDisbursement(models.Model):
 
                 cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
 
+                task_vals_list = []
+                mail_vals_list = []
                 for manager in final_approvers:
                     rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
                                           note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
 
                     if 'project.task' in self.env:
-                        self.env['project.task'].sudo().create({
+                        task_vals_list.append({
                             'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
                             'date_deadline': deadline, 'is_voucher_task': True,
                             'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
                         })
 
                     if manager.email:
-                        mail_values = {
+                        mail_vals_list.append({
                             'subject': f'Action Required: Approve Voucher {rec.name}',
                             'email_to': manager.email,
                             'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {manager.name},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{matched_rule.name}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{active_clinic.name}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{rec.display_category}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
-                        }
-                        self.env['mail.mail'].sudo().create(mail_values)
+                        })
+
+                if task_vals_list:
+                    self.env['project.task'].sudo().create(task_vals_list)
+                if mail_vals_list:
+                    self.env['mail.mail'].sudo().create(mail_vals_list)
 
     def _cleanup_todo_tasks(self, task_name_prefix):
         if 'project.task' in self.env:
@@ -1011,6 +1164,15 @@ class OperationalFundDisbursement(models.Model):
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
             active_clinic.sudo()._check_low_balance_alert()
+            
+            if rec.create_uid and rec.create_uid.email:
+                mail_values = {
+                    'subject': f'Approved: Voucher {rec.name}',
+                    'email_to': rec.create_uid.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Voucher Approved</h2><p>Hello,</p><p>Your voucher <strong>{rec.name}</strong> for ₹{rec.amount} has been approved.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     def action_mark_as_paid(self):
         for rec in self:
@@ -1018,6 +1180,15 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("Auditing Restriction: You must attach an image or PDF copy of the finalized bank transaction rollout receipt to mark this voucher as Paid."))
             rec.state = 'paid'
+            
+            if rec.create_uid and rec.create_uid.email:
+                mail_values = {
+                    'subject': f'Paid: Voucher {rec.name}',
+                    'email_to': rec.create_uid.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #17a2b8;">Voucher Paid</h2><p>Hello,</p><p>Your voucher <strong>{rec.name}</strong> has been finalized and marked as paid.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     def action_unlock_for_correction(self):
         self.ensure_one()
@@ -1096,12 +1267,30 @@ class OperationalFundDisbursement(models.Model):
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
             active_clinic.sudo()._check_low_balance_alert()
+            
+            if rec.create_uid and rec.create_uid.email:
+                mail_values = {
+                    'subject': f'Refund Approved: Voucher {rec.name}',
+                    'email_to': rec.create_uid.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Refund Approved</h2><p>Hello,</p><p>The refund for voucher <strong>{rec.name}</strong> has been approved.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     def action_cancel_refund(self):
         for rec in self:
             rec.state = 'approved'
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
+            
+            if rec.create_uid and rec.create_uid.email:
+                mail_values = {
+                    'subject': f'Refund Denied: Voucher {rec.name}',
+                    'email_to': rec.create_uid.email,
+                    'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Refund Denied</h2><p>Hello,</p><p>The refund request for voucher <strong>{rec.name}</strong> was denied.</p></div>""",
+                    'state': 'outgoing',
+                }
+                self.env['mail.mail'].sudo().create(mail_values)
 
     def action_sync_pending_alerts(self):
         legacy_escalated_cats = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
