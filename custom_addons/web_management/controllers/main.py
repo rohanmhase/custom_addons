@@ -282,6 +282,7 @@ class PatientController(http.Controller):
                 "evening_with_time": sess.evening_with_time,
                 "dinner_with_time": sess.dinner_with_time,
                 "comments": sess.comments,
+                "body_parts": sess.body_parts
             })
 
         # Group Enrollment by date
