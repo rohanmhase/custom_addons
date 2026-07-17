@@ -29,9 +29,9 @@
         <field name="arch" type="xml">
             <tree create="false" edit="false" delete="false">
                 <field name="patient_id" string="Patient Name"/>
-                <field name="session_day" string="Session Day"/>
-                <field name="doctor_id" string="Doctor Name"/>
-                <field name="therapist_id" string="Therapist Name"/>
+                <field name="session_day" string="Session Day" optional="hide"/>
+                <field name="doctor_id" string="Doctor Name" optional="show"/>
+                <field name="therapist_id" string="Therapist Name" optional="hide"/>
             </tree>
         </field>
     </record>

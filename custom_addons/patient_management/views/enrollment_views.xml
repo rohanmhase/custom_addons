@@ -29,8 +29,9 @@
         <field name="arch" type="xml">
             <tree create="false" edit="false" delete="false">
                 <field name="patient_id" string="Patient Name"/>
-                <field name="enrolled_for" string="Doctor Name"/>
+                <field name="enrolled_for" string="Enrolled For"/>
                 <field name="total_sessions" string="Total Session"/>
+                <field name="total_amount" string="Total Amount" optional="hide"/>
             </tree>
         </field>
     </record>
