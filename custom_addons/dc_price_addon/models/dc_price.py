@@ -19,11 +19,9 @@ class StockMove(models.Model):
         copy=False,
     )
 
-    # ✅ FIX #1: Depend on BOTH product_uom_qty (Demand) AND quantity (done qty)
     @api.depends('unit_price', 'product_uom_qty', 'quantity')
     def _compute_price_subtotal(self):
         for move in self:
-            # Use 'quantity' (done qty) if set, else fallback to 'product_uom_qty' (demand)
             qty = move.quantity if move.quantity else move.product_uom_qty
             move.price_subtotal = (move.unit_price or 0.0) * (qty or 0.0)
 
@@ -33,12 +31,27 @@ class StockMove(models.Model):
             if move.product_id and not move.unit_price:
                 move.unit_price = move.product_id.lst_price
 
-    # ✅ FIX #6: Validate negative unit price
     @api.constrains('unit_price')
     def _check_unit_price_positive(self):
         for move in self:
             if move.unit_price < 0:
                 raise ValidationError("Unit Price cannot be negative.")
+
+
+class StockMoveLine(models.Model):
+    _inherit = 'stock.move.line'
+
+    def _get_aggregated_product_quantities(self, **kwargs):
+        """Include unit_price in aggregated lines for delivery slip"""
+        aggregated_lines = super()._get_aggregated_product_quantities(**kwargs)
+        for line_key, line_data in aggregated_lines.items():
+            product = line_data.get('product')
+            if product:
+                matching_ml = self.filtered(lambda ml: ml.product_id == product)
+                line_data['unit_price'] = matching_ml[0].move_id.unit_price if matching_ml else 0.0
+            else:
+                line_data['unit_price'] = 0.0
+        return aggregated_lines
 
 
 class StockPicking(models.Model):
@@ -52,7 +65,6 @@ class StockPicking(models.Model):
         copy=False,
     )
 
-    # ✅ FIX #2: Helper to check if this picking type should show prices
     show_price_columns = fields.Boolean(
         string='Show Price Columns',
         compute='_compute_show_price_columns',
@@ -61,7 +73,6 @@ class StockPicking(models.Model):
     @api.depends('picking_type_id', 'picking_type_id.code')
     def _compute_show_price_columns(self):
         for picking in self:
-            # Only show price columns for outgoing (delivery) pickings
             picking.show_price_columns = picking.picking_type_id.code == 'outgoing'
 
     @api.depends('move_ids_without_package.price_subtotal')
