@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- ==================== PICKING OPERATIONS REPORT ==================== -->
     <template id="report_picking_dc_price" inherit_id="stock.report_picking">
 
-        <!-- ✅ FIX #2: Only show price columns for outgoing deliveries -->
         <xpath expr="//thead/tr/th[2]" position="after">
             <th name="th_unit_price" class="text-end"
                 t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
@@ -43,4 +44,77 @@
         </xpath>
 
     </template>
+
+
+    <!-- ==================== DELIVERY SLIP MAIN DOCUMENT ==================== -->
+    <template id="report_delivery_document_dc_price" inherit_id="stock.report_delivery_document">
+
+        <!-- BEFORE VALIDATION: stock_move_table -->
+        <xpath expr="//table[@name='stock_move_table']//thead//th[@name='th_sm_quantity']" position="after">
+            <th name="th_sm_unit_price" class="text-end" t-if="o.amount_total &gt; 0">
+                <strong>Unit Price</strong>
+            </th>
+            <th name="th_sm_subtotal" class="text-end" t-if="o.amount_total &gt; 0">
+                <strong>Subtotal</strong>
+            </th>
+        </xpath>
+
+        <xpath expr="//table[@name='stock_move_table']//tbody//tr/td[3]" position="after">
+            <td class="text-end" t-if="o.amount_total &gt; 0">
+                <span t-esc="move.unit_price" t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+            <td class="text-end" t-if="o.amount_total &gt; 0">
+                <span t-esc="move.price_subtotal" t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+        </xpath>
+
+        <!-- AFTER VALIDATION: stock_move_line_table headers -->
+        <xpath expr="//table[@name='stock_move_line_table']//thead//th[@name='th_sml_quantity']" position="after">
+            <th name="th_sml_unit_price" class="text-end" t-if="o.amount_total &gt; 0">
+                <strong>Unit Price</strong>
+            </th>
+            <th name="th_sml_subtotal" class="text-end" t-if="o.amount_total &gt; 0">
+                <strong>Subtotal</strong>
+            </th>
+        </xpath>
+
+        <!-- Grand Total (works for both states) -->
+        <xpath expr="//div[@class='page']" position="inside">
+            <div class="row" t-if="o.amount_total &gt; 0">
+                <div class="col-4 offset-8">
+                    <table class="table table-sm">
+                        <tr class="border-black">
+                            <td><strong>Grand Total</strong></td>
+                            <td class="text-end">
+                                <strong>
+                                    <span t-esc="o.amount_total" t-options='{"widget": "float", "precision": 2}'/>
+                                </strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+
+
+    <!-- ==================== AGGREGATED MOVE LINES (done state, no serial) ==================== -->
+    <template id="stock_report_delivery_aggregated_move_lines_dc_price"
+              inherit_id="stock.stock_report_delivery_aggregated_move_lines">
+
+        <xpath expr="//td[@name='move_line_aggregated_quantity']" position="after">
+            <td class="text-end" t-if="o.amount_total &gt; 0">
+                <span t-esc="aggregated_lines[line].get('unit_price', 0.0)"
+                      t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+            <td class="text-end" t-if="o.amount_total &gt; 0">
+                <t t-set="_up" t-value="aggregated_lines[line].get('unit_price', 0.0)"/>
+                <t t-set="_q" t-value="aggregated_lines[line]['quantity'] or 0.0"/>
+                <span t-esc="_up * _q" t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+        </xpath>
+
+    </template>
+
 </odoo>
