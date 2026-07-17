@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_picking_dc_price" inherit_id="stock.report_picking">
+
+        <!-- ✅ FIX #2: Only show price columns for outgoing deliveries -->
+        <xpath expr="//thead/tr/th[2]" position="after">
+            <th name="th_unit_price" class="text-end"
+                t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
+                <strong>Unit Price</strong>
+            </th>
+            <th name="th_subtotal" class="text-end"
+                t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
+                <strong>Subtotal</strong>
+            </th>
+        </xpath>
+
+        <xpath expr="//tbody/tr/td[2]" position="after">
+            <td class="text-end"
+                t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
+                <span t-esc="ml.move_id.unit_price" t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+            <td class="text-end"
+                t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
+                <span t-esc="ml.move_id.price_subtotal" t-options='{"widget": "float", "precision": 2}'/>
+            </td>
+        </xpath>
+
+        <xpath expr="//table[1]" position="after">
+            <div class="row" t-if="o.amount_total &gt; 0 and o.picking_type_id.code == 'outgoing'">
+                <div class="col-4 offset-8">
+                    <table class="table table-sm">
+                        <tr class="border-black">
+                            <td><strong>Grand Total</strong></td>
+                            <td class="text-end">
+                                <strong>
+                                    <span t-esc="o.amount_total" t-options='{"widget": "float", "precision": 2}'/>
+                                </strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>
