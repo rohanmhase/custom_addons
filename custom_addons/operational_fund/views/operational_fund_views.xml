@@ -305,7 +305,7 @@
                 <field name="is_today" column_invisible="True"/>
                 <field name="name"/>
                 <field name="date"/>
-                <field name="clinic_id"/>
+                <field name="clinic_id" class="text-wrap"/>
                 <field name="payee_display"/>
                 <field name="display_category"/>
                 <field name="amount" sum="Total"/>
@@ -422,7 +422,7 @@
             <tree default_order="date desc, id desc">
                 <field name="name" string="Receipt No."/>
                 <field name="date" string="Date"/>
-                <field name="clinic_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="clinic_id" class="text-wrap" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="notes" string="Purpose"/>
                 <field name="amount" sum="Total Lifetime Deposits"/>
                 <field name="controller_id" widget="many2one_avatar_user"/>
@@ -498,7 +498,7 @@
             <tree string="Fund Balances" create="0" delete="0" editable="bottom" decoration-danger="is_low_balance" default_order="is_low_balance desc, op_fund_balance asc">
                 <field name="is_low_balance" column_invisible="1"/>
 
-                <field name="name" string="Branch / Clinic" readonly="1"/>
+                <field name="name" string="Branch / Clinic" readonly="1" class="text-wrap"/>
                 <field name="master_fund_id" string="Shared Wallet (Master Clinic)" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="wallet_group_name" column_invisible="1"/>
                 <field name="op_fund_approval_threshold" widget="monetary" string="Auto-Approval Limit"/>
@@ -522,7 +522,7 @@
         <field name="arch" type="xml">
             <tree string="Passbook Ledger" decoration-success="transaction_type == 'credit'" decoration-danger="transaction_type == 'debit'" default_order="date desc, id desc">
                 <field name="date"/>
-                <field name="clinic_id"/>
+                <field name="clinic_id" class="text-wrap"/>
                 <field name="reference"/>
                 <field name="transaction_type" column_invisible="1"/>
 
@@ -553,8 +553,8 @@
         <field name="context">{'search_default_group_by_clinic': 1}</field>
     </record>
 
-    <record id="view_op_fund_audit_search" model="ir.ui.view">
-        <field name="name">operational.fund.audit.search</field>
+    <record id="view_op_fund_audit_search_advanced" model="ir.ui.view">
+        <field name="name">operational.fund.audit.search.advanced</field>
         <field name="model">operational.fund.audit</field>
         <field name="arch" type="xml">
             <search string="Search Audit Ledger">
@@ -599,10 +599,10 @@
         </field>
     </record>
 
-    <record id="action_op_fund_audit" model="ir.actions.act_window">
-        <field name="name">Audit Ledger</field>
+    <record id="action_op_fund_audit_analysis" model="ir.actions.act_window">
+        <field name="name">Audit Analysis</field>
         <field name="res_model">operational.fund.audit</field>
-        <field name="view_mode">tree,graph,pivot</field>
+        <field name="view_mode">graph,pivot,tree</field>
     </record>
 
     <record id="res_config_settings_view_form_op_fund" model="ir.ui.view">

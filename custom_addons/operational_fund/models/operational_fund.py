@@ -271,6 +271,9 @@ class OperationalFundAudit(models.Model):
             clinic_id = vals.get('clinic_id')
             if clinic_id and 'amount' in vals and 'transaction_type' in vals:
                 if clinic_id not in running_balances:
+                    # Enforce database-level locking to prevent race conditions during concurrent voucher approvals
+                    self.env.cr.execute("SELECT id FROM clinic_clinic WHERE id = %s FOR UPDATE", [clinic_id])
+                    
                     # Fetch the very last ledger entry for this clinic to get the exact closing balance
                     last_entry = self.search([
                         ('clinic_id', '=', clinic_id)
@@ -1491,8 +1494,12 @@ class OperationalFundDisbursement(models.Model):
                     clean_code = rec.name.replace('/', '_')
                     clinic_name = rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'
 
+                    # Security: Sanitize against CSV Formula Injection
+                    safe_name = f"'{rec.name}" if rec.name and str(rec.name).startswith(('=', '+', '-', '@')) else rec.name
+                    safe_clinic_name = f"'{clinic_name}" if clinic_name and str(clinic_name).startswith(('=', '+', '-', '@')) else clinic_name
+
                     csv_writer.writerow([
-                        rec.name, str(rec.date or ''), clinic_name, rec.amount,
+                        safe_name, str(rec.date or ''), safe_clinic_name, rec.amount,
                         rec.state or 'draft', rec.s3_receipt_url or 'N/A',
                         rec.s3_voucher_url or 'N/A', rec.s3_payment_url or 'N/A'
                     ])
@@ -1542,14 +1549,14 @@ class OperationalFundDisbursement(models.Model):
 
             temp_zip.flush()
             
-            with open(temp_zip.name, 'rb') as f:
-                archive_attachment = self.env['ir.attachment'].sudo().create({
-                    'name': 'OFD_Bulk_Financial_Export.zip',
-                    'type': 'binary',
-                    'raw': f.read(),
-                    'mimetype': 'application/zip',
-                    'public': False
-                })
+        with open(temp_zip.name, 'rb') as f:
+            archive_attachment = self.env['ir.attachment'].sudo().create({
+                'name': 'OFD_Bulk_Financial_Export.zip',
+                'type': 'binary',
+                'raw': f.read(),
+                'mimetype': 'application/zip',
+                'public': False
+            })
 
         try:
             os.unlink(temp_zip.name)
@@ -1656,8 +1663,10 @@ class IrAttachment(models.Model):
                                 s3_client.delete_object(Bucket=bucket, Key=attachment.s3_object_key)
                             except Exception as e:
                                 _logger.error(f"Failed to delete orphaned S3 object {attachment.s3_object_key}: {e}")
+                                raise ValidationError(_("Cloud Architecture Error: Failed to delete the asset from AWS S3. Aborting local deletion to prevent data orphaning."))
             except Exception as outer_e:
                 _logger.error(f"Could not connect to S3 to delete orphaned objects: {outer_e}")
+                raise ValidationError(_("Cloud Architecture Error: Could not connect to AWS S3. Aborting deletion to prevent orphaned assets."))
 
         return super().unlink()
 
@@ -1679,6 +1688,7 @@ class IrAttachment(models.Model):
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                 except Exception as e:
                     _logger.error(f"AWS S3 Cloud Upload Failure for asset {rec.id}: {str(e)}")
+                    raise ValidationError(_("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
         return records
 
     @api.depends('store_fname', 'db_datas', 'file_size')
