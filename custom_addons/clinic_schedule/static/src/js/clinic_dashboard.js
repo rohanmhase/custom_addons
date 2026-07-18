@@ -4,6 +4,8 @@ import {registry} from "@web/core/registry";
 import {Component, useState, onWillStart} from "@odoo/owl";
 import {useService} from "@web/core/utils/hooks";
 
+const DateTime = window.luxon ? window.luxon.DateTime : luxon.DateTime;
+
 export class ClinicMatrixDashboard extends Component {
     setup() {
         this.orm = useService("orm");
@@ -17,13 +19,15 @@ export class ClinicMatrixDashboard extends Component {
                 generatedSlots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
             }
         }
+        
+        this.baseTimeSlots = generatedSlots;
 
         this.state = useState({
             activeTab: "matrix",
             selectedRegion: 0,
             selectedClinic: 0,
-            selectedDate: new Date().toISOString().split('T')[0],
-            lastFetchedDate: new Date().toISOString().split('T')[0],
+            selectedDate: DateTime.now().setZone('Asia/Kolkata').toISODate(),
+            lastFetchedDate: DateTime.now().setZone('Asia/Kolkata').toISODate(),
             lastFetchedClinic: 0,
             pulledTherapistIds: [],
             timeSlots: generatedSlots,
@@ -95,6 +99,15 @@ export class ClinicMatrixDashboard extends Component {
 
     getFreeTherapistsForHour(slotKey, patientGender = false) {
         if (!this.state.therapists || !this.state.appointments) return [];
+        
+        // Helper to convert time string (HH:MM) to total offset minutes
+        const timeToMins = (str) => {
+            let [h, m] = str.split(':').map(Number);
+            return h * 60 + m;
+        };
+        
+        const targetMins = timeToMins(slotKey);
+        
         return this.state.therapists.filter(t => {
             if (t.id === 0) return false;
             if (t.is_absent) return false;
@@ -105,8 +118,16 @@ export class ClinicMatrixDashboard extends Component {
                 if (patientGender === 'f' && t.raw_gender === 'm') return false;
             }
 
-            const hasSlot = this.state.appointments.some(a => a.therapist_id === t.id && a.slot_key === slotKey);
-            return !hasSlot;
+            // Check if target slot minutes fall anywhere within the bounding range of an active session
+            const isOccupied = this.state.appointments.some(a => {
+                if (a.therapist_id !== t.id) return false;
+                let startMins = timeToMins(a.slot_key);
+                let durationMins = (a.col_span || 1) * 10;
+                let endMins = startMins + durationMins;
+                return targetMins >= startMins && targetMins < endMins;
+            });
+            
+            return !isOccupied;
         });
     }
 
@@ -148,6 +169,11 @@ export class ClinicMatrixDashboard extends Component {
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
         this.state.kpis = data.kpis || this.state.kpis;
+
+        let dynamicSlots = new Set(this.baseTimeSlots);
+        this.state.appointments.forEach(a => dynamicSlots.add(a.slot_key));
+        this.state.timeSlots = Array.from(dynamicSlots).sort((a,b) => a.localeCompare(b));
+
 
         if (data.selected_clinic_id && !this.state.selectedClinic) {
             this.state.selectedClinic = data.selected_clinic_id;
@@ -246,13 +272,14 @@ export class ClinicMatrixDashboard extends Component {
     getUtcDateTimeString(slotKey) {
         let [year, month, day] = this.state.selectedDate.split('-');
         let [hStr, mStr] = slotKey.split(':');
-        let localDate = new Date(year, month - 1, day, parseInt(hStr, 10), parseInt(mStr, 10), 0);
-        let utcYear = localDate.getUTCFullYear();
-        let utcMonth = (localDate.getUTCMonth() + 1).toString().padStart(2, '0');
-        let utcDay = localDate.getUTCDate().toString().padStart(2, '0');
-        let utcHour = localDate.getUTCHours().toString().padStart(2, '0');
-        let utcMin = localDate.getUTCMinutes().toString().padStart(2, '0');
-        return `${utcYear}-${utcMonth}-${utcDay} ${utcHour}:${utcMin}:00`;
+        const dt = DateTime.fromObject({
+            year: parseInt(year, 10),
+            month: parseInt(month, 10),
+            day: parseInt(day, 10),
+            hour: parseInt(hStr, 10),
+            minute: parseInt(mStr, 10)
+        }, { zone: 'Asia/Kolkata' });
+        return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss");
     }
 
     async onCreateNewTherapistClick() {

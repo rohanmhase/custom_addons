@@ -22,4 +22,18 @@
         <field name="category_id" ref="module_category_clinic_schedule"/>
         <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
     </record>
+
+    <record id="rule_clinic_schedule_appointment_clinic_admin" model="ir.rule">
+        <field name="name">Clinic Schedule Appointment: Clinic Admin Branch Isolation</field>
+        <field name="model_id" ref="model_clinic_schedule_appointment"/>
+        <field name="domain_force">[('clinic_id', 'in', user.clinic_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
+    </record>
+
+    <record id="rule_clinic_schedule_appointment_manager" model="ir.rule">
+        <field name="name">Clinic Schedule Appointment: Manager Bypass</field>
+        <field name="model_id" ref="model_clinic_schedule_appointment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_schedule_manager'))]"/>
+    </record>
 </odoo>

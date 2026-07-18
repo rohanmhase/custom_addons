@@ -261,9 +261,18 @@
                                                             <i class="fa fa-user me-1 text-primary"/> <t t-esc="app.patient_name"/>
                                                         </div>
 
-                                                        <!-- Time Range -->
-                                                        <div class="fw-bold text-dark mb-1" style="font-size: 0.75rem;">
-                                                            <i class="fa fa-clock-o text-muted me-1"/> <t t-esc="app.time_range"/>
+                                                        <!-- Time Range & Read Receipt -->
+                                                        <div class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                                                            <div>
+                                                                <i class="fa fa-clock-o text-muted me-1"/> <t t-esc="app.time_range"/>
+                                                            </div>
+                                                            <div t-if="app.notification_status" class="ms-1" style="font-size: 0.85rem;" t-att-title="'Status: ' + app.notification_status">
+                                                                <t t-if="app.notification_status === 'wa_delivered'"><i class="fa fa-check-circle text-success" title="WhatsApp Delivered"></i></t>
+                                                                <t t-elif="app.notification_status === 'sms_delivered'"><i class="fa fa-commenting text-primary" title="SMS Delivered"></i></t>
+                                                                <t t-elif="app.notification_status === 'queued'"><i class="fa fa-hourglass-half text-warning" title="Queued for Dispatch"></i></t>
+                                                                <t t-elif="app.notification_status === 'failed'"><i class="fa fa-exclamation-triangle text-danger" title="Delivery Failed"></i></t>
+                                                                <t t-else=""><i class="fa fa-clock-o text-muted" title="Pending"></i></t>
+                                                            </div>
                                                         </div>
 
                                                         <!-- Badges: Visit Type & Re-Allotment -->
