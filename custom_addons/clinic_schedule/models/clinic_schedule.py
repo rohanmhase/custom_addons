@@ -12,9 +12,18 @@ import pytz
 _logger = logging.getLogger(__name__)
 
 
+# --- -1. SYSTEM REGISTRY EXTENSIONS ---
+class ResUsers(models.Model):
+    _inherit = 'res.users'
+
+    clinic_ids = fields.Many2many('clinic.clinic', string='Allowed Branches')
+
+
 # --- 0. SMART HR SYNC (Background Performance Fix) ---
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
+
+    is_clinic_therapist = fields.Boolean(string="Is Clinic Therapist", default=False, tracking=True)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -24,7 +33,7 @@ class HrEmployee(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if any(f in vals for f in ['name', 'department_id', 'work_phone']):
+        if any(f in vals for f in ['name', 'department_id', 'work_phone', 'is_clinic_therapist']):
             self.env['clinic.therapist']._sync_from_hr_employee(self)
         return res
 
@@ -43,6 +52,9 @@ class ClinicClinic(models.Model):
     _inherit = 'clinic.clinic'
     region_id = fields.Many2one('clinic.region', string='Operating Region')
 
+class ClinicPatient(models.Model):
+    _inherit = 'clinic.patient'
+    appointment_ids = fields.One2many('clinic.schedule.appointment', 'patient_id', string='Appointments & Notifications')
 
 # --- 2. EXTENDED THERAPIST MODEL ---
 class ClinicTherapist(models.Model):
@@ -79,12 +91,17 @@ class ClinicTherapist(models.Model):
     def _sync_from_hr_employee(self, employees=None):
         if not employees:
             employees = self.env['hr.employee'].search([
-                '|', ('department_id.name', '=ilike', 'RS'), ('department_id.name', '=ilike', 'Asst RS')
+                '|', ('is_clinic_therapist', '=', True),
+                '|', ('department_id.name', 'ilike', 'RS'), ('department_id.name', 'ilike', 'Asst RS')
             ])
 
         for emp in employees:
-            if not emp.department_id or emp.department_id.name.upper() not in ['RS', 'ASST RS']:
-                continue
+            if not emp.is_clinic_therapist:
+                if not emp.department_id:
+                    continue
+                dept_name = emp.department_id.name.upper()
+                if 'RS' not in dept_name and 'ASST RS' not in dept_name:
+                    continue
 
             existing = self.search([('employee_id', '=', emp.id)], limit=1)
             if not existing:
@@ -151,6 +168,14 @@ class ClinicScheduleAppointment(models.Model):
         ('home', 'Home Visit'),
         ('self', 'Self Therapy')
     ], string="Visit Type", default='clinic', tracking=True)
+    
+    notification_status = fields.Selection([
+        ('pending', 'Pending'),
+        ('queued', 'Queued'),
+        ('wa_delivered', 'WA Delivered'),
+        ('sms_delivered', 'SMS Delivered'),
+        ('failed', 'Failed')
+    ], string='Notification Status', default='pending', tracking=True)
 
     patient_id = fields.Many2one('clinic.patient', string='Patient Name', tracking=True)
     start_datetime = fields.Datetime(string='Start Time', required=True, default=fields.Datetime.now, tracking=True)
@@ -174,7 +199,7 @@ class ClinicScheduleAppointment(models.Model):
             }
         }
 
-    def _send_slot_notification(self, trigger_type='booking_confirmation'):
+    def _send_slot_notification(self, trigger_type='booking_confirmation', session=None):
         """ Centralized Decoupled Notification Wrapper with Mock Fallback Logic """
         self.ensure_one()
 
@@ -183,15 +208,13 @@ class ClinicScheduleAppointment(models.Model):
 
         # 1. FETCH CREDENTIALS SECURELY
         params = self.env['ir.config_parameter'].sudo()
-        account_sid = params.get_param('twilio.account_sid')
-        auth_token = params.get_param('twilio.auth_token')
-        sms_from_number = params.get_param('twilio.from_number')
-        whatsapp_from_number = params.get_param('twilio.whatsapp_from')
-        if whatsapp_from_number and not whatsapp_from_number.startswith('whatsapp:'):
-            whatsapp_from_number = f"whatsapp:{whatsapp_from_number}"
+        engati_customer_id = params.get_param('engati.customer_id')
+        engati_bot_key = params.get_param('engati.bot_key')
+        engati_flow_key = params.get_param('engati.flow_key')
+        engati_api_key = params.get_param('engati.api_key')
 
-        if not all([account_sid, auth_token, sms_from_number, whatsapp_from_number]):
-            self.message_post(body="⚠️ Notification Failed: Twilio System Parameters missing.")
+        if not all([engati_customer_id, engati_bot_key, engati_flow_key, engati_api_key]):
+            self.message_post(body="⚠️ Notification Failed: Engati System Parameters missing.")
             return False
 
         raw_phone = getattr(self.patient_id, 'mobile', '') or getattr(self.patient_id, 'phone', '')
@@ -205,60 +228,55 @@ class ClinicScheduleAppointment(models.Model):
         patient_name = self.patient_id.name
         clinic_name = self.clinic_id.name if self.clinic_id else "ResearchAyu Clinic"
 
-        local_tz = pytz.timezone('Asia/Kolkata')
-        local_dt = pytz.utc.localize(self.start_datetime).astimezone(local_tz) if self.start_datetime else datetime.now(
-            local_tz)
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        local_dt = pytz.utc.localize(self.start_datetime).astimezone(local_tz) if self.start_datetime else datetime.now(local_tz)
         slot_date = local_dt.strftime('%d %B %Y')
         slot_time = local_dt.strftime('%I:%M %p')
         therapist_name = self.therapist_id.name if self.therapist_id else "Pending Assignment"
         visit_type_label = dict(self._fields['visit_type'].selection).get(self.visit_type, 'Session')
 
-        if trigger_type == 'booking_confirmation':
-            message = f"Hello {patient_name}, your {visit_type_label} is confirmed at ResearchAyu - {clinic_name} on {slot_date} at {slot_time}. Therapist: {therapist_name}."
-        else:
-            message = f"Update for {patient_name}: Your session at ResearchAyu has been updated. Date: {slot_date}, Time: {slot_time}."
+        url = f"https://api.engati.ai/bot-api/v3.0/customer/{engati_customer_id}/bot/{engati_bot_key}/flow/{engati_flow_key}"
 
-        url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+        if not session:
+            session = requests.Session()
 
         try:
-            wa_payload = {
-                'To': f"whatsapp:{patient_phone}",
-                'From': whatsapp_from_number,
-                'Body': message
+            engati_payload = {
+                "user.channel": "whatsapp",
+                "user.phone_no": patient_phone,
+                "attribute_appointment_id": str(self.id),
+                "attribute_patient_name": patient_name,
+                "attribute_clinic_name": clinic_name,
+                "attribute_slot_date": slot_date,
+                "attribute_slot_time": slot_time,
+                "attribute_therapist_name": therapist_name,
+                "attribute_visit_type": visit_type_label
             }
-            resp_wa = requests.post(url, data=wa_payload, auth=(account_sid, auth_token), timeout=10)
-            resp_wa.raise_for_status()
 
-            _logger.info("✅ WHATSAPP SUCCESS: %s", patient_phone)
-            self.message_post(body=f"✅ <b>WhatsApp Delivered:</b> Notification sent to {patient_phone}.")
+            headers = {
+                "Authorization": f"Basic {engati_api_key}",
+                "Content-Type": "application/json"
+            }
+
+            resp_engati = session.post(
+                url,
+                json=engati_payload,
+                headers=headers,
+                timeout=5
+            )
+            resp_engati.raise_for_status()
+
+            _logger.info("✅ ENGATI SUCCESS: %s", patient_phone)
+            self.message_post(body=f"✅ <b>Engati Delivered:</b> Notification sent to {patient_phone}.")
+            self.write({'notification_status': 'wa_delivered'})
             return True
 
-        except requests.exceptions.RequestException as wa_err:
-            wa_error = wa_err.response.text if wa_err.response is not None else str(wa_err)
-            _logger.warning("⚠️ WHATSAPP FAILED, TRIGGERING SMS FALLBACK. Error: %s", wa_error)
-
-            self.message_post(body=f"⚠️ <b>WhatsApp Failed</b> (Routing to SMS). <br/><i>Reason: {wa_error}</i>")
-
-            try:
-                sms_payload = {
-                    'To': patient_phone,
-                    'From': sms_from_number,
-                    'Body': message
-                }
-                resp_sms = requests.post(url, data=sms_payload, auth=(account_sid, auth_token), timeout=10)
-                resp_sms.raise_for_status()
-
-                _logger.info("✅ SMS FALLBACK SUCCESS: %s", patient_phone)
-                self.message_post(body=f"✅ <b>SMS Backup Delivered:</b> Notification sent to {patient_phone}.")
-                return True
-
-            except requests.exceptions.RequestException as sms_err:
-                sms_error = sms_err.response.text if sms_err.response is not None else str(sms_err)
-                _logger.error("❌ DUAL CHANNEL FAILURE: %s", sms_error)
-
-                self.message_post(
-                    body=f"❌ <b>Total Delivery Failure.</b> SMS Backup also failed.<br/><i>Reason: {sms_error}</i>")
-                return False
+        except requests.exceptions.RequestException as err:
+            err_msg = err.response.text if err.response is not None else str(err)
+            _logger.error("❌ ENGATI NOTIFICATION FAILURE: %s", err_msg)
+            self.message_post(body=f"❌ <b>Notification Delivery Failure.</b><br/><i>Reason: {err_msg}</i>")
+            self.write({'notification_status': 'failed'})
+            return False
 
     @api.depends('start_datetime')
     def _compute_end_datetime(self):
@@ -315,7 +333,12 @@ class ClinicScheduleAppointment(models.Model):
                 if t_gen and p_gen:
                     t_g = t_gen.lower()
                     p_g = p_gen.lower()
-                    if (p_g in ['m', 'male'] and t_g == 'f') or (p_g in ['f', 'female'] and t_g == 'm'):
+                    is_male_patient = p_g in ['m', 'male', 'boy', 'man']
+                    is_female_therapist = t_g in ['f', 'female', 'girl', 'woman']
+                    is_female_patient = p_g in ['f', 'female', 'girl', 'woman']
+                    is_male_therapist = t_g in ['m', 'male', 'boy', 'man']
+                    
+                    if (is_male_patient and is_female_therapist) or (is_female_patient and is_male_therapist):
                         raise ValidationError(
                             _("Strict Compliance Error: Female therapists must be allotted to female patients, and male therapists to male patients."))
 
@@ -356,9 +379,12 @@ class ClinicScheduleAppointment(models.Model):
 
                         while sessions_booked < sessions_to_book:
                             days_added += 1
+                            if days_added > 90:
+                                _logger.warning("Failsafe triggered: Could not auto-book %s sessions for patient %s within 90 days.", sessions_to_book, rec.patient_id.id)
+                                break
                             next_start = current_start + timedelta(days=days_added)
-                            # SHIFT: Changed auto-booking offset to 10 minutes
-                            next_end = next_start + timedelta(minutes=10)
+                            # SHIFT: Auto-booking offset standard 1 hour
+                            next_end = next_start + timedelta(hours=1)
 
                             if next_start.weekday() == 6: continue
 
@@ -368,15 +394,32 @@ class ClinicScheduleAppointment(models.Model):
                                 ('end_datetime', '>', next_start)
                             ])
 
-                            auto_book_vals.append({
-                                'clinic_id': rec.clinic_id.id,
-                                'therapist_id': False if conflict > 0 else rec.therapist_id.id,
-                                'patient_id': rec.patient_id.id,
-                                'slot_type': 'patient',
-                                'visit_type': rec.visit_type,
-                                'start_datetime': next_start,
-                            })
-                            sessions_booked += 1
+                            local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+                            local_next_start = pytz.utc.localize(next_start).astimezone(local_tz)
+                            
+                            start_of_day_local = local_tz.localize(datetime.combine(local_next_start.date(), time.min))
+                            end_of_day_local = local_tz.localize(datetime.combine(local_next_start.date(), time.max))
+                            
+                            start_of_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+                            end_of_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+                            patient_conflict = self.env['clinic.schedule.appointment'].search_count([
+                                ('patient_id', '=', rec.patient_id.id),
+                                ('slot_type', '=', 'patient'),
+                                ('start_datetime', '>=', start_of_day_utc),
+                                ('start_datetime', '<=', end_of_day_utc)
+                            ])
+
+                            if conflict == 0 and patient_conflict == 0:
+                                auto_book_vals.append({
+                                    'clinic_id': rec.clinic_id.id,
+                                    'therapist_id': rec.therapist_id.id,
+                                    'patient_id': rec.patient_id.id,
+                                    'slot_type': 'patient',
+                                    'visit_type': rec.visit_type,
+                                    'start_datetime': next_start,
+                                })
+                                sessions_booked += 1
 
             if auto_book_vals:
                 self.with_context(auto_book_run=True).create(auto_book_vals)
@@ -518,6 +561,14 @@ class ClinicScheduleAppointment(models.Model):
         ])
         enrollment_map = {e.patient_id.id: e.remaining_sessions for e in enrollments_qs}
 
+        # N+1 Optimization: Pre-fetch patient fields
+        patient_ids = appointments_raw.mapped('patient_id').ids
+        patient_data = self.env['clinic.patient'].search_read(
+            [('id', 'in', patient_ids)], 
+            ['id', 'name', 'gender', 'mrn']
+        )
+        patient_map = {p['id']: p for p in patient_data}
+
         for app in appointments_raw:
             local_time = fields.Datetime.context_timestamp(self, app.start_datetime) if app.start_datetime else False
             s_time_str = local_time.strftime('%I:%M %p') if local_time else ''
@@ -532,8 +583,15 @@ class ClinicScheduleAppointment(models.Model):
 
             p_gender = ''
             raw_p_gen = False
-            if app.patient_id and getattr(app.patient_id, 'gender', False):
-                g_val = app.patient_id.gender.lower()
+            p_name = ''
+            p_mrn = ''
+            
+            # Read straight from localized memory mapping structure
+            if app.patient_id and app.patient_id.id in patient_map:
+                p_info = patient_map[app.patient_id.id]
+                p_name = p_info.get('name') or ''
+                p_mrn = p_info.get('mrn') or ''
+                g_val = (p_info.get('gender') or '').lower()
                 if g_val in ['m', 'male']:
                     p_gender = ' (M)'
                     raw_p_gen = 'm'
@@ -562,8 +620,8 @@ class ClinicScheduleAppointment(models.Model):
                 'id': app.id, 'therapist_id': app.therapist_id.id if app.therapist_id else 0,
                 'slot_type': app.slot_type, 'visit_type': app.visit_type,
                 'slot_label': slot_dict.get(app.slot_type, 'Blocked'),
-                'patient_name': f"{app.patient_id.name}{p_gender}" if app.patient_id else '',
-                'patient_mrn': getattr(app.patient_id, 'mrn', '') if app.patient_id else '',
+                'patient_name': f"{p_name}{p_gender}" if p_name else '',
+                'patient_mrn': p_mrn,
                 'patient_raw_gender': raw_p_gen,
                 'slot_key': slot_key,
                 'col_span': col_span,  # Pass the span width to the UI
@@ -571,7 +629,8 @@ class ClinicScheduleAppointment(models.Model):
                 # Inject patient sessions!
                 'time_range': f"{s_time_str} - {e_time_str}" if s_time_str else "",
                 'attendance_state': app.attendance_state,
-                'requires_reallotment': requires_reallotment
+                'requires_reallotment': requires_reallotment,
+                'notification_status': app.notification_status
             })
 
         enrollments = self.env['patient.enrollment'].search([
@@ -661,8 +720,8 @@ class ClinicScheduleAppointment(models.Model):
             'self_visits_today': len(patient_apps.filtered(lambda a: a.visit_type == 'self' and a.therapist_id)),
             'yet_to_allot': unallotted_count,
             'free_staff': [{'name': t.name, 'designation': t.designation} for t in free_staff],
-            # SHIFT: Total absolute capacity scaled by 90 10-min slots
-            'total_capacity': len(active_capacity_staff) * 90,
+            # SHIFT: Total capacity displayed in Hours
+            'total_capacity': len(active_capacity_staff) * 15,
             'booked_slots': len(patient_apps.filtered(lambda a: a.therapist_id))
         }
 
@@ -846,16 +905,35 @@ class ClinicScheduleAppointment(models.Model):
             ('start_datetime', '>=', start_day),
             ('end_datetime', '<=', end_day),
             ('slot_type', '=', 'patient'),
-            ('therapist_id', '!=', False)
+            ('therapist_id', '!=', False),
+            ('notification_status', 'in', ['pending', 'failed'])
         ])
 
-        sent_count = 0
-        for app in appointments:
-            # Fires your unified WhatsApp/SMS engine from the previous step
-            app._send_slot_notification(trigger_type='booking_confirmation')
-            sent_count += 1
+        if not appointments:
+            return {'status': 'success', 'message': '0 new notifications to send.'}
+            
+        # Bulk rewrite inside a single transaction
+        appointments.write({'notification_status': 'queued'})
+        return {'status': 'success', 'message': f'Added {len(appointments)} notifications to dispatch queue.'}
 
-        return sent_count
+    @api.model
+    def _cron_consume_notification_queue(self):
+        """ Target of a permanent, static ir.cron job configured to execute every 5 minutes """
+        queued_appointments = self.search([('notification_status', '=', 'queued')], limit=100)
+        if not queued_appointments:
+            return True
+            
+        session = requests.Session()
+        for app in queued_appointments:
+            try:
+                app._send_slot_notification(trigger_type='booking_confirmation', session=session)
+            except Exception as e:
+                _logger.error("Fatal transaction handling failure for app ID %s: %s", app.id, str(e))
+                app.write({'notification_status': 'failed'})
+            
+            # Commit after each individual record execution.
+            self.env.cr.commit()
+        return True
 
 
 # --- 5. CSV STAGING ENGINE ---
@@ -871,7 +949,11 @@ class ClinicTherapistImportLog(models.Model):
 
     def action_process_csv(self):
         if not self.csv_file: return
-        reader = csv.DictReader(io.StringIO(base64.b64decode(self.csv_file).decode('utf-8')))
+        try:
+            decoded_file = base64.b64decode(self.csv_file).decode('utf-8-sig')
+        except UnicodeDecodeError:
+            decoded_file = base64.b64decode(self.csv_file).decode('latin1')
+        reader = csv.DictReader(io.StringIO(decoded_file))
         Therapist = self.env['clinic.therapist']
         counter = 0
 
@@ -891,7 +973,6 @@ class ClinicTherapistImportLog(models.Model):
             if existing:
                 existing.write(payload)
             else:
-                payload['contact_number'] = "9876543210"
                 Therapist.create(payload)
             counter += 1
 

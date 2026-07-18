@@ -15,7 +15,7 @@
                         <h1><field name="name" placeholder="New Entry"/></h1>
                     </div>
 
-                    <div invisible="slot_type != 'patient'" class="alert alert-warning d-flex align-items-center mb-4 border-warning shadow-sm" role="alert">
+                    <div invisible="slot_type != 'patient'" groups="base.group_no_one" class="alert alert-warning d-flex align-items-center mb-4 border-warning shadow-sm" role="alert">
                         <i class="fa fa-paper-plane fa-2x me-3 text-warning-darker" style="color: #856404;"></i>
                         <div class="flex-grow-1 text-dark">
                             <strong>Sandbox Mode Active:</strong> Click to simulate a WhatsApp/SMS payload. The exact text will appear in the log below.
@@ -202,5 +202,28 @@
         <field name="name">Upload Staff Roster</field>
         <field name="res_model">clinic.therapist.import.log</field>
         <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_patient_form_inherit_appointments" model="ir.ui.view">
+        <field name="name">clinic.patient.form.inherit.appointments</field>
+        <field name="model">clinic.patient</field>
+        <field name="inherit_id" ref="patient_management.view_patient_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <notebook>
+                    <page string="Appointments &amp; Notifications">
+                        <field name="appointment_ids" readonly="1">
+                            <tree string="Appointments">
+                                <field name="start_datetime"/>
+                                <field name="therapist_id"/>
+                                <field name="visit_type"/>
+                                <field name="attendance_state"/>
+                                <field name="notification_status" widget="badge" decoration-success="notification_status == 'wa_delivered'" decoration-info="notification_status == 'sms_delivered'" decoration-warning="notification_status == 'queued'" decoration-danger="notification_status == 'failed'"/>
+                            </tree>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
     </record>
 </odoo>
