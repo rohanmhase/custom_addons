@@ -4,7 +4,7 @@
         <field name="name">Clinic Stock Confirmation Request</field>
         <field name="model_id" ref="model_clinic_stock_confirmation"/>
         <field name="subject">Stock Confirmation Required - {{ ctx.get('warehouse_name') }} - {{ ctx.get('replenishment_name') }}</field>
-        <field name="email_from">{{ user.email_formatted or user.company_id.email_formatted or '' }}</field>
+        <field name="email_from">noreply@researchayu.com</field>
         <field name="body_html" type="html">
             <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
                 <p>Hello,</p>
