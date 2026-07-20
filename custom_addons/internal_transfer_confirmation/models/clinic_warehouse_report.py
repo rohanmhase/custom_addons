@@ -107,12 +107,24 @@ class ClinicWarehouseReport(models.TransientModel):
         Confirmation = self.env['clinic.internal.transfer.confirmation'].with_context(active_test=False)
         start, end = self._get_date_range()
 
-        all_lines = Confirmation.search([
+        domain = [
             ('transfer_date', '>=', start),
             ('transfer_date', '<=', end),
             ('picking_id', '!=', False),
             ('destination_warehouse_id', '!=', False),
-        ])
+        ]
+
+        # Filter by source warehouse if selected
+        if self.source_warehouse_id:
+            src_loc = self.source_warehouse_id.lot_stock_id.id
+            pickings = self.env['stock.picking'].sudo().search([
+                ('location_id', '=', src_loc),
+            ])
+            if not pickings:
+                return {'ready': [], 'issues': [], 'no_response': []}
+            domain.append(('picking_id', 'in', pickings.ids))
+
+        all_lines = Confirmation.search(domain)
 
         groups = {}
         for line in all_lines:
@@ -120,7 +132,6 @@ class ClinicWarehouseReport(models.TransientModel):
             groups.setdefault(key, []).append(line)
 
         result = {'ready': [], 'issues': [], 'no_response': []}
-
         for (clinic_id, pick_id), lines in groups.items():
             confirmed = sum(1 for l in lines if l.state == 'confirmed')
             problems = [l for l in lines if l.is_problem]
@@ -154,7 +165,7 @@ class ClinicWarehouseReport(models.TransientModel):
                 rec.stock_no_response_count
             )
 
-    @api.depends('report_date')
+    @api.depends('report_date', 'source_warehouse_id')
     def _compute_transfer_counters(self):
         for rec in self:
             groups = rec._classify_transfer_groups()
