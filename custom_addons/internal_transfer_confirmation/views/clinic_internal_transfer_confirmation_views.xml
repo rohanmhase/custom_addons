@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Server Action: Confirm All -->
+    <record id="action_transfer_confirm_all" model="ir.actions.server">
+        <field name="name">Confirm All</field>
+        <field name="model_id" ref="model_clinic_internal_transfer_confirmation"/>
+        <field name="state">code</field>
+        <field name="code">action = env['clinic.internal.transfer.confirmation'].action_confirm_all()</field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         CLINIC-FACING TREE VIEW
+    ───────────────────────────────────────────── -->
+    <record id="clinic_internal_transfer_confirmation_tree" model="ir.ui.view">
+        <field name="name">clinic.internal.transfer.confirmation.tree</field>
+        <field name="model">clinic.internal.transfer.confirmation</field>
+        <field name="arch" type="xml">
+            <tree string="Internal Transfer Confirmation"
+                  js_class="clinic_transfer_confirmation_list"
+                  create="false"
+                  delete="false">
+                <header>
+                    <button name="%(action_transfer_confirm_all)d"
+                            type="action"
+                            string="Confirm All"
+                            class="btn btn-success oe_highlight"/>
+                </header>
+                <field name="transfer_date" string="Date Created"/>
+                <field name="transfer_name" string="Internal Transfer"/>
+                <field name="destination_warehouse_id" string="Clinic"/>
+                <field name="product_id" string="Medicine"/>
+                <field name="sent_quantity" string="Sent Qty"/>
+                <field name="received_quantity" string="Received Qty"/>
+                <field name="difference_qty" string="Difference"
+                       decoration-danger="difference_qty != 0"
+                       decoration-success="difference_qty == 0"/>
+                <field name="problem_raised" string="Problem Raised"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-success="state == 'confirmed'"
+                       decoration-warning="state == 'pending'"/>
+                <field name="confirmed_by" string="Confirmed By"/>
+                <button name="action_raise_problem"
+                        type="object"
+                        string="Raise Problem"
+                        class="btn btn-warning"
+                        invisible="problem_raised == True or state == 'confirmed'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CLINIC-FACING WIZARD (Raise Problem popup)
+         Only problem raising - no resolution
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_transfer_problem_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.transfer.problem.wizard.form</field>
+        <field name="model">clinic.transfer.problem.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Raise Problem" edit="1" create="1">
+                <group>
+                    <field name="confirmation_id" invisible="1"/>
+                    <field name="transfer_name" readonly="1"/>
+                    <field name="destination_warehouse_id" readonly="1"/>
+                    <field name="product_id" readonly="1"/>
+                    <field name="sent_quantity" readonly="1"/>
+                    <field name="received_quantity"
+                           required="1"
+                           force_save="1"/>
+                    <field name="problem_notes"
+                           placeholder="Enter notes about the problem..."/>
+                </group>
+                <footer>
+                    <button name="action_save_and_confirm"
+                            type="object"
+                            string="Save &amp; Confirm"
+                            class="btn btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING SEARCH VIEW (for drill-down filtering)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_transfer_confirmation_search_warehouse" model="ir.ui.view">
+        <field name="name">clinic.internal.transfer.confirmation.search.warehouse</field>
+        <field name="model">clinic.internal.transfer.confirmation</field>
+        <field name="arch" type="xml">
+            <search string="Transfer Confirmation">
+                <field name="destination_warehouse_id" string="Clinic"/>
+                <field name="picking_id" string="Transfer"/>
+                <field name="product_id" string="Medicine"/>
+
+                <filter name="filter_problems" string="🔴 Problems Only"
+                        domain="[('is_problem', '=', True)]"/>
+                <filter name="filter_unresolved" string="⚠️ Unresolved"
+                        domain="[('is_problem', '=', True), ('resolution_status', '=', 'unresolved')]"/>
+                <filter name="filter_resolved" string="✅ Resolved"
+                        domain="[('resolution_status', '=', 'resolved')]"/>
+                <filter name="filter_skipped" string="⏭ Skipped"
+                        domain="[('resolution_status', '=', 'skipped')]"/>
+                <separator/>
+                <filter name="filter_pending" string="Pending"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_confirmed" string="Confirmed"
+                        domain="[('state', '=', 'confirmed')]"/>
+
+                <group expand="1" string="Group By">
+                    <filter name="group_by_picking" string="Transfer (WH/INT)"
+                            context="{'group_by': 'picking_id'}"/>
+                    <filter name="group_by_clinic" string="Clinic"
+                            context="{'group_by': 'destination_warehouse_id'}"/>
+                    <filter name="group_by_resolution" string="Resolution Status"
+                            context="{'group_by': 'resolution_status'}"/>
+                    <filter name="group_by_state" string="State"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING TREE VIEW (with inline action buttons)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_transfer_confirmation_warehouse_tree" model="ir.ui.view">
+        <field name="name">clinic.internal.transfer.confirmation.warehouse.tree</field>
+        <field name="model">clinic.internal.transfer.confirmation</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <tree string="Warehouse View"
+                  create="false"
+                  delete="false"
+                  editable="bottom"
+                  decoration-danger="is_problem and resolution_status == 'unresolved'"
+                  decoration-success="resolution_status == 'resolved'"
+                  decoration-muted="resolution_status == 'skipped'">
+                <!-- ✅ Keep hidden - used for decorations -->
+                <field name="is_problem" column_invisible="1"/>
+                <field name="state" column_invisible="1"/>
+
+                <field name="transfer_date" string="Date" widget="datetime" readonly="1"/>
+                <field name="transfer_name" string="Transfer" readonly="1"/>
+                <field name="destination_warehouse_id" string="Clinic" readonly="1"/>
+                <field name="product_id" string="Medicine" readonly="1"/>
+                <field name="sent_quantity" string="Sent" readonly="1"/>
+                <field name="received_quantity" string="Received" readonly="1"/>
+                <field name="difference_qty" string="Diff" readonly="1"
+                       decoration-danger="difference_qty != 0"/>
+                <field name="problem_notes" string="Clinic Note" readonly="1"/>
+                <field name="resolution_status" widget="badge" readonly="1"
+                       decoration-warning="resolution_status == 'unresolved'"
+                       decoration-success="resolution_status == 'resolved'"
+                       decoration-muted="resolution_status == 'skipped'"/>
+                <!-- ✅ EDITABLE Warehouse Note -->
+                <field name="resolution_notes" string="Warehouse Note"
+                       placeholder="Type resolution note..."/>
+                <field name="resolved_by" optional="hide" readonly="1"/>
+                <field name="resolved_date" optional="hide" readonly="1"/>
+                <field name="confirmed_by" string="Confirmed By" optional="show" readonly="1"/>
+
+                <button name="action_mark_resolved"
+                        type="object"
+                        string="Resolve"
+                        class="btn btn-success btn-sm"
+                        icon="fa-check"
+                        invisible="not is_problem or resolution_status in ('resolved', 'skipped') or not resolution_status"/>
+                <button name="action_skip_problem"
+                        type="object"
+                        string="Skip"
+                        class="btn btn-secondary btn-sm"
+                        icon="fa-forward"
+                        invisible="not is_problem or resolution_status != 'unresolved'"/>
+                <button name="action_reopen_problem"
+                        type="object"
+                        string="Reopen"
+                        class="btn btn-warning btn-sm"
+                        icon="fa-undo"
+                        invisible="not is_problem or resolution_status in ('unresolved', False) or not resolution_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING FORM VIEW (Only resolution - no problem raising)
+         Used from Warehouse Report → Needs Review drill-down
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_transfer_confirmation_warehouse_form" model="ir.ui.view">
+        <field name="name">clinic.internal.transfer.confirmation.warehouse.form</field>
+        <field name="model">clinic.internal.transfer.confirmation</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Transfer Problem">
+                <sheet>
+                    <field name="state" invisible="1"/>
+                    <field name="is_problem" invisible="1"/>
+
+                    <group>
+                        <group string="Transfer Info">
+                            <field name="picking_id" readonly="1"/>
+                            <field name="destination_warehouse_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                        </group>
+                        <group string="Quantities">
+                            <field name="sent_quantity" readonly="1"/>
+                            <field name="received_quantity" readonly="1"/>
+                            <field name="difference_qty" readonly="1"
+                                   decoration-danger="difference_qty != 0"/>
+                        </group>
+                    </group>
+
+                    <group string="Clinic Raised Problem">
+                        <field name="problem_notes" readonly="1"/>
+                        <field name="confirmed_by" readonly="1"/>
+                        <field name="confirmation_date" readonly="1"/>
+                    </group>
+
+                    <group string="Warehouse Resolution">
+                        <field name="resolution_status" widget="badge"
+                               decoration-warning="resolution_status == 'unresolved'"
+                               decoration-success="resolution_status == 'resolved'"
+                               decoration-muted="resolution_status == 'skipped'"/>
+                        <field name="resolution_notes"
+                               placeholder="Enter resolution notes..."/>
+                        <field name="resolved_by" readonly="1"/>
+                        <field name="resolved_date" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_mark_resolved"
+                            type="object"
+                            string="Mark Resolved"
+                            class="btn btn-success"
+                            invisible="resolution_status == 'resolved'"/>
+                    <button name="action_skip_problem"
+                            type="object"
+                            string="Skip"
+                            class="btn btn-secondary"
+                            invisible="resolution_status != 'unresolved'"/>
+                    <button name="action_reopen_problem"
+                            type="object"
+                            string="Reopen"
+                            class="btn btn-warning"
+                            invisible="resolution_status == 'unresolved'"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING KANBAN (Grouped by Transfer)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_transfer_confirmation_warehouse_kanban" model="ir.ui.view">
+        <field name="name">clinic.internal.transfer.confirmation.warehouse.kanban</field>
+        <field name="model">clinic.internal.transfer.confirmation</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="picking_id" class="o_kanban_small_column" create="false">
+                <field name="id"/>
+                <field name="product_id"/>
+                <field name="destination_warehouse_id"/>
+                <field name="picking_id"/>
+                <field name="is_problem"/>
+                <field name="resolution_status"/>
+                <field name="sent_quantity"/>
+                <field name="received_quantity"/>
+                <field name="difference_qty"/>
+                <field name="problem_notes"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click
+                        #{record.resolution_status.raw_value == 'unresolved' and record.is_problem.raw_value ? 'border-danger' : ''}
+                        #{record.resolution_status.raw_value == 'resolved' ? 'border-success' : ''}
+                        #{record.resolution_status.raw_value == 'skipped' ? 'border-secondary' : ''}"
+                             style="border-left-width: 4px;">
+                            <div class="o_kanban_content">
+                                <div class="row">
+                                    <div class="col-8">
+                                        <strong>
+                                            <field name="product_id"/>
+                                        </strong>
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <t t-if="record.is_problem.raw_value and record.resolution_status.raw_value == 'unresolved'">
+                                            <span class="badge text-bg-danger">🔴 Issue</span>
+                                        </t>
+                                        <t t-if="record.resolution_status.raw_value == 'resolved'">
+                                            <span class="badge text-bg-success">✅ Resolved</span>
+                                        </t>
+                                        <t t-if="record.resolution_status.raw_value == 'skipped'">
+                                            <span class="badge text-bg-secondary">⏭ Skipped</span>
+                                        </t>
+                                    </div>
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    <field name="destination_warehouse_id"/>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-muted small">Sent:</span>
+                                    <strong>
+                                        <field name="sent_quantity"/>
+                                    </strong>
+                                    <span class="text-muted small ms-2">Received:</span>
+                                    <strong>
+                                        <field name="received_quantity"/>
+                                    </strong>
+                                </div>
+                                <div t-if="record.difference_qty.raw_value != 0">
+                                    <span class="text-muted small">Difference:</span>
+                                    <strong class="text-danger">
+                                        <field name="difference_qty"/>
+                                    </strong>
+                                </div>
+                                <div class="mt-2" t-if="record.problem_notes.raw_value">
+                                    <em class="small">"<field name="problem_notes"/>"
+                                    </em>
+                                </div>
+                                <div class="mt-2 text-end"
+                                     t-if="record.is_problem.raw_value and record.resolution_status.raw_value == 'unresolved'">
+                                    <button name="action_mark_resolved" type="object"
+                                            class="btn btn-success btn-sm">
+                                        <i class="fa fa-check"/>
+                                        Resolve
+                                    </button>
+                                    <button name="action_skip_problem" type="object"
+                                            class="btn btn-secondary btn-sm">
+                                        <i class="fa fa-forward"/>
+                                        Skip
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-end"
+                                     t-if="record.resolution_status.raw_value != 'unresolved'">
+                                    <button name="action_reopen_problem" type="object"
+                                            class="btn btn-warning btn-sm">
+                                        <i class="fa fa-undo"/>
+                                        Reopen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <!-- ═══════════════════════════════════════════════════════════
+     ✅ NEW: WAREHOUSE RESOLVE PROBLEM WIZARD (TRANSFER)
+═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_resolve_transfer_problem_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.resolve.transfer.problem.wizard.form</field>
+        <field name="model">clinic.resolve.transfer.problem.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Transfer Problem" create="true" edit="true" delete="false">
+                <sheet>
+                    <field name="confirmation_id" invisible="1"/>
+                    <group>
+                        <group string="Problem Details">
+                            <field name="clinic_name" readonly="1"/>
+                            <field name="transfer_name" readonly="1"/>
+                            <field name="product_name" readonly="1"/>
+                            <field name="sent_quantity" readonly="1"/>
+                            <field name="received_quantity" readonly="1"/>
+                            <field name="difference_qty" readonly="1"/>
+                        </group>
+                        <group string="Clinic's Note">
+                            <field name="clinic_note" nolabel="1" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Your Resolution Note"/>
+                    <field name="resolution_notes"
+                           widget="text"
+                           placeholder="Type your resolution note here..."
+                           nolabel="1"
+                           readonly="0"/>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_resolve"
+                            type="object"
+                            string="✅ Mark Resolved"
+                            class="btn btn-success"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="email_template_stock_confirmation_request" model="mail.template">
+        <field name="name">Clinic Stock Confirmation Request</field>
+        <field name="model_id" ref="model_clinic_stock_confirmation"/>
+        <field name="subject">Stock Confirmation Required - {{ ctx.get('warehouse_name') }} - {{ ctx.get('replenishment_name') }}</field>
+        <field name="email_from">{{ user.email_formatted or user.company_id.email_formatted or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+                <p>Hello,</p>
+                <p>
+                    Please confirm stock for
+                    <strong><t t-out="ctx.get('warehouse_name')"/></strong>.
+                </p>
+                <p>
+                    <strong>CSR:</strong>
+                    <t t-out="ctx.get('replenishment_name')"/>
+                </p>
+
+                <t t-set="lines" t-value="ctx.get('confirmation_lines', [])"/>
+                <t t-if="lines">
+                    <table style="border-collapse: collapse; width: 100%; margin-top: 12px;">
+                        <thead>
+                            <tr style="background-color: #00a09d; color: #fff;">
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Medicine</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Target</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Current</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Shortage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="line">
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">
+                                        <t t-out="line.get('product_name')"/>
+                                    </td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">
+                                        <t t-out="line.get('target_qty')"/>
+                                    </td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">
+                                        <t t-out="line.get('current_stock')"/>
+                                    </td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">
+                                        <t t-out="line.get('shortage_qty')"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <p style="margin-top: 16px;">
+                    <strong>Total items:</strong>
+                    <t t-out="ctx.get('line_count', 0)"/>
+                </p>
+
+                <p>Please open HUB and complete confirmation.</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>
