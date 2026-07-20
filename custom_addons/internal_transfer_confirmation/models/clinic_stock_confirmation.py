@@ -175,7 +175,7 @@ class ClinicStockConfirmation(models.Model):
             user = session.user_id if session and session.user_id and session.user_id.active else False
             recipient_map[warehouse_id] = {
                 'user_id': user.id if user else False,
-                'email': user.partner_id.email if user and user.partner_id.email else False,
+                'email': (user.partner_id.email or user.login) if user else False,
             }
 
         return recipient_map
