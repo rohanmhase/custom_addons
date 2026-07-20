@@ -1,0 +1,1 @@
+from . import clinic_internal_transfer_confirmation, clinic_selection_wizard, clinic_stock_confirmation, clinic_warehouse_report
