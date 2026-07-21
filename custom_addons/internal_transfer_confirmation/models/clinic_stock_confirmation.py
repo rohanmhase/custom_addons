@@ -90,6 +90,16 @@ class ClinicStockConfirmation(models.Model):
     shortage_qty = fields.Integer(string="Shortage Qty", readonly=True)
     correct_quantity = fields.Integer(string="Correct Quantity", default=0)
     additional_quantity = fields.Integer(string="Additional Quantity", default=0)
+    revised_shortage = fields.Integer(
+        string="Revised Shortage",
+        compute='_compute_revised_shortage',
+    )
+
+    @api.depends('target_qty', 'correct_quantity')
+    def _compute_revised_shortage(self):
+        for rec in self:
+            diff = (rec.target_qty or 0) - (rec.correct_quantity or 0)
+            rec.revised_shortage = max(diff, 0)
 
     state = fields.Selection([
         ('pending', 'Pending'),
@@ -629,32 +639,4 @@ class ClinicStockConfirmationAutoConfirm(models.AbstractModel):
             )
             _logger.info("Auto-confirmed %s pending stock confirmations", len(pending))
 
-        # Reschedule next run based on system parameter (IST → UTC)
-        self._reschedule_next_run()
         return True
-
-    @api.model
-    def _reschedule_next_run(self):
-        from datetime import datetime, timedelta
-
-        ICP = self.env['ir.config_parameter'].sudo()
-        hour_ist = int(ICP.get_param('internal_transfer_confirmation.auto_confirm_hour_ist', '17'))
-        minute_ist = int(ICP.get_param('internal_transfer_confirmation.auto_confirm_minute_ist', '0'))
-
-        # IST → UTC (IST - 5:30)
-        total_min_ist = hour_ist * 60 + minute_ist
-        total_min_utc = (total_min_ist - 330) % (24 * 60)
-        hour_utc = total_min_utc // 60
-        minute_utc = total_min_utc % 60
-
-        now_utc = datetime.utcnow()
-        next_run = now_utc.replace(hour=hour_utc, minute=minute_utc, second=0, microsecond=0)
-        if next_run <= now_utc:
-            next_run += timedelta(days=1)
-
-        cron = self.env.ref(
-            'internal_transfer_confirmation.ir_cron_auto_confirm_pending',
-            raise_if_not_found=False,
-        )
-        if cron:
-            cron.sudo().write({'nextcall': next_run})

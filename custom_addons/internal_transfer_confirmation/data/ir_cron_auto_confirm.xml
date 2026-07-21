@@ -10,18 +10,9 @@
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
+            <field name="nextcall" eval="(DateTime.utcnow().replace(hour=11, minute=30, second=0, microsecond=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
             <field name="active" eval="True"/>
             <field name="user_id" ref="base.user_root"/>
-        </record>
-
-        <record id="param_auto_confirm_hour_ist" model="ir.config_parameter">
-            <field name="key">internal_transfer_confirmation.auto_confirm_hour_ist</field>
-            <field name="value">17</field>
-        </record>
-
-        <record id="param_auto_confirm_minute_ist" model="ir.config_parameter">
-            <field name="key">internal_transfer_confirmation.auto_confirm_minute_ist</field>
-            <field name="value">0</field>
         </record>
 
     </data>
