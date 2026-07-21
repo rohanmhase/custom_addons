@@ -172,13 +172,20 @@ class Clinic(models.Model):
         date_30_days_ago = fields.Date.context_today(self) - timedelta(days=30)
 
         for clinic in clinics:
-            # Map disbursements across both the clinic and any underlying child branches sharing the wallet
-            all_disbursements = clinic.disbursement_ids | clinic.child_clinic_ids.mapped('disbursement_ids')
-            historical_vouchers = all_disbursements.filtered(
-                lambda d: d.date >= date_30_days_ago and d.state in ('approved', 'paid')
+            # OPTIMIZED: PostgreSQL layer aggregation instead of Python memory mapping
+            relevant_clinic_ids = (clinic | clinic.child_clinic_ids).ids
+
+            disb_group = self.env['operational.fund.disbursement'].sudo().read_group(
+                [
+                    ('clinic_id', 'in', relevant_clinic_ids),
+                    ('date', '>=', date_30_days_ago),
+                    ('state', 'in', ['approved', 'paid'])
+                ],
+                ['amount:sum'],
+                []  # No group by, we want the total sum
             )
 
-            total_spent_30_days = sum(historical_vouchers.mapped('amount'))
+            total_spent_30_days = disb_group[0]['amount'] if disb_group and disb_group[0]['amount'] else 0.0
             avg_daily_burn = total_spent_30_days / 30.0
 
             # Forecast rolling 7-day protection limit
@@ -260,21 +267,25 @@ class OperationalFundAudit(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """🚨 ADDON: Automatically calculates Passbook snapshots for any new ledger entry!
+        """  ADDON: Automatically calculates Passbook snapshots for any new ledger entry!
         This cleanly ignores old records (so they don't break) and auto-magics the new ones.
-        FIX: Resolves race conditions by fetching the last actual ledger entry's closing balance 
-        instead of relying on potentially stale computed balances."""
-        
+        FIX: Resolves race conditions by fetching the last actual ledger entry's closing balance
+         instead of relying on potentially stale computed balances."""
+
+        # OPTIMIZED: Prevent PostgreSQL Deadlocks by locking all required clinics globally,
+        # ordered by ID, before starting the individual transaction loop.
+        clinic_ids = list(set([vals.get('clinic_id') for vals in vals_list if vals.get('clinic_id')]))
+        if clinic_ids:
+            self.env.cr.execute("SELECT id FROM clinic_clinic WHERE id IN %s ORDER BY id FOR UPDATE",
+                                [tuple(clinic_ids)])
+
         # Track running balances during this transaction to support multi-create correctly
         running_balances = {}
-        
+
         for vals in vals_list:
             clinic_id = vals.get('clinic_id')
             if clinic_id and 'amount' in vals and 'transaction_type' in vals:
                 if clinic_id not in running_balances:
-                    # Enforce database-level locking to prevent race conditions during concurrent voucher approvals
-                    self.env.cr.execute("SELECT id FROM clinic_clinic WHERE id = %s FOR UPDATE", [clinic_id])
-                    
                     # Fetch the very last ledger entry for this clinic to get the exact closing balance
                     last_entry = self.search([
                         ('clinic_id', '=', clinic_id)
@@ -1713,6 +1724,10 @@ class IrAttachment(models.Model):
     @api.depends('store_fname', 'db_datas', 'file_size')
     def _compute_raw(self):
         super()._compute_raw()
+        # OPTIMIZED: Respect Odoo's bin_size context. If the frontend only wants the size
+        # (like in list/kanban views), do NOT trigger an expensive synchronous AWS download.
+        if self.env.context.get('bin_size'):
+            return
         if boto3:
             s3_client, bucket = self._get_s3_credentials()
             if s3_client and bucket:
