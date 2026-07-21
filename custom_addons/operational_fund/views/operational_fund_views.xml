@@ -382,27 +382,32 @@
                         </group>
                     </group>
 
-                    <group string="Audit Verification Proof" invisible="not ack_proof_file">
+                    <group string="Audit Verification Proof" invisible="state == 'pending'">
                         <field name="ack_proof_filename" invisible="1"/>
                         <field name="is_ack_proof_image" invisible="1"/>
                         <field name="is_ack_proof_pdf" invisible="1"/>
                         <field name="ack_proof_file" filename="ack_proof_filename" widget="binary" readonly="1" string="Download Original File"/>
                     </group>
 
-                    <div invisible="not ack_proof_file" class="mt-4">
-                        <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Live Document Preview</h4>
-
-                        <div invisible="not is_ack_proof_image" style="display: flex; justify-content: center; width: 100%; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
-                            <field name="ack_proof_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
+                    <!-- OPTIMIZED: It is safer to check if the filename string is empty rather than evaluating heavy binary fields in JS -->
+                    <div invisible="state == 'pending' or not ack_proof_filename" class="mt-4">
+                        <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">
+                            Live Document Preview
+                        </h4>
+                        <div invisible="not is_ack_proof_image"
+                             style="display: flex; justify-content: center; width: 100%; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
+                            <field name="ack_proof_file" widget="image" options="{'zoom': true}" readonly="1"
+                                   nolabel="1"/>
                         </div>
-
-                        <div invisible="not is_ack_proof_pdf" style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                        <div invisible="not is_ack_proof_pdf"
+                             style="width: 100%; height: 600px; border: 1px solid #ddd;">
                             <field name="ack_proof_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
                         </div>
-
-                        <div invisible="is_ack_proof_image or is_ack_proof_pdf" class="alert alert-warning text-center mt-2">
+                        <div invisible="is_ack_proof_image or is_ack_proof_pdf"
+                             class="alert alert-warning text-center mt-2" role="status">
                             <i class="fa fa-info-circle me-2"></i>
-                            Preview is not available for this specific file format. Please click the download link above to view it.
+                            Preview is not available for this specific file format. Please click the download link above
+                            to view it.
                         </div>
                     </div>
                 </sheet>
