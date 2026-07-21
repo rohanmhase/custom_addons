@@ -153,6 +153,7 @@ class Clinic(models.Model):
             if emails:
                 mail_vals_list.append({
                     'subject': subject,
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': ','.join(emails),
                     'body_html': body,
                     'state': 'outgoing',
@@ -364,6 +365,7 @@ class OperationalFundAllocation(models.Model):
             deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.allocation&view_type=form"
             mail_values = {
                 'subject': f'Direct Allocation: Pending HQ Deposit for {rec.clinic_id.name}',
+                'email_from': 'noreply@healthylifeinnovation.com',
                 'email_to': user.email,
                 'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #333;">Direct Capital Deposit</h2><p>Hello {escape(user.name)},</p><p>HQ has directly allocated <strong>₹{rec.amount}</strong> to {escape(rec.clinic_id.name)} under your name. Please log in and upload the bank verification proof to clear it.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acknowledge Funds</a></div>""",
                 'state': 'outgoing',
@@ -412,6 +414,7 @@ class OperationalFundAllocation(models.Model):
                 if user.email:
                     mail_values_list.append({
                         'subject': f'Action Required: Pending HQ Deposit for {rec.clinic_id.name}',
+                        'email_from': 'noreply@healthylifeinnovation.com',
                         'email_to': user.email,
                         'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #333;">Capital Deposit Pending</h2><p>Hello {escape(user.name)},</p><p>HQ has allocated <strong>₹{rec.amount}</strong> to {escape(rec.clinic_id.name)}. Please log in and upload the bank verification proof today to unlock your dashboard.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acknowledge Funds</a></div>""",
                         'state': 'outgoing',
@@ -475,6 +478,7 @@ class OperationalFundAllocation(models.Model):
             if target_user and target_user.email:
                 mail_vals_list.append({
                     'subject': f'Approved: Deposit for {rec.clinic_id.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': target_user.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Deposit Approved</h2><p>Hello,</p><p>The bank proof for your deposit of <strong>₹{rec.amount}</strong> for {escape(rec.clinic_id.name)} has been approved by the Manager.</p><p>The funds are now available in the clinic wallet.</p></div>""",
                     'state': 'outgoing',
@@ -502,6 +506,7 @@ class OperationalFundAllocation(models.Model):
             if target_user and target_user.email:
                 mail_vals_list.append({
                     'subject': f'Rejected: Bank Proof for {rec.clinic_id.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': target_user.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Proof Rejected</h2><p>Hello,</p><p>The bank proof for your deposit of <strong>₹{rec.amount}</strong> for {escape(rec.clinic_id.name)} was rejected by the Manager.</p><p>Please re-upload a valid proof document.</p></div>""",
                     'state': 'outgoing',
@@ -533,6 +538,7 @@ class OperationalFundAllocation(models.Model):
                 if manager.email:
                     mail_vals_list.append({
                         'subject': f'SLA BREACH: Overdue Acknowledgment for {alloc.clinic_id.name}',
+                        'email_from': 'noreply@healthylifeinnovation.com',
                         'email_to': manager.email,
                         'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d9534f;"><h2 style="color: #d9534f;">⚠️ 24-Hour SLA Breach Alert</h2><p>Hello {escape(manager.name)},</p><p>The Tier 1 Custodians at <strong>{escape(alloc.clinic_id.name)}</strong> have failed to acknowledge Deposit {escape(alloc.name)} (₹{alloc.amount}) within the mandated 24-hour window.</p><p>Please intervene to ensure the funds are cleared and their dashboard is unlocked.</p><a href="{deep_link}" style="background-color: #d9534f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Record</a></div>""",
                         'state': 'outgoing',
@@ -611,6 +617,7 @@ class OperationalFundRejectionWizard(models.TransientModel):
             if disb.create_uid and disb.create_uid.email:
                 mail_vals_list.append({
                     'subject': f'Rejected: Voucher {disb.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': disb.create_uid.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Voucher Rejected</h2><p>Hello,</p><p>Your voucher <strong>{escape(disb.name)}</strong> for ₹{disb.amount} was rejected.</p><p><strong>Reason:</strong> {escape(wiz.reason)}</p></div>""",
                     'state': 'outgoing',
@@ -1185,6 +1192,7 @@ class OperationalFundDisbursement(models.Model):
                     if manager.email:
                         mail_vals_list.append({
                             'subject': f'Action Required: Approve Voucher {rec.name}',
+                            'email_from': 'noreply@healthylifeinnovation.com',
                             'email_to': manager.email,
                             'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
                         })
@@ -1219,6 +1227,7 @@ class OperationalFundDisbursement(models.Model):
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append({
                     'subject': f'Approved: Voucher {rec.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': rec.create_uid.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Voucher Approved</h2><p>Hello,</p><p>Your voucher <strong>{escape(rec.name)}</strong> for ₹{rec.amount} has been approved.</p></div>""",
                     'state': 'outgoing',
@@ -1238,6 +1247,7 @@ class OperationalFundDisbursement(models.Model):
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append({
                     'subject': f'Paid: Voucher {rec.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': rec.create_uid.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #17a2b8;">Voucher Paid</h2><p>Hello,</p><p>Your voucher <strong>{escape(rec.name)}</strong> has been finalized and marked as paid.</p></div>""",
                     'state': 'outgoing',
@@ -1338,6 +1348,7 @@ class OperationalFundDisbursement(models.Model):
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append({
                     'subject': f'Refund Approved: Voucher {rec.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': rec.create_uid.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Refund Approved</h2><p>Hello,</p><p>The refund for voucher <strong>{escape(rec.name)}</strong> has been approved.</p></div>""",
                     'state': 'outgoing',
@@ -1356,6 +1367,7 @@ class OperationalFundDisbursement(models.Model):
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append({
                     'subject': f'Refund Denied: Voucher {rec.name}',
+                    'email_from': 'noreply@healthylifeinnovation.com',
                     'email_to': rec.create_uid.email,
                     'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #d9534f;">Refund Denied</h2><p>Hello,</p><p>The refund request for voucher <strong>{escape(rec.name)}</strong> was denied.</p></div>""",
                     'state': 'outgoing',
@@ -1424,6 +1436,7 @@ class OperationalFundDisbursement(models.Model):
                     if manager.email:
                         mail_vals_list.append({
                             'subject': f'Action Required: Approve Voucher {rec.name} (Synced)',
+                            'email_from': 'noreply@healthylifeinnovation.com',
                             'email_to': manager.email,
                             'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">This is a synced notification for a pending operational fund disbursement.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
                             'state': 'outgoing',
@@ -1568,6 +1581,12 @@ class OperationalFundDisbursement(models.Model):
             'url': f'/web/content/{archive_attachment.id}?download=true',
             'target': 'self'
         }
+
+    @api.constrains('date')
+    def _check_voucher_date_is_today(self):
+        for rec in self:
+            if rec.date and rec.date != fields.Date.context_today(self):
+                raise  ValidationError(_("Auditing Restriction: Vouchers can only be created for today's date."))
 
     def unlink(self):
         for rec in self:
