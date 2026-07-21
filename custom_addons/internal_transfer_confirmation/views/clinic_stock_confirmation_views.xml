@@ -384,7 +384,9 @@
                 <field name="product_id" string="Medicine" readonly="1"/>
                 <field name="target_qty" string="Target" readonly="1"/>
                 <field name="current_stock" string="Current" readonly="1"/>
+                <field name="shortage_qty" string="Shortage" readonly="1"/>
                 <field name="correct_quantity" string="Correct Stock" readonly="1"/>
+                <field name="revised_shortage" string="Revised Shortage" readonly="1"/>
                 <field name="additional_quantity" string="Need Additional" readonly="1"/>
                 <field name="problem_notes" string="Clinic Note" readonly="1"/>
                 <field name="resolution_status" widget="badge" readonly="1"
