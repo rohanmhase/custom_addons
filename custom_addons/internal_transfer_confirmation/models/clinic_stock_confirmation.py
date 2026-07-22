@@ -229,16 +229,23 @@ class ClinicStockConfirmation(models.Model):
                     })
 
                 try:
-                    template.sudo().with_context(
+                    mail_values = template.sudo().with_context(
                         warehouse_name=anchor.destination_warehouse_id.display_name,
                         replenishment_name=replenishment_name,
                         confirmation_lines=line_payload,
                         line_count=len(batch_lines),
-                    ).send_mail(
-                        anchor.id,
-                        force_send=False,
-                        email_values={'email_to': recipient['email']},
-                    )
+                    )._generate_template(
+                        [anchor.id],
+                        ('subject', 'body_html', 'email_from')
+                    )[anchor.id]
+
+                    self.env['mail.mail'].sudo().create({
+                        'subject': mail_values.get('subject'),
+                        'body_html': mail_values.get('body_html'),
+                        'email_from': mail_values.get('email_from') or 'noreply@researchayu.com',
+                        'email_to': recipient['email'],
+                        'auto_delete': True,
+                    })
                 except Exception:
                     _logger.exception(
                         "Failed to queue stock confirmation email for warehouse %s, replenishment %s",
@@ -267,10 +274,10 @@ class ClinicStockConfirmation(models.Model):
                             '<p><strong>CSR:</strong> %s</p>'
                             '<p><strong>Items:</strong> %s</p>'
                         ) % (
-                            anchor.destination_warehouse_id.display_name,
-                            replenishment_name,
-                            len(batch_lines),
-                        ),
+                                    anchor.destination_warehouse_id.display_name,
+                                    replenishment_name,
+                                    len(batch_lines),
+                                ),
                         'date_deadline': fields.Date.context_today(self),
                         'user_id': user_id,
                         'res_id': anchor.id,
@@ -613,6 +620,8 @@ class ClinicStockReplenishmentInherit(models.Model):
                 confirmations._cancel_request_activities_for_archived()
                 confirmations.write({'active': False})
         return result
+
+
 class ClinicStockConfirmationAutoConfirm(models.AbstractModel):
     _name = 'clinic.stock.confirmation.autoconfirm'
     _description = 'Auto Confirm Cron Helper'
