@@ -244,7 +244,7 @@ class ClinicStockConfirmation(models.Model):
                         'body_html': mail_values.get('body_html'),
                         'email_from': mail_values.get('email_from') or 'noreply@researchayu.com',
                         'email_to': recipient['email'],
-                        'auto_delete': True,
+                        'auto_delete': False,
                     })
                 except Exception:
                     _logger.exception(
