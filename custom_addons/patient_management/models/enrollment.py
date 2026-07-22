@@ -262,14 +262,11 @@ class Enrollment(models.Model):
     #         if rec.used_sessions > rec.total_sessions:
     #             raise ValidationError(_("Used Sessions cannot be greater than Total Sessions."))
     #
-    # @api.constrains('total_sessions')
-    # def _check_total_sessions_zero(self):
-    #     for rec in self:
-    #         if rec.total_sessions == 0:
-    #             raise ValidationError(_("Number of Therapy Sessions for which Patient has Enrolled Cannot be 0."))
-    #
-    #         elif rec.total_sessions > 100:
-    #             raise ValidationError(_("You can enter a maximum of 100 therapy sessions."))
+    @api.constrains('total_sessions')
+    def _check_total_sessions_zero(self):
+        for rec in self:
+            if rec.total_sessions > 100:
+                raise ValidationError(_("You can enter a maximum of 100 therapy sessions."))
     #
     # @api.constrains('total_amount')
     # def _check_total_amount_zero(self):

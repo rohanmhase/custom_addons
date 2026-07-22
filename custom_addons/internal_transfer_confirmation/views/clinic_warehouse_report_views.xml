@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────
+         WAREHOUSE REPORT FORM VIEW
+    ───────────────────────────────────────────── -->
+    <record id="clinic_warehouse_report_form" model="ir.ui.view">
+        <field name="name">clinic.warehouse.report.form</field>
+        <field name="model">clinic.warehouse.report</field>
+        <field name="arch" type="xml">
+            <form string="Warehouse Report" create="false" delete="false">
+                <div class="o_form_sheet_bg" style="background:#f8f9fa; min-height:100vh;">
+                    <div class="container-fluid py-4">
+
+                        <!-- Header -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <h1 style="font-weight:600; color:#333;">
+                                    📊 Warehouse Report
+                                </h1>
+                                <p class="text-muted">
+                                    Overview of clinic confirmations for the selected date
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <field name="available_source_warehouse_ids" invisible="1"/>
+                                <div class="mb-2">
+                                    <label for="report_date" class="fw-bold me-2">Date:</label>
+                                    <field name="report_date" nolabel="1"
+                                           style="max-width:200px; display:inline-block;"/>
+                                </div>
+                                <div>
+                                    <label for="source_warehouse_id" class="fw-bold me-2">Warehouse:</label>
+                                    <field name="source_warehouse_id" nolabel="1"
+                                           options="{'no_create': True, 'no_edit': True}"
+                                           domain="[('id', 'in', available_source_warehouse_ids)]"
+                                           style="max-width:200px; display:inline-block;"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ═══════════════════════════════════════════
+                             STOCK CONFIRMATION SECTION
+                        ═══════════════════════════════════════════ -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h3 style="color:#00a09d; border-bottom:2px solid #00a09d; padding-bottom:8px;">
+                                    📦 Current Stock Confirmation
+                                </h3>
+                                <p class="text-muted small mb-3">
+                                    <field name="stock_total_clinics" readonly="1" nolabel="1" class="fw-bold"/>
+                                    clinics received replenishment on this date
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-5">
+                            <!-- Ready -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #28a745; cursor:pointer;">
+                                    <button name="action_stock_ready" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">READY TO DISPATCH</p>
+                                                    <h1 style="color:#28a745; font-weight:700; margin:0;">
+                                                        <field name="stock_ready_count" readonly="1" nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-check-circle fa-3x" style="color:#28a745; opacity:0.3;"
+                                                   title="Ready"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to view →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Issues -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #dc3545; cursor:pointer;">
+                                    <button name="action_stock_issues" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">NEEDS REVIEW</p>
+                                                    <h1 style="color:#dc3545; font-weight:700; margin:0;">
+                                                        <field name="stock_issues_count" readonly="1" nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-exclamation-triangle fa-3x"
+                                                   style="color:#dc3545; opacity:0.3;" title="Issues"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to resolve →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- No Response -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #6c757d; cursor:pointer;">
+                                    <button name="action_stock_no_response" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">NO RESPONSE</p>
+                                                    <h1 style="color:#6c757d; font-weight:700; margin:0;">
+                                                        <field name="stock_no_response_count" readonly="1" nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-clock-o fa-3x" style="color:#6c757d; opacity:0.3;"
+                                                   title="No Response"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to view →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ═══════════════════════════════════════════
+                             INTERNAL TRANSFER SECTION
+                        ═══════════════════════════════════════════ -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h3 style="color:#00a09d; border-bottom:2px solid #00a09d; padding-bottom:8px;">
+                                    🔄 Internal Transfer Confirmation
+                                </h3>
+                                <p class="text-muted small mb-3">
+                                    <field name="transfer_total_clinics" readonly="1" nolabel="1" class="fw-bold"/>
+                                    transfers dispatched on this date
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Ready -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #28a745; cursor:pointer;">
+                                    <button name="action_transfer_ready" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">RECEIVED OK</p>
+                                                    <h1 style="color:#28a745; font-weight:700; margin:0;">
+                                                        <field name="transfer_ready_count" readonly="1" nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-check-circle fa-3x" style="color:#28a745; opacity:0.3;"
+                                                   title="Received OK"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to view →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Issues -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #dc3545; cursor:pointer;">
+                                    <button name="action_transfer_issues" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">MISMATCH / ISSUES</p>
+                                                    <h1 style="color:#dc3545; font-weight:700; margin:0;">
+                                                        <field name="transfer_issues_count" readonly="1" nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-exclamation-triangle fa-3x"
+                                                   style="color:#dc3545; opacity:0.3;" title="Issues"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to resolve →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- No Response -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card shadow-sm h-100"
+                                     style="border-radius:12px; border-left:5px solid #6c757d; cursor:pointer;">
+                                    <button name="action_transfer_no_response" type="object"
+                                            class="btn btn-link p-0 text-decoration-none w-100 h-100"
+                                            style="text-align:left;">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p class="text-muted mb-1 small">NO RESPONSE</p>
+                                                    <h1 style="color:#6c757d; font-weight:700; margin:0;">
+                                                        <field name="transfer_no_response_count" readonly="1"
+                                                               nolabel="1"/>
+                                                    </h1>
+                                                </div>
+                                                <i class="fa fa-clock-o fa-3x" style="color:#6c757d; opacity:0.3;"
+                                                   title="No Response"/>
+                                            </div>
+                                            <p class="text-muted small mt-2 mb-0">Click to view →</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         WAREHOUSE REPORT ACTION
+    ───────────────────────────────────────────── -->
+    <record id="action_clinic_warehouse_report" model="ir.actions.act_window">
+        <field name="name">Warehouse Report</field>
+        <field name="res_model">clinic.warehouse.report</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="clinic_warehouse_report_form"/>
+        <field name="target">current</field>
+        <field name="context">{'form_view_initial_mode': 'edit'}</field>
+    </record>
+    <!-- ═══════════════════════════════════════════════════════════
+     LEVEL 1: STOCK SUMMARY TREE (one row per clinic)
+═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_warehouse_report_stock_summary_tree" model="ir.ui.view">
+        <field name="name">clinic.warehouse.report.stock.summary.tree</field>
+        <field name="model">clinic.warehouse.report.stock.summary</field>
+        <field name="arch" type="xml">
+            <tree string="Clinics" create="false" delete="false" edit="false">
+                <field name="clinic_id" string="🏥 Clinic"/>
+                <field name="replenishment_id" string="CSR"/>
+                <field name="total_items" string="Total Items"/>
+                <field name="confirmed_count" string="Confirmed"/>
+                <field name="problem_count" string="Problems"
+                       decoration-danger="problem_count > 0"/>
+                <button name="action_open_lines"
+                        type="object"
+                        string="View Details →"
+                        class="btn btn-primary btn-sm"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         LEVEL 1: TRANSFER SUMMARY TREE
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_warehouse_report_transfer_summary_tree" model="ir.ui.view">
+        <field name="name">clinic.warehouse.report.transfer.summary.tree</field>
+        <field name="model">clinic.warehouse.report.transfer.summary</field>
+        <field name="arch" type="xml">
+            <tree string="Clinics" create="false" delete="false" edit="false">
+                <field name="clinic_id" string="🏥 Clinic"/>
+                <field name="picking_id" string="Transfer"/>
+                <field name="total_items" string="Total Items"/>
+                <field name="confirmed_count" string="Confirmed"/>
+                <field name="problem_count" string="Problems"
+                       decoration-danger="problem_count > 0"/>
+                <button name="action_open_lines"
+                        type="object"
+                        string="View Details →"
+                        class="btn btn-primary btn-sm"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

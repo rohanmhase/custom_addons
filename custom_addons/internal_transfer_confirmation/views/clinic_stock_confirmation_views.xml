@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────
+         DASHBOARD FORM VIEW
+    ───────────────────────────────────────────── -->
+    <record id="clinic_stock_confirmation_dashboard_form" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.dashboard.form</field>
+        <field name="model">clinic.stock.confirmation.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Stock Confirmation" create="false" edit="false" delete="false">
+                <div class="o_form_sheet_bg" style="background:#f8f9fa;">
+                    <div class="container-fluid py-5">
+                        <div class="row mb-5">
+                            <div class="col-12 text-center">
+                                <h1 style="font-weight:600; color:#333;">Stock Confirmation</h1>
+                                <p class="text-muted" style="font-size:16px;">Select what you want to do</p>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center g-4">
+
+                            <!-- Current Stock Confirmation -->
+                            <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                                <div class="card text-center shadow-sm h-100"
+                                     style="border-radius:12px; border: 2px solid #00a09d;">
+                                    <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fa fa-check-circle fa-3x mb-3"
+                                           style="color:#00a09d;"
+                                           title="Current Stock Confirmation"/>
+                                        <h5 class="card-title mb-3">Current Stock Confirmation</h5>
+                                        <p class="card-text text-muted small mb-4">
+                                            Confirm today's stock levels for your clinic
+                                        </p>
+                                        <button name="action_open_current_stock_confirmation"
+                                                type="object"
+                                                class="btn btn-primary w-100"
+                                                style="background-color:#00a09d; border-color:#00a09d;">
+                                            Open
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Report (Only visible to Admin) -->
+                            <div class="col-lg-4 col-md-6 col-sm-12 mb-4"
+                                 groups="clinic_management.group_clinic_administrator">
+                                <div class="card text-center shadow-sm h-100"
+                                     style="border-radius:12px; border: 2px solid #00a09d;">
+                                    <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fa fa-bar-chart fa-3x mb-3"
+                                           style="color:#00a09d;"
+                                           title="Report"/>
+                                        <h5 class="card-title mb-3">Warehouse Report</h5>
+                                        <p class="card-text text-muted small mb-4">
+                                            View clinic confirmation status
+                                        </p>
+                                        <button name="action_open_report"
+                                                type="object"
+                                                class="btn btn-primary w-100"
+                                                style="background-color:#00a09d; border-color:#00a09d;">
+                                            Open
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Internal Transfer -->
+                            <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                                <div class="card text-center shadow-sm h-100"
+                                     style="border-radius:12px; border: 2px solid #cccccc;">
+                                    <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fa fa-exchange fa-3x mb-3"
+                                           style="color:#00a09d;"
+                                           title="Internal Transfer Confirmation"/>
+                                        <h5 class="card-title mb-3">Internal Transfer Confirmation</h5>
+                                        <p class="card-text text-muted small mb-4">
+                                            Confirm internal stock transfers
+                                        </p>
+                                        <button name="action_open_internal_transfer"
+                                                type="object"
+                                                class="btn btn-primary w-100"
+                                                style="background-color:#00a09d; border-color:#00a09d;">
+                                            Open
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         DASHBOARD ACTION
+    ───────────────────────────────────────────── -->
+    <record id="action_clinic_stock_confirmation_dashboard" model="ir.actions.act_window">
+        <field name="name">Stock Confirmation</field>
+        <field name="res_model">clinic.stock.confirmation.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="clinic_stock_confirmation_dashboard_form"/>
+        <field name="target">current</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         CLINIC SELECTION WIZARD
+    ───────────────────────────────────────────── -->
+    <record id="clinic_selection_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.selection.wizard.form</field>
+        <field name="model">clinic.selection.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Clinic">
+                <group>
+                    <field name="warehouse_id"
+                           options="{'no_create': True, 'no_edit': True}"/>
+                </group>
+                <footer>
+                    <button name="action_open_confirmation"
+                            type="object"
+                            string="Open"
+                            class="btn btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         SERVER ACTION - CONFIRM ALL
+    ───────────────────────────────────────────── -->
+    <record id="action_confirm_all" model="ir.actions.server">
+        <field name="name">Confirm All</field>
+        <field name="model_id" ref="model_clinic_stock_confirmation"/>
+        <field name="state">code</field>
+        <field name="code">action = env['clinic.stock.confirmation'].action_confirm_all()</field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         STOCK CONFIRMATION TREE VIEW (Clinic-facing)
+    ───────────────────────────────────────────── -->
+    <record id="clinic_stock_confirmation_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.tree</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="arch" type="xml">
+            <tree string="Stock Confirmation"
+                  js_class="clinic_stock_confirmation_list"
+                  create="false"
+                  delete="false"
+                  edit="false">
+                <header>
+                    <button name="%(action_confirm_all)d"
+                            type="action"
+                            string="Confirm All"
+                            class="btn btn-success oe_highlight"/>
+                </header>
+                <field name="replenishment_date" string="Date" widget="datetime"/>
+                <field name="replenishment_id" string="CSR Number"/>
+                <field name="destination_warehouse_id" string="Clinic"/>
+                <field name="product_id" string="Medicine"/>
+                <field name="target_qty" string="Target"/>
+                <field name="current_stock" string="Current Stock"/>
+                <field name="shortage_qty" string="Shortage Qty"/>
+                <field name="correct_quantity" string="Correct Stock"/>
+                <field name="additional_quantity" string="Need Additional Stock"/>
+                <field name="problem_raised" string="Problem Raised"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-success="state == 'confirmed'"
+                       decoration-warning="state == 'pending'"/>
+                <field name="confirmed_by" string="Problem/Confirmed By"/>
+                <button name="action_raise_problem"
+                        type="object"
+                        string="Raise Problem"
+                        class="btn btn-warning"
+                        invisible="problem_raised == True or state == 'confirmed'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CLINIC-FACING FORM (Only problem raising - no resolution)
+         Used when clinic user opens from Stock Confirmation menu
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_stock_confirmation_form" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.form</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="arch" type="xml">
+            <form string="Raise Problem">
+                <sheet>
+                    <field name="state" invisible="1"/>
+                    <group>
+                        <field name="destination_warehouse_id" string="Clinic" readonly="1"/>
+                        <field name="product_id" string="Medicine" readonly="1"/>
+                        <field name="correct_quantity" string="Correct Quantity"/>
+                        <field name="additional_quantity"
+                               string="Additional Quantity"
+                               readonly="correct_quantity &gt; 0"/>
+                        <field name="problem_notes" string="Notes"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm"
+                            type="object"
+                            string="Save &amp; Confirm"
+                            class="btn btn-primary"
+                            invisible="state == 'confirmed'"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING FORM (Only resolution - no problem raising)
+         Used from Warehouse Report → Needs Review drill-down
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_stock_confirmation_warehouse_form" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.warehouse.form</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Problem">
+                <sheet>
+                    <field name="state" invisible="1"/>
+                    <field name="is_problem" invisible="1"/>
+
+                    <group>
+                        <group string="Clinic Info">
+                            <field name="destination_warehouse_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="replenishment_id" readonly="1"/>
+                        </group>
+                        <group string="Stock Info">
+                            <field name="target_qty" readonly="1"/>
+                            <field name="current_stock" readonly="1"/>
+                            <field name="shortage_qty" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Clinic Raised Problem">
+                        <field name="correct_quantity" readonly="1"/>
+                        <field name="additional_quantity" readonly="1"/>
+                        <field name="problem_notes" readonly="1"/>
+                        <field name="confirmed_by" readonly="1"/>
+                        <field name="confirmation_date" readonly="1"/>
+                    </group>
+
+                    <group string="Warehouse Resolution">
+                        <field name="resolution_status" widget="badge"
+                               decoration-warning="resolution_status == 'unresolved'"
+                               decoration-success="resolution_status == 'resolved'"
+                               decoration-muted="resolution_status == 'skipped'"/>
+                        <field name="resolution_notes"
+                               placeholder="Enter resolution notes..."/>
+                        <field name="resolved_by" readonly="1"/>
+                        <field name="resolved_date" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_mark_resolved"
+                            type="object"
+                            string="Mark Resolved"
+                            class="btn btn-success"
+                            invisible="resolution_status == 'resolved'"/>
+                    <button name="action_skip_problem"
+                            type="object"
+                            string="Skip"
+                            class="btn btn-secondary"
+                            invisible="resolution_status != 'unresolved'"/>
+                    <button name="action_reopen_problem"
+                            type="object"
+                            string="Reopen"
+                            class="btn btn-warning"
+                            invisible="resolution_status == 'unresolved'"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Transfer Selection Wizard -->
+    <record id="clinic_transfer_selection_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.transfer.selection.wizard.form</field>
+        <field name="model">clinic.transfer.selection.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Internal Transfer">
+                <group>
+                    <field name="available_picking_ids" invisible="1"/>
+                    <field name="warehouse_id"
+                           options="{'no_create': True, 'no_edit': True}"/>
+                    <field name="picking_id"
+                           options="{'no_create': True, 'no_edit': True}"
+                           invisible="not warehouse_id"
+                           placeholder="Choose transfer from delivery box label"/>
+                </group>
+                <div class="alert alert-info" role="alert"
+                     invisible="not warehouse_id or picking_id">
+                    <i class="fa fa-info-circle" title="Info"/>
+                    Please enter the Internal Transfer number printed on the delivery box.
+                </div>
+                <footer>
+                    <button name="action_open_transfer_confirmation"
+                            type="object"
+                            string="Open"
+                            class="btn btn-primary"
+                            invisible="not picking_id"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING SEARCH VIEW (for drill-down filtering)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_stock_confirmation_search_warehouse" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.search.warehouse</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="arch" type="xml">
+            <search string="Stock Confirmation">
+                <field name="destination_warehouse_id" string="Clinic"/>
+                <field name="replenishment_id" string="CSR"/>
+                <field name="product_id" string="Medicine"/>
+
+                <filter name="filter_problems" string="🔴 Problems Only"
+                        domain="[('is_problem', '=', True)]"/>
+                <filter name="filter_unresolved" string="⚠️ Unresolved"
+                        domain="[('is_problem', '=', True), ('resolution_status', '=', 'unresolved')]"/>
+                <filter name="filter_resolved" string="✅ Resolved"
+                        domain="[('resolution_status', '=', 'resolved')]"/>
+                <filter name="filter_skipped" string="⏭ Skipped"
+                        domain="[('resolution_status', '=', 'skipped')]"/>
+                <separator/>
+                <filter name="filter_pending" string="Pending"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_confirmed" string="Confirmed"
+                        domain="[('state', '=', 'confirmed')]"/>
+
+                <group expand="1" string="Group By">
+                    <filter name="group_by_replenishment" string="CSR (Replenishment)"
+                            context="{'group_by': 'replenishment_id'}"/>
+                    <filter name="group_by_clinic" string="Clinic"
+                            context="{'group_by': 'destination_warehouse_id'}"/>
+                    <filter name="group_by_resolution" string="Resolution Status"
+                            context="{'group_by': 'resolution_status'}"/>
+                    <filter name="group_by_state" string="State"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING TREE VIEW (with inline action buttons)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_stock_confirmation_warehouse_tree" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.warehouse.tree</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <tree string="Warehouse View"
+                  create="false"
+                  delete="false"
+                  editable="bottom"
+                  decoration-danger="is_problem and resolution_status == 'unresolved'"
+                  decoration-success="resolution_status == 'resolved'"
+                  decoration-muted="resolution_status == 'skipped'">
+                <!-- Hidden helper fields -->
+                <field name="is_problem" column_invisible="1"/>
+                <field name="state" column_invisible="1"/>
+
+                <field name="replenishment_date" string="Date" widget="datetime" readonly="1"/>
+                <field name="replenishment_id" string="CSR" readonly="1"/>
+                <field name="destination_warehouse_id" string="Clinic" readonly="1"/>
+                <field name="product_id" string="Medicine" readonly="1"/>
+                <field name="target_qty" string="Target" readonly="1"/>
+                <field name="current_stock" string="Current" readonly="1"/>
+                <field name="shortage_qty" string="Shortage" readonly="1"/>
+                <field name="correct_quantity" string="Correct Stock" readonly="1"/>
+                <field name="revised_shortage" string="Revised Shortage" readonly="1"/>
+                <field name="additional_quantity" string="Need Additional" readonly="1"/>
+                <field name="problem_notes" string="Clinic Note" readonly="1"/>
+                <field name="resolution_status" widget="badge" readonly="1"
+                       decoration-warning="resolution_status == 'unresolved'"
+                       decoration-success="resolution_status == 'resolved'"
+                       decoration-muted="resolution_status == 'skipped'"/>
+                <!-- ✅ EDITABLE Warehouse Note -->
+                <field name="resolution_notes" string="Warehouse Note"
+                       placeholder="Type resolution note..."/>
+                <field name="resolved_by" optional="hide" readonly="1"/>
+                <field name="resolved_date" optional="hide" readonly="1"/>
+                <field name="confirmed_by" string="Confirmed By" optional="show" readonly="1"/>
+
+                <button name="action_mark_resolved"
+                        type="object"
+                        string="Resolve"
+                        class="btn btn-success btn-sm"
+                        icon="fa-check"
+                        invisible="not is_problem or resolution_status in ('resolved', 'skipped') or not resolution_status"/>
+                <button name="action_skip_problem"
+                        type="object"
+                        string="Skip"
+                        class="btn btn-secondary btn-sm"
+                        icon="fa-forward"
+                        invisible="not is_problem or resolution_status != 'unresolved'"/>
+                <button name="action_reopen_problem"
+                        type="object"
+                        string="Reopen"
+                        class="btn btn-warning btn-sm"
+                        icon="fa-undo"
+                        invisible="not is_problem or resolution_status in ('unresolved', False) or not resolution_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WAREHOUSE-FACING KANBAN (Cards grouped by CSR)
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_stock_confirmation_warehouse_kanban" model="ir.ui.view">
+        <field name="name">clinic.stock.confirmation.warehouse.kanban</field>
+        <field name="model">clinic.stock.confirmation</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="replenishment_id" class="o_kanban_small_column" create="false">
+                <field name="id"/>
+                <field name="product_id"/>
+                <field name="destination_warehouse_id"/>
+                <field name="replenishment_id"/>
+                <field name="is_problem"/>
+                <field name="resolution_status"/>
+                <field name="correct_quantity"/>
+                <field name="additional_quantity"/>
+                <field name="problem_notes"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click
+                        #{record.resolution_status.raw_value == 'unresolved' and record.is_problem.raw_value ? 'border-danger' : ''}
+                        #{record.resolution_status.raw_value == 'resolved' ? 'border-success' : ''}
+                        #{record.resolution_status.raw_value == 'skipped' ? 'border-secondary' : ''}"
+                             style="border-left-width: 4px;">
+                            <div class="o_kanban_content">
+                                <div class="row">
+                                    <div class="col-8">
+                                        <strong>
+                                            <field name="product_id"/>
+                                        </strong>
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <t t-if="record.is_problem.raw_value and record.resolution_status.raw_value == 'unresolved'">
+                                            <span class="badge text-bg-danger">🔴 Issue</span>
+                                        </t>
+                                        <t t-if="record.resolution_status.raw_value == 'resolved'">
+                                            <span class="badge text-bg-success">✅ Resolved</span>
+                                        </t>
+                                        <t t-if="record.resolution_status.raw_value == 'skipped'">
+                                            <span class="badge text-bg-secondary">⏭ Skipped</span>
+                                        </t>
+                                    </div>
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    <field name="destination_warehouse_id"/>
+                                </div>
+                                <div class="mt-2" t-if="record.correct_quantity.raw_value > 0">
+                                    <span class="text-muted small">Correct Stock:</span>
+                                    <strong>
+                                        <field name="correct_quantity"/>
+                                    </strong>
+                                </div>
+                                <div t-if="record.additional_quantity.raw_value > 0">
+                                    <span class="text-muted small">Need Additional:</span>
+                                    <strong>
+                                        <field name="additional_quantity"/>
+                                    </strong>
+                                </div>
+                                <div class="mt-2" t-if="record.problem_notes.raw_value">
+                                    <em class="small">"<field name="problem_notes"/>"
+                                    </em>
+                                </div>
+                                <div class="mt-2 text-end"
+                                     t-if="record.is_problem.raw_value and record.resolution_status.raw_value == 'unresolved'">
+                                    <button name="action_mark_resolved" type="object"
+                                            class="btn btn-success btn-sm">
+                                        <i class="fa fa-check"/>
+                                        Resolve
+                                    </button>
+                                    <button name="action_skip_problem" type="object"
+                                            class="btn btn-secondary btn-sm">
+                                        <i class="fa fa-forward"/>
+                                        Skip
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-end"
+                                     t-if="record.resolution_status.raw_value != 'unresolved'">
+                                    <button name="action_reopen_problem" type="object"
+                                            class="btn btn-warning btn-sm">
+                                        <i class="fa fa-undo"/>
+                                        Reopen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <!-- ═══════════════════════════════════════════════════════════
+     ✅ NEW: WAREHOUSE RESOLVE PROBLEM WIZARD (STOCK)
+═══════════════════════════════════════════════════════════ -->
+    <record id="clinic_resolve_problem_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.resolve.problem.wizard.form</field>
+        <field name="model">clinic.resolve.problem.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Problem" create="true" edit="true" delete="false">
+                <sheet>
+                    <field name="confirmation_id" invisible="1"/>
+                    <group>
+                        <group string="Problem Details">
+                            <field name="clinic_name" readonly="1"/>
+                            <field name="product_name" readonly="1"/>
+                            <field name="correct_quantity" readonly="1"/>
+                            <field name="additional_quantity" readonly="1"/>
+                        </group>
+                        <group string="Clinic's Note">
+                            <field name="clinic_note" nolabel="1" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Your Resolution Note"/>
+                    <field name="resolution_notes"
+                           widget="text"
+                           placeholder="Type your resolution note here..."
+                           nolabel="1"
+                           readonly="0"/>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_resolve"
+                            type="object"
+                            string="✅ Mark Resolved"
+                            class="btn btn-success"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ─────────────────────────────────────────────
+         MENU
+    ───────────────────────────────────────────── -->
+    <menuitem id="menu_clinic_stock_confirmation"
+              name="Stock Confirmation"
+              parent="stock.menu_stock_root"
+              action="action_clinic_stock_confirmation_dashboard"
+              sequence="26"/>
+
+</odoo>
