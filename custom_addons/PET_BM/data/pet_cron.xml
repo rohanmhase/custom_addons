@@ -10,7 +10,7 @@
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
-            <field name="nextcall" eval="(DateTime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="nextcall" eval="(datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
 
         <record id="ir_cron_check_sla_tickets" model="ir.cron">
@@ -33,7 +33,7 @@
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
-            <field name="nextcall" eval="(DateTime.now().replace(hour=23, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="nextcall" eval="(datetime.now().replace(hour=23, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
     </data>
 </odoo>
