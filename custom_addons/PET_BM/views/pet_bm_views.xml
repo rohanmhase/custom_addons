@@ -63,6 +63,11 @@
                             <field name="recommended_next_followup" readonly="1" force_save="1" invisible="not_connected"/>
                         </group>
 
+                        <group string="Call Tagging">
+                            <field name="call_tagging" readonly="is_locked" required="1" invisible="not_connected"/>
+                            <field name="other_call_tagging" readonly="is_locked" invisible="not_connected"/>
+                        </group>
+
                         <group string="STATUS UPDATE" invisible="not_connected">
                             <field name="category_id" required="not not_connected" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
                             <field name="subcategory_id" domain="[('category_id', '=', category_id)]" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>

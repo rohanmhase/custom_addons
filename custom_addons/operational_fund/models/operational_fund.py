@@ -160,7 +160,7 @@ class Clinic(models.Model):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     @api.model
     def _cron_calculate_smart_thresholds(self):
@@ -496,7 +496,7 @@ class OperationalFundAllocation(models.Model):
                 })
         
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_reject_allocation(self):
         """🚨 ADDON: Manager rejects the proof. Sends it back to Custodian."""
@@ -524,7 +524,7 @@ class OperationalFundAllocation(models.Model):
                 })
         
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     @api.model
     def _cron_check_overdue_allocations(self):
@@ -556,7 +556,7 @@ class OperationalFundAllocation(models.Model):
                     })
                     
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
 
 class OperationalFundAllocationWizard(models.TransientModel):
@@ -635,7 +635,7 @@ class OperationalFundRejectionWizard(models.TransientModel):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
 
 class OperationalFundDisbursement(models.Model):
@@ -1211,7 +1211,7 @@ class OperationalFundDisbursement(models.Model):
                 if task_vals_list:
                     self.env['project.task'].sudo().create(task_vals_list)
                 if mail_vals_list:
-                    self.env['mail.mail'].sudo().create(mail_vals_list)
+                    self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def _cleanup_todo_tasks(self, task_name_prefix):
         if 'project.task' in self.env:
@@ -1245,7 +1245,7 @@ class OperationalFundDisbursement(models.Model):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_mark_as_paid(self):
         mail_vals_list = []
@@ -1265,7 +1265,7 @@ class OperationalFundDisbursement(models.Model):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_unlock_for_correction(self):
         self.ensure_one()
@@ -1366,7 +1366,7 @@ class OperationalFundDisbursement(models.Model):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_cancel_refund(self):
         mail_vals_list = []
@@ -1385,7 +1385,7 @@ class OperationalFundDisbursement(models.Model):
                 })
                 
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_sync_pending_alerts(self):
         legacy_escalated_cats = ['therapist_incentive', 'therapist_overtime', 'home_visit_travel',
@@ -1457,7 +1457,7 @@ class OperationalFundDisbursement(models.Model):
         if task_vals_list:
             self.env['project.task'].sudo().create(task_vals_list)
         if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list)
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
         return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Sync Complete'),
                                                                                        'message': _(
