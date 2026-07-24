@@ -73,6 +73,7 @@ class Patient(models.Model):
 
     source_event_name = fields.Char(related='source_event.name', string="Event Name Helper")
     manual_event_name = fields.Char(string="Type Event Name")
+    referred_doctor_name = fields.Char(string="Doctor Name", tracking=True)
 
     treatment_status = fields.Selection([
         ('converted', 'Enrolled'),
@@ -765,6 +766,8 @@ class Patient(models.Model):
             if record.patient_source != 'event':
                 record.source_event = False
                 record.manual_event_name = False
+            if record.patient_source != 'doctor':
+                record.referred_doctor_name = False
 
     @api.onchange('source_event')
     def _onchange_source_event_clear_manual(self):
