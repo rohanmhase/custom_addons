@@ -173,6 +173,7 @@
 
                         <field name="id" invisible="1"/>
                         <field name="patient_source" required="id == False"/>
+                        <field name="referred_doctor_name" invisible="patient_source != 'doctor'" required="1"/>
 
                         <field name="source_event"
                                widget="selection"

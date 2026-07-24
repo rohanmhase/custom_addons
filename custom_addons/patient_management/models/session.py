@@ -201,3 +201,6 @@ class Session(models.Model):
                 selected.append(f"Other ({rec.b_if_other})" if rec.b_if_other else "Other")
 
             rec.body_parts = ", ".join(selected)
+
+    def copy(self, default=None):
+        raise UserError(_("⚠️ Duplication of this record is not allowed."))
