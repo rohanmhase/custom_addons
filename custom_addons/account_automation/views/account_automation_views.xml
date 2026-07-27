@@ -125,6 +125,38 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- ── Card 4: Medicine Transfer vs Sales Audit ── -->
+                        <div class="col-md-4 col-sm-6 p-2">
+                            <div class="card p-3 shadow-sm border-0"
+                                 style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-danger d-flex align-items-center justify-content-center rounded"
+                                             style="font-size: 20px; background-color: #fef2f2; width: 40px; height: 40px;">
+                                            <i class="fa fa-medkit" title="Medicine Audit"/>
+                                        </div>
+                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
+                                            Medicine Transfer vs Sales
+                                        </h3>
+                                    </div>
+                                    <p class="text-muted small m-0" style="line-height: 1.4;">
+                                        Compare medicine transferred to clinics (at selling price)
+                                        against actual sales to identify discrepancies.
+                                    </p>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-3 pt-2"
+                                     style="border-top: 1px solid #f3f4f6 !important;">
+                                    <button name="action_view_medicine_transfer_audit_history"
+                                            string="View History"
+                                            type="object"
+                                            class="btn btn-secondary btn-sm"/>
+                                    <button name="action_run_medicine_transfer_audit"
+                                            string="Run Audit"
+                                            type="object"
+                                            class="btn btn-primary btn-sm"/>
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
                 </sheet>

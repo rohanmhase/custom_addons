@@ -82,3 +82,23 @@ class AccountAutomationDashboard(models.TransientModel):
             'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
         })
         return action
+
+    def action_run_medicine_transfer_audit(self):
+        return {
+            'name': 'Medicine Transfer vs Sales Audit',
+            'type': 'ir.actions.act_window',
+            'res_model': 'medicine.transfer.sales.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context,
+        }
+
+    def action_view_medicine_transfer_audit_history(self):
+        action = self.env.ref(
+            'account_automation.action_medicine_transfer_sales_audit_history'
+        ).read()[0]
+        action.update({
+            'target': 'current',
+            'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
+        })
+        return action

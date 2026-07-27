@@ -16,6 +16,7 @@
         'views/psmr_reconciliation_views.xml',
         'views/clinic_performance_views.xml',
         'views/invoice_lock_views.xml',
+        'views/medicine_transfer_sales_audit_views.xml',
     ],
     'installable': True,
     'application': False,

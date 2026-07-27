@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         1.  MEDICINE SELLING PRICE CONFIG
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_medicine_transfer_selling_price_tree" model="ir.ui.view">
+        <field name="name">medicine.transfer.selling.price.tree</field>
+        <field name="model">medicine.transfer.selling.price</field>
+        <field name="arch" type="xml">
+            <tree string="Medicine Selling Prices" editable="bottom">
+                <field name="product_id" string="Product"/>
+                <field name="selling_price" string="Selling Price"/>
+                <field name="currency_id" string="Currency" optional="show"/>
+                <field name="notes" string="Notes" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_medicine_transfer_selling_price_form" model="ir.ui.view">
+        <field name="name">medicine.transfer.selling.price.form</field>
+        <field name="model">medicine.transfer.selling.price</field>
+        <field name="arch" type="xml">
+            <form string="Medicine Selling Price">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="product_id" placeholder="Select Product…"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Price">
+                            <field name="selling_price" string="Selling Price"/>
+                            <field name="currency_id" string="Currency"/>
+                        </group>
+                        <group string="Info">
+                            <field name="notes" string="Notes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_medicine_transfer_selling_price_search" model="ir.ui.view">
+        <field name="name">medicine.transfer.selling.price.search</field>
+        <field name="model">medicine.transfer.selling.price</field>
+        <field name="arch" type="xml">
+            <search string="Medicine Selling Prices">
+                <field name="product_id"/>
+                <field name="notes"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_medicine_transfer_selling_price" model="ir.actions.act_window">
+        <field name="name">Medicine Selling Prices</field>
+        <field name="res_model">medicine.transfer.selling.price</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         2.  WIZARD
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_medicine_transfer_sales_audit_wizard_form" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.wizard.form</field>
+        <field name="model">medicine.transfer.sales.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Medicine Transfer vs Sales Audit">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2 style="color: #1f2937;">Medicine Transfer vs Sales Audit</h2>
+                        <p class="text-muted small">
+                            Compare medicine transferred (at selling price) against actual clinic sales.
+                        </p>
+                    </div>
+                    <group>
+                        <group string="Period">
+                            <field name="start_date" string="From Date"/>
+                            <field name="end_date" string="To Date"/>
+                        </group>
+                        <group string="Filter (optional)">
+                            <field name="clinic_ids"
+                                   string="Clinics"
+                                   widget="many2many_tags"
+                                   placeholder="Leave blank for all clinics"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_audit"
+                            string="Run Audit"
+                            type="object"
+                            class="btn btn-primary"
+                            icon="fa-search"/>
+                    <button string="Cancel"
+                            class="btn btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_medicine_transfer_sales_audit_wizard" model="ir.actions.act_window">
+        <field name="name">Medicine Transfer vs Sales Audit</field>
+        <field name="res_model">medicine.transfer.sales.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         3.  AUDIT HEADER – Form
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_medicine_transfer_sales_audit_form" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.form</field>
+        <field name="model">medicine.transfer.sales.audit</field>
+        <field name="arch" type="xml">
+            <form string="Medicine Transfer vs Sales Audit"
+                  create="false" edit="false" delete="false">
+                <sheet style="max-width: 100%;">
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                            invisible="active == True"/>
+
+                    <!-- Header info -->
+                    <div class="oe_title mb-3" style="width: 100%;">
+                        <h1 style="color: #111827; font-size: 24px; font-weight: 700;">
+                            Medicine Transfer vs Sales Audit
+                        </h1>
+                        <div class="d-flex gap-3 mt-1 small" style="color:#374151;">
+                            <span>
+                                <i class="fa fa-calendar-o mr-1"/>
+                                Period:
+                                <strong>
+                                    <field name="start_date" readonly="1" nolabel="1"/>
+                                </strong>
+                                to
+                                <strong>
+                                    <field name="end_date" readonly="1" nolabel="1"/>
+                                </strong>
+                            </span>
+                            <span invisible="not clinic_name_filter">
+                                <i class="fa fa-filter mr-1"/>
+                                Filter:
+                                <field name="clinic_name_filter" readonly="1" nolabel="1"/>
+                            </span>
+                            <span>
+                                <i class="fa fa-clock-o mr-1"/>
+                                Generated:
+                                <field name="run_on" readonly="1" nolabel="1"/>
+                                by
+                                <field name="run_by_id" readonly="1" nolabel="1"/>
+                            </span>
+                        </div>
+                        <button name="action_open_lines"
+                                type="object"
+                                class="btn btn-sm btn-primary mt-2"
+                                icon="fa-search">
+                            Search / Filter Clinics
+                        </button>
+                    </div>
+
+                    <!-- Uncosted products warning – always visible when present -->
+                    <div invisible="uncosted_product_count == 0"
+                         class="alert alert-warning mt-2 mb-3"
+                         style="border-left: 4px solid #f59e0b;">
+                        <div class="d-flex align-items-start">
+                            <i class="fa fa-exclamation-triangle fa-lg mr-3 mt-1"
+                               style="color: #d97706;"/>
+                            <div>
+                                <strong style="font-size: 14px;">
+                                    <field name="uncosted_product_count" readonly="1" nolabel="1"/>
+                                    product(s) transferred without a configured selling price
+                                </strong>
+                                <div class="small mt-1" style="color: #92400e; line-height: 1.5;">
+                                    These products were included in transfer quantity but valued at ₹0.
+                                    Configure their selling price for accurate audit results.
+                                </div>
+                                <div class="small mt-2"
+                                     style="color: #78350f; background: #fef3c7; padding: 8px 12px; border-radius: 4px; max-height: 120px; overflow-y: auto;">
+                                    <field name="uncosted_product_names" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Result table -->
+                    <field name="line_ids"
+                           nolabel="1"
+                           widget="one2many_list"
+                           mode="tree">
+                        <tree string="Audit Results" create="false" delete="false">
+                            <field name="clinic_name" string="Clinic"/>
+                            <field name="total_sales" string="Total Sales" sum="Total"/>
+                            <field name="medicine_transfer_value"
+                                   string="Medicine Transfer Value" sum="Total"/>
+                            <field name="sales_medicine_ratio"
+                                   string="Sales / Medicine" avg="Average"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         4.  AUDIT LINES – Standalone searchable tree + search
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_medicine_transfer_sales_audit_line_search" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.line.search</field>
+        <field name="model">medicine.transfer.sales.audit.line</field>
+        <field name="arch" type="xml">
+            <search string="Medicine Audit Lines">
+                <field name="clinic_name" string="Clinic"
+                       filter_domain="[('clinic_name','ilike',self)]"/>
+                <filter name="has_sales" string="Has Sales"
+                        domain="[('total_sales','&gt;',0)]"/>
+                <filter name="has_transfers" string="Has Transfers"
+                        domain="[('medicine_transfer_value','&gt;',0)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_medicine_transfer_sales_audit_line_full_tree" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.line.full.tree</field>
+        <field name="model">medicine.transfer.sales.audit.line</field>
+        <field name="arch" type="xml">
+            <tree string="Medicine Transfer vs Sales Audit" create="false" delete="false">
+                <field name="clinic_name" string="Clinic"/>
+                <field name="total_sales" string="Total Sales" sum="Total"/>
+                <field name="medicine_transfer_value"
+                       string="Medicine Transfer Value" sum="Total"/>
+                <field name="sales_medicine_ratio"
+                       string="Sales / Medicine" avg="Average"/>
+            </tree>
+        </field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         5.  HISTORY
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_medicine_transfer_sales_audit_tree" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.tree</field>
+        <field name="model">medicine.transfer.sales.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Audit History" create="false"
+                  decoration-muted="active == False">
+                <field name="active" column_invisible="1"/>
+                <field name="run_on" string="Generated On"/>
+                <field name="start_date" string="From"/>
+                <field name="end_date" string="To"/>
+                <field name="clinic_name_filter" string="Clinic Filter"/>
+                <field name="run_by_id" string="Generated By"/>
+                <field name="uncosted_product_count" string="Uncosted Products"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_medicine_transfer_sales_audit_search" model="ir.ui.view">
+        <field name="name">medicine.transfer.sales.audit.search</field>
+        <field name="model">medicine.transfer.sales.audit</field>
+        <field name="arch" type="xml">
+            <search string="Audit History">
+                <field name="clinic_name_filter" string="Clinic Filter"/>
+                <field name="run_by_id" string="Generated By"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_run_by" string="Generated By"
+                            context="{'group_by': 'run_by_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_medicine_transfer_sales_audit_history" model="ir.actions.act_window">
+        <field name="name">Medicine Transfer vs Sales Audit – History</field>
+        <field name="res_model">medicine.transfer.sales.audit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_medicine_transfer_sales_audit_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         6.  MENU ITEMS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_medicine_transfer_sales_audit_history"
+              name="Medicine Transfer vs Sales Audit"
+              parent="menu_account_automation_operations"
+              action="action_medicine_transfer_sales_audit_history"
+              sequence="40"/>
+
+    <menuitem id="menu_medicine_transfer_selling_price"
+              name="Medicine Selling Prices"
+              parent="menu_account_automation_config"
+              action="action_medicine_transfer_selling_price"
+              sequence="30"/>
+
+</odoo>
