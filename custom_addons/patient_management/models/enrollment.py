@@ -138,7 +138,7 @@ class Enrollment(models.Model):
             therapy_products = [
                 'Complementary Therapy',
                 'Demo Session',
-                'Regeneration Therapy',
+                'Regrowth Therapy',
                 'Self Therapy'
             ]
 
@@ -146,7 +146,7 @@ class Enrollment(models.Model):
                 'Diabetes Treatment',
                 'Digestion Improvement Treatment',
                 'PCOD Treatment',
-                'Regeneration Treatment',
+                'Regrowth Treatment',
                 'Weight Management Treatment'
             ]
 
@@ -468,7 +468,7 @@ class EnrollmentLine(models.Model):
             'Diabetes Treatment',
             'Digestion Improvement Treatment',
             'PCOD Treatment',
-            'Regeneration Treatment',
+            'Regrowth Treatment',
             'Weight Management Treatment',
         ]:
 
@@ -505,7 +505,7 @@ class EnrollmentLine(models.Model):
             if product_name in [
                 'Demo Session',
                 'Complementary Therapy',
-                'Regeneration Therapy',
+                'Regrowth Therapy',
                 'Self Therapy',
             ]:
 
@@ -542,8 +542,8 @@ class EnrollmentLine(models.Model):
             rec.is_digestion_improvement = (product_name == 'Digestion Improvement Treatment')
             rec.is_home_visit = (product_name == 'Home Visit Charges')
             rec.is_pcod = (product_name == 'PCOD Treatment')
-            rec.is_regeneration_therapy = (product_name == 'Regeneration Therapy')
-            rec.is_regeneration_treatment = (product_name == 'Regeneration Treatment')
+            rec.is_regeneration_therapy = (product_name == 'Regrowth Therapy')
+            rec.is_regeneration_treatment = (product_name == 'Regrowth Treatment')
             rec.is_self_therapy = (product_name == 'Self Therapy')
             rec.is_weight_management_treatment = (product_name == 'Weight Management Treatment')
 
@@ -552,13 +552,14 @@ class EnrollmentLine(models.Model):
 
         # List of all treatments that require a quantity greater than 0
         restricted_treatments = [
-            'Regeneration Therapy',
+            'Regrowth Therapy',
             'Diabetes Treatment',
             'Digestion Improvement Treatment',
             'PCOD Treatment',
-            'Regeneration Treatment',
+            'Regrowth Treatment',
             'Weight Management Treatment',
             'Self Therapy',
+            'Complementary Therapy',
         ]
 
         for rec in self:
@@ -592,7 +593,7 @@ class ProductProduct(models.Model):
         # 2. Check context (with cache bypassing enabled)
         if self.env.context.get('show_custom_regeneration_name'):
             for product in self:
-                if product.name == 'Regeneration Therapy':
-                    product.display_name = 'Regeneration Therapy(Consultation + Medicine + Therapy)'
-                elif product.name == 'Regeneration Treatment':
-                    product.display_name = 'Regeneration Treatment(Consultation + Medicine)'
+                if product.name == 'Regrowth Therapy':
+                    product.display_name = 'Regrowth Therapy(Therapy + Medicine + Consultation)'
+                elif product.name == 'Regrowth Treatment':
+                    product.display_name = 'Regrowth Treatment(Medicine + Consultation)'
