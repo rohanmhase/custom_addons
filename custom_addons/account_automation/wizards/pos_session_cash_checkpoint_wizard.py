@@ -199,7 +199,7 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
                     'view_mode': 'form', 'target': 'new'}
 
         session_ids = [c[1] for c in candidates]
-        expected_map = self.env['pos.session.alert.service'].compute_expected_batch(session_ids)
+        expected_map = self.env['pos.session.alert.service'].sudo().compute_expected_batch(session_ids)
 
         Chk = self.env['pos.session.cash.checkpoint']
         active_cps = Chk.search([('active', '=', True)])
@@ -240,6 +240,7 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
             lines_vals.append((0, 0, {
                 'clinic_id': config_id,
                 'session_id': session_id,
+                'session_stop_at_stored': stop_at,
                 'entered_closing': entered_closing or 0.0,
                 'expected_closing': expected_close,
                 'diff': diff,
@@ -275,15 +276,16 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
                 skipped += 1
                 continue
             try:
+                session_sudo = line.session_id.sudo()
                 current = Chk.search([
                     ('clinic_id', '=', line.clinic_id.id),
                     ('active', '=', True),
                 ], limit=1)
                 Chk.create({
                     'clinic_id': line.clinic_id.id,
-                    'checkpoint_datetime': line.session_id.stop_at,
+                    'checkpoint_datetime': line.session_stop_at_stored,
                     'checkpoint_amount': line.expected_closing,
-                    'source_session_id': line.session_id.id,
+                    'source_session_id': session_sudo.id,
                     'checkpoint_type': 'manual',
                     'active': True,
                     'previous_checkpoint_id': current.id if current else False,
@@ -315,8 +317,9 @@ class PosSessionCashCheckpointBulkWizardLine(models.TransientModel):
         'pos.session.cash.checkpoint.bulk.wizard', ondelete='cascade', required=True)
     clinic_id = fields.Many2one('pos.config', string='Clinic', readonly=True)
     session_id = fields.Many2one('pos.session', string='Session', readonly=True)
-    session_name = fields.Char(related='session_id.name', readonly=True)
-    session_stop_at = fields.Datetime(related='session_id.stop_at', readonly=True)
+    session_name = fields.Char(related='session_id.name', readonly=True, compute_sudo=True)
+    session_stop_at = fields.Datetime(related='session_id.stop_at', readonly=True, compute_sudo=True)
+    session_stop_at_stored = fields.Datetime(string='Session Stop At', readonly=True)
     entered_closing = fields.Float(string='Entered', readonly=True)
     expected_closing = fields.Float(string='Expected (New Anchor)', readonly=True)
     diff = fields.Float(string='Diff', readonly=True)
