@@ -10,6 +10,22 @@ class PosSessionAlertService(models.AbstractModel):
     _description = 'POS Session Cash Alert Service'
 
     # ------------------------------------------------------------------
+    # Helper: get an env that can read ALL companies' sessions
+    # ------------------------------------------------------------------
+    def _sudo_all_companies(self):
+        """Return self bound to sudo + all companies context.
+
+        This bypasses multi-company record rules so the cron/wizard can
+        read POS sessions belonging to any clinic/company regardless of
+        the executing user's allowed_company_ids.
+        """
+        all_company_ids = self.env['res.company'].sudo().search([]).ids
+        return self.sudo().with_context(
+            allowed_company_ids=all_company_ids,
+            active_test=False,
+        )
+
+    # ------------------------------------------------------------------
     # BATCH: compute expected opening/closing for many sessions in ONE query
     # Uses per-clinic active checkpoint (fallback to April 1 default)
     # ------------------------------------------------------------------
@@ -162,36 +178,41 @@ class PosSessionAlertService(models.AbstractModel):
     # ------------------------------------------------------------------
     @api.model
     def process_alerts_for_date(self, check_date, force_resend=False):
-        config = self.env['pos.session.alert.config'].sudo().get_config()
+        # ⭐ Elevate: sudo + include all companies so record rules don't block us
+        service = self._sudo_all_companies()
+
+        config = service.env['pos.session.alert.config'].sudo().get_config()
         if not config.active:
             _logger.info("POS Session Alerts disabled. Skipping.")
             return {'processed': 0, 'emails_sent': 0, 'errors': 0}
 
         stats = {'processed': 0, 'emails_sent': 0, 'errors': 0}
 
-        self.env.cr.execute("""
+        service.env.cr.execute("""
             SELECT id, config_id FROM pos_session
             WHERE (start_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = %s
         """, (check_date,))
-        rows_a = self.env.cr.fetchall()
+        rows_a = service.env.cr.fetchall()
         session_ids_a = [r[0] for r in rows_a]
         clinic_ids_with_yesterday = {r[1] for r in rows_a}
 
         exclude = tuple(clinic_ids_with_yesterday) or (0,)
-        self.env.cr.execute("""
+        service.env.cr.execute("""
             SELECT DISTINCT ON (config_id) id FROM pos_session
             WHERE (start_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date < %s
               AND config_id NOT IN %s
             ORDER BY config_id, start_at DESC
         """, (check_date, exclude))
-        step_b_ids = [r[0] for r in self.env.cr.fetchall()]
+        step_b_ids = [r[0] for r in service.env.cr.fetchall()]
 
         all_ids = list(set(session_ids_a + step_b_ids))
         if not all_ids:
             return stats
 
-        expected_map = self.compute_expected_batch(all_ids)
-        sessions = self.env['pos.session'].browse(all_ids)
+        expected_map = service.compute_expected_batch(all_ids)
+
+        # ⭐ Browse with the elevated env so ORM record-rule check passes
+        sessions = service.env['pos.session'].browse(all_ids)
 
         for session in sessions:
             try:
@@ -200,7 +221,9 @@ class PosSessionAlertService(models.AbstractModel):
                     'patient_cash': 0.0, 'cash_refunds': 0.0,
                     'manual_in': 0.0, 'manual_out': 0.0,
                 })
-                self._process_single_session(session, expected, check_date, config, force_resend, stats)
+                service._process_single_session(
+                    session, expected, check_date, config, force_resend, stats
+                )
             except Exception as e:
                 stats['errors'] += 1
                 _logger.exception("Alert check failed for session %s: %s", session.id, e)
@@ -208,6 +231,9 @@ class PosSessionAlertService(models.AbstractModel):
         return stats
 
     def _process_single_session(self, session, expected, check_date, config, force_resend, stats):
+        # ⭐ Defensive: ensure this specific session record is sudo'd too
+        session = session.sudo()
+
         stats['processed'] += 1
         tolerance = config.tolerance_amount or 0.0
         issues = []
@@ -272,7 +298,8 @@ class PosSessionAlertService(models.AbstractModel):
     def _send_consolidated_email(self, session, issues, expected, check_date, config):
         """Returns (bool sent, str error_or_none). Sends email WITHOUT posting to chatter."""
         try:
-            from markupsafe import Markup
+            # ⭐ Sudo the session so reading user_id/partner_id/email works across companies
+            session = session.sudo()
 
             responsible = session.user_id
             if not responsible or not responsible.partner_id.email:
@@ -338,7 +365,7 @@ class PosSessionAlertService(models.AbstractModel):
                 'email_from': from_email,
                 'email_to': responsible.partner_id.email,
                 'email_cc': cc_emails or False,
-                'auto_delete': True,
+                'auto_delete': False,
                 # Explicitly no res_model/res_id → no chatter link
             }
             mail = self.env['mail.mail'].sudo().create(mail_vals)
