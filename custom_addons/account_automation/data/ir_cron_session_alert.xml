@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_pos_session_alert" model="ir.cron">
+            <field name="name">POS Session Cash Alert (Daily 8 AM IST)</field>
+            <field name="model_id" ref="model_pos_session_alert_service"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_daily_session_alerts()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <!-- 2:30 UTC = 8:00 IST -->
+            <field name="nextcall" eval="(DateTime.now().replace(hour=2, minute=30, second=0, microsecond=0) + timedelta(days=1))"/>
+        </record>
+    </data>
+</odoo>

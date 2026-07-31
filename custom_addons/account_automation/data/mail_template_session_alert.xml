@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_pos_session_cash_alert" model="mail.template">
+            <field name="name">POS Session Cash Alert</field>
+            <field name="model_id" ref="point_of_sale.model_pos_session"/>
+            <field name="subject">⚠️ Session {{ object.name }} — Issues Detected ({{ ctx.get('check_date_str') }})</field>
+            <field name="email_from">{{ ctx.get('email_from') or 'noreply@researchayu.com' }}</field>
+            <field name="email_to">{{ ctx.get('email_to') }}</field>
+            <field name="email_cc">{{ ctx.get('email_cc') }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; color:#111827; max-width:640px;">
+                    <h2 style="color:#111827;">POS Session Alert</h2>
+                    <p>Hello <t t-out="object.user_id.name or 'Cashier'"/>,</p>
+                    <p>
+                        The following issues were detected for POS session
+                        <b><t t-out="object.name"/></b> at
+                        <b><t t-out="object.config_id.name"/></b>
+                        for business day <b><t t-out="ctx.get('check_date_str')"/></b>:
+                    </p>
+                    <ul style="line-height: 1.8;">
+                        <t t-out="ctx.get('issues_html')"/>
+                    </ul>
+                    <p>Please reconcile as soon as possible.</p>
+                    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;"/>
+                    <p style="color:#6b7280;font-size:12px;">
+                        This is an automated alert from ResearchAyu Account Automation.
+                        Please do not reply.
+                    </p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>
