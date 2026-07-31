@@ -4,9 +4,9 @@
 
     <menuitem id="menu_schedule_calendar_dashboard" name="Appointments Dashboard" parent="menu_clinic_schedule_root" action="action_clinic_schedule_dashboard_client" sequence="10"/>
 
-    <menuitem id="menu_schedule_therapist_directory" name="Therapist Directory" parent="menu_clinic_schedule_root" action="action_clinic_therapist_directory" sequence="15"/>
+    <menuitem id="menu_schedule_therapist_directory" name="Therapist Directory" parent="menu_clinic_schedule_root" action="action_clinic_therapist_directory" sequence="15" groups="clinic_schedule.group_clinic_schedule_manager,clinic_schedule.group_clinic_schedule_clinic_admin"/>
 
-    <menuitem id="menu_clinic_region_main" name="Regions &amp; Zones" parent="menu_clinic_schedule_root" action="action_clinic_region" sequence="18"/>
+    <menuitem id="menu_clinic_region_main" name="Regions &amp; Zones" parent="menu_clinic_schedule_root" action="action_clinic_region" sequence="18" groups="clinic_schedule.group_clinic_schedule_manager,clinic_schedule.group_clinic_schedule_clinic_admin"/>
 
-    <menuitem id="menu_schedule_upload_roster" name="Upload Staff Roster" parent="menu_clinic_schedule_root" action="action_clinic_therapist_import_log" sequence="20"/>
+    <menuitem id="menu_schedule_upload_roster" name="Upload Staff Roster" parent="menu_clinic_schedule_root" action="action_clinic_therapist_import_log" sequence="20" groups="clinic_schedule.group_clinic_schedule_manager,clinic_schedule.group_clinic_schedule_clinic_admin"/>
 </odoo>
