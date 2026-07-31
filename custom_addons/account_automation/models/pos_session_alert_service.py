@@ -1,5 +1,5 @@
 import logging
-import time
+import smtplib
 from datetime import timedelta
 from odoo import models, fields, api, _
 
@@ -11,7 +11,6 @@ class PosSessionAlertService(models.AbstractModel):
     _description = 'POS Session Cash Alert Service'
 
     def _sudo_all_companies(self):
-        """Return self bound to sudo + all companies context."""
         all_company_ids = self.env['res.company'].sudo().search([]).ids
         return self.sudo().with_context(
             allowed_company_ids=all_company_ids,
@@ -23,21 +22,13 @@ class PosSessionAlertService(models.AbstractModel):
         if not session_ids:
             return {}
 
-        t0 = time.time()
-
         session_ids_tuple = tuple(session_ids)
         self.env.cr.execute("""
             SELECT DISTINCT config_id FROM pos_session WHERE id IN %s
         """, (session_ids_tuple,))
         clinic_ids = tuple(r[0] for r in self.env.cr.fetchall())
-
-        t1 = time.time()
-        _logger.warning("⏱️ [SERVICE-1] Get clinic_ids (%s clinics): %.2fs", len(clinic_ids), t1 - t0)
-
         if not clinic_ids:
             return {}
-
-        t2 = time.time()
 
         self.env.cr.execute("""
             WITH effective_anchor AS (
@@ -159,9 +150,6 @@ class PosSessionAlertService(models.AbstractModel):
             'target_ids': session_ids_tuple,
         })
 
-        t3 = time.time()
-        _logger.warning("⏱️ [SERVICE-2] BIG SQL query (%s sessions): %.2fs ⚠️", len(session_ids), t3 - t2)
-
         results = {}
         for row in self.env.cr.dictfetchall():
             results[row['session_id']] = {
@@ -172,17 +160,10 @@ class PosSessionAlertService(models.AbstractModel):
                 'manual_in': row['manual_in'] or 0.0,
                 'manual_out': row['manual_out'] or 0.0,
             }
-
-        t4 = time.time()
-        _logger.warning("⏱️ [SERVICE-3] Build results dict: %.2fs", t4 - t3)
-        _logger.warning("⏱️ [SERVICE] TOTAL compute_expected_batch: %.2fs", t4 - t0)
-
         return results
 
     @api.model
     def process_alerts_for_date(self, check_date, force_resend=False):
-        t_total_start = time.time()
-
         service = self._sudo_all_companies()
 
         config = service.env['pos.session.alert.config'].sudo().get_config()
@@ -215,7 +196,6 @@ class PosSessionAlertService(models.AbstractModel):
 
         expected_map = service.compute_expected_batch(all_ids)
 
-        # Preload ALL existing alerts in ONE query
         existing_alerts = set()
         if not force_resend:
             service.env.cr.execute("""
@@ -224,7 +204,6 @@ class PosSessionAlertService(models.AbstractModel):
             """, (tuple(all_ids), check_date))
             existing_alerts = {(r[0], r[1]) for r in service.env.cr.fetchall()}
 
-        # Browse with prefetch
         sessions = service.env['pos.session'].browse(all_ids)
         sessions.read(['name', 'state', 'config_id', 'user_id',
                        'cash_register_balance_start', 'cash_register_balance_end_real',
@@ -253,14 +232,13 @@ class PosSessionAlertService(models.AbstractModel):
             service.env['pos.session.alert.log'].sudo().browse(logs_to_delete_ids).unlink()
 
         # ============================================================
-        # Build all mail.mail records in ONE batch create
-        # Then send them all — Odoo internally reuses SMTP connection
-        # when sending on a recordset of multiple mails.
+        # BATCH SMTP with auto-reconnect safety net
+        # - Opens ONE SMTP connection, reuses for all emails
+        # - If connection drops, auto-reconnects and retries
+        # - One bad email doesn't kill the whole batch
         # ============================================================
         log_vals_list = []
         if email_tasks:
-            t_mail_start = time.time()
-
             mail_vals_list = []
             for task in email_tasks:
                 mv = self._build_mail_vals(
@@ -273,12 +251,10 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail_vals'] = None
 
-            # Batch create ALL mail.mail records in one shot
             created_mails = self.env['mail.mail'].sudo()
             if mail_vals_list:
                 created_mails = self.env['mail.mail'].sudo().create(mail_vals_list)
 
-            # Map created mails back to their tasks (in order)
             mail_iter = iter(created_mails)
             for task in email_tasks:
                 if task.get('mail_vals'):
@@ -286,59 +262,118 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail'] = None
 
-            # ⚡ BATCH SEND: Call send() ONCE on whole recordset.
-            # Odoo internally opens ONE SMTP connection and reuses it.
+            IrMailServer = self.env['ir.mail_server'].sudo()
+            smtp_session = None
+            mail_server = None
+
             if created_mails:
                 try:
-                    _logger.info("⚡ Sending %s emails as batch recordset", len(created_mails))
-                    created_mails.send(raise_exception=False)
-                except Exception as batch_err:
-                    _logger.exception("Batch send failed: %s", batch_err)
+                    mail_server = IrMailServer.search([], order='sequence', limit=1)
+                    if mail_server:
+                        smtp_session = IrMailServer.connect(mail_server_id=mail_server.id)
+                        _logger.info("Opened SMTP connection for %s emails", len(created_mails))
+                except Exception as conn_err:
+                    _logger.warning("SMTP connect failed, will use fallback: %s", conn_err)
+                    smtp_session = None
 
-                # Refresh cache to read updated state
-                created_mails.invalidate_recordset(['state', 'failure_reason'])
+                try:
+                    for task in email_tasks:
+                        mail = task.get('mail')
+                        sent = False
+                        error = None
 
-            # Now read status of each mail and update log vals
-            for task in email_tasks:
-                mail = task.get('mail')
-                sent = False
-                error = None
-                if mail:
-                    if mail.state == 'sent':
-                        sent = True
-                    else:
-                        error = mail.failure_reason or f'Send failed (state={mail.state})'
-                else:
-                    error = "No valid recipient (user inactive or no email)"
+                        if not mail:
+                            error = "No valid recipient (user inactive or no email)"
+                        else:
+                            sent, error, smtp_session = self._send_one_mail(
+                                mail, task['mail_vals'], IrMailServer,
+                                mail_server, smtp_session
+                            )
 
-                if sent:
-                    stats['emails_sent'] += 1
+                        if sent:
+                            stats['emails_sent'] += 1
+                        for lv in task['log_vals']:
+                            lv['email_sent'] = sent
+                            lv['email_error'] = error or False
+                        log_vals_list.extend(task['log_vals'])
+                finally:
+                    if smtp_session is not None:
+                        try:
+                            smtp_session.quit()
+                        except Exception:
+                            pass
 
-                for lv in task['log_vals']:
-                    lv['email_sent'] = sent
-                    lv['email_error'] = error or False
-                log_vals_list.extend(task['log_vals'])
-
-            t_mail_end = time.time()
-            _logger.warning("⏱️ [MAIL] Sent %s/%s emails in %.2fs",
-                            stats['emails_sent'], len(created_mails), t_mail_end - t_mail_start)
-
-        # Single batch create for all logs
         if log_vals_list:
             try:
                 service.env['pos.session.alert.log'].sudo().create(log_vals_list)
             except Exception as e:
                 _logger.exception("Batch log create failed: %s", e)
 
-        t_total_end = time.time()
-        _logger.warning("⏱️ [TOTAL] process_alerts_for_date: %.2fs", t_total_end - t_total_start)
-
         return stats
+
+    def _send_one_mail(self, mail, mv, IrMailServer, mail_server, smtp_session):
+        """Send one mail via SMTP with auto-reconnect on disconnect.
+        Returns (sent_bool, error_str_or_None, updated_smtp_session)."""
+        if smtp_session is None or mail_server is None:
+            # Fallback: standard Odoo send (opens own connection)
+            try:
+                mail.send(raise_exception=False)
+                mail.invalidate_recordset(['state', 'failure_reason'])
+                if mail.state == 'sent':
+                    return (True, None, smtp_session)
+                return (False, mail.failure_reason or 'Send failed', smtp_session)
+            except Exception as e:
+                return (False, str(e), smtp_session)
+
+        # Try batch SMTP send
+        try:
+            self._smtp_send_via_session(mv, IrMailServer, mail_server, smtp_session)
+            mail.write({'state': 'sent'})
+            return (True, None, smtp_session)
+        except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError,
+                ConnectionResetError, BrokenPipeError) as disc_err:
+            # Connection died — reconnect once and retry
+            _logger.warning("SMTP disconnected, reconnecting: %s", disc_err)
+            try:
+                try:
+                    smtp_session.quit()
+                except Exception:
+                    pass
+                smtp_session = IrMailServer.connect(mail_server_id=mail_server.id)
+                self._smtp_send_via_session(mv, IrMailServer, mail_server, smtp_session)
+                mail.write({'state': 'sent'})
+                return (True, None, smtp_session)
+            except Exception as retry_err:
+                error = str(retry_err)
+                mail.write({'state': 'exception', 'failure_reason': error})
+                return (False, error, smtp_session)
+        except Exception as other_err:
+            error = str(other_err)
+            mail.write({'state': 'exception', 'failure_reason': error})
+            _logger.exception("SMTP send failed: %s", other_err)
+            return (False, error, smtp_session)
+
+    def _smtp_send_via_session(self, mv, IrMailServer, mail_server, smtp_session):
+        """Build and send one email through the given SMTP session."""
+        email_to_list = [e.strip() for e in mv['email_to'].split(',') if e.strip()]
+        email_cc_list = [e.strip() for e in (mv.get('email_cc') or '').split(',') if e.strip()]
+        message = IrMailServer.build_email(
+            email_from=mv['email_from'],
+            email_to=email_to_list,
+            subject=mv['subject'],
+            body=mv['body_html'],
+            email_cc=email_cc_list,
+            subtype='html',
+        )
+        IrMailServer.send_email(
+            message,
+            mail_server_id=mail_server.id,
+            smtp_session=smtp_session,
+        )
 
     def _collect_single_session(self, session, expected, check_date, config,
                                  force_resend, stats, existing_alerts,
                                  email_tasks, logs_to_delete_ids):
-        """Collect email tasks + log vals — actual sending happens in batch after loop."""
         session = session.sudo()
         stats['processed'] += 1
         tolerance = config.tolerance_amount or 0.0
@@ -396,8 +431,6 @@ class PosSessionAlertService(models.AbstractModel):
         })
 
     def _is_valid_recipient(self, user):
-        """Check if a user is a valid email recipient.
-        Returns True only if user + partner are active with valid email."""
         if not user:
             return False
         user_sudo = user.sudo()
@@ -414,7 +447,6 @@ class PosSessionAlertService(models.AbstractModel):
         return True
 
     def _build_mail_vals(self, session, issues, expected, check_date, config):
-        """Build mail.mail vals dict. Returns None if no valid recipient."""
         try:
             session = session.sudo()
             responsible = session.user_id
@@ -488,7 +520,7 @@ class PosSessionAlertService(models.AbstractModel):
             return None
 
     def _send_consolidated_email(self, session, issues, expected, check_date, config):
-        """Returns (bool sent, str error_or_none). Kept for backward compatibility."""
+        """Kept for backward compatibility."""
         try:
             mail_vals = self._build_mail_vals(session, issues, expected, check_date, config)
             if not mail_vals:
