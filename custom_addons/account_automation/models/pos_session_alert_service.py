@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import timedelta
 from odoo import models, fields, api, _
 
@@ -22,13 +23,27 @@ class PosSessionAlertService(models.AbstractModel):
         if not session_ids:
             return {}
 
+        # ============ TIMING DEBUG START ============
+        t0 = time.time()
+        # ============================================
+
         session_ids_tuple = tuple(session_ids)
         self.env.cr.execute("""
             SELECT DISTINCT config_id FROM pos_session WHERE id IN %s
         """, (session_ids_tuple,))
         clinic_ids = tuple(r[0] for r in self.env.cr.fetchall())
+
+        # ============ TIMING DEBUG ============
+        t1 = time.time()
+        _logger.warning("⏱️ [SERVICE-1] Get clinic_ids (%s clinics): %.2fs", len(clinic_ids), t1 - t0)
+        # ======================================
+
         if not clinic_ids:
             return {}
+
+        # ============ TIMING DEBUG ============
+        t2 = time.time()
+        # ======================================
 
         self.env.cr.execute("""
             WITH effective_anchor AS (
@@ -150,6 +165,11 @@ class PosSessionAlertService(models.AbstractModel):
             'target_ids': session_ids_tuple,
         })
 
+        # ============ TIMING DEBUG ============
+        t3 = time.time()
+        _logger.warning("⏱️ [SERVICE-2] BIG SQL query (%s sessions): %.2fs ⚠️⚠️⚠️", len(session_ids), t3 - t2)
+        # ======================================
+
         results = {}
         for row in self.env.cr.dictfetchall():
             results[row['session_id']] = {
@@ -160,6 +180,13 @@ class PosSessionAlertService(models.AbstractModel):
                 'manual_in': row['manual_in'] or 0.0,
                 'manual_out': row['manual_out'] or 0.0,
             }
+
+        # ============ TIMING DEBUG ============
+        t4 = time.time()
+        _logger.warning("⏱️ [SERVICE-3] Build results dict: %.2fs", t4 - t3)
+        _logger.warning("⏱️ [SERVICE] TOTAL compute_expected_batch: %.2fs", t4 - t0)
+        # ======================================
+
         return results
 
     @api.model
@@ -196,7 +223,7 @@ class PosSessionAlertService(models.AbstractModel):
 
         expected_map = service.compute_expected_batch(all_ids)
 
-        # OPTIMIZATION: Preload ALL existing alerts in ONE query (was N queries)
+        # Preload ALL existing alerts in ONE query (was N queries)
         existing_alerts = set()
         if not force_resend:
             service.env.cr.execute("""
@@ -205,14 +232,13 @@ class PosSessionAlertService(models.AbstractModel):
             """, (tuple(all_ids), check_date))
             existing_alerts = {(r[0], r[1]) for r in service.env.cr.fetchall()}
 
-        # OPTIMIZATION: Browse with prefetch for related fields
+        # Browse with prefetch for related fields
         sessions = service.env['pos.session'].browse(all_ids)
         sessions.read(['name', 'state', 'config_id', 'user_id',
                        'cash_register_balance_start', 'cash_register_balance_end_real',
                        'start_at'])
 
-        # OPTIMIZATION: Collect email tasks + log vals during loop
-        # (emails will be created + sent AFTER the loop in a batch)
+        # Collect email tasks + log vals during loop
         email_tasks = []
         logs_to_delete_ids = []
 
@@ -232,12 +258,11 @@ class PosSessionAlertService(models.AbstractModel):
                 _logger.exception("Alert check failed for session %s: %s", session.id, e)
                 continue
 
-        # OPTIMIZATION: Batch delete old logs (force_resend case)
+        # Batch delete old logs (force_resend case)
         if logs_to_delete_ids:
             service.env['pos.session.alert.log'].sudo().browse(logs_to_delete_ids).unlink()
 
-        # OPTIMIZATION: Create ALL mail.mail records in ONE batch
-        # then send them all together (single SMTP connection reused)
+        # Create ALL mail.mail records in ONE batch, then send them all
         log_vals_list = []
         if email_tasks:
             mail_vals_list = []
@@ -252,12 +277,10 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail_vals'] = None
 
-            # Batch create all mail.mail records
             created_mails = self.env['mail.mail'].sudo()
             if mail_vals_list:
                 created_mails = self.env['mail.mail'].sudo().create(mail_vals_list)
 
-            # Map mails back to tasks (in order)
             mail_iter = iter(created_mails)
             for task in email_tasks:
                 if task.get('mail_vals'):
@@ -265,7 +288,6 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail'] = None
 
-            # SEND all emails (still individual sends, but no ORM overhead per email)
             for task in email_tasks:
                 mail = task.get('mail')
                 sent = False
@@ -273,7 +295,6 @@ class PosSessionAlertService(models.AbstractModel):
                 if mail:
                     try:
                         mail.send(raise_exception=False)
-                        # Check state after send
                         mail.invalidate_recordset(['state', 'failure_reason'])
                         if mail.state == 'sent':
                             sent = True
@@ -289,13 +310,12 @@ class PosSessionAlertService(models.AbstractModel):
                 if sent:
                     stats['emails_sent'] += 1
 
-                # Attach send result to each log val
                 for lv in task['log_vals']:
                     lv['email_sent'] = sent
                     lv['email_error'] = error or False
                 log_vals_list.extend(task['log_vals'])
 
-        # OPTIMIZATION: Single batch create for all logs
+        # Single batch create for all logs
         if log_vals_list:
             try:
                 service.env['pos.session.alert.log'].sudo().create(log_vals_list)
@@ -332,7 +352,6 @@ class PosSessionAlertService(models.AbstractModel):
         if not issues:
             return
 
-        # Collect log vals (email_sent/error filled in after email sent)
         session_log_vals = []
         for alert_type, diff_amount in issues:
             if force_resend:
@@ -436,7 +455,6 @@ class PosSessionAlertService(models.AbstractModel):
             _logger.exception("Failed to build mail for session %s: %s", session.id, e)
             return None
 
-    # Kept for backward compatibility (unchanged interface)
     def _send_consolidated_email(self, session, issues, expected, check_date, config):
         """Returns (bool sent, str error_or_none). Sends email WITHOUT posting to chatter."""
         try:
