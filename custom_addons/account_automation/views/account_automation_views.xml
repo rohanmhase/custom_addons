@@ -24,7 +24,71 @@
                     <div class="oe_title mb-4">
                         <h1 style="color: #111827; font-size: 28px; font-weight: 700;">Account Automation Workspace</h1>
                     </div>
+                    <!-- Hidden field for computed counter -->
+                    <field name="overdue_checkpoint_count" invisible="1"/>
+
                     <div class="row">
+
+                        <!-- ── BIG COUNTER: Cash Checkpoint Status (RED state) ── -->
+                        <div class="col-md-12 p-2" invisible="overdue_checkpoint_count == 0">
+                            <div class="card p-4 shadow-sm border-0"
+                                 style="background: linear-gradient(90deg,#fef2f2 0%,#fff7ed 100%); border: 1px solid #fecaca !important; border-radius: 12px;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="text-danger d-flex align-items-center justify-content-center rounded mr-4"
+                                             style="font-size: 32px; background:#fee2e2; width:64px; height:64px;">
+                                            <i class="fa fa-exclamation-triangle"/>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h2 style="margin:0;font-size:22px;color:#7f1d1d;">
+                                                <field name="overdue_checkpoint_count" nolabel="1" readonly="1" class="oe_inline"/>
+                                                clinic(s) need cash checkpoint update
+                                            </h2>
+                                            <p class="text-muted small m-0">
+                                                Please verify month-end cash balance and update checkpoints.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button name="action_view_checkpoint_history" string="View All"
+                                                type="object" class="btn btn-secondary"/>
+                                        <button name="action_update_checkpoint_single" string="Update Single"
+                                                type="object" class="btn btn-warning"/>
+                                        <button name="action_bulk_update_checkpoints" string="Bulk Update"
+                                                type="object" class="btn btn-danger"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── BIG COUNTER: Cash Checkpoint Status (GREEN state) ── -->
+                        <div class="col-md-12 p-2" invisible="overdue_checkpoint_count != 0">
+                            <div class="card p-4 shadow-sm border-0"
+                                 style="background:#f0fdf4; border: 1px solid #bbf7d0 !important; border-radius: 12px;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="text-success d-flex align-items-center justify-content-center rounded mr-4"
+                                             style="font-size: 32px; background:#dcfce7; width:64px; height:64px;">
+                                            <i class="fa fa-check-circle"/>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h2 style="margin:0;font-size:22px;color:#166534;">
+                                                All clinic checkpoints are current
+                                            </h2>
+                                            <p class="text-muted small m-0">No action required.</p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button name="action_view_checkpoint_history" string="View History"
+                                                type="object" class="btn btn-secondary"/>
+                                        <button name="action_update_checkpoint_single" string="Update Single"
+                                                type="object" class="btn btn-outline-primary"/>
+                                        <button name="action_bulk_update_checkpoints" string="Bulk Update"
+                                                type="object" class="btn btn-outline-primary"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- ── Card 1: Daily Sale Comparison ── -->
                         <div class="col-md-4 col-sm-6 p-2">
@@ -93,7 +157,7 @@
                             </div>
                         </div>
 
-                        <!-- ── Card 3: Clinic Performance Report  (NEW) ── -->
+                        <!-- ── Card 3: Clinic Performance Report ── -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
                                  style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -125,6 +189,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <!-- ── Card 4: Medicine Transfer vs Sales Audit ── -->
                         <div class="col-md-4 col-sm-6 p-2">
                             <div class="card p-3 shadow-sm border-0"
@@ -154,6 +219,35 @@
                                             string="Run Audit"
                                             type="object"
                                             class="btn btn-primary btn-sm"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Card 5: Session Cash Alerts ── -->
+                        <div class="col-md-4 col-sm-6 p-2">
+                            <div class="card p-3 shadow-sm border-0"
+                                 style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-info d-flex align-items-center justify-content-center rounded"
+                                             style="font-size: 20px; background-color: #ecfeff; width: 40px; height: 40px;">
+                                            <i class="fa fa-envelope-o" title="Session Alerts"/>
+                                        </div>
+                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
+                                            Session Cash Alerts
+                                        </h3>
+                                    </div>
+                                    <p class="text-muted small m-0" style="line-height: 1.4;">
+                                        Automatically emails cashiers when a POS session has cash
+                                        differences or was not closed on time. Runs daily at 8 AM.
+                                    </p>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-3 pt-2"
+                                     style="border-top: 1px solid #f3f4f6 !important;">
+                                    <button name="action_view_session_alert_history" string="View History"
+                                            type="object" class="btn btn-secondary btn-sm"/>
+                                    <button name="action_run_session_alert" string="Run Now"
+                                            type="object" class="btn btn-primary btn-sm"/>
                                 </div>
                             </div>
                         </div>

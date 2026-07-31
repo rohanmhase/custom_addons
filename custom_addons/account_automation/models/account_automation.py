@@ -102,3 +102,50 @@ class AccountAutomationDashboard(models.TransientModel):
             'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
         })
         return action
+
+    # -------- Session Cash Alerts --------
+    def action_run_session_alert(self):
+        return {
+            'name': 'Run Session Alert Check',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pos.session.alert.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_view_session_alert_history(self):
+        action = self.env.ref('account_automation.action_pos_session_alert_log').read()[0]
+        action.update({'target': 'current', 'context': {'clear_breadcrumbs': True}})
+        return action
+
+    # -------- Cash Checkpoints --------
+    def action_update_checkpoint_single(self):
+        return {
+            'name': 'Update Cash Checkpoint',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pos.session.cash.checkpoint.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_bulk_update_checkpoints(self):
+        return {
+            'name': 'Bulk Update Cash Checkpoints',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pos.session.cash.checkpoint.bulk.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_view_checkpoint_history(self):
+        action = self.env.ref('account_automation.action_pos_session_cash_checkpoint').read()[0]
+        action.update({'target': 'current', 'context': {'clear_breadcrumbs': True}})
+        return action
+
+    # Live overdue counter for dashboard card
+    overdue_checkpoint_count = fields.Integer(
+        compute='_compute_overdue_count', store=False)
+
+    def _compute_overdue_count(self):
+        for rec in self:
+            rec.overdue_checkpoint_count = self.env['pos.session.cash.checkpoint'].get_overdue_count()

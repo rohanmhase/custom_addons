@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========== CHECKPOINT TREE ========== -->
+    <record id="view_pos_session_cash_checkpoint_tree" model="ir.ui.view">
+        <field name="name">pos.session.cash.checkpoint.tree</field>
+        <field name="model">pos.session.cash.checkpoint</field>
+        <field name="arch" type="xml">
+            <tree string="Cash Checkpoints" create="false" delete="false" edit="false"
+                  decoration-success="active==True" decoration-muted="active==False">
+                <field name="clinic_id"/>
+                <field name="checkpoint_datetime"/>
+                <field name="checkpoint_amount" sum="Total"/>
+                <field name="source_session_id"/>
+                <field name="checkpoint_type"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+                <field name="deactivated_by_id" optional="hide"/>
+                <field name="deactivated_date" optional="hide"/>
+                <field name="notes" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pos_session_cash_checkpoint_form" model="ir.ui.view">
+        <field name="name">pos.session.cash.checkpoint.form</field>
+        <field name="model">pos.session.cash.checkpoint</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false">
+                <field name="active" invisible="1"/>
+                <header>
+                    <button name="action_undo_last_update" type="object"
+                            string="Undo Last Update" class="btn-warning"
+                            invisible="not active"
+                            confirm="This will deactivate the current checkpoint and reactivate the previous one. Continue?"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-success" role="alert" invisible="not active">
+                        <b>ACTIVE CHECKPOINT</b>
+                        — This is currently in use for calculations.
+                    </div>
+                    <div class="alert alert-secondary" role="alert" invisible="active">
+                        <b>INACTIVE</b>
+                        — This checkpoint was replaced or undone.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="clinic_id"/>
+                            <field name="checkpoint_datetime"/>
+                            <field name="checkpoint_amount"/>
+                            <field name="checkpoint_type"/>
+                        </group>
+                        <group>
+                            <field name="source_session_id"/>
+                            <field name="previous_checkpoint_id"/>
+                            <field name="create_uid" readonly="1"/>
+                            <field name="create_date" readonly="1"/>
+                            <field name="deactivated_by_id" readonly="1" invisible="active"/>
+                            <field name="deactivated_date" readonly="1" invisible="active"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_session_cash_checkpoint_search" model="ir.ui.view">
+        <field name="name">pos.session.cash.checkpoint.search</field>
+        <field name="model">pos.session.cash.checkpoint</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="clinic_id"/>
+                <field name="source_session_id"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+                <filter string="Inactive" name="inactive" domain="[('active','=',False)]"/>
+                <separator/>
+                <filter string="Initial" name="type_init" domain="[('checkpoint_type','=','initial')]"/>
+                <filter string="Manual" name="type_man" domain="[('checkpoint_type','=','manual')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Clinic" name="gb_clinic" context="{'group_by':'clinic_id'}"/>
+                    <filter string="Created By" name="gb_creator" context="{'group_by':'create_uid'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pos_session_cash_checkpoint" model="ir.actions.act_window">
+        <field name="name">Cash Checkpoints</field>
+        <field name="res_model">pos.session.cash.checkpoint</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+    <!-- ========== SINGLE-CLINIC WIZARD ========== -->
+    <record id="view_pos_session_cash_checkpoint_wizard_form" model="ir.ui.view">
+        <field name="name">pos.session.cash.checkpoint.wizard.form</field>
+        <field name="model">pos.session.cash.checkpoint.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Update Cash Checkpoint">
+                <group>
+                    <field name="clinic_id"/>
+                    <field name="session_id" options="{'no_create': True}"/>
+                </group>
+                <group string="Current Active Checkpoint">
+                    <field name="current_checkpoint_datetime" readonly="1"/>
+                    <field name="current_checkpoint_amount" readonly="1"/>
+                </group>
+                <group string="Selected Session" invisible="not session_id">
+                    <field name="session_stop_at" readonly="1"/>
+                    <field name="session_entered_closing" readonly="1"/>
+                    <field name="session_expected_closing" readonly="1"/>
+                    <field name="session_diff" readonly="1"/>
+                </group>
+                <div class="alert alert-danger" role="alert" invisible="not backward_error">
+                    <field name="backward_error" nolabel="1" readonly="1"/>
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not diff_warning">
+                    <field name="diff_warning" nolabel="1" readonly="1"/>
+                </div>
+                <group>
+                    <field name="notes"/>
+                </group>
+                <footer>
+                    <button string="Confirm Update" name="action_confirm" type="object" class="btn-primary"
+                            invisible="backward_error"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== BULK WIZARD ========== -->
+    <record id="view_pos_session_cash_checkpoint_bulk_wizard_form" model="ir.ui.view">
+        <field name="name">pos.session.cash.checkpoint.bulk.wizard.form</field>
+        <field name="model">pos.session.cash.checkpoint.bulk.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Update Cash Checkpoints">
+                <!-- Hidden fields required by Odoo 17 for modifier expressions -->
+                <field name="preview_loaded" invisible="1"/>
+
+                <group>
+                    <group>
+                        <field name="effective_date"/>
+                        <field name="scope" widget="radio"/>
+                    </group>
+                    <group>
+                        <field name="skip_high_diff"/>
+                        <field name="skip_diff_threshold" invisible="not skip_high_diff"/>
+                        <field name="notes"/>
+                    </group>
+                </group>
+
+                <div class="text-center" invisible="preview_loaded">
+                    <button string="Load Preview" name="action_load_preview" type="object" class="btn-primary"/>
+                </div>
+
+                <div invisible="not preview_loaded">
+                    <div class="alert alert-info" role="alert">
+                        <b>Preview:</b>
+                        Skipped (no session):
+                        <field name="skipped_no_session" readonly="1" class="oe_inline"/>
+                        &amp;nbsp;|&amp;nbsp;
+                        Would move backward:
+                        <field name="skipped_backward" readonly="1" class="oe_inline"/>
+                    </div>
+                    <field name="line_ids" nolabel="1">
+                        <tree editable="bottom" create="false" delete="false"
+                              decoration-danger="is_backward==True"
+                              decoration-warning="warning!=''">
+                            <field name="is_backward" column_invisible="True"/>
+                            <field name="include" widget="boolean_toggle" readonly="is_backward"/>
+                            <field name="clinic_id" readonly="1"/>
+                            <field name="session_name" readonly="1"/>
+                            <field name="session_stop_at" readonly="1"/>
+                            <field name="current_checkpoint_datetime" readonly="1"/>
+                            <field name="current_checkpoint_amount" readonly="1"/>
+                            <field name="entered_closing" readonly="1"/>
+                            <field name="expected_closing" readonly="1"/>
+                            <field name="diff" readonly="1"/>
+                            <field name="warning" readonly="1"/>
+                        </tree>
+                    </field>
+                    <div class="alert alert-info" role="alert">
+                        Rows marked in red would move the checkpoint backward — use <b>Undo Last Update</b> on the
+                        active checkpoint for that clinic instead.
+                    </div>
+                </div>
+
+                <footer>
+                    <button string="Reload Preview" name="action_load_preview" type="object"
+                            invisible="not preview_loaded"/>
+                    <button string="Confirm Update" name="action_confirm_bulk" type="object" class="btn-primary"
+                            invisible="not preview_loaded"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pos_session_cash_checkpoint_bulk_wizard" model="ir.actions.act_window">
+        <field name="name">Bulk Update Checkpoints</field>
+        <field name="res_model">pos.session.cash.checkpoint.bulk.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ========== MENUS ========== -->
+    <menuitem id="menu_pos_session_cash_checkpoint"
+              name="Cash Checkpoints"
+              parent="menu_account_automation_operations"
+              action="action_pos_session_cash_checkpoint"
+              sequence="60"/>
+
+</odoo>

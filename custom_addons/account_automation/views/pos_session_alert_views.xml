@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ========== ALERT CONFIG FORM ========== -->
+        <record id="view_pos_session_alert_config_form" model="ir.ui.view">
+            <field name="name">pos.session.alert.config.form</field>
+            <field name="model">pos.session.alert.config</field>
+            <field name="arch" type="xml">
+                <form string="Session Alert Config" create="false" delete="false">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>Session Cash Alert Configuration</h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="active"/>
+                                <field name="from_email"/>
+                                <field name="tolerance_amount"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="CC Recipients">
+                                <field name="cc_user_ids"
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       placeholder="Add users to CC on every alert email..."/>
+                            </page>
+                        </notebook>
+                        <div class="alert alert-info" role="alert">
+                            <b>How it works:</b>
+                            <ul style="margin-bottom:0;">
+                                <li>Cron runs daily at 8 AM IST checking sessions started yesterday.</li>
+                                <li>If a clinic had no session yesterday, its most recent session is checked instead.</li>
+                                <li>Emails are sent to the session's responsible user + CC list above.</li>
+                                <li>Email failures never block the cron — they're just logged.</li>
+                            </ul>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ========== SERVER ACTION FOR CONFIG ========== -->
+        <record id="action_open_pos_session_alert_config" model="ir.actions.server">
+            <field name="name">Open Session Alert Config</field>
+            <field name="model_id" ref="model_pos_session_alert_config"/>
+            <field name="state">code</field>
+            <field name="code">action = model.action_open_config()</field>
+        </record>
+
+        <!-- ========== ALERT LOG TREE ========== -->
+        <record id="view_pos_session_alert_log_tree" model="ir.ui.view">
+            <field name="name">pos.session.alert.log.tree</field>
+            <field name="model">pos.session.alert.log</field>
+            <field name="arch" type="xml">
+                <tree string="Session Alert History"
+                      create="false"
+                      delete="false"
+                      edit="false">
+                    <field name="create_date"/>
+                    <field name="check_date"/>
+                    <field name="clinic_name"/>
+                    <field name="session_name"/>
+                    <field name="alert_type"/>
+                    <field name="diff_amount" sum="Total Diff"/>
+                    <field name="session_state_at_check"/>
+                    <field name="responsible_user_id"/>
+                    <field name="responsible_email"/>
+                    <field name="email_sent" widget="boolean_toggle"/>
+                    <field name="email_error" optional="hide"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- ========== ALERT LOG SEARCH ========== -->
+        <record id="view_pos_session_alert_log_search" model="ir.ui.view">
+            <field name="name">pos.session.alert.log.search</field>
+            <field name="model">pos.session.alert.log</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="clinic_name"/>
+                    <field name="session_name"/>
+                    <field name="responsible_user_id"/>
+                    <filter string="Email Failed"
+                            name="email_failed"
+                            domain="[('email_sent','=',False)]"/>
+                    <separator/>
+                    <filter string="Opening Diff"
+                            name="type_open"
+                            domain="[('alert_type','=','opening_diff')]"/>
+                    <filter string="Closing Diff"
+                            name="type_close"
+                            domain="[('alert_type','=','closing_diff')]"/>
+                    <filter string="Not Closed"
+                            name="type_not_closed"
+                            domain="[('alert_type','=','not_closed')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Clinic"
+                                name="gb_clinic"
+                                context="{'group_by':'clinic_name'}"/>
+                        <filter string="Alert Type"
+                                name="gb_type"
+                                context="{'group_by':'alert_type'}"/>
+                        <filter string="Check Date"
+                                name="gb_date"
+                                context="{'group_by':'check_date'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ========== ALERT LOG ACTION ========== -->
+        <record id="action_pos_session_alert_log" model="ir.actions.act_window">
+            <field name="name">Session Alert History</field>
+            <field name="res_model">pos.session.alert.log</field>
+            <field name="view_mode">tree</field>
+        </record>
+
+        <!-- ========== ALERT WIZARD FORM ========== -->
+        <record id="view_pos_session_alert_wizard_form" model="ir.ui.view">
+            <field name="name">pos.session.alert.wizard.form</field>
+            <field name="model">pos.session.alert.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Run Alert Check">
+                    <group>
+                        <field name="check_date"/>
+                        <field name="force_resend"/>
+                    </group>
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="not force_resend">
+                        <b>Force Resend enabled:</b>
+                        alerts will be re-sent even if already emailed for this date.
+                    </div>
+                    <footer>
+                        <button string="Run"
+                                name="action_run"
+                                type="object"
+                                class="btn-primary"/>
+                        <button string="Cancel"
+                                class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ========== ALERT WIZARD ACTION ========== -->
+        <record id="action_pos_session_alert_wizard" model="ir.actions.act_window">
+            <field name="name">Run Alert Check</field>
+            <field name="res_model">pos.session.alert.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- ========== MENUS ========== -->
+        <menuitem id="menu_pos_session_alert_config"
+                  name="Session Cash Alert"
+                  parent="menu_account_automation_config"
+                  action="action_open_pos_session_alert_config"
+                  sequence="10"/>
+
+        <menuitem id="menu_pos_session_alert_log"
+                  name="Session Alert History"
+                  parent="menu_account_automation_operations"
+                  action="action_pos_session_alert_log"
+                  sequence="50"/>
+
+    </data>
+</odoo>
