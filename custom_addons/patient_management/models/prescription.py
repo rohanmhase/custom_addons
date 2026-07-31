@@ -314,8 +314,8 @@ class Prescription(models.Model):
 
     def _send_partial_notification_mail(self, missing_products=None):
         for rec in self:
-            if not rec.doctor_id or not rec.doctor_id.email:
-                return
+            if not rec.doctor_id or not rec.doctor_id.email or not rec.doctor_id.active:
+                continue
 
             body = f"""
             <p>Dear Dr. {rec.doctor_id.name},</p>
