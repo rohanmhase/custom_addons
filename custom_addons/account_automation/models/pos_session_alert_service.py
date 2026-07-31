@@ -33,17 +33,13 @@ class PosSessionAlertService(models.AbstractModel):
         """, (session_ids_tuple,))
         clinic_ids = tuple(r[0] for r in self.env.cr.fetchall())
 
-        # ============ TIMING DEBUG ============
         t1 = time.time()
         _logger.warning("⏱️ [SERVICE-1] Get clinic_ids (%s clinics): %.2fs", len(clinic_ids), t1 - t0)
-        # ======================================
 
         if not clinic_ids:
             return {}
 
-        # ============ TIMING DEBUG ============
         t2 = time.time()
-        # ======================================
 
         self.env.cr.execute("""
             WITH effective_anchor AS (
@@ -165,10 +161,8 @@ class PosSessionAlertService(models.AbstractModel):
             'target_ids': session_ids_tuple,
         })
 
-        # ============ TIMING DEBUG ============
         t3 = time.time()
-        _logger.warning("⏱️ [SERVICE-2] BIG SQL query (%s sessions): %.2fs ⚠️⚠️⚠️", len(session_ids), t3 - t2)
-        # ======================================
+        _logger.warning("⏱️ [SERVICE-2] BIG SQL query (%s sessions): %.2fs ⚠️", len(session_ids), t3 - t2)
 
         results = {}
         for row in self.env.cr.dictfetchall():
@@ -181,16 +175,18 @@ class PosSessionAlertService(models.AbstractModel):
                 'manual_out': row['manual_out'] or 0.0,
             }
 
-        # ============ TIMING DEBUG ============
         t4 = time.time()
         _logger.warning("⏱️ [SERVICE-3] Build results dict: %.2fs", t4 - t3)
         _logger.warning("⏱️ [SERVICE] TOTAL compute_expected_batch: %.2fs", t4 - t0)
-        # ======================================
 
         return results
 
     @api.model
     def process_alerts_for_date(self, check_date, force_resend=False):
+        # ============ TIMING DEBUG ============
+        t_total_start = time.time()
+        # ======================================
+
         service = self._sudo_all_companies()
 
         config = service.env['pos.session.alert.config'].sudo().get_config()
@@ -223,7 +219,7 @@ class PosSessionAlertService(models.AbstractModel):
 
         expected_map = service.compute_expected_batch(all_ids)
 
-        # Preload ALL existing alerts in ONE query (was N queries)
+        # Preload ALL existing alerts in ONE query
         existing_alerts = set()
         if not force_resend:
             service.env.cr.execute("""
@@ -232,7 +228,7 @@ class PosSessionAlertService(models.AbstractModel):
             """, (tuple(all_ids), check_date))
             existing_alerts = {(r[0], r[1]) for r in service.env.cr.fetchall()}
 
-        # Browse with prefetch for related fields
+        # Browse with prefetch for related fields (+ user active status)
         sessions = service.env['pos.session'].browse(all_ids)
         sessions.read(['name', 'state', 'config_id', 'user_id',
                        'cash_register_balance_start', 'cash_register_balance_end_real',
@@ -262,9 +258,14 @@ class PosSessionAlertService(models.AbstractModel):
         if logs_to_delete_ids:
             service.env['pos.session.alert.log'].sudo().browse(logs_to_delete_ids).unlink()
 
-        # Create ALL mail.mail records in ONE batch, then send them all
+        # ============================================================
+        # Build all mail.mail records in ONE batch create
+        # Then send them all via a SINGLE reused SMTP connection
+        # ============================================================
         log_vals_list = []
         if email_tasks:
+            t_mail_start = time.time()
+
             mail_vals_list = []
             for task in email_tasks:
                 mv = self._build_mail_vals(
@@ -277,10 +278,12 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail_vals'] = None
 
+            # Batch create ALL mail.mail records in one shot
             created_mails = self.env['mail.mail'].sudo()
             if mail_vals_list:
                 created_mails = self.env['mail.mail'].sudo().create(mail_vals_list)
 
+            # Map created mails back to their tasks (in order)
             mail_iter = iter(created_mails)
             for task in email_tasks:
                 if task.get('mail_vals'):
@@ -288,32 +291,68 @@ class PosSessionAlertService(models.AbstractModel):
                 else:
                     task['mail'] = None
 
-            for task in email_tasks:
-                mail = task.get('mail')
-                sent = False
-                error = None
-                if mail:
+            # ============================================================
+            # ⚡ BATCH SMTP: Open ONE connection, send ALL emails, close
+            # This saves ~500ms per email (SMTP handshake overhead)
+            # ============================================================
+            IrMailServer = self.env['ir.mail_server'].sudo()
+            smtp_session = None
+            try:
+                # Only open connection if we have mails to send
+                mails_to_send = [t['mail'] for t in email_tasks if t.get('mail')]
+                if mails_to_send:
                     try:
-                        mail.send(raise_exception=False)
-                        mail.invalidate_recordset(['state', 'failure_reason'])
-                        if mail.state == 'sent':
-                            sent = True
-                        else:
-                            error = mail.failure_reason or 'Send failed'
-                    except Exception as e:
-                        error = str(e)
-                        _logger.exception("Email send failed for session %s: %s",
-                                          task['session'].id, e)
-                else:
-                    error = "Responsible user has no email"
+                        smtp_session = IrMailServer.connect(mail_server_id=None)
+                        _logger.info("⚡ Opened batch SMTP connection for %s emails", len(mails_to_send))
+                    except Exception as conn_err:
+                        _logger.warning(
+                            "Batch SMTP connect failed, falling back to individual sends: %s",
+                            conn_err
+                        )
+                        smtp_session = None
 
-                if sent:
-                    stats['emails_sent'] += 1
+                for task in email_tasks:
+                    mail = task.get('mail')
+                    sent = False
+                    error = None
+                    if mail:
+                        try:
+                            # Use shared SMTP session if available, else normal send
+                            if smtp_session is not None:
+                                mail.send(raise_exception=False, smtp_session=smtp_session)
+                            else:
+                                mail.send(raise_exception=False)
+                            mail.invalidate_recordset(['state', 'failure_reason'])
+                            if mail.state == 'sent':
+                                sent = True
+                            else:
+                                error = mail.failure_reason or 'Send failed'
+                        except Exception as e:
+                            error = str(e)
+                            _logger.exception("Email send failed for session %s: %s",
+                                              task['session'].id, e)
+                    else:
+                        error = "No valid recipient (user inactive or no email)"
 
-                for lv in task['log_vals']:
-                    lv['email_sent'] = sent
-                    lv['email_error'] = error or False
-                log_vals_list.extend(task['log_vals'])
+                    if sent:
+                        stats['emails_sent'] += 1
+
+                    for lv in task['log_vals']:
+                        lv['email_sent'] = sent
+                        lv['email_error'] = error or False
+                    log_vals_list.extend(task['log_vals'])
+            finally:
+                # Always close SMTP connection cleanly
+                if smtp_session is not None:
+                    try:
+                        smtp_session.quit()
+                        _logger.info("⚡ Closed batch SMTP connection")
+                    except Exception as close_err:
+                        _logger.warning("SMTP session close error (safe to ignore): %s", close_err)
+
+            t_mail_end = time.time()
+            _logger.warning("⏱️ [MAIL] Sent %s emails in %.2fs",
+                            stats['emails_sent'], t_mail_end - t_mail_start)
 
         # Single batch create for all logs
         if log_vals_list:
@@ -321,6 +360,11 @@ class PosSessionAlertService(models.AbstractModel):
                 service.env['pos.session.alert.log'].sudo().create(log_vals_list)
             except Exception as e:
                 _logger.exception("Batch log create failed: %s", e)
+
+        # ============ TIMING DEBUG ============
+        t_total_end = time.time()
+        _logger.warning("⏱️ [TOTAL] process_alerts_for_date: %.2fs", t_total_end - t_total_start)
+        # ======================================
 
         return stats
 
@@ -384,16 +428,45 @@ class PosSessionAlertService(models.AbstractModel):
             'log_vals': session_log_vals,
         })
 
+    def _is_valid_recipient(self, user):
+        """Check if a user is a valid email recipient.
+        Returns True only if:
+          - User exists
+          - User is active
+          - User's partner is active
+          - User's partner has an email
+        """
+        if not user:
+            return False
+        # Read with sudo to bypass access rules but respect active_test
+        user_sudo = user.sudo()
+        if not user_sudo.active:
+            _logger.info("Skipping email: user %s (id=%s) is inactive", user_sudo.name, user_sudo.id)
+            return False
+        partner = user_sudo.partner_id
+        if not partner or not partner.active:
+            _logger.info("Skipping email: partner for user %s is inactive/missing", user_sudo.name)
+            return False
+        if not partner.email:
+            _logger.info("Skipping email: user %s has no email", user_sudo.name)
+            return False
+        return True
+
     def _build_mail_vals(self, session, issues, expected, check_date, config):
         """Build mail.mail vals dict. Returns None if no valid recipient."""
         try:
             session = session.sudo()
             responsible = session.user_id
-            if not responsible or not responsible.partner_id.email:
+
+            # ⭐ NEW: Check if responsible user is active and has valid email
+            if not self._is_valid_recipient(responsible):
                 return None
 
+            # ⭐ NEW: Only include CC recipients who are active with valid email
             cc_emails = ','.join(
-                u.partner_id.email for u in config.cc_user_ids if u.partner_id.email
+                u.partner_id.email
+                for u in config.cc_user_ids
+                if self._is_valid_recipient(u)
             )
 
             issues_html = ""
@@ -456,11 +529,11 @@ class PosSessionAlertService(models.AbstractModel):
             return None
 
     def _send_consolidated_email(self, session, issues, expected, check_date, config):
-        """Returns (bool sent, str error_or_none). Sends email WITHOUT posting to chatter."""
+        """Returns (bool sent, str error_or_none). Kept for backward compatibility."""
         try:
             mail_vals = self._build_mail_vals(session, issues, expected, check_date, config)
             if not mail_vals:
-                return (False, "Responsible user has no email")
+                return (False, "No valid recipient (user inactive or no email)")
             mail = self.env['mail.mail'].sudo().create(mail_vals)
             mail.send(raise_exception=False)
             mail.invalidate_recordset(['state', 'failure_reason'])
