@@ -1,41 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- MODULE CATEGORY -->
     <record model="ir.module.category" id="module_category_clinic_schedule">
         <field name="name">Clinic Scheduling</field>
         <field name="description">Access rights for the Clinical Matrix Dashboard</field>
         <field name="sequence">10</field>
     </record>
 
-    <!-- 1. VIEWER GROUP (READ-ONLY) -->
     <record id="group_clinic_schedule_viewer" model="res.groups">
         <field name="name">Viewer (Read-Only)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
     </record>
 
-    <!-- 2. CLINIC ADMIN GROUP -->
     <record id="group_clinic_schedule_clinic_admin" model="res.groups">
-        <field name="name">Clinic Admin (Manage Local Branch Appointments)</field>
+        <field name="name">Clinic Admin (Manage Appointments &amp; Leaves)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
         <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_viewer'))]"/>
     </record>
 
-    <!-- 3. TOM (TERRITORY OPERATIONAL MANAGER) GROUP -->
-    <record id="group_clinic_schedule_tom" model="res.groups">
-        <field name="name">Territory Operational Manager (TOM)</field>
+    <record id="group_clinic_schedule_manager" model="res.groups">
+        <field name="name">Back Office Manager (Full Access)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
         <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
     </record>
 
-    <!-- 4. BACK OFFICE MANAGER GROUP (FULL ACCESS) -->
-    <record id="group_clinic_schedule_manager" model="res.groups">
-        <field name="name">Back Office Manager (Full System Access)</field>
-        <field name="category_id" ref="module_category_clinic_schedule"/>
-        <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_tom'))]"/>
-    </record>
-
-    <!-- RECORD RULES -->
-    <!-- Rule: Clinic Admin Branch Isolation -->
     <record id="rule_clinic_schedule_appointment_clinic_admin" model="ir.rule">
         <field name="name">Clinic Schedule Appointment: Clinic Admin Branch Isolation</field>
         <field name="model_id" ref="model_clinic_schedule_appointment"/>
@@ -43,15 +30,6 @@
         <field name="groups" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
     </record>
 
-    <!-- Rule: TOM Cross-Region Access -->
-    <record id="rule_clinic_schedule_appointment_tom" model="ir.rule">
-        <field name="name">Clinic Schedule Appointment: TOM Cross-Region Access</field>
-        <field name="model_id" ref="model_clinic_schedule_appointment"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[(4, ref('group_clinic_schedule_tom'))]"/>
-    </record>
-
-    <!-- Rule: Manager Bypass -->
     <record id="rule_clinic_schedule_appointment_manager" model="ir.rule">
         <field name="name">Clinic Schedule Appointment: Manager Bypass</field>
         <field name="model_id" ref="model_clinic_schedule_appointment"/>
