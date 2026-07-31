@@ -34,8 +34,10 @@ class PosSessionCashCheckpoint(models.Model):
     deactivated_date = fields.Datetime(string='Deactivated On')
     notes = fields.Text(string='Notes')
 
-    @api.depends('clinic_id', 'checkpoint_datetime', 'checkpoint_amount')
+    @api.depends('clinic_id', 'clinic_id.name', 'checkpoint_datetime', 'checkpoint_amount')
     def _compute_display_name(self):
+        # OPTIMIZATION: Prefetch clinic names in one query
+        self.mapped('clinic_id.name')
         for r in self:
             clinic = r.clinic_id.name or ''
             dt = r.checkpoint_datetime and r.checkpoint_datetime.strftime('%d %b %Y %H:%M') or ''
@@ -44,16 +46,20 @@ class PosSessionCashCheckpoint(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        # Enforce only-one-active per clinic
-        for rec in records:
-            if rec.active:
-                self.env.cr.execute("""
-                    UPDATE pos_session_cash_checkpoint
-                    SET active = FALSE,
-                        deactivated_by_id = %s,
-                        deactivated_date = NOW()
-                    WHERE clinic_id = %s AND active = TRUE AND id != %s
-                """, (self.env.uid, rec.clinic_id.id, rec.id))
+        # OPTIMIZATION: Batch deactivate all clinics at once instead of loop
+        active_records = records.filtered('active')
+        if active_records:
+            clinic_ids = tuple(active_records.mapped('clinic_id').ids)
+            new_ids = tuple(active_records.ids)
+            self.env.cr.execute("""
+                UPDATE pos_session_cash_checkpoint
+                SET active = FALSE,
+                    deactivated_by_id = %s,
+                    deactivated_date = NOW()
+                WHERE clinic_id IN %s AND active = TRUE AND id NOT IN %s
+            """, (self.env.uid, clinic_ids, new_ids))
+            # Invalidate cache for affected records
+            self.env['pos.session.cash.checkpoint'].invalidate_model(['active', 'deactivated_by_id', 'deactivated_date'])
         return records
 
     def action_undo_last_update(self):
@@ -67,7 +73,6 @@ class PosSessionCashCheckpoint(models.Model):
         prev = self.previous_checkpoint_id
 
         if prev:
-            # Normal case: reactivate previous
             self.write({
                 'active': False,
                 'deactivated_by_id': self.env.uid,
@@ -88,7 +93,6 @@ class PosSessionCashCheckpoint(models.Model):
                 }
             }
         else:
-            # No previous → deactivate and fall back to April 1 logic
             self.write({
                 'active': False,
                 'deactivated_by_id': self.env.uid,
@@ -109,28 +113,20 @@ class PosSessionCashCheckpoint(models.Model):
                 }
             }
 
-    # -------- Utility: get overdue clinics count for dashboard --------
     @api.model
     def get_overdue_count(self):
         """Returns number of clinics whose active checkpoint is >30 days old
         OR clinics that have sessions but no checkpoint at all."""
         self.env.cr.execute("""
-            WITH clinic_checkpoints AS (
-                SELECT
-                    pc.id AS clinic_id,
-                    (SELECT checkpoint_datetime
-                     FROM pos_session_cash_checkpoint cp
-                     WHERE cp.clinic_id = pc.id AND cp.active = TRUE
-                     LIMIT 1) AS cp_dt,
-                    (SELECT COUNT(*)
-                     FROM pos_session ps
-                     WHERE ps.config_id = pc.id) AS session_count
-                FROM pos_config pc
-                WHERE pc.active = TRUE
-            )
-            SELECT COUNT(*) FROM clinic_checkpoints
-            WHERE session_count > 0
-              AND (cp_dt IS NULL OR cp_dt < (NOW() - INTERVAL '30 days'))
+            SELECT COUNT(*) FROM pos_config pc
+            WHERE pc.active = TRUE
+              AND EXISTS (SELECT 1 FROM pos_session ps WHERE ps.config_id = pc.id)
+              AND NOT EXISTS (
+                  SELECT 1 FROM pos_session_cash_checkpoint cp
+                  WHERE cp.clinic_id = pc.id
+                    AND cp.active = TRUE
+                    AND cp.checkpoint_datetime >= (NOW() - INTERVAL '30 days')
+              )
         """)
         row = self.env.cr.fetchone()
         return row[0] if row else 0

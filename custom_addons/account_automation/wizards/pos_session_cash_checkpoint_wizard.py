@@ -34,6 +34,10 @@ class PosSessionCashCheckpointWizard(models.TransientModel):
 
     @api.depends('session_id')
     def _compute_session_info(self):
+        # OPTIMIZATION: Prefetch fields in one read
+        sessions = self.mapped('session_id')
+        if sessions:
+            sessions.read(['stop_at', 'cash_register_balance_end_real'])
         for rec in self:
             rec.session_stop_at = rec.session_id.stop_at if rec.session_id else False
             rec.session_entered_closing = (
@@ -44,11 +48,23 @@ class PosSessionCashCheckpointWizard(models.TransientModel):
     @api.depends('clinic_id', 'session_id')
     def _compute_info(self):
         Chk = self.env['pos.session.cash.checkpoint']
-        for rec in self:
-            active = Chk.search([
-                ('clinic_id', '=', rec.clinic_id.id),
+        # OPTIMIZATION: Fetch all active checkpoints for all clinics in ONE query
+        clinic_ids = self.mapped('clinic_id').ids
+        cp_map = {}
+        if clinic_ids:
+            actives = Chk.search([
+                ('clinic_id', 'in', clinic_ids),
                 ('active', '=', True),
-            ], limit=1)
+            ])
+            cp_map = {cp.clinic_id.id: cp for cp in actives}
+
+        # Prefetch session data
+        sessions = self.mapped('session_id')
+        if sessions:
+            sessions.read(['stop_at'])
+
+        for rec in self:
+            active = cp_map.get(rec.clinic_id.id, Chk)
             rec.current_checkpoint_id = active
             rec.current_checkpoint_datetime = active.checkpoint_datetime if active else False
             rec.current_checkpoint_amount = active.checkpoint_amount if active else 0.0
@@ -70,12 +86,20 @@ class PosSessionCashCheckpointWizard(models.TransientModel):
     @api.depends('session_id')
     def _compute_expected(self):
         Service = self.env['pos.session.alert.service']
+        # OPTIMIZATION: Batch all session_ids into single service call
+        all_session_ids = [r.session_id.id for r in self if r.session_id]
+        data = Service.sudo().compute_expected_batch(all_session_ids) if all_session_ids else {}
+
+        # Prefetch entered closing for all sessions in one shot
+        sessions = self.mapped('session_id')
+        if sessions:
+            sessions.read(['cash_register_balance_end_real'])
+
         for rec in self:
             rec.session_expected_closing = 0.0
             rec.session_diff = 0.0
             rec.diff_warning = False
             if rec.session_id:
-                data = Service.compute_expected_batch([rec.session_id.id])
                 info = data.get(rec.session_id.id, {})
                 rec.session_expected_closing = info.get('expected_closing', 0.0)
                 entered = rec.session_id.cash_register_balance_end_real or 0.0
@@ -183,10 +207,11 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
         """, (eod,))
         candidates = self.env.cr.fetchall()
 
-        self.env.cr.execute("SELECT id FROM pos_config WHERE active = TRUE")
-        active_clinics = {r[0] for r in self.env.cr.fetchall()}
+        # OPTIMIZATION: Get active clinic count in one aggregate query
+        self.env.cr.execute("SELECT COUNT(id) FROM pos_config WHERE active = TRUE")
+        active_clinic_count = self.env.cr.fetchone()[0]
         clinics_with_candidate = {r[0] for r in candidates}
-        no_session_count = len(active_clinics - clinics_with_candidate)
+        no_session_count = active_clinic_count - len(clinics_with_candidate)
 
         if not candidates:
             self.write({
@@ -201,9 +226,13 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
         session_ids = [c[1] for c in candidates]
         expected_map = self.env['pos.session.alert.service'].sudo().compute_expected_batch(session_ids)
 
-        Chk = self.env['pos.session.cash.checkpoint']
-        active_cps = Chk.search([('active', '=', True)])
-        cp_map = {cp.clinic_id.id: cp for cp in active_cps}
+        # OPTIMIZATION: Fetch active checkpoints via raw SQL — avoids ORM overhead
+        self.env.cr.execute("""
+            SELECT clinic_id, id, checkpoint_datetime, checkpoint_amount
+            FROM pos_session_cash_checkpoint
+            WHERE active = TRUE
+        """)
+        cp_map = {r[0]: {'id': r[1], 'dt': r[2], 'amt': r[3]} for r in self.env.cr.fetchall()}
 
         thirty_days_ago = fields.Datetime.now() - timedelta(days=30)
         lines_vals = []
@@ -213,11 +242,11 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
             current_cp = cp_map.get(config_id)
 
             if self.scope == 'overdue':
-                if current_cp and current_cp.checkpoint_datetime and current_cp.checkpoint_datetime >= thirty_days_ago:
+                if current_cp and current_cp['dt'] and current_cp['dt'] >= thirty_days_ago:
                     continue
 
             is_backward = False
-            if current_cp and current_cp.checkpoint_datetime and stop_at <= current_cp.checkpoint_datetime:
+            if current_cp and current_cp['dt'] and stop_at <= current_cp['dt']:
                 is_backward = True
                 backward_count += 1
 
@@ -244,8 +273,8 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
                 'entered_closing': entered_closing or 0.0,
                 'expected_closing': expected_close,
                 'diff': diff,
-                'current_checkpoint_datetime': current_cp.checkpoint_datetime if current_cp else False,
-                'current_checkpoint_amount': current_cp.checkpoint_amount if current_cp else 0.0,
+                'current_checkpoint_datetime': current_cp['dt'] if current_cp else False,
+                'current_checkpoint_amount': current_cp['amt'] if current_cp else 0.0,
                 'is_backward': is_backward,
                 'include': include,
                 'warning': warn,
@@ -267,33 +296,58 @@ class PosSessionCashCheckpointBulkWizard(models.TransientModel):
             raise UserError(_("Please load the preview first."))
 
         Chk = self.env['pos.session.cash.checkpoint']
-        created = 0
-        skipped = 0
-        errors = 0
 
-        for line in self.line_ids:
-            if not line.include or line.is_backward:
-                skipped += 1
-                continue
-            try:
-                session_sudo = line.session_id.sudo()
-                current = Chk.search([
-                    ('clinic_id', '=', line.clinic_id.id),
-                    ('active', '=', True),
-                ], limit=1)
-                Chk.create({
-                    'clinic_id': line.clinic_id.id,
-                    'checkpoint_datetime': line.session_stop_at_stored,
-                    'checkpoint_amount': line.expected_closing,
-                    'source_session_id': session_sudo.id,
-                    'checkpoint_type': 'manual',
-                    'active': True,
-                    'previous_checkpoint_id': current.id if current else False,
-                    'notes': self.notes or False,
-                })
-                created += 1
-            except Exception:
-                errors += 1
+        # OPTIMIZATION: Filter includable lines once
+        valid_lines = self.line_ids.filtered(lambda l: l.include and not l.is_backward)
+        skipped = len(self.line_ids) - len(valid_lines)
+
+        if not valid_lines:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Bulk Update Complete'),
+                    'message': _('Created: 0 | Skipped: %(s)s | Errors: 0') % {'s': skipped},
+                    'type': 'success',
+                    'sticky': True,
+                }
+            }
+
+        # OPTIMIZATION: Fetch all current active checkpoints in ONE query
+        clinic_ids = valid_lines.mapped('clinic_id').ids
+        self.env.cr.execute("""
+            SELECT clinic_id, id FROM pos_session_cash_checkpoint
+            WHERE active = TRUE AND clinic_id IN %s
+        """, (tuple(clinic_ids),))
+        current_cp_map = dict(self.env.cr.fetchall())
+
+        # OPTIMIZATION: Build all create vals, then single batch create
+        create_vals_list = []
+        for line in valid_lines:
+            create_vals_list.append({
+                'clinic_id': line.clinic_id.id,
+                'checkpoint_datetime': line.session_stop_at_stored,
+                'checkpoint_amount': line.expected_closing,
+                'source_session_id': line.session_id.id,
+                'checkpoint_type': 'manual',
+                'active': True,
+                'previous_checkpoint_id': current_cp_map.get(line.clinic_id.id, False),
+                'notes': self.notes or False,
+            })
+
+        created = 0
+        errors = 0
+        try:
+            Chk.create(create_vals_list)
+            created = len(create_vals_list)
+        except Exception:
+            # Fallback: try one-by-one if batch fails
+            for vals in create_vals_list:
+                try:
+                    Chk.create(vals)
+                    created += 1
+                except Exception:
+                    errors += 1
 
         return {
             'type': 'ir.actions.client',
