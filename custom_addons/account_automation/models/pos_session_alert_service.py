@@ -9,34 +9,23 @@ class PosSessionAlertService(models.AbstractModel):
     _name = 'pos.session.alert.service'
     _description = 'POS Session Cash Alert Service'
 
-    # ------------------------------------------------------------------
-    # Helper: get an env that can read ALL companies' sessions
-    # ------------------------------------------------------------------
     def _sudo_all_companies(self):
-        """Return self bound to sudo + all companies context.
-
-        This bypasses multi-company record rules so the cron/wizard can
-        read POS sessions belonging to any clinic/company regardless of
-        the executing user's allowed_company_ids.
-        """
+        """Return self bound to sudo + all companies context."""
         all_company_ids = self.env['res.company'].sudo().search([]).ids
         return self.sudo().with_context(
             allowed_company_ids=all_company_ids,
             active_test=False,
         )
 
-    # ------------------------------------------------------------------
-    # BATCH: compute expected opening/closing for many sessions in ONE query
-    # Uses per-clinic active checkpoint (fallback to April 1 default)
-    # ------------------------------------------------------------------
     @api.model
     def compute_expected_batch(self, session_ids):
         if not session_ids:
             return {}
 
+        session_ids_tuple = tuple(session_ids)
         self.env.cr.execute("""
             SELECT DISTINCT config_id FROM pos_session WHERE id IN %s
-        """, (tuple(session_ids),))
+        """, (session_ids_tuple,))
         clinic_ids = tuple(r[0] for r in self.env.cr.fetchall())
         if not clinic_ids:
             return {}
@@ -158,7 +147,7 @@ class PosSessionAlertService(models.AbstractModel):
             WHERE session_id IN %(target_ids)s
         """, {
             'clinics': clinic_ids,
-            'target_ids': tuple(session_ids),
+            'target_ids': session_ids_tuple,
         })
 
         results = {}
@@ -173,12 +162,8 @@ class PosSessionAlertService(models.AbstractModel):
             }
         return results
 
-    # ------------------------------------------------------------------
-    # Main entrypoint
-    # ------------------------------------------------------------------
     @api.model
     def process_alerts_for_date(self, check_date, force_resend=False):
-        # ⭐ Elevate: sudo + include all companies so record rules don't block us
         service = self._sudo_all_companies()
 
         config = service.env['pos.session.alert.config'].sudo().get_config()
@@ -211,8 +196,25 @@ class PosSessionAlertService(models.AbstractModel):
 
         expected_map = service.compute_expected_batch(all_ids)
 
-        # ⭐ Browse with the elevated env so ORM record-rule check passes
+        # OPTIMIZATION: Preload ALL existing alerts in ONE query (was N queries)
+        existing_alerts = set()
+        if not force_resend:
+            service.env.cr.execute("""
+                SELECT session_id, alert_type FROM pos_session_alert_log
+                WHERE session_id IN %s AND check_date = %s
+            """, (tuple(all_ids), check_date))
+            existing_alerts = {(r[0], r[1]) for r in service.env.cr.fetchall()}
+
+        # OPTIMIZATION: Browse with prefetch for related fields
         sessions = service.env['pos.session'].browse(all_ids)
+        sessions.read(['name', 'state', 'config_id', 'user_id',
+                       'cash_register_balance_start', 'cash_register_balance_end_real',
+                       'start_at'])
+
+        # OPTIMIZATION: Collect email tasks + log vals during loop
+        # (emails will be created + sent AFTER the loop in a batch)
+        email_tasks = []
+        logs_to_delete_ids = []
 
         for session in sessions:
             try:
@@ -221,19 +223,92 @@ class PosSessionAlertService(models.AbstractModel):
                     'patient_cash': 0.0, 'cash_refunds': 0.0,
                     'manual_in': 0.0, 'manual_out': 0.0,
                 })
-                service._process_single_session(
-                    session, expected, check_date, config, force_resend, stats
+                self._collect_single_session(
+                    session, expected, check_date, config, force_resend,
+                    stats, existing_alerts, email_tasks, logs_to_delete_ids
                 )
             except Exception as e:
                 stats['errors'] += 1
                 _logger.exception("Alert check failed for session %s: %s", session.id, e)
                 continue
+
+        # OPTIMIZATION: Batch delete old logs (force_resend case)
+        if logs_to_delete_ids:
+            service.env['pos.session.alert.log'].sudo().browse(logs_to_delete_ids).unlink()
+
+        # OPTIMIZATION: Create ALL mail.mail records in ONE batch
+        # then send them all together (single SMTP connection reused)
+        log_vals_list = []
+        if email_tasks:
+            mail_vals_list = []
+            for task in email_tasks:
+                mv = self._build_mail_vals(
+                    task['session'], task['issues'], task['expected'],
+                    check_date, config
+                )
+                if mv:
+                    task['mail_vals'] = mv
+                    mail_vals_list.append(mv)
+                else:
+                    task['mail_vals'] = None
+
+            # Batch create all mail.mail records
+            created_mails = self.env['mail.mail'].sudo()
+            if mail_vals_list:
+                created_mails = self.env['mail.mail'].sudo().create(mail_vals_list)
+
+            # Map mails back to tasks (in order)
+            mail_iter = iter(created_mails)
+            for task in email_tasks:
+                if task.get('mail_vals'):
+                    task['mail'] = next(mail_iter, None)
+                else:
+                    task['mail'] = None
+
+            # SEND all emails (still individual sends, but no ORM overhead per email)
+            for task in email_tasks:
+                mail = task.get('mail')
+                sent = False
+                error = None
+                if mail:
+                    try:
+                        mail.send(raise_exception=False)
+                        # Check state after send
+                        mail.invalidate_recordset(['state', 'failure_reason'])
+                        if mail.state == 'sent':
+                            sent = True
+                        else:
+                            error = mail.failure_reason or 'Send failed'
+                    except Exception as e:
+                        error = str(e)
+                        _logger.exception("Email send failed for session %s: %s",
+                                          task['session'].id, e)
+                else:
+                    error = "Responsible user has no email"
+
+                if sent:
+                    stats['emails_sent'] += 1
+
+                # Attach send result to each log val
+                for lv in task['log_vals']:
+                    lv['email_sent'] = sent
+                    lv['email_error'] = error or False
+                log_vals_list.extend(task['log_vals'])
+
+        # OPTIMIZATION: Single batch create for all logs
+        if log_vals_list:
+            try:
+                service.env['pos.session.alert.log'].sudo().create(log_vals_list)
+            except Exception as e:
+                _logger.exception("Batch log create failed: %s", e)
+
         return stats
 
-    def _process_single_session(self, session, expected, check_date, config, force_resend, stats):
-        # ⭐ Defensive: ensure this specific session record is sudo'd too
+    def _collect_single_session(self, session, expected, check_date, config,
+                                 force_resend, stats, existing_alerts,
+                                 email_tasks, logs_to_delete_ids):
+        """Collect email tasks + log vals — actual sending happens in batch after loop."""
         session = session.sudo()
-
         stats['processed'] += 1
         tolerance = config.tolerance_amount or 0.0
         issues = []
@@ -241,75 +316,67 @@ class PosSessionAlertService(models.AbstractModel):
         entered_open = session.cash_register_balance_start or 0.0
         opening_diff = entered_open - expected['expected_opening']
         if abs(opening_diff) > tolerance:
-            if force_resend or not self._alert_exists(session.id, 'opening_diff', check_date):
+            if force_resend or (session.id, 'opening_diff') not in existing_alerts:
                 issues.append(('opening_diff', opening_diff))
 
         if session.state == 'closed':
             entered_close = session.cash_register_balance_end_real or 0.0
             closing_diff = entered_close - expected['expected_closing']
             if abs(closing_diff) > tolerance:
-                if force_resend or not self._alert_exists(session.id, 'closing_diff', check_date):
+                if force_resend or (session.id, 'closing_diff') not in existing_alerts:
                     issues.append(('closing_diff', closing_diff))
         else:
-            if force_resend or not self._alert_exists(session.id, 'not_closed', check_date):
+            if force_resend or (session.id, 'not_closed') not in existing_alerts:
                 issues.append(('not_closed', None))
 
         if not issues:
             return
 
-        email_sent, email_error = self._send_consolidated_email(
-            session, issues, expected, check_date, config)
-        if email_sent:
-            stats['emails_sent'] += 1
-
-        LogModel = self.env['pos.session.alert.log'].sudo()
+        # Collect log vals (email_sent/error filled in after email sent)
+        session_log_vals = []
         for alert_type, diff_amount in issues:
-            try:
-                if force_resend:
-                    LogModel.search([
-                        ('session_id', '=', session.id),
-                        ('alert_type', '=', alert_type),
-                        ('check_date', '=', check_date),
-                    ]).unlink()
-                LogModel.create({
-                    'session_id': session.id,
-                    'session_name': session.name or '',
-                    'clinic_id': session.config_id.id,
-                    'clinic_name': session.config_id.name or '',
-                    'check_date': check_date,
-                    'alert_type': alert_type,
-                    'diff_amount': diff_amount or 0.0,
-                    'session_state_at_check': session.state,
-                    'responsible_user_id': session.user_id.id if session.user_id else False,
-                    'responsible_email': session.user_id.partner_id.email if session.user_id else False,
-                    'email_sent': email_sent,
-                    'email_error': email_error or False,
-                })
-            except Exception as e:
-                _logger.exception("Failed writing log for session %s: %s", session.id, e)
+            if force_resend:
+                existing = self.env['pos.session.alert.log'].sudo().search([
+                    ('session_id', '=', session.id),
+                    ('alert_type', '=', alert_type),
+                    ('check_date', '=', check_date),
+                ])
+                logs_to_delete_ids.extend(existing.ids)
 
-    def _alert_exists(self, session_id, alert_type, check_date):
-        return bool(self.env['pos.session.alert.log'].sudo().search_count([
-            ('session_id', '=', session_id),
-            ('alert_type', '=', alert_type),
-            ('check_date', '=', check_date),
-        ]))
+            session_log_vals.append({
+                'session_id': session.id,
+                'session_name': session.name or '',
+                'clinic_id': session.config_id.id,
+                'clinic_name': session.config_id.name or '',
+                'check_date': check_date,
+                'alert_type': alert_type,
+                'diff_amount': diff_amount or 0.0,
+                'session_state_at_check': session.state,
+                'responsible_user_id': session.user_id.id if session.user_id else False,
+                'responsible_email': session.user_id.partner_id.email if session.user_id else False,
+                'email_sent': False,
+                'email_error': False,
+            })
 
-    def _send_consolidated_email(self, session, issues, expected, check_date, config):
-        """Returns (bool sent, str error_or_none). Sends email WITHOUT posting to chatter."""
+        email_tasks.append({
+            'session': session,
+            'issues': issues,
+            'expected': expected,
+            'log_vals': session_log_vals,
+        })
+
+    def _build_mail_vals(self, session, issues, expected, check_date, config):
+        """Build mail.mail vals dict. Returns None if no valid recipient."""
         try:
-            # ⭐ Sudo the session so reading user_id/partner_id/email works across companies
             session = session.sudo()
-
             responsible = session.user_id
             if not responsible or not responsible.partner_id.email:
-                return (False, "Responsible user has no email")
+                return None
 
             cc_emails = ','.join(
                 u.partner_id.email for u in config.cc_user_ids if u.partner_id.email
             )
 
-            # Build issues HTML
             issues_html = ""
             for alert_type, diff_amount in issues:
                 if alert_type == 'opening_diff':
@@ -332,7 +399,6 @@ class PosSessionAlertService(models.AbstractModel):
                         f"({age} day{'s' if age != 1 else ''} ago). Please close it promptly.</li>"
                     )
 
-            # Full HTML body
             body_html = f"""
                 <div style="font-family: Arial, sans-serif; color:#111827; max-width:640px;">
                     <h2 style="color:#111827;">POS Session Alert</h2>
@@ -358,20 +424,31 @@ class PosSessionAlertService(models.AbstractModel):
             subject = f"⚠️ Session {session.name} — Issues Detected ({check_date.strftime('%d %b %Y')})"
             from_email = config.from_email or 'noreply@researchayu.com'
 
-            # Create mail.mail directly — bypasses chatter completely
-            mail_vals = {
+            return {
                 'subject': subject,
                 'body_html': body_html,
                 'email_from': from_email,
                 'email_to': responsible.partner_id.email,
                 'email_cc': cc_emails or False,
                 'auto_delete': False,
-                # Explicitly no res_model/res_id → no chatter link
             }
+        except Exception as e:
+            _logger.exception("Failed to build mail for session %s: %s", session.id, e)
+            return None
+
+    # Kept for backward compatibility (unchanged interface)
+    def _send_consolidated_email(self, session, issues, expected, check_date, config):
+        """Returns (bool sent, str error_or_none). Sends email WITHOUT posting to chatter."""
+        try:
+            mail_vals = self._build_mail_vals(session, issues, expected, check_date, config)
+            if not mail_vals:
+                return (False, "Responsible user has no email")
             mail = self.env['mail.mail'].sudo().create(mail_vals)
             mail.send(raise_exception=False)
-
-            return (True, None)
+            mail.invalidate_recordset(['state', 'failure_reason'])
+            if mail.state == 'sent':
+                return (True, None)
+            return (False, mail.failure_reason or 'Send failed')
         except Exception as e:
             _logger.exception("Email send failed for session %s: %s", session.id, e)
             return (False, str(e))

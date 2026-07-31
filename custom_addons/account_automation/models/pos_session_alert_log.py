@@ -7,9 +7,9 @@ class PosSessionAlertLog(models.Model):
     _order = 'create_date desc'
     _rec_name = 'session_name'
 
-    session_id = fields.Many2one('pos.session', string='Session', ondelete='set null')
+    session_id = fields.Many2one('pos.session', string='Session', ondelete='set null', index=True)
     session_name = fields.Char(string='Session', required=True)
-    clinic_id = fields.Many2one('pos.config', string='Clinic', ondelete='set null')
+    clinic_id = fields.Many2one('pos.config', string='Clinic', ondelete='set null', index=True)
     clinic_name = fields.Char(string='Clinic', required=True)
     check_date = fields.Date(string='Business Day', required=True, index=True)
     alert_type = fields.Selection([
