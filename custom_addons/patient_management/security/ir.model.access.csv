@@ -53,3 +53,6 @@ access_enrollment_bill_popup_user,access.enrollment.bill.popup.user,model_enroll
 
 access_patient_billing_queue_admin,access.patient.billing.queue.admin,model_patient_billing_queue,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_billing_queue_user,access.patient.billing.queue.user,model_patient_billing_queue,clinic_management.group_clinic_user,1,1,1,0
+
+access_prescription_exempt_product_admin,access.prescription.exempt.product_admin,model_prescription_exempt_product,clinic_management.group_clinic_administrator,1,1,1,1
+access_prescription_exempt_product_user,access.prescription.exempt.product_user,model_prescription_exempt_product,clinic_management.group_clinic_user,1,1,1,1
