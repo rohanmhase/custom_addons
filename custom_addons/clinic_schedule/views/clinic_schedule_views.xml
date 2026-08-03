@@ -5,45 +5,49 @@
         <field name="tag">clinic_schedule.matrix_dashboard_action</field>
     </record>
 
+    <!-- APPOINTMENT FORM VIEW -->
     <record id="view_clinic_schedule_appointment_form" model="ir.ui.view">
         <field name="name">clinic.schedule.appointment.form</field>
         <field name="model">clinic.schedule.appointment</field>
         <field name="arch" type="xml">
-            <form string="Book Appointment or Block Slot">
+            <form string="Clinic Session">
+                <header>
+                    <button name="action_mark_completed" string="Mark Completed" type="object" class="btn-success" invisible="attendance_state in ['completed', 'no_show'] or is_future_session"/>
+                    <button name="action_mark_no_show" string="Mark No-Show" type="object" class="btn-danger" invisible="attendance_state in ['completed', 'no_show'] or is_future_session"/>
+                    <field name="attendance_state" widget="statusbar" statusbar_visible="scheduled,completed"/>
+                </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name" placeholder="New Entry"/></h1>
+                    <field name="is_live_in_progress" invisible="1"/>
+                    <field name="is_future_session" invisible="1"/>
+
+                    <div invisible="not is_live_in_progress or attendance_state == 'completed'" class="alert alert-success text-center fw-bold text-uppercase shadow-sm" role="alert" style="border: 2px solid #28a745;">
+                        <i class="fa fa-spinner fa-spin me-2"/> SESSION CURRENTLY IN PROGRESS
                     </div>
 
-                    <div invisible="slot_type != 'patient'" groups="base.group_no_one" class="alert alert-warning d-flex align-items-center mb-4 border-warning shadow-sm" role="alert">
-                        <i class="fa fa-paper-plane fa-2x me-3 text-warning-darker" style="color: #856404;"></i>
-                        <div class="flex-grow-1 text-dark">
-                            <strong>Sandbox Mode Active:</strong> Click to simulate a WhatsApp/SMS payload. The exact text will appear in the log below.
-                        </div>
-                        <button name="action_send_test_notification"
-                                string="Fire Test Message"
-                                type="object"
-                                class="btn btn-danger fw-bold shadow-sm"
-                                icon="fa-bolt"/>
+                    <div class="oe_title mb-4">
+                        <h1><field name="name" placeholder="New Entry" readonly="1"/></h1>
                     </div>
 
-                    <group>
-                        <field name="slot_type" widget="radio" options="{'horizontal': True}"/>
-                        <field name="visit_type" widget="radio" options="{'horizontal': True}" invisible="slot_type != 'patient'"/>
-                        <field name="attendance_state" widget="radio" options="{'horizontal': True}"/>
-                    </group>
-
-                    <field name="allowed_patient_ids" invisible="1"/>
+                    <field name="has_existing_session" invisible="1"/>
+                    <div invisible="not has_existing_session or slot_type != 'patient'" class="alert alert-info shadow-sm" role="alert">
+                        <strong><i class="fa fa-info-circle me-1"/> Existing Session Today:</strong><br/>
+                        <field name="existing_session_info" nolabel="1"/>
+                    </div>
 
                     <group>
                         <group>
+                            <field name="slot_type" widget="radio" options="{'horizontal': True}"/>
+                            <field name="visit_type" widget="radio" options="{'horizontal': True}" invisible="slot_type != 'patient'"/>
                             <field name="clinic_id" options="{'no_create': True}"/>
                             <field name="therapist_id" options="{'no_create': True}" domain="['|', ('allowed_branch_ids', '=', False), ('allowed_branch_ids', 'in', clinic_id)]"/>
-                            <field name="patient_id" options="{'no_create': True}" invisible="slot_type != 'patient'" required="slot_type == 'patient'" domain="[('id', 'in', allowed_patient_ids)]"/>
                         </group>
                         <group>
-                            <field name="start_datetime"/>
-                            <field name="end_datetime" readonly="1" force_save="1"/>
+                            <field name="allowed_patient_ids" invisible="1"/>
+                            <field name="patient_id" options="{'no_create': True}" invisible="slot_type != 'patient'" required="slot_type == 'patient'" domain="[('id', 'in', allowed_patient_ids)]"/>
+
+                            <!-- 12-Hour AM/PM Enforcement -->
+                            <field name="start_datetime" widget="datetime" options="{'format': 'yyyy-MM-dd hh:mm a'}"/>
+                            <field name="end_datetime" readonly="1" force_save="1" widget="datetime" options="{'format': 'yyyy-MM-dd hh:mm a'}"/>
                         </group>
                     </group>
                 </sheet>
@@ -56,32 +60,120 @@
         </field>
     </record>
 
+    <!-- THERAPIST KANBAN VIEW (Modern Directory Look) -->
+    <record id="view_clinic_therapist_kanban" model="ir.ui.view">
+        <field name="name">clinic.therapist.kanban</field>
+        <field name="model">clinic.therapist</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" sample="1">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="designation"/>
+                <field name="vendor_id"/>
+                <field name="image_128"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click o_kanban_record_has_image_fill o_hr_kanban_record border-0 shadow-sm rounded mb-3">
+                            <field name="image_128" widget="image" class="o_kanban_image_fill_left" options="{'zoom': true, 'background': true, 'preventClicks': false}"/>
+                            <div class="oe_kanban_details">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title fs-5">
+                                            <field name="name"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                                <ul class="mt-2 list-unstyled text-muted small">
+                                    <li t-if="record.designation.raw_value" class="o_text_overflow mb-1">
+                                        <i class="fa fa-briefcase me-1" title="Briefcase"/> <field name="designation"/>
+                                    </li>
+                                    <li t-if="record.vendor_id.raw_value" class="o_text_overflow">
+                                       <i class="fa fa-id-badge me-1" title="Badge"/> <field name="vendor_id"/>
+                                    </li>
+                                </ul>
+                                <div class="o_kanban_record_bottom mt-auto d-flex justify-content-between">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'onboarding'" decoration-danger="state == 'offboarded'"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+<!-- THERAPIST TREE VIEW (Cleaned) -->
+    <record id="view_clinic_therapist_tree" model="ir.ui.view">
+        <field name="name">clinic.therapist.tree</field>
+        <field name="model">clinic.therapist</field>
+        <field name="arch" type="xml">
+            <tree string="Therapists" decoration-muted="state == 'offboarded'">
+                <field name="name" class="fw-bold"/>
+                <field name="vendor_id"/>
+                <field name="contact_number"/>
+                <field name="designation" widget="badge" decoration-info="designation == 'floater'" decoration-success="designation == 'hv'" decoration-primary="designation == 'fixed'"/>
+                <field name="allowed_branch_ids" widget="many2many_tags" optional="show"/>
+                <field name="is_buffer" widget="boolean_toggle" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'onboarding'" decoration-danger="state == 'offboarded'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- THERAPIST FORM VIEW (HR Onboarding Layout) -->
     <record id="view_clinic_therapist_form" model="ir.ui.view">
         <field name="name">clinic.therapist.form</field>
         <field name="model">clinic.therapist</field>
         <field name="arch" type="xml">
             <form string="Therapist Profile">
+                <header>
+                    <button name="action_activate" string="Complete Onboarding" type="object" class="oe_highlight btn-success" invisible="state != 'onboarding'"/>
+                    <button name="action_offboard" string="Offboard Therapist" type="object" class="btn-danger" invisible="state == 'offboarded'"/>
+                    <button name="action_reonboard" string="Re-onboard Therapist" type="object" class="btn-warning" invisible="state != 'offboarded'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="onboarding,active,offboarded"/>
+                </header>
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+                    <widget name="web_ribbon" title="Offboarded" bg_color="bg-secondary" invisible="state != 'offboarded'"/>
+
+                    <field name="image_1920" widget="image" class="oe_avatar" options="{'zoom': true, 'preview_image':'image_128'}"/>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only" string="Therapist Name"/>
-                        <h1><field name="name" placeholder="e.g. John Doe"/></h1>
+                        <h1><field name="name" placeholder="e.g. Jane Doe" required="1"/></h1>
                     </div>
+
                     <group>
-                        <group>
+                        <group string="Employment Details">
+                            <field name="designation" widget="radio" options="{'horizontal': True}"/>
+                            <field name="vendor_id"/>
                             <field name="active" invisible="1"/>
                             <field name="is_buffer" widget="boolean_toggle"/>
-                            <field name="designation"/>
-                            <field name="vendor_id" invisible="designation == 'fixed'"/>
-                            <field name="employee_id" invisible="designation != 'fixed'"/>
+                            <field name="allowed_branch_ids" widget="many2many_tags" placeholder="Assign operating clinics..."/>
                         </group>
-                        <group>
+                        <group string="Personal Information">
                             <field name="contact_number" widget="phone"/>
                             <field name="gender" widget="radio" options="{'horizontal': True}"/>
                             <field name="transport_type"/>
-                            <field name="allowed_branch_ids" widget="many2many_tags" placeholder="Limit to specific clinics..."/>
                         </group>
                     </group>
+
+                    <notebook>
+                        <page string="HR &amp; Bank Details">
+                            <group>
+                                <group string="Compensation">
+                                    <field name="hourly_rate" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </group>
+                                <group string="Bank Account Information">
+                                    <field name="bank_account_name" placeholder="Account Holder Name"/>
+                                    <field name="bank_name" placeholder="e.g. HDFC Bank"/>
+                                    <field name="bank_account_number" placeholder="Account Number"/>
+                                    <field name="bank_ifsc_code" placeholder="IFSC Code"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
@@ -92,74 +184,51 @@
         </field>
     </record>
 
-    <record id="view_clinic_therapist_tree" model="ir.ui.view">
-        <field name="name">clinic.therapist.tree</field>
-        <field name="model">clinic.therapist</field>
+    <!-- FLOATER REQUEST WIZARD FORM -->
+    <record id="view_clinic_floater_request_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.floater.request.wizard.form</field>
+        <field name="model">clinic.floater.request.wizard</field>
         <field name="arch" type="xml">
-            <tree string="Therapists" decoration-muted="not active" editable="bottom">
-                <field name="name"/>
-                <field name="contact_number"/>
-                <field name="is_buffer" widget="boolean_toggle"/>
-                <field name="designation"/>
-                <field name="gender"/>
-                <field name="transport_type"/>
-                <field name="allowed_branch_ids" widget="many2many_tags"/>
-                <field name="active" widget="boolean_toggle"/>
-            </tree>
+            <form string="Request Floater Therapist">
+                <sheet>
+                    <div class="alert alert-info text-center" role="alert">
+                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>
+                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>
+                        Please select the required gender for this floater.
+                        <br/><small>(Max limit: 3 requests per gender, per day)</small>
+                    </div>
+                    <group>
+                        <field name="clinic_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="target_date" readonly="1"/>
+                        <field name="gender" widget="radio" options="{'horizontal': true}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_submit_request" type="object" string="Submit Request" class="btn-primary fw-bold" icon="fa-paper-plane"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
         </field>
     </record>
 
     <record id="action_clinic_therapist_directory" model="ir.actions.act_window">
         <field name="name">Master Therapist Directory</field>
         <field name="res_model">clinic.therapist</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
-    <record id="view_clinic_region_form" model="ir.ui.view">
-        <field name="name">clinic.region.form</field>
-        <field name="model">clinic.region</field>
-        <field name="arch" type="xml">
-            <form string="Region / Zone">
-                <sheet>
-                    <div class="oe_title">
-                        <label for="name" class="oe_edit_only" string="Region Name"/>
-                        <h1><field name="name" placeholder="e.g. North Zone"/></h1>
-                    </div>
-                    <group>
-                        <field name="active" widget="boolean_toggle"/>
-                    </group>
-                    <notebook>
-                        <page string="Assigned Clinics">
-                            <field name="clinic_ids" context="{'default_region_id': id}">
-                                <tree editable="bottom">
-                                    <field name="name"/>
-                                </tree>
-                            </field>
-                        </page>
-                    </notebook>
-                </sheet>
-            </form>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Therapist profile!
+            </p>
+            <p>
+                Onboard new clinicians and manage their branch deployment and banking information here.
+            </p>
         </field>
     </record>
 
-    <record id="view_clinic_region_tree" model="ir.ui.view">
-        <field name="name">clinic.region.tree</field>
-        <field name="model">clinic.region</field>
-        <field name="arch" type="xml">
-            <tree string="Regions" editable="bottom">
-                <field name="name"/>
-                <field name="clinic_ids" widget="many2many_tags" placeholder="Add Clinics to this Zone..."/>
-                <field name="active" widget="boolean_toggle"/>
-            </tree>
-        </field>
-    </record>
 
-    <record id="action_clinic_region" model="ir.actions.act_window">
-        <field name="name">Regions &amp; Zones</field>
-        <field name="res_model">clinic.region</field>
-        <field name="view_mode">tree,form</field>
-    </record>
 
+
+    <!-- ROSTER IMPORT LOG VIEWS -->
     <record id="view_clinic_therapist_import_log_form" model="ir.ui.view">
         <field name="name">clinic.therapist.import.log.form</field>
         <field name="model">clinic.therapist.import.log</field>
@@ -202,28 +271,5 @@
         <field name="name">Upload Staff Roster</field>
         <field name="res_model">clinic.therapist.import.log</field>
         <field name="view_mode">tree,form</field>
-    </record>
-
-    <record id="view_patient_form_inherit_appointments" model="ir.ui.view">
-        <field name="name">clinic.patient.form.inherit.appointments</field>
-        <field name="model">clinic.patient</field>
-        <field name="inherit_id" ref="patient_management.view_patient_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//sheet" position="inside">
-                <notebook>
-                    <page string="Appointments &amp; Notifications">
-                        <field name="appointment_ids" readonly="1">
-                            <tree string="Appointments">
-                                <field name="start_datetime"/>
-                                <field name="therapist_id"/>
-                                <field name="visit_type"/>
-                                <field name="attendance_state"/>
-                                <field name="notification_status" widget="badge" decoration-success="notification_status == 'wa_delivered'" decoration-info="notification_status == 'sms_delivered'" decoration-warning="notification_status == 'queued'" decoration-danger="notification_status == 'failed'"/>
-                            </tree>
-                        </field>
-                    </page>
-                </notebook>
-            </xpath>
-        </field>
     </record>
 </odoo>
