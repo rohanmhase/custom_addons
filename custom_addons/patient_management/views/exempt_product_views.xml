@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Tree View for Exempted Products -->
+    <record id="view_prescription_exempt_product_tree" model="ir.ui.view">
+        <field name="name">prescription.exempt.product.tree</field>
+        <field name="model">prescription.exempt.product</field>
+        <field name="arch" type="xml">
+            <tree string="Exempted Medicines">
+                <field name="product_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View for Exempted Products -->
+    <record id="view_prescription_exempt_product_form" model="ir.ui.view">
+        <field name="name">prescription.exempt.product.form</field>
+        <field name="model">prescription.exempt.product</field>
+        <field name="arch" type="xml">
+            <form string="Exempted Medicine">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active == True"/>
+                    <group>
+                        <field name="product_id" options="{'no_create': True}"/>
+                        <field name="active" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_prescription_exempt_product" model="ir.actions.act_window">
+        <field name="name">Exempted Medicines</field>
+        <field name="res_model">prescription.exempt.product</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add exempted medicines here.
+            </p>
+        </field>
+    </record>
+
+    <!-- Add the menu under your Prescription Configuration -->
+    <!-- Replace 'menu_prescription_configuration' with your actual parent menu ID -->
+    <menuitem id="menu_prescription_exempt_product"
+              name="Exempted Medicines"
+              parent="clinic_management.menu_clinic_root"
+              action="action_prescription_exempt_product"
+              groups="clinic_management.group_clinic_administrator"
+              />
+
+</odoo>

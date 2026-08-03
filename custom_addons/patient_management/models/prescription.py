@@ -194,6 +194,7 @@ class Prescription(models.Model):
         if not vals.get('line_ids'):
             raise UserError(_("⚠️ You cannot create a prescription without medicines."))
         record = super().create(vals)
+        record._validate_followup_rule()
         # Check stock immediately after creation
         record._check_stock()
         return record
@@ -209,6 +210,7 @@ class Prescription(models.Model):
             if not rec.line_ids:
                 raise UserError(_("⚠️ You cannot confirm a prescription without medicines."))
 
+            rec._validate_followup_rule()
             rec._check_stock()  # Reuse same stock validation
             rec.state = "confirmed"
             rec._notify_pos_prescription_created()
@@ -234,6 +236,7 @@ class Prescription(models.Model):
         result = super().write(vals)
 
         for rec in self:
+            rec._validate_followup_rule()
             if rec.state == "confirmed":
                 rec._check_stock()  # Ensure stock still available after edit
 
@@ -341,6 +344,60 @@ class Prescription(models.Model):
 
             self.env["mail.mail"].sudo().create(mail_values).send()
 
+    def _validate_followup_rule(self):
+        """
+        Validates that a follow-up happened within the last 48 hours IF there are 3
+        or more non-exempt medicines in the prescription.
+        Optimized for high-concurrency (bulk processing without N+1 queries).
+        """
+        # OPTIMIZATION 1: Quick Exit
+        # Filter prescriptions that actually have 3 or more total medicines.
+        # If a prescription only has 1 or 2 lines, it passes automatically. No DB hits.
+        recs_to_check = self.filtered(lambda p: len(p.line_ids) >= 3 and p.patient_id)
+        if not recs_to_check:
+            return
+
+        # OPTIMIZATION 2: Single DB hit for exempt products, fetched only when needed
+        ExemptProduct = self.env['prescription.exempt.product']
+        exempt_product_ids = set(ExemptProduct.search([]).mapped('product_id.id'))
+
+        # Track which patients actually require a database check
+        patients_to_check = self.env['clinic.patient']
+
+        for rec in recs_to_check:
+            line_product_ids = set(rec.line_ids.mapped('product_id.id'))
+
+            # Count how many products are NOT in the exempt list
+            non_exempt_count = sum(1 for pid in line_product_ids if pid not in exempt_product_ids)
+
+            # If 3 or more regular medicines, we must check this patient's history
+            if non_exempt_count >= 3:
+                patients_to_check |= rec.patient_id
+
+        if not patients_to_check:
+            return
+
+        # OPTIMIZATION 3: Single bulk DB query for all affected patients
+        today = self._ist_date()
+        twenty_four_hours_ago = today - timedelta(days=1)
+        Assessment = self.env['patient.assessment']
+
+        # Get a set of patient IDs who actually had a follow-up in the last 48 hours
+        valid_assessments = Assessment.search([
+            ('patient_id', 'in', patients_to_check.ids),
+            ('assessment_date', '>=', twenty_four_hours_ago),
+            ('assessment_date', '<=', today),
+            ('active', '=', True)
+        ])
+        patients_with_followup = set(valid_assessments.mapped('patient_id.id'))
+
+        # OPTIMIZATION 4: Final memory check
+        for rec in recs_to_check:
+            if rec.patient_id in patients_to_check and rec.patient_id.id not in patients_with_followup:
+                raise UserError(_(
+                    "⚠️ A follow-up assessment within the last 24 hours is required to prescribe 3 or more medicines, excluding therapy materials."
+                ))
+
 class PrescriptionLine(models.Model):
     _name = "patient.prescription.line"
     _description = "Prescription Line"
@@ -393,3 +450,8 @@ class PrescriptionLine(models.Model):
                     ).qty_available
             line.qty_available = qty
 
+    @api.constrains('product_id', 'prescription_id')
+    def _check_prescription_followup(self):
+        for line in self:
+            if line.prescription_id:
+                line.prescription_id._validate_followup_rule()
