@@ -3,8 +3,8 @@
     <record id="seq_op_fund_disbursement" model="ir.sequence">
         <field name="name">Operational Fund Disbursement</field>
         <field name="code">operational.fund.disbursement</field>
-        <field name="prefix">OFD/%(year)s/</field>
-        <field name="padding">5</field>
+        <field name="prefix"></field> <!-- Removed prefix entirely to build it dynamically -->
+        <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
 
@@ -127,45 +127,36 @@
         <field name="name">operational.fund.disbursement.form</field>
         <field name="model">operational.fund.disbursement</field>
         <field name="arch" type="xml">
-            <form string="Operational Fund Disbursement" delete="0">
-                <header>
-                    <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
+            <form string="Operational Fund Disbursement">
+                        <header>
+            <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
 
-                    <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
+            <!-- STANDARD SUBMIT (For Manual Vouchers) -->
+            <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
 
-                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-                    <button name="action_mark_as_paid" string="Mark as Paid" type="object" class="oe_highlight" invisible="state != 'approved'"/>
-                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_request_refund" string="Request Refund" type="object" class="btn-warning" invisible="state not in ('approved', 'paid')" form_novalidate="1"/>
-                    <button name="action_approve_refund" string="Approve Refund" type="object" class="btn-success" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_cancel_refund" string="Deny Refund" type="object" class="btn-danger" invisible="state != 'refund_requested'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state != 'rejected'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
-                    <button name="action_delete_draft" string="Delete Draft" type="object" class="btn-secondary text-danger" invisible="state != 'draft'" form_novalidate="1"/>
+            <!-- NEW: TIER 1 SYSTEM APPROVAL (Only visible for system-generated payouts) -->
+            <button name="action_approve_system_voucher" string="Approve Verified Matrix Payout" type="object" class="btn-success fw-bold text-uppercase" invisible="state != 'waiting' or is_system_generated == False" groups="operational_fund.group_op_fund_custodian"/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
-                </header>
+            <!-- STANDARD TIER 2 MANAGER APPROVAL (Only for Manual Vouchers) -->
+            <button name="action_approve" string="Manager Approve" type="object" class="btn-success" invisible="state != 'waiting' or is_system_generated == True" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+
+            <!-- ... (Keep your other buttons exactly as they are) ... -->
+            <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
+        </header>
                 <sheet>
                     <field name="has_pending_allocation" invisible="1"/>
-
-                    <div class="alert alert-danger d-flex align-items-center justify-content-between shadow-sm" role="alert" invisible="not has_pending_allocation" style="margin-bottom: 20px; padding: 15px;">
-                        <div>
-                            <i class="fa fa-university me-2 fa-2x align-middle" title="Bank"></i>
-                            <span class="align-middle ms-2">
-                                <strong>MANDATORY ACTION REQUIRED:</strong> This clinic has an unacknowledged capital deposit from HQ. You cannot submit vouchers until this balance is verified.
-                            </span>
-                        </div>
-                        <button name="action_open_acknowledgment_wizard_from_banner" string="Upload Bank Proof Now" type="object" class="btn btn-danger btn-sm fw-bold text-uppercase border border-light" form_novalidate="1"/>
-                    </div>
+                    <field name="is_system_generated" invisible="1"/>
 
                     <div class="alert alert-info text-center" role="alert" invisible="signed_voucher_file or state in ('waiting', 'approved', 'paid', 'refund_requested', 'refunded')" style="margin-bottom: 20px;">
                         <i class="fa fa-info-circle me-2" title="Info"></i>
                         <strong>Action Required:</strong> Click <em>Print Voucher</em>, sign the physical document, and upload it below to unlock submission.
                     </div>
-
                     <div class="alert alert-danger text-center" role="alert" invisible="not is_cross_cluster_visit or state in ('approved', 'paid', 'refunded')" style="margin-bottom: 20px;">
                         <i class="fa fa-exclamation-triangle me-2" title="Warning"></i>
                         <strong>Cross-Cluster Alert:</strong> This patient is registered outside your clinic cluster. Manager approval is strictly required.
                     </div>
+
+
 
                     <div class="oe_title"><h1><field name="name"/></h1></div>
 
@@ -173,7 +164,6 @@
                         <group>
                             <field name="category" readonly="1" string="Legacy Category"/>
                             <field name="payee_type" readonly="1" invisible="category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')"/>
-                            <field name="payee_id" readonly="1" invisible="payee_type != 'internal' or category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')"/>
                             <field name="vendor_name" readonly="1" invisible="payee_type != 'external' or category in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')"/>
                             <field name="therapist_name" readonly="1" invisible="category not in ('home_visit_travel', 'fixed_therapist_travel', 'floater_travel', 'clinic_to_clinic')"/>
                         </group>
@@ -185,7 +175,6 @@
                             <field name="date" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="amount" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                         </group>
-
                         <group string="Expense Routing">
                             <field name="show_employee_payee" invisible="1"/>
                             <field name="show_therapist_name_input" invisible="1"/>
@@ -198,15 +187,21 @@
                             <field name="show_other_expense" invisible="1"/>
 
                             <field name="expense_category" required="not category" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
-
                             <field name="therapist_role" invisible="not show_therapist_role" required="show_therapist_role" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="travel_type" invisible="not show_travel_type" required="show_travel_type" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="office_expense_type" invisible="not show_office_type" required="show_office_type" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
 
-                            <field name="payee_id" string="Select Employee" invisible="not show_employee_payee" required="show_employee_payee" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" options="{'no_create': True}"/>
-                            <field name="therapist_name" string="Therapist Name" invisible="not show_therapist_name_input" required="show_therapist_name_input" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
+                            <field name="therapist_name" string="Therapist (Legacy)" invisible="not show_therapist_name_input or not therapist_name" readonly="1"/>
+                            <field name="vendor_name" string="Vendor (Legacy)" invisible="not show_vendor_payee or not vendor_name" readonly="1"/>
 
-                            <field name="vendor_name" string="Vendor / Payee Name" invisible="not show_vendor_payee" required="show_vendor_payee" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
+                            <field name="therapist_ref_id" string="Select Therapist" invisible="not show_therapist_name_input or therapist_name" required="show_therapist_name_input and not therapist_name" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="vendor_ref_id" string="Select Vendor"
+       invisible="not show_vendor_payee or vendor_name"
+       required="show_vendor_payee and not vendor_name"
+       readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"
+       options="{'no_create': True, 'no_open': True}"
+       domain="['|', ('clinic_ids', '=', False), ('clinic_ids', 'in', clinic_id)]"/>
+
                             <field name="other_expense_details" invisible="not show_other_expense" required="show_other_expense" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                         </group>
                     </group>
@@ -236,18 +231,19 @@
                     <group string="Documents &amp; Compliance Attachments">
                         <group>
                             <field name="is_receipt_mandatory" invisible="1"/>
-                            <field name="receipt_file" filename="receipt_filename" string="Vendor Receipt / Bill" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested') or has_pending_allocation"/>
+                            <field name="receipt_file" filename="receipt_filename" string="Vendor Receipt / Bill" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="receipt_filename" invisible="1"/>
                         </group>
                         <group>
-                            <field name="signed_voucher_file" filename="signed_voucher_filename" string="Signed Voucher Asset" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested') or has_pending_allocation"/>
+                            <field name="signed_voucher_file" filename="signed_voucher_filename" string="Signed Voucher Asset" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="signed_voucher_filename" invisible="1"/>
                         </group>
                     </group>
 
-                    <group string="Payment Proof Breakdown" invisible="state not in ('approved', 'paid', 'refund_requested', 'refunded')">
+                    <group string="Payment &amp; Bank Reconciliation" invisible="state not in ('approved', 'paid', 'refund_requested', 'refunded')">
                         <group>
-                            <field name="payment_screenshot" filename="payment_screenshot_filename" string="Transaction Screenshot" readonly="state in ('paid', 'refunded')"/>
+                            <field name="utr_reference" decoration-success="utr_reference != False" decoration-bf="1"/>
+                            <field name="payment_screenshot" filename="payment_screenshot_filename" string="Legacy Screenshot" readonly="state in ('paid', 'refunded')" invisible="not payment_screenshot"/>
                             <field name="payment_screenshot_filename" invisible="1"/>
                             <field name="is_payment_screenshot_image" invisible="1"/>
                         </group>
@@ -255,40 +251,6 @@
 
                     <notebook>
                         <page string="Business Purpose"><field name="description" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" placeholder="Specify exact context parameters..."/></page>
-                        <page string="Current Documents" invisible="not signed_voucher_file and not receipt_file and not payment_screenshot">
-                            <div class="row mt-3">
-                                <div class="col-4" invisible="not signed_voucher_file">
-                                    <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Signed Voucher</h4>
-                                    <field name="is_signed_voucher_image" invisible="1"/>
-                                    <div invisible="not is_signed_voucher_image" style="display: flex; justify-content: center; width: 100%;">
-                                        <field name="signed_voucher_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
-                                    </div>
-                                    <div invisible="is_signed_voucher_image" style="width: 100%; height: 600px;">
-                                        <field name="signed_voucher_preview_pdf" widget="pdf_viewer" readonly="1" nolabel="1"/>
-                                    </div>
-                                </div>
-                                <div class="col-4" invisible="not receipt_file">
-                                    <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Original Receipt / Vendor Bill</h4>
-                                    <field name="is_receipt_image" invisible="1"/>
-                                    <div invisible="not is_receipt_image" style="display: flex; justify-content: center; width: 100%;">
-                                        <field name="receipt_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
-                                    </div>
-                                    <div invisible="is_receipt_image" style="width: 100%; height: 600px;">
-                                        <field name="receipt_preview_pdf" widget="pdf_viewer" readonly="1" nolabel="1"/>
-                                    </div>
-                                </div>
-                                <div class="col-4" invisible="not payment_screenshot">
-                                    <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 15px;">Transaction Rollout Proof</h4>
-                                    <field name="is_payment_screenshot_image" invisible="1"/>
-                                    <div invisible="not is_payment_screenshot_image" style="display: flex; justify-content: center; width: 100%;">
-                                        <field name="payment_screenshot_preview_image" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
-                                    </div>
-                                    <div invisible="is_payment_screenshot_image" style="width: 100%; height: 600px;">
-                                        <field name="payment_screenshot_preview_pdf" widget="pdf_viewer" readonly="1" nolabel="1"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </page>
                         <page string="Archived Original Document" invisible="not old_signed_voucher_file"><field name="old_signed_voucher_file" widget="pdf_viewer" readonly="1"/></page>
                     </notebook>
                 </sheet>
@@ -297,11 +259,62 @@
         </field>
     </record>
 
+        <!-- Wizard Form View -->
+    <record id="view_op_fund_download_wizard_form" model="ir.ui.view">
+        <field name="name">operational.fund.download.wizard.form</field>
+        <field name="model">operational.fund.download.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Download Vouchers">
+                <sheet>
+                    <group>
+                        <field name="date"/>
+                        <field name="include_paid"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        This will compile a ZIP file containing the financial CSV manifest (with banking details) and all attached PDF/Image receipts for the selected date.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_download_vouchers" string="Download" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open Wizard -->
+    <record id="action_op_fund_download_wizard" model="ir.actions.act_window">
+        <field name="name">Download Daily Vouchers</field>
+        <field name="res_model">operational.fund.download.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Inject the button into your Disbursement Tree/List view header -->
+    <record id="view_op_fund_disbursement_tree_inherit" model="ir.ui.view">
+        <field name="name">operational.fund.disbursement.tree.inherit</field>
+        <field name="model">operational.fund.disbursement</field>
+        <field name="inherit_id" ref="operational_fund.view_op_fund_disbursement_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <header>
+                    <!-- TIER 3 CONTROLLER EXCLUSIVE ACCESS -->
+                    <button name="%(operational_fund.action_op_fund_download_wizard)d"
+                            string="Download Daily Vouchers"
+                            type="action"
+                            class="btn-primary"
+                            icon="fa-cloud-download"
+                            groups="operational_fund.group_op_fund_controller"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_op_fund_disbursement_tree" model="ir.ui.view">
         <field name="name">operational.fund.disbursement.tree</field>
         <field name="model">operational.fund.disbursement</field>
         <field name="arch" type="xml">
-            <tree decoration-info="state == 'draft' and is_today" decoration-warning="state == 'waiting' and is_today" decoration-success="state == 'approved' and is_today" decoration-bf="state == 'approved' and is_today" decoration-danger="state == 'rejected' and is_today" decoration-muted="not is_today or state == 'refunded'" delete="0">
+            <tree decoration-warning="state == 'waiting' and is_today" decoration-success="state == 'approved' and is_today" decoration-bf="state == 'approved' and is_today" decoration-danger="state == 'rejected' and is_today" decoration-muted="not is_today or state == 'refunded'">
                 <field name="is_today" column_invisible="True"/>
                 <field name="name"/>
                 <field name="date"/>
@@ -309,8 +322,7 @@
                 <field name="payee_display"/>
                 <field name="display_category"/>
                 <field name="amount" sum="Total"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft' and is_today" decoration-warning="state == 'waiting' and is_today" decoration-primary="state == 'approved' and is_today" decoration-success="state == 'paid' and is_today" decoration-danger="state == 'rejected' and is_today" decoration-muted="not is_today or state == 'refunded'"/>
-
+                <field name="state" widget="badge" decoration-warning="state == 'waiting' and is_today" decoration-primary="state == 'approved' and is_today" decoration-success="state == 'paid' and is_today" decoration-danger="state == 'rejected' and is_today" decoration-muted="not is_today or state == 'refunded'"/>
                 <field name="s3_receipt_url" optional="hide"/>
                 <field name="s3_voucher_url" optional="hide"/>
                 <field name="s3_payment_url" optional="hide"/>
@@ -330,9 +342,8 @@
                 <separator/>
                 <filter string="Today's Vouchers" name="filter_today" domain="[('is_today', '=', True)]"/>
                 <filter string="My Vouchers" name="filter_my_vouchers" domain="[('create_uid', '=', uid)]"/>
-                <filter string="Needs Action" name="filter_needs_action" domain="[('state', 'in', ['waiting', 'draft'])]"/>
+                <filter string="Needs Action" name="filter_needs_action" domain="[('state', '=', 'waiting')]"/>
                 <separator/>
-                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Waiting Approval" name="filter_waiting" domain="[('state', '=', 'waiting')]"/>
                 <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
                 <group expand="0" string="Group By">
@@ -349,17 +360,82 @@
         </field>
     </record>
 
+    <record id="view_op_fund_vendor_form" model="ir.ui.view">
+        <field name="name">operational.fund.vendor.form</field>
+        <field name="model">operational.fund.vendor</field>
+        <field name="arch" type="xml">
+            <form string="Local Vendor">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h1><field name="name" placeholder="Vendor Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Bank Details">
+                            <field name="bank_account_name"/>
+                            <field name="bank_account_number"/>
+                            <field name="bank_ifsc_code"/>
+                        </group>
+                        <group string="Settings">
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Allowed Clinics">
+                            <field name="clinic_ids" widget="many2many_tags" placeholder="Select clinics this vendor operates in..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- VENDOR ACTION -->
+    <record id="action_op_fund_vendor" model="ir.actions.act_window">
+        <field name="name">Fund Vendors</field>
+        <field name="res_model">operational.fund.vendor</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_op_fund_utr_wizard_form" model="ir.ui.view">
+        <field name="name">operational.fund.utr.wizard.form</field>
+        <field name="model">operational.fund.utr.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Batch Bank Reconciliation">
+                <div class="alert alert-info text-center shadow-sm" role="alert">
+                    <i class="fa fa-upload fa-2x mb-2 d-block"></i>
+                    Upload your downloaded Bank Payment CSV. The system will automatically scan for <strong>Voucher Code</strong> and <strong>UTR</strong> to reconcile approved transactions.
+                </div>
+                <group>
+                    <field name="csv_file" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_process_csv" string="Scan &amp; Process Payments" type="object" class="btn-success text-uppercase fw-bold"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_op_fund_utr_wizard" model="ir.actions.act_window">
+        <field name="name">Batch UTR Reconciliation</field>
+        <field name="res_model">operational.fund.utr.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <record id="action_op_fund_disbursement" model="ir.actions.act_window">
         <field name="name">Disbursements</field>
         <field name="res_model">operational.fund.disbursement</field>
         <field name="view_mode">kanban,form,tree</field>
+        <field name="context">{'search_default_filter_today': 1}</field>
     </record>
 
     <record id="view_op_fund_allocation_form" model="ir.ui.view">
         <field name="name">operational.fund.allocation.form</field>
         <field name="model">operational.fund.allocation</field>
         <field name="arch" type="xml">
-            <form string="Fund Allocation">
+            <form string="Fund Allocation" create="0" edit="0">
                 <header>
                     <button name="action_approve_allocation" string="Approve &amp; Clear Funds" type="object" class="btn-success text-uppercase fw-bold" invisible="state != 'review'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
                     <button name="action_reject_allocation" string="Reject &amp; Request Re-upload" type="object" class="btn-danger" invisible="state != 'review'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
@@ -424,7 +500,7 @@
         <field name="name">operational.fund.allocation.tree</field>
         <field name="model">operational.fund.allocation</field>
         <field name="arch" type="xml">
-            <tree default_order="date desc, id desc">
+            <tree default_order="date desc, id desc" create="0" edit="0">
                 <field name="name" string="Receipt No."/>
                 <field name="date" string="Date"/>
                 <field name="clinic_id" class="text-wrap" options="{'no_create': True, 'no_create_edit': True}"/>
@@ -462,27 +538,7 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <record id="view_op_fund_user_approver_tree" model="ir.ui.view">
-        <field name="name">res.users.op.fund.tree</field>
-        <field name="model">res.users</field>
-        <field name="arch" type="xml">
-            <tree editable="bottom" create="0" delete="0">
-                <field name="name" readonly="1"/>
-                <field name="login" readonly="1"/>
-                <field name="op_fund_managed_clinic_ids" widget="many2many_tags" options="{'no_create': True}"/>
-                <field name="op_fund_ho_managed_clinic_ids" widget="many2many_tags" options="{'no_create': True}"/>
-                <field name="op_fund_finance_clinic_ids" widget="many2many_tags" options="{'no_create': True}"/>
-            </tree>
-        </field>
-    </record>
 
-    <record id="action_op_fund_user_approvers" model="ir.actions.act_window">
-        <field name="name">User Approver Setup</field>
-        <field name="res_model">res.users</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="view_op_fund_user_approver_tree"/>
-        <field name="domain">[('share', '=', False)]</field>
-    </record>
 
     <record id="view_op_fund_clinic_search" model="ir.ui.view">
         <field name="name">op.fund.clinic.search</field>
@@ -642,19 +698,35 @@
         <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
+        <field name="groups_id" eval="[(4, ref('operational_fund.group_op_fund_controller'))]"/>
         <field name="code">
             if records: action = records.action_bulk_download_assets()
         </field>
     </record>
 
-    <record id="action_migrate_attachments_s3" model="ir.actions.server">
-        <field name="name">Migrate Local Files to S3</field>
+    <!-- DOWNLOAD UNPAID VOUCHERS -->
+    <record id="action_download_selected_unpaid" model="ir.actions.server">
+        <field name="name">Download Selected UNPAID Vouchers (Zip)</field>
         <field name="model_id" ref="model_operational_fund_disbursement"/>
         <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
-        <field name="binding_view_types">list,form</field>
+        <field name="binding_view_types">list</field>
         <field name="state">code</field>
+        <field name="groups_id" eval="[(4, ref('operational_fund.group_op_fund_controller'))]"/>
         <field name="code">
-            action = env['ir.attachment'].action_migrate_local_attachments_to_s3()
+action = records.filtered_domain([('state', '=', 'approved')]).action_bulk_download_assets()
+        </field>
+    </record>
+
+    <!-- DOWNLOAD PAID VOUCHERS -->
+    <record id="action_download_selected_paid" model="ir.actions.server">
+        <field name="name">Download Selected PAID Vouchers (Zip)</field>
+        <field name="model_id" ref="model_operational_fund_disbursement"/>
+        <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="groups_id" eval="[(4, ref('operational_fund.group_op_fund_controller'))]"/>
+        <field name="code">
+action = records.filtered_domain([('state', '=', 'paid')]).action_bulk_download_assets()
         </field>
     </record>
 
@@ -748,6 +820,37 @@
         <field name="name">Routing Matrix</field>
         <field name="res_model">operational.fund.approval.rule</field>
         <field name="view_mode">tree,form</field>
+    </record>
+
+
+    <!-- UTR UPLOAD WIZARD VIEW -->
+    <record id="view_op_fund_utr_wizard_form" model="ir.ui.view">
+        <field name="name">operational.fund.utr.wizard.form</field>
+        <field name="model">operational.fund.utr.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Batch Bank Reconciliation">
+                <div class="alert alert-info text-center shadow-sm" role="alert">
+                    <i class="fa fa-upload fa-2x mb-2 d-block"></i>
+                    Upload your downloaded Bank Payment CSV. The system will automatically scan for <strong>Voucher Code</strong> and <strong>UTR</strong> to reconcile approved transactions.
+                </div>
+                <group>
+                    <field name="csv_file" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_process_csv" string="Scan &amp; Process Payments" type="object" class="btn-success text-uppercase fw-bold"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- UTR UPLOAD ACTION -->
+    <record id="action_op_fund_utr_wizard" model="ir.actions.act_window">
+        <field name="name">Batch UTR Reconciliation</field>
+        <field name="res_model">operational.fund.utr.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
     </record>
 
 </odoo>

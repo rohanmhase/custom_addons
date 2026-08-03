@@ -53,11 +53,6 @@ export class ClinicMatrixDashboard extends Component {
             allotableTherapists: [],
             allotSearchQuery: "",
             selectedTherapistObj: null,
-            analyticsData: null,
-            isDrillDownModalOpen: false,
-            drillDownTitle: "",
-            drillDownRecords: [],
-            drillDownType: "",
             isTherapistActionModalOpen: false,
             selectedTherapistForAction: null,
             isLateModalOpen: false,
@@ -100,21 +95,48 @@ export class ClinicMatrixDashboard extends Component {
         await this.loadRosterMetadata();
     }
 
-    async triggerMassReassign() {
-        if (!this.state.selectedTherapistForAction || !this.state.massReassignTarget) return;
+    get unassignedAppointments() {
+        // Automatically returns all patients dumped into the action-required bucket
+        return this.state.appointments.filter(a => a.therapist_id === 0);
+    }
+
+    async carryForward() {
+        if (!this.state.selectedClinic) return;
+        const confirmed = window.confirm(`Are you sure you want to pull yesterday's completed patients into ${this.state.selectedDate}?`);
+        if (!confirmed) return;
 
         try {
-            const res = await this.orm.call("clinic.schedule.appointment", "action_mass_reassign_sessions", [
-                this.state.selectedTherapistForAction.id, // Can be 0 for UNASSIGNED
-                parseInt(this.state.massReassignTarget),
+            const res = await this.orm.call("clinic.schedule.appointment", "action_carry_forward_schedule", [
                 parseInt(this.state.selectedClinic),
                 this.state.selectedDate
             ]);
             this.notificationService.add(res.message, { type: res.status });
-        } catch (e) {
-            // Odoo backend validation (overlaps) will throw natively here
-            console.error("Mass Assignment Blocked:", e);
+            await this.refreshGrid();
+        } catch (error) {
+            console.error(error);
         }
+    }
+
+    onAppointmentClick(appointment) {
+        // Universal click handler for the new flexbox unassigned cards
+        this.state.selectedAppointment = appointment;
+        const freeStaff = this.getFreeTherapistsForHour(appointment.slot_key, appointment.patient_raw_gender);
+        this.state.quickReassignTherapist = freeStaff.length > 0 ? freeStaff[0].id : 0;
+        this.state.isActionModalOpen = true;
+    }
+
+
+    async triggerMassReassign() {
+        if (!this.state.selectedTherapistForAction || !this.state.massReassignTarget) return;
+
+        // Removed try/catch to ensure overlap errors block the UI and alert the manager
+        const res = await this.orm.call("clinic.schedule.appointment", "action_mass_reassign_sessions", [
+            this.state.selectedTherapistForAction.id, // Can be 0 for UNASSIGNED
+            parseInt(this.state.massReassignTarget),
+            parseInt(this.state.selectedClinic),
+            this.state.selectedDate
+        ]);
+        this.notificationService.add(res.message, { type: res.status });
 
         this.closeTherapistActionModal();
         await this.refreshGrid();
@@ -145,18 +167,64 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     get filteredAllotableTherapists() {
-    const query = this.state.allotSearchQuery.toLowerCase().trim();
-    if (!query) return this.state.allotableTherapists;
-    return this.state.allotableTherapists.filter(t =>
-        (t.smart_name && t.smart_name.toLowerCase().includes(query)) ||
-        (t.vendor_id && t.vendor_id.toLowerCase().includes(query))
-    );
-}
+        const query = this.state.allotSearchQuery.toLowerCase().trim();
+        if (!query) return this.state.allotableTherapists;
+        return this.state.allotableTherapists.filter(t =>
+            (t.smart_name && t.smart_name.toLowerCase().includes(query)) ||
+            (t.vendor_id && t.vendor_id.toLowerCase().includes(query))
+        );
+    }
 
     get filteredClinics() {
         const regionId = parseInt(this.state.selectedRegion);
         if (!regionId) return this.state.clinics;
         return this.state.clinics.filter(c => c.region_id && c.region_id[0] === regionId);
+    }
+
+    get isToday() {
+        const todayISO = DateTime.now().setZone('Asia/Kolkata').toISODate();
+        return this.state.selectedDate === todayISO;
+    }
+
+    get isTomorrow() {
+        const tomorrowISO = DateTime.now().setZone('Asia/Kolkata').plus({days: 1}).toISODate();
+        return this.state.selectedDate === tomorrowISO;
+    }
+
+    get unassignedAppointments() {
+        return this.state.appointments.filter(a => a.therapist_id === 0);
+    }
+
+    async toggleTodayTomorrow() {
+        const todayISO = DateTime.now().setZone('Asia/Kolkata').toISODate();
+        const tomorrowISO = DateTime.now().setZone('Asia/Kolkata').plus({days: 1}).toISODate();
+        if (this.state.selectedDate === todayISO) {
+            this.state.selectedDate = tomorrowISO;
+        } else {
+            this.state.selectedDate = todayISO;
+        }
+        await this.refreshGrid();
+    }
+
+    async carryForward() {
+        if (!this.state.selectedClinic) return;
+        const confirmed = window.confirm(`Are you sure you want to pull yesterday's completed patients into ${this.state.selectedDate}?`);
+        if (!confirmed) return;
+        try {
+            const res = await this.orm.call("clinic.schedule.appointment", "action_carry_forward_schedule", [
+                parseInt(this.state.selectedClinic),
+                this.state.selectedDate
+            ]);
+            this.notificationService.add(res.message, { type: res.status === 'success' ? 'success' : 'info' });
+            await this.refreshGrid();
+        } catch (error) { console.error(error); }
+    }
+
+    onAppointmentClick(appointment) {
+        this.state.selectedAppointment = appointment;
+        const freeStaff = this.getFreeTherapistsForHour(appointment.slot_key, appointment.patient_raw_gender);
+        this.state.quickReassignTherapist = freeStaff.length > 0 ? freeStaff[0].id : 0;
+        this.state.isActionModalOpen = true;
     }
 
     getFreeTherapistsForHour(slotKey, patientGender = false) {
@@ -194,8 +262,6 @@ export class ClinicMatrixDashboard extends Component {
             await this.loadRosterMetadata();
         } else if (tabName === "attendance") {
             await this.loadAttendanceLedger();
-        } else if (tabName === "analytics") {
-            await this.loadAnalyticsData();
         } else {
             await this.refreshGrid();
         }
@@ -203,19 +269,23 @@ export class ClinicMatrixDashboard extends Component {
 
     async onRegionChange() {
         const availableClinics = this.filteredClinics;
+        const currentRegion = parseInt(this.state.selectedRegion) || 0;
+
         if (availableClinics.length > 0) {
             this.state.selectedClinic = availableClinics[0].id;
-            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [availableClinics[0].id]);
+            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [availableClinics[0].id, currentRegion]);
         } else {
             this.state.selectedClinic = 0;
+            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [0, currentRegion]);
         }
         await this.refreshGrid();
     }
 
     async onClinicChange() {
         const currentClinic = parseInt(this.state.selectedClinic) || 0;
-        if (currentClinic > 0) {
-            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [currentClinic]);
+        const currentRegion = parseInt(this.state.selectedRegion) || 0;
+        if (currentClinic > 0 || currentRegion > 0) {
+            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [currentClinic, currentRegion]);
         }
         await this.refreshGrid();
     }
@@ -227,34 +297,38 @@ export class ClinicMatrixDashboard extends Component {
             this.state.lastFetchedDate = this.state.selectedDate;
             this.state.lastFetchedClinic = currentClinic;
         }
+
         const data = await this.orm.call("clinic.schedule.appointment", "get_matrix_data", [currentClinic, this.state.selectedDate, this.state.pulledTherapistIds]);
+
         this.state.clinics = data.clinics || [];
         this.state.regions = data.regions || [];
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
         this.state.kpis = data.kpis || this.state.kpis;
-        let dynamicSlots = new Set(this.baseTimeSlots);
-        this.state.appointments.forEach(a => dynamicSlots.add(a.slot_key));
-        this.state.timeSlots = Array.from(dynamicSlots).sort((a, b) => a.localeCompare(b));
+
+        // THE FIX: Strict 10-minute grid enforcement. Do NOT dynamically append slots.
+        this.state.timeSlots = [...this.baseTimeSlots];
+
         if (data.selected_clinic_id && !this.state.selectedClinic) {
             this.state.selectedClinic = data.selected_clinic_id;
-            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [data.selected_clinic_id]);
+            const currentRegion = parseInt(this.state.selectedRegion) || 0;
+            await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [data.selected_clinic_id, currentRegion]);
         }
-        if (this.state.activeTab === "analytics") await this.loadAnalyticsData();
         if (this.state.activeTab === "roster") await this.loadRosterMetadata();
         if (this.state.activeTab === "attendance") await this.loadAttendanceLedger();
     }
 
-    async openTodayPreview() {
-        // Jump directly to today's date in the Matrix view
+    async toggleTodayTomorrow() {
         const todayISO = DateTime.now().setZone('Asia/Kolkata').toISODate();
-        this.state.selectedDate = todayISO;
-        await this.refreshGrid();
-    } // <--- ADD THIS BRACE
+        const tomorrowISO = DateTime.now().setZone('Asia/Kolkata').plus({days: 1}).toISODate();
 
-    closeTodayPreview() {
-        this.state.isTodayPreviewOpen = false;
-        this.state.todayPreviewData = null;
+        // If we are currently looking at Today, jump to Tomorrow. Otherwise, jump to Today.
+        if (this.state.selectedDate === todayISO) {
+            this.state.selectedDate = tomorrowISO;
+        } else {
+            this.state.selectedDate = todayISO;
+        }
+        await this.refreshGrid();
     }
 
     async loadRosterMetadata() {
@@ -266,9 +340,6 @@ export class ClinicMatrixDashboard extends Component {
         this.state.expandedRows = [];
     }
 
-    async loadAnalyticsData() {
-        this.state.analyticsData = await this.orm.call("clinic.schedule.appointment", "get_daily_analytics", [this.state.selectedDate]) || null;
-    }
 
     async openSmartView() {
         const clinicId = parseInt(this.state.selectedClinic);
@@ -284,18 +355,7 @@ export class ClinicMatrixDashboard extends Component {
         this.state.smartViewData = null;
     }
 
-    openDrillDown(metricKey, title, type) {
-        if (!this.state.analyticsData || !this.state.analyticsData.drill_downs) return;
-        this.state.drillDownRecords = this.state.analyticsData.drill_downs[metricKey] || [];
-        this.state.drillDownTitle = title;
-        this.state.drillDownType = type;
-        this.state.isDrillDownModalOpen = true;
-    }
 
-    closeDrillDown() {
-        this.state.isDrillDownModalOpen = false;
-        this.state.drillDownRecords = [];
-    }
 
     toggleRow(therapistId) {
         if (this.state.expandedRows.includes(therapistId)) {
@@ -377,11 +437,13 @@ export class ClinicMatrixDashboard extends Component {
     async openAllotModal() {
         const displayedIds = this.state.therapists.map(t => t.id);
         const data = await this.orm.call("clinic.schedule.appointment", "get_allotable_therapists", [parseInt(this.state.selectedClinic), this.state.selectedDate, displayedIds]);
+
         this.state.allotableTherapists = data.map(t => {
-    let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
-    let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
-    return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
-});
+            let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
+            let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
+            return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
+        }); // <--- ADD THIS CLOSING PARENTHESIS AND BRACE
+
         this.state.allotSearchQuery = "";
         this.state.selectedTherapistObj = null;
         this.state.isAllotModalOpen = true;
@@ -420,23 +482,20 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async requestFloater() {
-        try {
-            const action = await this.orm.call(
-                "clinic.schedule.appointment",
-                "action_check_floater_eligibility",
-                [parseInt(this.state.selectedClinic), this.state.selectedDate]
-            );
-            if (action) {
-                this.actionService.doAction(action, {
-                    onClose: async () => {
-                        await this.refreshGrid();
-                        await this.loadRosterMetadata();
-                    }
-                });
-            }
-        } catch (error) {
-            // Odoo's native ORM automatically displays the ValidationError popup if the capacity rule fails.
-            console.error("Floater Request Blocked:", error);
+        // By removing the try/catch, Odoo's native ORM will catch the capacity ValidationError
+        // and automatically display the red warning popup on the screen.
+        const action = await this.orm.call(
+            "clinic.schedule.appointment",
+            "action_check_floater_eligibility",
+            [parseInt(this.state.selectedClinic), this.state.selectedDate]
+        );
+        if (action) {
+            this.actionService.doAction(action, {
+                onClose: async () => {
+                    await this.refreshGrid();
+                    await this.loadRosterMetadata();
+                }
+            });
         }
     }
 
@@ -449,14 +508,13 @@ export class ClinicMatrixDashboard extends Component {
     async openSubstituteModal(placeholderId) {
         this.state.substituteTargetPlaceholderId = placeholderId;
         const displayedIds = this.state.therapists.map(t => t.id);
-
-        // Fetch eligible real floaters
         const data = await this.orm.call("clinic.schedule.appointment", "get_allotable_therapists", [parseInt(this.state.selectedClinic), this.state.selectedDate, displayedIds]);
+
         this.state.allotableTherapists = data.map(t => {
-    let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
-    let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
-    return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
-});
+            let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
+            let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
+            return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
+        }); // <--- ADD THIS CLOSING PARENTHESIS AND BRACE
 
         this.state.allotSearchQuery = "";
         this.state.selectedTherapistObj = null;
@@ -595,15 +653,10 @@ export class ClinicMatrixDashboard extends Component {
         const newTherapistId = parseInt(newTherapistIdRaw, 10);
         if (isNaN(newTherapistId)) return;
 
-        try {
-            await this.orm.write("clinic.schedule.appointment", [this.state.selectedAppointment.id], {therapist_id: newTherapistId === 0 ? false : newTherapistId});
-            this.closeActionModal();
-            await this.refreshGrid();
-        } catch (error) {
-            // Odoo backend validation errors (like Overlap / Transit Buffer) will throw natively here.
-            // The UI will show the exact backend ValidationError dialog to the user.
-            console.error("Assignment Blocked by Rules Engine:", error);
-        }
+        // Let the ORM throw the error natively so the Overlap/Transit buffer warnings appear on screen
+        await this.orm.write("clinic.schedule.appointment", [this.state.selectedAppointment.id], {therapist_id: newTherapistId === 0 ? false : newTherapistId});
+        this.closeActionModal();
+        await this.refreshGrid();
     }
 
     openFullForm() {

@@ -1,7 +1,6 @@
 import base64
 import io
 import csv
-import json
 import requests
 import logging
 from odoo import models, fields, api, _
@@ -11,23 +10,17 @@ import pytz
 
 _logger = logging.getLogger(__name__)
 
+class ClinicScheduleState(models.Model):
+    _name = 'clinic.schedule.state'
+    _description = 'User Schedule Memory State'
 
-class ResUsers(models.Model):
-    _inherit = 'res.users'
-    clinic_ids = fields.Many2many('clinic.clinic', string='Allowed Branches')
-    default_region_id = fields.Many2one('clinic.region', string='Default Region / Zone',
-                                        help="Primary region managed by this user (TOMs default landing zone)")
-    last_operated_clinic_id = fields.Many2one('clinic.clinic', string='Last Operated Clinic',
-                                              help="Memory field to re-land TOMs into their last worked clinic branch")
+    user_id = fields.Many2one('res.users', string='User', required=True, ondelete='cascade', index=True)
+    last_region_id = fields.Integer(string='Last Region ID', default=0)
+    last_clinic_id = fields.Integer(string='Last Clinic ID', default=0)
 
-
-
-class ClinicRegion(models.Model):
-    _name = 'clinic.region'
-    _description = 'Clinic Region / Zone'
-    name = fields.Char(string='Region Name', required=True)
-    active = fields.Boolean(default=True)
-    clinic_ids = fields.One2many('clinic.clinic', 'region_id', string="Assigned Clinics")
+    _sql_constraints = [
+        ('unique_user_state', 'unique(user_id)', 'A user can only have one memory state record!')
+    ]
 
 
 class ClinicClinic(models.Model):
@@ -35,15 +28,19 @@ class ClinicClinic(models.Model):
     region_id = fields.Many2one('clinic.region', string='Operating Region')
 
 
-class ClinicPatient(models.Model):
-    _inherit = 'clinic.patient'
-    appointment_ids = fields.One2many('clinic.schedule.appointment', 'patient_id',
-                                      string='Appointments & Notifications')
-
 
 class ClinicTherapist(models.Model):
     _name = 'clinic.therapist'
     _inherit = ['clinic.therapist', 'mail.thread', 'mail.activity.mixin']
+
+    # --- MODERN HR FIELDS ---
+    image_1920 = fields.Image("Avatar", max_width=1920, max_height=1920)
+    image_128 = fields.Image("Avatar 128", related="image_1920", max_width=128, max_height=128, store=True)
+    state = fields.Selection([
+        ('onboarding', 'Onboarding'),
+        ('active', 'Active'),
+        ('offboarded', 'Offboarded')
+    ], string='Employment Status', default='onboarding', tracking=True)
 
     active = fields.Boolean(string="Active", default=True, tracking=True)
     vendor_id = fields.Char(string='Vendor ID', required=True, copy=False, tracking=True)
@@ -62,9 +59,44 @@ class ClinicTherapist(models.Model):
     ], string="Deployment Type", default='fixed', required=True, tracking=True)
     allowed_branch_ids = fields.Many2many('clinic.clinic', string="Allowed Branches", tracking=True)
 
+    # --- FINANCIAL FIELDS ---
+    hourly_rate = fields.Float(string="Hourly Pay Rate", tracking=True, help="Standard hourly compensation.")
+    bank_name = fields.Char(string="Bank Name", tracking=True)
+    bank_account_name = fields.Char(string="Account Holder Name", tracking=True)
+    bank_account_number = fields.Char(string="Account Number", tracking=True)
+    bank_ifsc_code = fields.Char(string="IFSC Code", tracking=True)
+
+    # --- FLOATER REQUEST (PLACEHOLDER) FIELDS ---
+    is_floater_request = fields.Boolean(string="Is Floater Request Placeholder", default=False, tracking=True)
+    request_clinic_id = fields.Many2one('clinic.clinic', string="Requested For Clinic", tracking=True)
+    request_date = fields.Date(string="Requested Date", tracking=True)
+    request_state = fields.Selection([
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved & Substituted'),
+        ('rejected', 'Rejected')
+    ], string="Request State", tracking=True)
+
     _sql_constraints = [
         ('unique_vendor_id', 'unique(vendor_id)', 'Vendor ID must be unique across all therapists!')
     ]
+
+    def action_activate(self):
+        """Completes Onboarding"""
+        for rec in self:
+            rec.state = 'active'
+            rec.active = True
+
+    def action_offboard(self):
+        """Separates the Therapist"""
+        for rec in self:
+            rec.state = 'offboarded'
+            # Optionally set rec.active = False here if you want them archived automatically
+
+    def action_reonboard(self):
+        """Restores an offboarded therapist back into the onboarding queue"""
+        for rec in self:
+            rec.state = 'onboarding'
+            rec.active = True
 
     def action_toggle_buffer(self):
         for rec in self:
@@ -126,10 +158,215 @@ class ClinicScheduleAppointment(models.Model):
         ('failed', 'Failed')
     ], string='Notification Status', default='pending', tracking=True)
     patient_id = fields.Many2one('clinic.patient', string='Patient Name', tracking=True)
-    start_datetime = fields.Datetime(string='Start Time', required=True, default= lambda self: self._ist_date(), tracking=True, index=True)
+    start_datetime = fields.Datetime(string='Start Time', required=True, default=lambda self: self._ist_date(),
+                                     tracking=True, index=True)
     end_datetime = fields.Datetime(string='End Time', compute='_compute_end_datetime', store=True, readonly=False,
                                    tracking=True)
     allowed_patient_ids = fields.Many2many('clinic.patient', compute='_compute_allowed_patient_ids')
+
+    is_live_in_progress = fields.Boolean(compute='_compute_live_status', store=False)
+
+    @api.depends('start_datetime', 'end_datetime', 'attendance_state')
+    def _compute_live_status(self):
+        now_utc = datetime.utcnow()
+        for rec in self:
+            if rec.attendance_state == 'scheduled' and rec.start_datetime and rec.end_datetime:
+                rec.is_live_in_progress = (rec.start_datetime <= now_utc <= rec.end_datetime)
+            else:
+                rec.is_live_in_progress = False
+
+    @api.model
+    def action_carry_forward_schedule(self, clinic_id, target_date):
+        if not clinic_id or not target_date:
+            return {'status': 'warning', 'message': 'Missing Clinic or Date.'}
+
+        clinic_id = int(clinic_id)
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+
+        # Exact IST Boundaries
+        target_dt = fields.Date.from_string(target_date)
+        yesterday_dt = target_dt - timedelta(days=1)
+
+        y_start = local_tz.localize(datetime.combine(yesterday_dt, time.min)).astimezone(pytz.utc).replace(tzinfo=None)
+        y_end = local_tz.localize(datetime.combine(yesterday_dt, time.max)).astimezone(pytz.utc).replace(tzinfo=None)
+
+        t_start = local_tz.localize(datetime.combine(target_dt, time.min)).astimezone(pytz.utc).replace(tzinfo=None)
+        t_end = local_tz.localize(datetime.combine(target_dt, time.max)).astimezone(pytz.utc).replace(tzinfo=None)
+
+        # 1. Fetch yesterday's COMPLETED sessions
+        yesterday_sessions = self.search([
+            ('clinic_id', '=', clinic_id),
+            ('slot_type', '=', 'patient'),
+            ('attendance_state', '=', 'completed'),
+            ('start_datetime', '>=', y_start),
+            ('start_datetime', '<=', y_end)
+        ])
+
+        # 2. Fetch today's booked patients (Anti-duplication Check)
+        today_sessions = self.search([
+            ('clinic_id', '=', clinic_id),
+            ('slot_type', '=', 'patient'),
+            ('start_datetime', '>=', t_start),
+            ('start_datetime', '<=', t_end)
+        ])
+        today_patient_ids = today_sessions.mapped('patient_id.id')
+
+        # 3. Pre-fetch today's absent staff
+        daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
+        absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
+
+        carried_count, unassigned_count = 0, 0
+        new_apps_vals = []
+
+        for old_app in yesterday_sessions:
+            if not old_app.patient_id or old_app.patient_id.id in today_patient_ids: continue
+            if old_app.patient_id.remaining_sessions <= 0: continue  # Skip if package exhausted
+
+            # Sync to exact time tomorrow
+            new_start = old_app.start_datetime + timedelta(days=1)
+            new_end = old_app.end_datetime + timedelta(days=1)
+
+            target_therapist_id = old_app.therapist_id.id if old_app.therapist_id else False
+            is_unassigned = False
+
+            # Strict Conflict & Leave Checking
+            if target_therapist_id:
+                if target_therapist_id in absent_staff_ids:
+                    target_therapist_id = False
+                    is_unassigned = True
+                else:
+                    overlap = self.search([
+                        ('therapist_id', '=', target_therapist_id),
+                        ('start_datetime', '<', new_end),
+                        ('end_datetime', '>', new_start),
+                        ('attendance_state', '!=', 'no_show')
+                    ], limit=1)
+                    if overlap:
+                        target_therapist_id = False
+                        is_unassigned = True
+
+            new_apps_vals.append({
+                'clinic_id': clinic_id,
+                'therapist_id': target_therapist_id,
+                'patient_id': old_app.patient_id.id,
+                'slot_type': 'patient',
+                'visit_type': old_app.visit_type,
+                'attendance_state': 'scheduled',
+                'start_datetime': new_start,
+                'end_datetime': new_end,
+            })
+            carried_count += 1
+            if is_unassigned: unassigned_count += 1
+
+        if new_apps_vals:
+            self.create(new_apps_vals)
+
+        if carried_count == 0:
+            return {'status': 'info',
+                    'message': 'No eligible completed sessions found to carry forward from yesterday.'}
+        return {'status': 'success',
+                'message': f'Carry Forward: {carried_count} patients moved. {unassigned_count} dropped to UNASSIGNED (Therapist absent/busy).'}
+
+    is_future_session = fields.Boolean(compute='_compute_is_future_session', store=False)
+
+    @api.depends('start_datetime')
+    def _compute_is_future_session(self):
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        today_local = datetime.now(local_tz).date()
+        for rec in self:
+            if rec.start_datetime:
+                rec_local_date = pytz.utc.localize(rec.start_datetime).astimezone(local_tz).date()
+                rec.is_future_session = rec_local_date > today_local
+            else:
+                rec.is_future_session = False
+
+    @api.model
+    def _cron_generate_daily_payouts(self):
+        """
+        Runs at 11:55 PM daily. Calculates Time-Fenced Incentives and OT,
+        and routes the financial voucher to the therapist's last clinic of the day.
+        """
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date = datetime.now(local_tz).date()
+
+        start_day = datetime.combine(target_date, time.min)
+        end_day = datetime.combine(target_date, time.max)
+
+        # Get all valid worked appointments for the day
+        daily_apps = self.search([
+            ('start_datetime', '>=', start_day),
+            ('end_datetime', '<=', end_day),
+            ('attendance_state', 'in', ['completed', 'in_progress']),
+            ('therapist_id', '!=', False)
+        ], order='start_datetime asc')
+
+        # Group chronologically by therapist
+        therapist_map = {}
+        for app in daily_apps:
+            t_id = app.therapist_id
+            if t_id not in therapist_map:
+                therapist_map[t_id] = []
+            therapist_map[t_id].append(app)
+
+        Disbursement = self.env['operational.fund.disbursement'].sudo()
+        vouchers_to_create = []
+
+        for therapist, apps in therapist_map.items():
+            cumulative_hours = 0.0
+            therapies_in_standard_time = 0
+
+            # 1. Chronological Timeline Analysis
+            for app in apps:
+                duration_hours = (app.end_datetime - app.start_datetime).total_seconds() / 3600.0
+
+                # Check if this appointment falls entirely or partially within the 9-hour window
+                if cumulative_hours < 9.0:
+                    if app.slot_type == 'patient' and app.attendance_state == 'completed':
+                        therapies_in_standard_time += 1
+
+                cumulative_hours += duration_hours
+
+            # 2. Identify the Last Clinic
+            last_clinic = apps[-1].clinic_id
+
+            # 3. Calculate Incentive (Strictly inside the 9-hour window)
+            if therapies_in_standard_time > 6:
+                incentive_amount = (therapies_in_standard_time - 6) * 120.0
+                vouchers_to_create.append({
+                    'clinic_id': last_clinic.id,
+                    'date': target_date,
+                    'expense_category': 'incentive',
+                    'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
+                                                                                         'floater'] else 'fixed',
+                    'therapist_ref_id': therapist.id,
+                    'amount': incentive_amount,
+                    'is_system_generated': True,
+                    'description': f"Automated Matrix Payout: Completed {therapies_in_standard_time} therapies within standard 9-hour shift. Base: 6.",
+                    'state': 'waiting'  # Sends it to Custodian Dashboard
+                })
+
+            # 4. Calculate Overtime (Strictly outside the 9-hour window)
+            if cumulative_hours > 9.0:
+                ot_hours = cumulative_hours - 9.0
+                ot_amount = round(ot_hours * 120.0, 2)
+                vouchers_to_create.append({
+                    'clinic_id': last_clinic.id,
+                    'date': target_date,
+                    'expense_category': 'overtime',
+                    'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
+                                                                                         'floater'] else 'fixed',
+                    'therapist_ref_id': therapist.id,
+                    'amount': ot_amount,
+                    'is_system_generated': True,
+                    'description': f"Automated Matrix Payout: {round(ot_hours, 2)} hours of tracked Overtime.",
+                    'state': 'waiting'
+                })
+
+        # Inject all validated vouchers into the operational fund
+        if vouchers_to_create:
+            Disbursement.create(vouchers_to_create)
+            _logger.info(
+                f"System Matrix generated {len(vouchers_to_create)} automated payout vouchers for {target_date}.")
 
     def _ist_date(self):
         utc = (datetime.now())
@@ -157,6 +394,9 @@ class ClinicScheduleAppointment(models.Model):
             'request_state': 'rejected'
         })
         return True
+
+
+
 
     @api.model
     def action_remove_therapist_from_board(self, therapist_id, clinic_id, target_date):
@@ -210,7 +450,6 @@ class ClinicScheduleAppointment(models.Model):
 
         return {'status': 'success', 'message': f'Successfully moved {count} sessions to {target_t.name}.'}
 
-
     @api.model
     def action_substitute_floater(self, placeholder_id, real_therapist_id):
         """ Accepts the request, moves patients to the real floater, and hides the placeholder """
@@ -247,6 +486,7 @@ class ClinicScheduleAppointment(models.Model):
         local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
         start_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
         end_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+
         start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
         end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
 
@@ -272,6 +512,7 @@ class ClinicScheduleAppointment(models.Model):
                 ('start_datetime', '>=', start_day_utc),
                 ('start_datetime', '<=', end_day_utc)
             ])
+
             if slot_count < 6:
                 raise ValidationError(_(
                     "Capacity threshold not met: All working therapists must have at least 6 assigned therapies before requesting a floater.\n\n"
@@ -284,6 +525,7 @@ class ClinicScheduleAppointment(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'clinic.floater.request.wizard',
             'view_mode': 'form',
+            'views': [[False, 'form']],
             'target': 'new',
             'context': {
                 'default_clinic_id': clinic_id,
@@ -294,28 +536,46 @@ class ClinicScheduleAppointment(models.Model):
     @api.model
     def get_user_schedule_defaults(self):
         user = self.env.user
-        is_tom = user.has_group('clinic_schedule.group_clinic_schedule_tom')
-        # ADD THIS LINE:
         is_manager = user.has_group('clinic_schedule.group_clinic_schedule_manager')
 
+        # Check for saved memory state
+        state = self.env['clinic.schedule.state'].search([('user_id', '=', user.id)], limit=1)
+
         return {
-            'default_region_id': user.default_region_id.id if user.default_region_id else 0,
-            'last_operated_clinic_id': user.last_operated_clinic_id.id if user.last_operated_clinic_id else 0,
-            'is_tom': is_tom,
-            'is_manager': is_manager,  # <--- ADD THIS EXPORT
+            'default_region_id': state.last_region_id if state else 0,
+            'last_operated_clinic_id': state.last_clinic_id if state else 0,
+            'is_tom': is_manager,
+            'is_manager': is_manager,
             'user_name': user.name,
         }
 
     @api.model
-    def save_last_operated_clinic(self, clinic_id):
-        if clinic_id:
-            user = self.env.user
-            user.sudo().write({'last_operated_clinic_id': int(clinic_id)})
-            _logger.info("Audit Log: Saved last operated clinic ID %s for user %s", clinic_id, user.name)
+    def save_last_operated_clinic(self, clinic_id, region_id=0):
+        """Silently logs the user's last viewed clinic and region"""
+        user_id = self.env.user.id
+        state = self.env['clinic.schedule.state'].search([('user_id', '=', user_id)], limit=1)
+        if state:
+            state.write({
+                'last_clinic_id': int(clinic_id),
+                'last_region_id': int(region_id)
+            })
+        else:
+            self.env['clinic.schedule.state'].create({
+                'user_id': user_id,
+                'last_clinic_id': int(clinic_id),
+                'last_region_id': int(region_id)
+            })
         return True
 
 
     def write(self, vals):
+        # 1. ABSOLUTE COMPLETION LOCK
+        business_fields = {'therapist_id', 'start_datetime', 'clinic_id', 'patient_id', 'slot_type', 'visit_type', 'attendance_state'}
+        if any(f in vals for f in business_fields):
+            for rec in self:
+                if rec.attendance_state == 'completed':
+                    raise ValidationError(_("Record Locked: This session is 'Completed'. No further modifications are permitted."))
+
         for rec in self:
             audit_entries = []
             if 'therapist_id' in vals:
@@ -677,12 +937,20 @@ class ClinicScheduleAppointment(models.Model):
                             _("Strict Compliance Error: Female therapists must be allotted to female patients, and male therapists to male patients."))
 
     def action_mark_no_show(self):
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        today_local = datetime.now(local_tz).date()
         for rec in self:
+            if rec.start_datetime and pytz.utc.localize(rec.start_datetime).astimezone(local_tz).date() > today_local:
+                raise ValidationError(_("Logical Error: You cannot mark a future session as a no-show."))
             rec.write({'attendance_state': 'no_show'})
         return True
 
     def action_mark_completed(self):
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        today_local = datetime.now(local_tz).date()
         for rec in self:
+            if rec.start_datetime and pytz.utc.localize(rec.start_datetime).astimezone(local_tz).date() > today_local:
+                raise ValidationError(_("Logical Error: You cannot mark a future session as completed."))
             rec.write({'attendance_state': 'completed'})
         return True
 
@@ -803,6 +1071,13 @@ class ClinicScheduleAppointment(models.Model):
     def get_matrix_data(self, clinic_id, target_date, pulled_therapist_ids=None):
         """Get matrix data for clinic scheduling dashboard"""
         # Handle edge cases
+        clinics_records = self.env["clinic.clinic"].search_read([], ["id", "name", "region_id"])
+        regions_records = self.env["clinic.region"].search_read([], ["id", "name"])
+
+        # 2. Determine clinic to display (Fallback Logic)
+        if not clinic_id and clinics_records:
+            clinic_id = clinics_records[0]["id"]
+
         if not clinic_id or not target_date:
             return {
                 "therapists": [],
@@ -822,21 +1097,11 @@ class ClinicScheduleAppointment(models.Model):
                 }
             }
 
-
         # Convert parameters
         clinic_id = int(clinic_id)
         target_date_obj = fields.Date.from_string(target_date)
         start_day = datetime.combine(target_date_obj, time(0, 0, 0))
         end_day = datetime.combine(target_date_obj, time(23, 59, 59))
-
-        # Fetch core data efficiently
-        clinics_records = self.env["clinic.clinic"].search_read([], ["id", "name", "region_id"])
-        regions_records = self.env["clinic.region"].search_read([], ["id", "name"])
-
-
-        # Determine clinic to display
-        if not clinic_id and clinics_records:
-            clinic_id = clinics_records[0]["id"]
 
 
         if not clinic_id:
@@ -858,7 +1123,6 @@ class ClinicScheduleAppointment(models.Model):
                 }
             }
 
-
         # Fetch appointments for the date range
 
         appointments_raw = self.search([
@@ -867,12 +1131,9 @@ class ClinicScheduleAppointment(models.Model):
             ("end_datetime", "<=", end_day)
         ], order="start_datetime asc")
 
-
-
         # Get therapist daily states
         daily_states = self.env["clinic.therapist.daily.state"].search([("target_date", "=", target_date)])
         state_map = {s.therapist_id.id: s for s in daily_states}
-
 
         # Get therapists for the board (active therapists assigned to this clinic OR buffer therapists)
         assigned_therapists = self.env["clinic.therapist"].search(
@@ -889,7 +1150,6 @@ class ClinicScheduleAppointment(models.Model):
 
         # Merge local and cross-clinic appointments for rendering
         all_apps_to_render = appointments_raw | cross_clinic_apps
-
 
         # Build therapist list for display
         therapists = []
@@ -946,9 +1206,7 @@ class ClinicScheduleAppointment(models.Model):
                 '_sort_score': sort_score
             })
 
-
         therapists.sort(key=lambda x: (x["_sort_score"], x["name"]))
-
 
         # Get patient data for efficient lookup
         patient_ids = all_apps_to_render.mapped("patient_id").ids
@@ -958,10 +1216,7 @@ class ClinicScheduleAppointment(models.Model):
         ) if patient_ids else []
         patient_map = {p["id"]: p for p in patient_data}
 
-
         # Get enrollment data for KPIs
-
-
 
         # Format appointments for display
 
@@ -970,22 +1225,29 @@ class ClinicScheduleAppointment(models.Model):
         scheduled_clinic_hv = 0
         scheduled_self = 0
 
-
+        now_utc = datetime.utcnow()  # For live tracking
         for app in all_apps_to_render:
             is_other_clinic = (app.clinic_id.id != clinic_id)
             local_time = fields.Datetime.context_timestamp(self, app.start_datetime) if app.start_datetime else False
             s_time_str = local_time.strftime("%I:%M %p") if local_time else ""
             e_time_str = fields.Datetime.context_timestamp(self, app.end_datetime).strftime(
                 "%I:%M %p") if app.end_datetime else ""
-            slot_key = local_time.strftime("%H:%M") if local_time else "00:00"
 
-            duration_mins = int(
-                (app.end_datetime - app.start_datetime).total_seconds() / 60.0
-            ) if app.end_datetime and app.start_datetime else 10
+            # THE GRID FIX: Snap to 10-minute boundary to prevent table breakage
+            if local_time:
+                snapped_minute = (local_time.minute // 10) * 10
+                slot_key = f"{local_time.hour:02d}:{snapped_minute:02d}"
+            else:
+                slot_key = "00:00"
 
-            col_span = max(1, duration_mins // 10)
+                # THE SPAN FIX: Use round() to prevent floating point duration loss (e.g. 59.99 mins)
+            if app.end_datetime and app.start_datetime:
+                duration_mins = round((app.end_datetime - app.start_datetime).total_seconds() / 60.0)
+            else:
+                duration_mins = 10
+            col_span = max(1, int(duration_mins) // 10)
 
-
+            # ... (keep p_gender, p_name, p_mrn logic here) ...
             p_gender, raw_p_gen, p_name, p_mrn = "", False, "", ""
             if app.patient_id and app.patient_id.id in patient_map:
                 p_info = patient_map[app.patient_id.id]
@@ -995,16 +1257,24 @@ class ClinicScheduleAppointment(models.Model):
                 if g_val in ["m", "f"]:
                     p_gender = gender_map[g_val]
                     raw_p_gen = g_val
+
+            # DYNAMIC IN-PROGRESS AUTOMATION
+            display_state = app.attendance_state
+            if display_state == 'scheduled' and app.start_datetime and app.end_datetime:
+                if app.start_datetime <= now_utc <= app.end_datetime:
+                    display_state = 'in_progress'
+
+            display_state = app.attendance_state
+            if display_state == 'scheduled' and app.start_datetime and app.end_datetime:
+                if app.start_datetime <= now_utc <= app.end_datetime:
+                    display_state = 'in_progress'
+
+            # ... (keep requires_reallotment logic here) ...
             requires_reallotment = False
-
             if not is_other_clinic:
-
                 if app.therapist_id:
-
                     t_state = state_map.get(app.therapist_id.id)
-
                     if t_state:
-
                         if t_state.action_type in ["no_show", "wo", "leave"]:
                             requires_reallotment = True
                         elif t_state.action_type == "late" and local_time and local_time.hour < t_state.expected_hour:
@@ -1012,17 +1282,11 @@ class ClinicScheduleAppointment(models.Model):
                 elif not app.therapist_id:
                     requires_reallotment = True
 
-
-            # KPIs MUST ONLY calculate based on local appointments_raw
-
             if not is_other_clinic and app.slot_type == "patient" and app.therapist_id:
-
                 if app.visit_type == "self":
                     scheduled_self += 1
-
                 else:
                     scheduled_clinic_hv += 1
-
 
             formatted_appointments.append({
                 "id": app.id,
@@ -1037,13 +1301,12 @@ class ClinicScheduleAppointment(models.Model):
                 "col_span": col_span,
                 "remaining_sessions": p_info.get("remaining_sessions", 0) if p_info else 0,
                 "time_range": f"{s_time_str} - {e_time_str}" if s_time_str else "",
-                "attendance_state": app.attendance_state,
+                "attendance_state": display_state,  # INJECT DYNAMIC STATE
                 "requires_reallotment": requires_reallotment,
                 "notification_status": app.notification_status,
                 "is_other_clinic": is_other_clinic,
                 "other_clinic_name": app.clinic_id.name if is_other_clinic else ""
             })
-
 
         # Calculate KPIs (local clinic only)
 
@@ -1052,25 +1315,22 @@ class ClinicScheduleAppointment(models.Model):
             if app.slot_type == "patient" and app.therapist_id
         )
 
-
         total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
         outstanding_count = len(total_eligible_patients - scheduled_patient_ids)
 
-
-        rs_count = sum(1 for t in assigned_therapists if t.designation == "rs")
         fixed_count = sum(1 for t in assigned_therapists if t.designation == 'fixed')
         floater_count = sum(1 for t in assigned_therapists if t.designation in ['floater', 'hv'])
 
-
         active_capacity_therapists = [t for t in assigned_therapists if not t.is_buffer]
         working_count = len([t for t in active_capacity_therapists if
-                             not state_map.get(t.id) or state_map.get(t.id).action_type not in ["no_show", "wo", "leave"]])
+                             not state_map.get(t.id) or state_map.get(t.id).action_type not in ["no_show", "wo",
+                                                                                                "leave"]])
         total_capacity_mins = working_count * 15 * 60
         total_booked_mins = 0
         for app in appointments_raw:
             if app.slot_type == "patient" and app.therapist_id and not app.therapist_id.is_buffer:
                 duration = (
-                               app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
+                                   app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
                 total_booked_mins += duration
         utilization_pct = round((total_booked_mins / total_capacity_mins) * 100) if total_capacity_mins > 0 else 0
 
@@ -1090,6 +1350,7 @@ class ClinicScheduleAppointment(models.Model):
                 'outstanding': outstanding_count
             }
         }
+
     @api.model
     def get_clinic_smart_view(self, clinic_id, target_date):
         if not clinic_id or not target_date: return {}
@@ -1204,10 +1465,6 @@ class ClinicScheduleAppointment(models.Model):
             })
         return list(therapists_data.values())
 
-    @api.model
-    def get_daily_analytics(self, target_date):
-        if not target_date:
-            return {}
 
         start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
         end_day = datetime.combine(fields.Date.from_string(target_date), time.max)
@@ -1341,7 +1598,6 @@ class ClinicTherapistImportLog(models.Model):
     state = fields.Selection([('draft', 'Draft'), ('done', 'Imported')], default='draft')
     records_processed = fields.Integer(readonly=True)
 
-
     def action_process_csv(self):
         if not self.csv_file: return
         try:
@@ -1388,7 +1644,7 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             ('request_clinic_id', '=', self.clinic_id.id),
             ('request_date', '=', self.target_date),
             ('gender', '=', self.gender),
-            ('active', '=', True)  # Only count active pending/approved placeholders
+            ('active', '=', True)
         ])
 
         if existing_requests >= 3:
@@ -1402,6 +1658,9 @@ class ClinicFloaterRequestWizard(models.TransientModel):
         gender_label = "M" if self.gender == 'm' else "F"
         placeholder_name = f"Requested Floater ({gender_label})"
 
+        # FIX: Generate a highly unique Vendor ID so the SQL constraint doesn't crash on multiple requests!
+        unique_suffix = fields.Datetime.now().strftime('%H%M%S')
+
         placeholder = Therapist.create({
             'name': placeholder_name,
             'designation': 'floater',
@@ -1411,22 +1670,18 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             'request_date': self.target_date,
             'request_state': 'pending',
             'allowed_branch_ids': [(4, self.clinic_id.id)],
-            'vendor_id': 'PENDING HO',  # Dummy value to keep UI badges clean
+            'vendor_id': f'PENDING_HO_{unique_suffix}',  # Dynamic ID prevents PostgreSQL duplicate key crash
+            'contact_number': '0000000000',  # FIX: Bypasses the mandatory phone number validation
         })
 
-        # 3. Notify Regional Managers via To-Do Activity
-        if self.clinic_id.region_id:
-            managers = self.env['res.users'].search([
-                ('default_region_id', '=', self.clinic_id.region_id.id),
-                ('groups_id', 'in', self.env.ref('clinic_schedule.group_clinic_schedule_manager').id)
-            ])
-
-            for manager in managers:
-                placeholder.activity_schedule(
-                    'mail.activity_data_todo',
-                    user_id=manager.id,
-                    summary='Floater Request Requires Substitution',
-                    note=f"<b>{self.clinic_id.name}</b> has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater on the Matrix Board."
-                )
+        # 3. Notify Managers via To-Do Activity (Merged Access)
+        managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
+        for manager in managers:
+            placeholder.activity_schedule(
+                'mail.activity_data_todo',
+                user_id=manager.id,
+                summary='Floater Request Requires Substitution',
+                note=f"<b>{self.clinic_id.name}</b> has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater on the Matrix Board."
+            )
 
         return {'type': 'ir.actions.act_window_close'}
