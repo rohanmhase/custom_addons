@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Dynamic Title: Bill of Supply for POS, Tax Invoice for Invoicing -->
+    <template id="report_invoice_document_bill_of_supply"
+              inherit_id="account.report_invoice_document">
+
+        <xpath expr="//h2" position="replace">
+            <h2>
+                <span t-if="not proforma"></span>
+                <span t-else="">PROFORMA</span>
+
+                <!-- Customer Invoice: Title based on origin (POS or Invoicing) -->
+                <t t-if="o.move_type == 'out_invoice'">
+                    <t t-set="is_pos_invoice" t-value="'pos_order_ids' in o._fields and o.pos_order_ids"/>
+                    <t t-set="doc_title" t-value="'Bill of Supply' if is_pos_invoice else 'Tax Invoice'"/>
+                    <span t-if="o.state == 'posted'"><t t-out="doc_title"/></span>
+                    <span t-elif="o.state == 'draft'">Draft <t t-out="doc_title"/></span>
+                    <span t-elif="o.state == 'cancel'">Cancelled <t t-out="doc_title"/></span>
+                </t>
+
+                <!-- Credit Notes -->
+                <span t-elif="o.move_type == 'out_refund' and o.state == 'posted'">Credit Note</span>
+                <span t-elif="o.move_type == 'out_refund' and o.state == 'draft'">Draft Credit Note</span>
+                <span t-elif="o.move_type == 'out_refund' and o.state == 'cancel'">Cancelled Credit Note</span>
+
+                <!-- Vendor Bills -->
+                <span t-elif="o.move_type == 'in_refund'">Vendor Credit Note</span>
+                <span t-elif="o.move_type == 'in_invoice'">Vendor Bill</span>
+
+                <span t-if="o.name != '/'" t-field="o.name">INV/2023/0001</span>
+            </h2>
+        </xpath>
+
+        <!-- Show Actual Payment Method (Priority: Current Payment > POS Original) -->
+        <xpath expr="//i[hasclass('oe_payment_label')]" position="replace">
+            <i class="oe_form_field text-end oe_payment_label">
+                Paid on <t t-out="payment_vals['date']" t-options='{"widget": "date"}'>2021-09-19</t>
+
+                <!-- Get the actual payment move (this is the CURRENT payment) -->
+                <t t-set="payment_move" t-value="o.env['account.move'].browse(payment_vals.get('move_id'))"/>
+                <t t-set="method_name" t-value="False"/>
+
+                <!-- Priority 1: If payment move has a linked POS order payment, use POS method -->
+                <t t-if="payment_move and 'pos_payment_ids' in payment_move._fields and payment_move.pos_payment_ids">
+                    <t t-set="method_name" t-value="', '.join(payment_move.pos_payment_ids.mapped('payment_method_id.name'))"/>
+                </t>
+
+                <!-- Priority 2: Use payment move's journal name (works for Invoicing re-payments) -->
+                <t t-if="not method_name and payment_move and payment_move.journal_id">
+                    <t t-set="method_name" t-value="payment_move.journal_id.name"/>
+                </t>
+
+                <t t-if="method_name">
+                    using <span t-out="method_name">Cash</span>
+                </t>
+            </i>
+        </xpath>
+
+    </template>
+
+</odoo>
