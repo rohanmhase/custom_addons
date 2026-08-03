@@ -38,13 +38,6 @@ class Clinic(models.Model):
     total_spent = fields.Float(string='Total Disbursed', compute='_compute_balances', store=True)
     op_fund_balance = fields.Float(string='Available Balance', compute='_compute_balances', store=True)
 
-    op_fund_approval_threshold = fields.Float(string='Auto-Approval Threshold', default=0.0)
-    op_fund_alert_threshold = fields.Float(string='Low Balance Alert Threshold', default=0.0)
-    is_low_balance_alert_sent = fields.Boolean(string='Alert Sent Flag', default=False)
-
-    use_smart_threshold = fields.Boolean(string='Use Smart Threshold', default=False,
-                                         help="Automatically updates alert floor using a 7-day rolling burn rate forecast.")
-    is_low_balance = fields.Boolean(string='Is Low Balance', compute='_compute_is_low_balance', store=True)
 
 
     @api.constrains('master_fund_id')
@@ -98,92 +91,6 @@ class Clinic(models.Model):
             clinic.total_allocated = total_alloc
             clinic.total_spent = total_spent
             clinic.op_fund_balance = total_alloc - total_spent
-
-    @api.depends('op_fund_balance', 'op_fund_alert_threshold')
-    def _compute_is_low_balance(self):
-        """
-        Computes a stored boolean flag indicating if a clinic has hit its alert safety floor.
-        This will drive the visual red rows/indicators on the frontend views.
-        """
-        for clinic in self:
-            if clinic.op_fund_alert_threshold > 0:
-                clinic.is_low_balance = clinic.op_fund_balance <= clinic.op_fund_alert_threshold
-            else:
-                clinic.is_low_balance = False
-
-    def _check_low_balance_alert(self):
-        for clinic in self:
-            if clinic.op_fund_alert_threshold > 0:
-                if clinic.op_fund_balance <= clinic.op_fund_alert_threshold and not clinic.is_low_balance_alert_sent:
-                    clinic._send_low_balance_notification()
-                    clinic.is_low_balance_alert_sent = True
-                elif clinic.op_fund_balance > clinic.op_fund_alert_threshold and clinic.is_low_balance_alert_sent:
-                    clinic.is_low_balance_alert_sent = False
-
-    def _send_low_balance_notification(self):
-        mail_vals_list = []
-        for clinic in self:
-            # Refined Audit Scope: Only alert standard managers and finance teams directly related to this clinic
-            target_users = self.env.ref('operational_fund.group_op_fund_manager').users | self.env.ref('operational_fund.group_op_fund_controller').users
-            if not target_users:
-                continue
-
-            subject = f"⚠️ URGENT: Low Balance Alert for {clinic.name}"
-            body = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #d9534f;">Operational Fund Low Balance Warning</h2>
-                    <p style="color: #555; font-size: 16px;">The operational fund balance for <strong>{escape(clinic.name)}</strong> has dropped below the minimum safety threshold.</p>
-                    <table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;">
-                        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Current Balance:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹{clinic.op_fund_balance}</td></tr>
-                        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Alert Threshold:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">₹{clinic.op_fund_alert_threshold}</td></tr>
-                    </table>
-                    <div style="background-color: #fcf8e3; color: #8a6d3b; padding: 15px; border-radius: 4px; border: 1px solid #faebcc;">
-                        <strong>Action Required:</strong> Please arrange for a wallet top-up as soon as possible to avoid disruption of clinic operations.
-                    </div>
-                </div>
-            """
-
-            emails = [u.email for u in target_users if u.email]
-            if emails:
-                mail_vals_list.append({
-                    'subject': subject,
-                    'email_from': '<noreply@researchayu.com>',
-                    'email_to': ','.join(emails),
-                    'body_html': body,
-                    'state': 'outgoing',
-                })
-                
-        if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list).send()
-
-    @api.model
-    def _cron_calculate_smart_thresholds(self):
-        """
-        Option D Automation: Computes daily operational burn rate over a 30-day window
-        and updates safety floors dynamically with a rolling 7-day reserve buffer.
-        """
-        clinics = self.search([('use_smart_threshold', '=', True)])
-        date_30_days_ago = fields.Date.context_today(self) - timedelta(days=30)
-
-        for clinic in clinics:
-            # OPTIMIZED: PostgreSQL layer aggregation instead of Python memory mapping
-            relevant_clinic_ids = (clinic | clinic.child_clinic_ids).ids
-
-            disb_group = self.env['operational.fund.disbursement'].sudo().read_group(
-                [
-                    ('clinic_id', 'in', relevant_clinic_ids),
-                    ('date', '>=', date_30_days_ago),
-                    ('state', 'in', ['approved', 'paid'])
-                ],
-                ['amount:sum'],
-                []  # No group by, we want the total sum
-            )
-
-            total_spent_30_days = disb_group[0]['amount'] if disb_group and disb_group[0]['amount'] else 0.0
-            avg_daily_burn = total_spent_30_days / 30.0
-
-            # Forecast rolling 7-day protection limit
-            clinic.op_fund_alert_threshold = round(avg_daily_burn * 7, 2)
 
 
 
@@ -424,7 +331,6 @@ class OperationalFundAllocation(models.Model):
                 'user_id': self.env.user.id
             })
 
-            active_clinic.sudo()._check_low_balance_alert()
             rec.activity_unlink(['mail.activity_data_todo'])
             
             # Send Notification
@@ -469,37 +375,6 @@ class OperationalFundAllocation(models.Model):
         if mail_vals_list:
             self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
-    @api.model
-    def _cron_check_overdue_allocations(self):
-        """🚨 ADDON: Cron Job checks for 24h SLA Breaches and escalates to Managers."""
-        overdue_date = fields.Date.context_today(self) - timedelta(days=1)
-        overdue_allocs = self.search([('state', '=', 'pending'), ('date', '<=', overdue_date)])
-
-        mail_vals_list = []
-        for alloc in overdue_allocs:
-            managers = self.env.ref('operational_fund.group_op_fund_manager').users
-            base_url = self.get_base_url()
-            deep_link = f"{base_url}/web#id={alloc.id}&model=operational.fund.allocation&view_type=form"
-
-            for manager in managers:
-                alloc.activity_schedule(
-                    'mail.activity_data_todo',
-                    user_id=manager.id,
-                    summary='⚠️ SLA BREACH: Pending Deposit Unacknowledged',
-                    note=f'Clinic Custodian has not acknowledged Deposit {alloc.name} (₹{alloc.amount}) within 24 hours. Please follow up. <a href="{deep_link}">Click here</a>'
-                )
-
-                if manager.email:
-                    mail_vals_list.append({
-                        'subject': f'SLA BREACH: Overdue Acknowledgment for {alloc.clinic_id.name}',
-                        'email_from': '<noreply@researchayu.com>',
-                        'email_to': manager.email,
-                        'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d9534f;"><h2 style="color: #d9534f;">⚠️ 24-Hour SLA Breach Alert</h2><p>Hello {escape(manager.name)},</p><p>The Tier 1 Custodians at <strong>{escape(alloc.clinic_id.name)}</strong> have failed to acknowledge Deposit {escape(alloc.name)} (₹{alloc.amount}) within the mandated 24-hour window.</p><p>Please intervene to ensure the funds are cleared and their dashboard is unlocked.</p><a href="{deep_link}" style="background-color: #d9534f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Record</a></div>""",
-                        'state': 'outgoing',
-                    })
-                    
-        if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
 
 class OperationalFundAllocationWizard(models.TransientModel):
@@ -589,6 +464,11 @@ class OperationalFundVendor(models.Model):
     bank_account_name = fields.Char(string='Bank Account Name')
     bank_account_number = fields.Char(string='Account Number')
     bank_ifsc_code = fields.Char(string='IFSC Code')
+
+    clinic_ids = fields.Many2many(
+        'clinic.clinic',
+        string='Allowed Clinics',
+        help='This vendor will only appear in the dropdowns for these specific clinics.')
     active = fields.Boolean(default=True)
 
 
@@ -723,27 +603,7 @@ class OperationalFundDisbursement(models.Model):
         string='Allowed Therapists'
     )
     is_system_generated = fields.Boolean(string="System Generated", default=False, readonly=True, copy=False)
-    has_pending_allocation = fields.Boolean(string="Has Pending Funds", compute='_compute_has_pending_allocation')
 
-    @api.depends('clinic_id')
-    def _compute_has_pending_allocation(self):
-        # Optimization: Fetch all pending allocations in a single query instead of a loop
-        clinics = self.mapped('clinic_id')
-        if clinics:
-            pending_allocs = self.env['operational.fund.allocation'].sudo().read_group(
-                [('clinic_id', 'in', clinics.ids), ('state', '=', 'pending')],
-                ['clinic_id'],
-                ['clinic_id']
-            )
-            pending_clinic_ids = {alloc['clinic_id'][0] for alloc in pending_allocs if alloc['clinic_id_count'] > 0}
-        else:
-            pending_clinic_ids = set()
-
-        for rec in self:
-            if rec.clinic_id:
-                rec.has_pending_allocation = rec.clinic_id.id in pending_clinic_ids
-            else:
-                rec.has_pending_allocation = False
 
     @api.constrains('expense_category', 'therapist_ref_id', 'date', 'is_system_generated')
     def _prevent_duplicate_allowances(self):
@@ -766,13 +626,6 @@ class OperationalFundDisbursement(models.Model):
                         ))
 
     def action_submit_for_approval(self):
-        # Optimization: Pre-fetch active clinics and pending allocations
-        clinic_ids = (self.mapped('clinic_id') | self.mapped('clinic_id.master_fund_id')).ids
-        pending_recharges = self.env['operational.fund.allocation'].sudo().search([
-            ('clinic_id', 'in', clinic_ids),
-            ('state', '=', 'pending')
-        ])
-        pending_recharge_clinics = pending_recharges.mapped('clinic_id').ids
         # Optimization: Fetch rules once
         rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
         for rec in self:
@@ -790,9 +643,6 @@ class OperationalFundDisbursement(models.Model):
             if rec.is_receipt_mandatory and not rec.receipt_file: raise ValidationError(
                 _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-            if active_clinic.id in pending_recharge_clinics:
-                raise ValidationError(
-                    _("Access Denied: The clinic '%s' has a pending capital deposit from HQ. You must upload the bank proof and acknowledge receipt of these funds before submitting new vouchers.") % active_clinic.name)
             # Validate live balance BEFORE rules
             if rec.amount > active_clinic.op_fund_balance:
                 raise ValidationError(
@@ -815,50 +665,51 @@ class OperationalFundDisbursement(models.Model):
             if matched_rule.cc_user_ids:
                 rec.message_subscribe(partner_ids=matched_rule.cc_user_ids.mapped('partner_id').ids)
 
-            # --- EXECUTE THE RULE OUTCOME ---
-            if matched_rule.action_type == 'block':
-                raise ValidationError(matched_rule.block_message or _(
-                    "This voucher violates operational policies and has been blocked by a system rule."))
-            elif matched_rule.action_type == 'auto_approve':
-                rec.action_approve()
-                rec.message_post(
-                    body=f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{matched_rule.name}'</em>.",
-                    subtype_xmlid='mail.mt_note',
-                    author_id=self.env.ref('base.partner_root').id
-                )
-            elif matched_rule.action_type == 'require_approval':
-                # SMART FALLBACK: Use rule approvers if set, otherwise route to the clinic's standard managers
-                final_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
-                if not final_approvers:
-                    raise ValidationError(
-                        _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but there are no Assigned Approvers on the rule, and '{active_clinic.name}' has no Standard Managers set up."))
-                rec.state = 'waiting'
-                base_url = self.get_base_url()
-                deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
-                deadline = fields.Date.context_today(self) + timedelta(days=1)
-                cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
-                task_vals_list = []
-                mail_vals_list = []
-                for manager in final_approvers:
-                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
-                                          note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
-                    if 'project.task' in self.env:
-                        task_vals_list.append({
-                            'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                            'date_deadline': deadline, 'is_voucher_task': True,
-                            'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
-                        })
-                    if manager.email:
-                        mail_vals_list.append({
-                            'subject': f'Action Required: Approve Voucher {rec.name}',
-                            'email_from': '<noreply@researchayu.com>',
-                            'email_to': manager.email,
-                            'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹ {rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
-                        })
-                if task_vals_list:
-                    self.env['project.task'].sudo().create(task_vals_list)
-                if mail_vals_list:
-                    self.env['mail.mail'].sudo().create(mail_vals_list).send()
+                # --- EXECUTE THE RULE OUTCOME ---
+                if matched_rule.action_type == 'block':
+                    raise ValidationError(matched_rule.block_message or _(
+                        "This voucher violates operational policies and has been blocked by a system rule."))
+                elif matched_rule.action_type == 'auto_approve':
+                    rec.action_approve()
+                    rec.message_post(
+                        body=f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{matched_rule.name}'</em>.",
+                        subtype_xmlid='mail.mt_note', author_id=self.env.ref('base.partner_root').id)
+                elif matched_rule.action_type == 'require_approval':
+
+                    # STRICT ENFORCEMENT: Only use rule approvers. No manager key fallback.
+                    if not matched_rule.approver_ids:
+                        raise ValidationError(
+                            _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but no specific approvers are assigned to it in the routing table."))
+
+                    # ACTIVE USER FILTER: Exclude archived users from notifications
+                    valid_approvers = matched_rule.approver_ids.filtered(lambda u: u.active)
+
+                    if not valid_approvers:
+                        raise ValidationError(
+                            _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but all assigned approvers are currently archived/inactive."))
+
+                    rec.state = 'waiting'
+                    base_url = self.get_base_url()
+                    deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+                    deadline = fields.Date.context_today(self) + timedelta(days=1)
+
+                    task_vals_list = []
+                    mail_vals_list = []
+
+                    for manager in valid_approvers:
+                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
+                                              note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
+
+                        if manager.email:
+                            mail_vals_list.append({
+                                'subject': f'Action Required: Approve Voucher {rec.name}',
+                                'email_from': '<noreply@researchayu.com>',
+                                'email_to': manager.email,
+                                'body_html': f'<div style="padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p>Hello {escape(manager.name)},</p><p>A new operational fund disbursement requires your review.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
+                            })
+
+                    if mail_vals_list:
+                        self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_approve_system_voucher(self):
         """Tier 1 Custodian authorization strictly limited to system-verified matrix payouts."""
@@ -1136,26 +987,23 @@ class OperationalFundDisbursement(models.Model):
 
     def _route_for_approval(self):
         """
-        DYNAMIC ROUTING ENGINE:
-        Evaluates the voucher against 'operational.fund.approval.rule' domains.
-        The first rule (by sequence) that matches the voucher dictates the outcome.
+        STRICT ROUTING ENGINE:
+        Evaluates the voucher against 'operational.fund.approval.rule'.
+        No fallback managers. Only active assigned users are notified.
         """
         for rec in self:
-            # 1. Fetch active routing rules ordered by sequence
-            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
+            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)],
+                                                                             order='sequence, id')
             matched_rule = False
             approvers = self.env['res.users']
 
-            # 2. Evaluate domains against this specific voucher
             for rule in rules:
                 domain = safe_eval(rule.domain or '[]')
-                # If a domain is empty [], it acts as a global catch-all
                 is_match = self.env['operational.fund.disbursement'].search_count([('id', '=', rec.id)] + domain) > 0
                 if is_match:
                     matched_rule = rule
                     break
 
-            # 3. Process the outcome of the matched rule
             if matched_rule:
                 if matched_rule.action_type == 'block':
                     raise ValidationError(
@@ -1166,25 +1014,31 @@ class OperationalFundDisbursement(models.Model):
                 else:
                     approvers = matched_rule.approver_ids
             else:
-                # Fallback if NO rules match
-                approvers = self.env.ref('operational_fund.group_op_fund_manager').users
-                if not approvers:
-                    raise ValidationError(
-                        _("System Architecture Error: No routing rule matched and no default managers were found in the system."))
+                # MANAGER KEY FALLBACK REMOVED. Strict enforcement applied.
+                raise ValidationError(
+                    _("System Architecture Error: No routing rule matched this voucher. A specific routing rule must exist to process disbursements."))
 
-            # 4. Generate Tasks and Emails for the assigned approvers
             base_url = rec.get_base_url()
             deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
             deadline = fields.Date.context_today(rec) + timedelta(days=1)
             task_vals_list, mail_vals_list = [], []
 
-            for manager in approvers:
+            # ACTIVE USER FILTER APPLIED HERE
+            valid_approvers = approvers.filtered(lambda u: u.active)
+
+            if not valid_approvers:
+                raise ValidationError(
+                    _(f"Configuration Error: Rule '{matched_rule.name}' matched, but none of the assigned approvers are active in the system."))
+
+            for manager in valid_approvers:
                 rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
                                       note=f'Voucher Requires Approval. <a href="{deep_link}">Click here to view</a>')
+
                 if 'project.task' in self.env:
                     task_vals_list.append({'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
                                            'date_deadline': deadline, 'is_voucher_task': True,
                                            'description': f'<p>Automated Routing: Requires your approval.</p><div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>'})
+
                 if manager.email:
                     mail_vals_list.append({'subject': f'Action Required: Approve Voucher {rec.name}',
                                            'email_from': '<noreply@researchayu.com>', 'email_to': manager.email,
@@ -1219,7 +1073,7 @@ class OperationalFundDisbursement(models.Model):
                  'reference': f'Disbursement: {rec.name} - {rec.display_category}', 'user_id': self.env.user.id})
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
-            active_clinic.sudo()._check_low_balance_alert()
+
 
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append(
@@ -1292,7 +1146,7 @@ class OperationalFundDisbursement(models.Model):
             rec.state = 'refunded'
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Review Refund')
-            active_clinic.sudo()._check_low_balance_alert()
+
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append(
                     {'subject': f'Refund Approved: Voucher {rec.name}', 'email_from': '<noreply@researchayu.com>',
@@ -1579,21 +1433,29 @@ class IrAttachment(models.Model):
     def create(self, vals_list):
         records = super().create(vals_list)
         if not boto3: return records
-
         s3_client, bucket = self._get_s3_credentials()
         if not s3_client or not bucket: return records
 
         protected_models = ['operational.fund.disbursement', 'operational.fund.allocation']
+
         for rec in records:
-            if rec.res_model in protected_models and rec.type == 'binary' and rec.raw:
+            # FIX: In Odoo 17, check 'datas' as 'raw' might not be fully computed during create_multi
+            if rec.res_model in protected_models and rec.type == 'binary' and rec.datas:
                 try:
+                    # Decode the base64 string to raw bytes for AWS S3
+                    file_bytes = base64.b64decode(rec.datas)
                     file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
                     object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
-                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+
+                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=file_bytes, ContentType=rec.mimetype)
+
+                    # Update without triggering recomputes
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                 except Exception as e:
                     _logger.error(f"AWS S3 Cloud Upload Failure for asset {rec.id}: {str(e)}")
-                    raise ValidationError(_("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
+                    # STRICT ENFORCEMENT: Do not fail silently. Force a UI error if S3 rejects the file.
+                    raise ValidationError(
+                        _("Cloud Architecture Error: Failed to upload the asset to AWS S3. Please check AWS IAM credentials. Transaction aborted."))
         return records
 
     @api.depends('store_fname', 'db_datas', 'file_size')
@@ -1761,70 +1623,3 @@ class OperationalFundUtrWizard(models.TransientModel):
                 'type': 'success'
             }
         }
-
-class OperationalFundVendor(models.Model):
-    _name = 'operational.fund.vendor'
-    _description = 'Operational Fund Local Vendor'
-
-    name = fields.Char(string='Vendor Name', required=True)
-    bank_account_name = fields.Char(string='Bank Account Name')
-    bank_account_number = fields.Char(string='Account Number')
-    bank_ifsc_code = fields.Char(string='IFSC Code')
-
-    # NEW: Clinic dependency
-    clinic_ids = fields.Many2many('clinic.clinic', string='Allowed Clinics', help='This vendor will only appear in the dropdowns for these specific clinics.')
-    active = fields.Boolean(default=True)
-
-class OperationalFundUtrWizard(models.TransientModel):
-    _name = 'operational.fund.utr.wizard'
-    _description = 'Batch UTR Upload Wizard'
-
-    csv_file = fields.Binary(string='Bank Payment Sheet (CSV)', required=True)
-    file_name = fields.Char(string='File Name')
-
-    def action_process_csv(self):
-        self.ensure_one()
-        if not self.csv_file:
-            raise ValidationError(_("Please upload a CSV file."))
-
-        try:
-            decoded_file = base64.b64decode(self.csv_file).decode('utf-8-sig')
-        except UnicodeDecodeError:
-            decoded_file = base64.b64decode(self.csv_file).decode('latin1')
-
-        reader = csv.DictReader(io.StringIO(decoded_file))
-        success_count, skipped_count = 0, 0
-        mail_vals_list = []
-
-        for row in reader:
-            row_keys = {k.strip().lower(): k for k in row.keys() if k}
-            v_key = next((row_keys[k] for k in row_keys if 'voucher' in k or 'name' in k or 'code' in k), None)
-            u_key = next((row_keys[k] for k in row_keys if 'utr' in k or 'ref' in k), None)
-
-            if not v_key or not u_key:
-                raise ValidationError(_("Invalid CSV Format. The system could not detect columns for 'Voucher' and 'UTR'."))
-
-            voucher_code, utr_number = str(row.get(v_key, '')).strip(), str(row.get(u_key, '')).strip()
-            if not voucher_code or not utr_number: continue
-
-            voucher = self.env['operational.fund.disbursement'].search([('name', '=', voucher_code)], limit=1)
-
-            # SECURITY GUARD: Only process if structurally approved
-            if voucher and voucher.state == 'approved':
-                voucher.write({'utr_reference': utr_number, 'state': 'paid'})
-                success_count += 1
-                if voucher.create_uid and voucher.create_uid.email:
-                    mail_vals_list.append({
-                        'subject': f'Paid: Voucher {voucher.name}',
-                        'email_from': '<noreply@researchayu.com>',
-                        'email_to': voucher.create_uid.email,
-                        'body_html': f'<div style="padding: 20px;"><h2 style="color: #17a2b8;">Voucher Paid</h2><p>Your voucher <strong>{escape(voucher.name)}</strong> has been finalized by Accounts.</p><p><strong>Bank UTR Reference:</strong> {escape(utr_number)}</p></div>',
-                        'state': 'outgoing',
-                    })
-            else:
-                skipped_count += 1
-
-        if mail_vals_list:
-            self.env['mail.mail'].sudo().create(mail_vals_list).send()
-
-        return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Batch Processing Complete'), 'message': _('Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count, skipped_count), 'sticky': False, 'type': 'success'}}

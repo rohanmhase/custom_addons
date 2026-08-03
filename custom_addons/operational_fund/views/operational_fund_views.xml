@@ -132,7 +132,7 @@
             <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
 
             <!-- STANDARD SUBMIT (For Manual Vouchers) -->
-            <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
+            <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' "/>
 
             <!-- NEW: TIER 1 SYSTEM APPROVAL (Only visible for system-generated payouts) -->
             <button name="action_approve_system_voucher" string="Approve Verified Matrix Payout" type="object" class="btn-success fw-bold text-uppercase" invisible="state != 'waiting' or is_system_generated == False" groups="operational_fund.group_op_fund_custodian"/>
@@ -144,7 +144,6 @@
             <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
         </header>
                 <sheet>
-                    <field name="has_pending_allocation" invisible="1"/>
                     <field name="is_system_generated" invisible="1"/>
 
                     <div class="alert alert-info text-center" role="alert" invisible="signed_voucher_file or state in ('waiting', 'approved', 'paid', 'refund_requested', 'refunded')" style="margin-bottom: 20px;">
@@ -323,9 +322,6 @@
                 <field name="display_category"/>
                 <field name="amount" sum="Total"/>
                 <field name="state" widget="badge" decoration-warning="state == 'waiting' and is_today" decoration-primary="state == 'approved' and is_today" decoration-success="state == 'paid' and is_today" decoration-danger="state == 'rejected' and is_today" decoration-muted="not is_today or state == 'refunded'"/>
-                <field name="s3_receipt_url" optional="hide"/>
-                <field name="s3_voucher_url" optional="hide"/>
-                <field name="s3_payment_url" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -556,14 +552,10 @@
         <field name="name">op.fund.clinic.balance.tree</field>
         <field name="model">clinic.clinic</field>
         <field name="arch" type="xml">
-            <tree string="Fund Balances" create="0" delete="0" editable="bottom" decoration-danger="is_low_balance" default_order="is_low_balance desc, op_fund_balance asc">
-                <field name="is_low_balance" column_invisible="1"/>
-
+            <tree string="Fund Balances" create="0" delete="0" editable="bottom" default_order="op_fund_balance asc">
                 <field name="name" string="Branch / Clinic" readonly="1" class="text-wrap"/>
                 <field name="master_fund_id" string="Shared Wallet (Master Clinic)" options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="wallet_group_name" column_invisible="1"/>
-                <field name="op_fund_approval_threshold" widget="monetary" string="Auto-Approval Limit"/>
-                <field name="op_fund_alert_threshold" widget="monetary" string="Low Balance Alert At"/>
                 <field name="total_allocated" sum="Total Funded" decoration-info="1" readonly="1"/>
                 <field name="total_spent" sum="Total Spent" decoration-warning="1" readonly="1"/>
                 <field name="op_fund_balance" sum="Total Available Wallet" decoration-success="op_fund_balance &gt; 0" decoration-danger="op_fund_balance == 0" readonly="1"/>
@@ -730,16 +722,6 @@ action = records.filtered_domain([('state', '=', 'paid')]).action_bulk_download_
         </field>
     </record>
 
-    <record id="ir_cron_check_overdue_allocations" model="ir.cron">
-        <field name="name">Operational Funds: Check 24h SLA Breaches</field>
-        <field name="model_id" ref="model_operational_fund_allocation"/>
-        <field name="state">code</field>
-        <field name="code">model._cron_check_overdue_allocations()</field>
-        <field name="interval_number">1</field>
-        <field name="interval_type">days</field>
-        <field name="numbercall">-1</field>
-        <field name="active" eval="True"/>
-    </record>
 
     <record id="action_op_fund_manager_pending_vouchers" model="ir.actions.act_window">
         <field name="name">Vouchers Awaiting Approval</field>
