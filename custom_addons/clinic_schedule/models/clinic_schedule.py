@@ -1071,8 +1071,8 @@ class ClinicScheduleAppointment(models.Model):
     def get_matrix_data(self, clinic_id, target_date, pulled_therapist_ids=None):
         """Get matrix data for clinic scheduling dashboard"""
         # Handle edge cases
-        clinics_records = self.env["clinic.clinic"].search_read([], ["id", "name", "region_id"])
-        regions_records = self.env["clinic.region"].search_read([], ["id", "name"])
+        clinics_records = self.env["clinic.clinic"].sudo().search_read([], ["id", "name", "region_id"])
+        regions_records = self.env["clinic.region"].sudo().search_read([], ["id", "name"])
 
         # 2. Determine clinic to display (Fallback Logic)
         if not clinic_id and clinics_records:
@@ -1384,7 +1384,7 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.model
     def get_roster_data(self, target_date=None):
-        clinics = self.env['clinic.clinic'].search_read([], ['id', 'name'])
+        clinics = self.env['clinic.clinic'].sudo().bsearch_read([], ['id', 'name'])
         therapist_records = self.env['clinic.therapist'].search([('active', '=', True)])
         clinic_active_floaters = {}
         if target_date:
