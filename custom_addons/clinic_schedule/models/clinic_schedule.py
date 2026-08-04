@@ -846,7 +846,7 @@ class ClinicScheduleAppointment(models.Model):
                 ('start_datetime', '<', record.end_datetime), ('end_datetime', '>', record.start_datetime),
                 ('attendance_state', '!=', 'no_show')  # NEW: Let No-Shows be overlapped
             ]
-            conflict = self.search(domain, limit=1)
+            conflict = self.sudo().search(domain, limit=1)
             if conflict:
                 local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
                 s_time = pytz.utc.localize(conflict.start_datetime).astimezone(local_tz).strftime('%I:%M %p')
@@ -860,7 +860,7 @@ class ClinicScheduleAppointment(models.Model):
             if not record.clinic_id: continue
 
             # Find the session immediately before this one (IGNORE NO SHOWS)
-            prev_app = self.search([
+            prev_app = self.sudo().search([
                 ('therapist_id', '=', record.therapist_id.id), ('id', '!=', record.id),
                 ('end_datetime', '<=', record.start_datetime),
                 ('attendance_state', '!=', 'no_show')
@@ -875,7 +875,7 @@ class ClinicScheduleAppointment(models.Model):
                         ))
 
             # Find the session immediately after this one (IGNORE NO SHOWS)
-            next_app = self.search([
+            next_app = self.sudo().search([
                 ('therapist_id', '=', record.therapist_id.id), ('id', '!=', record.id),
                 ('start_datetime', '>=', record.end_datetime),
                 ('attendance_state', '!=', 'no_show')
@@ -974,7 +974,7 @@ class ClinicScheduleAppointment(models.Model):
         target_date_obj = fields.Date.from_string(target_date)
         start_day = datetime.combine(target_date_obj, time.min)
         end_day = datetime.combine(target_date_obj, time.max)
-        appointments = self.search([
+        appointments = self.sudo().search([
             ('start_datetime', '>=', start_day), ('end_datetime', '<=', end_day), ('therapist_id', '!=', False)
         ])
         active_today_map = {}
@@ -1149,7 +1149,7 @@ class ClinicScheduleAppointment(models.Model):
         ])
 
         # Merge local and cross-clinic appointments for rendering
-        all_apps_to_render = appointments_raw | cross_clinic_apps
+        all_apps_to_render = appointments_raw | cross_clinic_apps.sudo()
 
         # Build therapist list for display
         therapists = []
@@ -1249,6 +1249,7 @@ class ClinicScheduleAppointment(models.Model):
 
             # ... (keep p_gender, p_name, p_mrn logic here) ...
             p_gender, raw_p_gen, p_name, p_mrn = "", False, "", ""
+            p_info = None
             if app.patient_id and app.patient_id.id in patient_map:
                 p_info = patient_map[app.patient_id.id]
                 p_name = p_info.get("name") or ""
