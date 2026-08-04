@@ -1865,6 +1865,11 @@ msgstr ""
 
 #. module: patient_management
 #: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
+msgid "I understand that my data can be used for research purposes."
+msgstr "నా డేటాను పరిశోధన ప్రయోజనాల కోసం ఉపయోగించవచ్చని నేను అర్థం చేసుకున్నాను."
+
+#. module: patient_management
+#: model_terms:ir.ui.view,arch_db:patient_management.consent_report_template
 msgid ""
 "I will complete necessary investigations when advised (X-ray/MRI/Blood tests). I\n"
 "                                        will disclose complete medical history including autoimmune/comorbid conditions\n"
