@@ -188,8 +188,8 @@
                                         symptom flare, allergy/rash, emotional changes, or skin breakouts. I will report
                                         any side effects immediately.
                                     </p>
-                                    <p t-translation="on">
-                                        I will behave respectfully with staff and patients. Misconduct/threats may lead
+                                    <p>
+                                         <span t-translation="on">I will behave respectfully with staff and patients. Misconduct/threats may lead
                                         to refusal of service and/or legal action. Unutilized prepaid refund (if
                                         eligible): deductions include ₹5,000 admin fee + medicines issued + services
                                         used. Written request within 15 days of discontinuation. Processing up to 90
@@ -198,7 +198,8 @@
                                         refunded within 15 working days via NEFT. I will not request/share any other
                                         patient's personal, treatment, or payment details. Disputes will be resolved via
                                         arbitration in Thane, Maharashtra (English/Hindi/Marathi). Courts at Thane will
-                                        have jurisdiction if required.
+                                        have jurisdiction if required.</span>
+                                        <span t-translation="on"> I understand that my data can be used for research purposes.</span>
                                     </p>
                                 </div>
                             </t>
