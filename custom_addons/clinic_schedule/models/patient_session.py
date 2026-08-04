@@ -5,9 +5,11 @@ from odoo.exceptions import ValidationError
 class PatientSession(models.Model):
     _inherit = 'patient.session'
 
-    @api.constrains('clinic_id', 'therapist_id')
+    @api.constrains('clinic_id', 'therapist_id', 'session_type')
     def _check_therapist_allowed_branch(self):
         for rec in self:
+            if rec.session_type == 'self':
+                continue
             if not rec.therapist_id or not rec.clinic_id:
                 continue
 
