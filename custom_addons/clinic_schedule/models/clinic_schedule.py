@@ -289,13 +289,18 @@ class ClinicScheduleAppointment(models.Model):
         local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
         target_date = datetime.now(local_tz).date()
 
-        start_day = datetime.combine(target_date, time.min)
-        end_day = datetime.combine(target_date, time.max)
+        # 1. Calculate strict local time boundaries
+        start_of_day_local = local_tz.localize(datetime.combine(target_date, time.min))
+        end_of_day_local = local_tz.localize(datetime.combine(target_date, time.max))
 
-        # Get all valid worked appointments for the day
+        # 2. Convert boundaries safely to UTC for database querying
+        start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+        # Get all valid worked appointments for the day using UTC boundaries
         daily_apps = self.search([
-            ('start_datetime', '>=', start_day),
-            ('end_datetime', '<=', end_day),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc),
             ('attendance_state', 'in', ['completed', 'in_progress']),
             ('therapist_id', '!=', False)
         ], order='start_datetime asc')
@@ -1384,7 +1389,7 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.model
     def get_roster_data(self, target_date=None):
-        clinics = self.env['clinic.clinic'].sudo().bsearch_read([], ['id', 'name'])
+        clinics = self.env['clinic.clinic'].sudo().search_read([], ['id', 'name'])
         therapist_records = self.env['clinic.therapist'].search([('active', '=', True)])
         clinic_active_floaters = {}
         if target_date:
@@ -1639,7 +1644,10 @@ class ClinicFloaterRequestWizard(models.TransientModel):
         self.ensure_one()
         Therapist = self.env['clinic.therapist']
 
-        # 1. Enforce the Max 3 limit per gender per day
+        # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
+        self.clinic_id.with_for_update().read(['id'])
+
+        # 2. Enforce the Max 3 limit per gender per day safely
         existing_requests = Therapist.search_count([
             ('is_floater_request', '=', True),
             ('request_clinic_id', '=', self.clinic_id.id),
