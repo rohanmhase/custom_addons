@@ -8,6 +8,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/clinic_schedule_views.xml',
+        'views/patient_session_inherit_views.xml',
         'views/menus.xml',
         'data/sequence.xml',
         'data/cron.xml',

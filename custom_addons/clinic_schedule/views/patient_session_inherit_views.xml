@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_clinic_therapist_name_only_tree" model="ir.ui.view">
+        <field name="name">clinic.therapist.name.only.tree</field>
+        <field name="model">clinic.therapist</field>
+        <field name="priority" eval="999"/>
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false">
+                <field name="name"/>
+                <field name="contact_number"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_patient_session_form_therapist_branch_inherit"
+            model="ir.ui.view">
+
+        <field name="name">
+            patient.session.form.therapist.branch.inherit
+        </field>
+
+        <field name="model">patient.session</field>
+
+        <field name="inherit_id"
+               ref="patient_management.patient_session_form"/>
+
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='therapist_id']"
+                   position="attributes">
+
+                <attribute name="domain">
+                    [
+                        ('active', '=', True),
+                        ('allowed_branch_ids', 'in', clinic_id)
+                    ]
+                </attribute>
+
+                <attribute name="context">
+                    {
+                        'tree_view_ref':
+                        'clinic_schedule.view_clinic_therapist_name_only_tree'
+                    }
+                </attribute>
+
+            </xpath>
+
+        </field>
+
+    </record>
+
+</odoo>

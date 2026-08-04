@@ -86,9 +86,7 @@
                             <!--                            <field name="therapist_name"/>-->
                             <field name="clinic_id" invisible="1"/>
                             <field name="therapist_id"
-                                   domain="[('clinic_id', '=', clinic_id)]"
-                                   context="{'default_clinic_id': clinic_id}"
-                                   options="{'no_open': True, 'no_quick_create': True, 'no_create_edit': False}"
+                                   options="{'no_open': True, 'no_create': True, 'no_edit': True}"
                                    readonly="session_type == 'self'"
                                    required="1"
                                    force_save="1"/>
