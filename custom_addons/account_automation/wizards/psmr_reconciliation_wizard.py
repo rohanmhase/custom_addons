@@ -4,6 +4,7 @@ import io
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 
+
 class PsmrReconciliationWizard(models.TransientModel):
     _name = 'psmr.reconciliation.wizard'
     _description = 'PSMR Reconciliation Wizard'
@@ -91,28 +92,34 @@ class PsmrReconciliationWizard(models.TransientModel):
 
         odoo_sales = {row['pos_config_id']: float(row['total_sales']) for row in odoo_results}
 
+        # Build mappings
         mappings = self.env['clinic.psmr.mapping'].search([])
-        psmr_to_odoo = {m.psmr_name: m.pos_config_id.id for m in mappings}
-        odoo_to_psmr = {m.pos_config_id.id: m.psmr_name for m in mappings}
+        psmr_to_odoo = {}
+        odoo_to_psmr = {}  # pos_config_id -> list of psmr names
+
+        for m in mappings:
+            psmr_to_odoo[m.psmr_name] = m.pos_config_id.id
+            if m.pos_config_id.id not in odoo_to_psmr:
+                odoo_to_psmr[m.pos_config_id.id] = []
+            odoo_to_psmr[m.pos_config_id.id].append(m.psmr_name)
+
+        # ---- Everything below is OUTSIDE the for loop ----
 
         report_lines = []
         processed_psmr_names = set()
         processed_odoo_ids = set()
 
+        # Step 1: Group psmr sales by pos_config_id
+        grouped_psmr = {}  # {pos_config_id: {'total': float, 'names': [str]}}
+
         for psmr_name, psmr_amt in psmr_sales.items():
             odoo_config_id = psmr_to_odoo.get(psmr_name)
 
             if odoo_config_id:
-                odoo_amt = odoo_sales.get(odoo_config_id, 0.0)
-                report_lines.append({
-                    'pos_config_id': odoo_config_id,
-                    'psmr_name': psmr_name,
-                    'odoo_sales': odoo_amt,
-                    'psmr_sales': psmr_amt,
-                    'difference': odoo_amt - psmr_amt,
-                    'status': 'matched'
-                })
-                processed_odoo_ids.add(odoo_config_id)
+                if odoo_config_id not in grouped_psmr:
+                    grouped_psmr[odoo_config_id] = {'total': 0.0, 'names': []}
+                grouped_psmr[odoo_config_id]['total'] += psmr_amt
+                grouped_psmr[odoo_config_id]['names'].append(psmr_name)
             else:
                 report_lines.append({
                     'psmr_name': psmr_name,
@@ -121,21 +128,40 @@ class PsmrReconciliationWizard(models.TransientModel):
                     'difference': -psmr_amt,
                     'status': 'unmapped_psmr'
                 })
-            processed_psmr_names.add(psmr_name)
+                processed_psmr_names.add(psmr_name)
 
+        # Step 2: Create one line per POS with summed PSMR sales
+        for odoo_config_id, data in grouped_psmr.items():
+            psmr_amt = data['total']
+            psmr_names = ', '.join(data['names'])
+            odoo_amt = odoo_sales.get(odoo_config_id, 0.0)
+
+            report_lines.append({
+                'pos_config_id': odoo_config_id,
+                'psmr_name': psmr_names,
+                'odoo_sales': odoo_amt,
+                'psmr_sales': psmr_amt,
+                'difference': odoo_amt - psmr_amt,
+                'status': 'matched'
+            })
+            processed_odoo_ids.add(odoo_config_id)
+            processed_psmr_names.update(data['names'])
+
+        # Step 3: Handle POS configs missing in PSMR
         all_active_configs = self.env['pos.config'].search([])
         for config in all_active_configs:
             if config.id in processed_odoo_ids:
                 continue
 
             odoo_amt = odoo_sales.get(config.id, 0.0)
-            mapped_psmr_name = odoo_to_psmr.get(config.id)
+            mapped_psmr_names = odoo_to_psmr.get(config.id)  # now a list
 
-            if mapped_psmr_name:
-                if mapped_psmr_name not in processed_psmr_names:
+            if mapped_psmr_names:
+                # Check if ANY of the names were already processed
+                if not any(n in processed_psmr_names for n in mapped_psmr_names):
                     report_lines.append({
                         'pos_config_id': config.id,
-                        'psmr_name': mapped_psmr_name,
+                        'psmr_name': ', '.join(mapped_psmr_names),
                         'odoo_sales': odoo_amt,
                         'psmr_sales': 0.0,
                         'difference': odoo_amt,
