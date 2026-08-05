@@ -46,6 +46,14 @@ class Clinic(models.Model):
                                          help="Automatically updates alert floor using a 7-day rolling burn rate forecast.")
     is_low_balance = fields.Boolean(string='Is Low Balance', compute='_compute_is_low_balance', store=True)
 
+    op_fund_manager_ids = fields.Many2many(
+        comodel_name='res.users',
+        relation='clinic_op_fund_manager_rel',
+        column1='clinic_id',
+        column2='user_id',
+        string='Standard Fund Managers',
+        help="Managers designated to approve vouchers for this specific clinic."
+    )
 
     @api.constrains('master_fund_id')
     def _check_master_fund(self):
@@ -1869,3 +1877,15 @@ class OperationalFundUtrWizard(models.TransientModel):
             self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
         return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Batch Processing Complete'), 'message': _('Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count, skipped_count), 'sticky': False, 'type': 'success'}}
+
+class ResUsers(models.Model):
+    _inherit = 'res.users'
+
+    # 👉 ADD THIS TO COMPLETE THE INVERSE RELATIONSHIP:
+    op_fund_managed_clinic_ids = fields.Many2many(
+        comodel_name='clinic.clinic',
+        relation='clinic_op_fund_manager_rel',
+        column1='user_id',
+        column2='clinic_id',
+        string='Managed Clinics (Operational Funds)'
+    )
