@@ -780,10 +780,10 @@ class OperationalFundDisbursement(models.Model):
             if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
             if rec.show_employee_payee and not rec.payee_id: raise ValidationError(
                 _("Missing Parameter: Please select an Employee Profile."))
-            if rec.show_therapist_name_input and not rec.therapist_name: raise ValidationError(
-                _("Missing Parameter: Please type the Therapist Name."))
-            if rec.show_vendor_payee and not rec.vendor_name: raise ValidationError(
-                _("Missing Parameter: Please specify the Vendor or Payee Name."))
+            if rec.show_therapist_name_input and not (rec.therapist_name or rec.therapist_ref_id):
+                raise ValidationError(_("Missing Parameter: Please select or type the Therapist Name."))
+            if rec.show_vendor_payee and not (rec.vendor_name or rec.vendor_ref_id):
+                raise ValidationError(_("Missing Parameter: Please select or specify the Vendor Name."))
             if rec.show_home_visit and not rec.home_visit_mrn_search: raise ValidationError(
                 _("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
             if not rec.signed_voucher_file: raise ValidationError(
@@ -1132,7 +1132,7 @@ class OperationalFundDisbursement(models.Model):
                 vals['name'] = f"{c_code}/{d_code}/{main_code}/{sub_code}/{seq}"
 
         records = super().create(vals_list)
-        for rec in records: rec._route_for_approval()
+        # Auto-routing is handled upon clicking "Submit for Approval"
         return records
 
     def _route_for_approval(self):
