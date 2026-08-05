@@ -684,13 +684,14 @@ class OperationalFundDisbursement(models.Model):
 
     # DRAFT STATE REMOVED. Defaults to waiting.
     state = fields.Selection([
+        ('draft', 'Draft'),
         ('waiting', 'Waiting Approval'),
         ('approved', 'Approved'),
         ('paid', 'Paid'),
         ('rejected', 'Rejected'),
         ('refund_requested', 'Refund Requested'),
         ('refunded', 'Refunded'),
-    ], string='Status', default='waiting', tracking=True, index=True)
+    ], string='Status', default='draft', tracking=True, index=True)
 
     payment_screenshot = fields.Binary(string='Transaction Proof Screenshot')
     payment_screenshot_filename = fields.Char(string='Payment Proof Filename')
@@ -1209,10 +1210,14 @@ class OperationalFundDisbursement(models.Model):
     def action_approve(self):
         mail_vals_list = []
         for rec in self:
+            # 1. ADD VALIDATION HERE: Check for documents before allowing approval
+            if rec.therapist_ref_id and not rec.signed_voucher_file:
+                raise ValidationError(_("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
+            if rec.vendor_ref_id and not rec.receipt_file:
+                raise ValidationError(_("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
+
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
-
             # (Balance constraint removed. Funding is now strictly a visual ledger.)
-
             rec.state = 'approved'
             self.env['operational.fund.audit'].sudo().create(
                 {'clinic_id': active_clinic.id, 'date': rec.date, 'transaction_type': 'debit', 'amount': rec.amount,
@@ -1440,14 +1445,6 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("Auditing Restriction: Vouchers can only be created for today's date. Yesterday or tomorrow is not allowed."))
 
-    @api.constrains('vendor_ref_id', 'therapist_ref_id', 'receipt_file', 'signed_voucher_file')
-    def _check_mandatory_documents(self):
-        """Validation: Mandatory files based on payee selection."""
-        for rec in self:
-            if rec.vendor_ref_id and not rec.receipt_file:
-                raise ValidationError(_("A Bill / Vendor Receipt is mandatory when a vendor is selected."))
-            if rec.therapist_ref_id and not rec.signed_voucher_file:
-                raise ValidationError(_("A Signed Voucher Asset is mandatory when a therapist is selected."))
 
     def unlink(self):
         for rec in self:
@@ -1619,16 +1616,60 @@ class IrAttachment(models.Model):
         if not boto3: return
         s3_client, bucket = self._get_s3_credentials()
         if not s3_client or not bucket: return
-
         for rec in self:
             if not rec.is_s3_stored and rec.raw:
                 try:
-                    file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
+                    # FIX: Handle False/None mimetypes safely
+                    safe_mimetype = rec.mimetype or 'application/octet-stream'
+                    file_extension = mimetypes.guess_extension(safe_mimetype) or '.bin'
+
                     object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
-                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+
+                    # FIX: Pass the safe_mimetype to AWS
+                    s3_client.put_object(
+                        Bucket=bucket,
+                        Key=object_key,
+                        Body=rec.raw,
+                        ContentType=safe_mimetype
+                    )
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                 except Exception as e:
                     _logger.error(f"Force Migration Failure for asset {rec.id}: {str(e)}")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        if not boto3: return records
+
+        s3_client, bucket = self._get_s3_credentials()
+        if not s3_client or not bucket: return records
+
+        protected_models = ['operational.fund.disbursement', 'operational.fund.allocation']
+
+        for rec in records:
+            if rec.res_model in protected_models and rec.type == 'binary' and rec.raw:
+                try:
+                    # FIX: Handle False/None mimetypes safely
+                    safe_mimetype = rec.mimetype or 'application/octet-stream'
+                    file_extension = mimetypes.guess_extension(safe_mimetype) or '.bin'
+
+                    object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
+
+                    # FIX: Pass the safe_mimetype to AWS
+                    s3_client.put_object(
+                        Bucket=bucket,
+                        Key=object_key,
+                        Body=rec.raw,
+                        ContentType=safe_mimetype
+                    )
+                    rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
+                except Exception as e:
+                    _logger.error(f"AWS S3 Cloud Upload Failure for asset {rec.id}: {str(e)}")
+                    raise ValidationError(
+                        _("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
+
+        return records
+
 
     @api.model
     def action_migrate_local_attachments_to_s3(self):

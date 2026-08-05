@@ -128,21 +128,22 @@
         <field name="model">operational.fund.disbursement</field>
         <field name="arch" type="xml">
             <form string="Operational Fund Disbursement">
-                        <header>
-            <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
+                    <header>
+                        <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
 
-            <!-- STANDARD SUBMIT (For Manual Vouchers) -->
-            <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
+                        <!-- STANDARD SUBMIT (For Manual Vouchers if draft ever applies) -->
+                        <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
 
-            <!-- NEW: TIER 1 SYSTEM APPROVAL (Only visible for system-generated payouts) -->
-            <button name="action_approve_system_voucher" string="Approve Verified Matrix Payout" type="object" class="btn-success fw-bold text-uppercase" invisible="state != 'waiting' or is_system_generated == False" groups="operational_fund.group_op_fund_custodian"/>
+                        <!-- TIER 1 SYSTEM APPROVAL -->
+                        <button name="action_approve_system_voucher" string="Approve Verified Matrix Payout" type="object" class="btn-success fw-bold text-uppercase" invisible="state not in ('waiting', 'draft') or is_system_generated == False" groups="operational_fund.group_op_fund_custodian"/>
 
-            <!-- STANDARD TIER 2 MANAGER APPROVAL (Only for Manual Vouchers) -->
-            <button name="action_approve" string="Manager Approve" type="object" class="btn-success" invisible="state != 'waiting' or is_system_generated == True" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                        <!-- STANDARD TIER 2 MANAGER APPROVAL & REJECTION -->
+                        <button name="action_approve" string="Manager Approve" type="object" class="btn-success" invisible="state not in ('waiting', 'draft') or is_system_generated == True" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
-            <!-- ... (Keep your other buttons exactly as they are) ... -->
-            <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
-        </header>
+                        <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state not in ('waiting', 'draft')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
+                    </header>
                 <sheet>
                     <field name="has_pending_allocation" invisible="1"/>
                     <field name="is_system_generated" invisible="1"/>
