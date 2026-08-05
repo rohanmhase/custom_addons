@@ -769,15 +769,21 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.depends('clinic_id', 'start_datetime')
     def _compute_allowed_patient_ids(self):
-        """ Filters patients. Hides patients from the dropdown if they already have 2 sessions today. """
+        """ Filters patients by clinic and daily limits. """
         for record in self:
             if record.clinic_id:
+                # 1. Fetch active paid enrollments for the selected clinic
                 enrollments = self.env['patient.enrollment'].search([
                     ('clinic_id', '=', record.clinic_id.id),
                     ('payment_state', '=', 'paid'),
                     ('state', '=', 'active')
                 ])
+                enrolled_patient_ids = enrollments.mapped('patient_id').ids
+
+                # 2. Filter eligible patients to ONLY those belonging to THIS clinic
+                # Matches either their active enrollment OR their primary clinic profile
                 eligible_patients = self.env['clinic.patient'].search([
+                    '|', ('id', 'in', enrolled_patient_ids), ('clinic_id', '=', record.clinic_id.id),
                     ('remaining_sessions', '>', 0)
                 ])
 
@@ -809,7 +815,8 @@ class ClinicScheduleAppointment(models.Model):
                 else:
                     record.allowed_patient_ids = eligible_patients
             else:
-                record.allowed_patient_ids = self.env['clinic.patient'].search([])
+                # Clear the dropdown entirely if no clinic is selected
+                record.allowed_patient_ids = self.env['clinic.patient'].search([('id', '=', False)])
 
     @api.constrains('start_datetime', 'therapist_id')
     def _check_therapist_availability(self):
@@ -1075,100 +1082,87 @@ class ClinicScheduleAppointment(models.Model):
     @api.model
     def get_matrix_data(self, clinic_id, target_date, pulled_therapist_ids=None):
         """Get matrix data for clinic scheduling dashboard"""
-        # Handle edge cases
-        clinics_records = self.env["clinic.clinic"].sudo().search_read([], ["id", "name", "region_id"])
-        regions_records = self.env["clinic.region"].sudo().search_read([], ["id", "name"])
+        user = self.env.user
+        is_manager = user.has_group('clinic_schedule.group_clinic_schedule_manager')
 
-        # 2. Determine clinic to display (Fallback Logic)
+        # ==========================================
+        # 1. STRICT DROPDOWN ISOLATION
+        # ==========================================
+        clinic_domain = []
+        if not is_manager:
+            allowed_ids = set()
+            if hasattr(user, 'clinic_id') and user.clinic_id: allowed_ids.add(user.clinic_id.id)
+            if hasattr(user, 'clinic_ids') and user.clinic_ids: allowed_ids.update(user.clinic_ids.ids)
+            if hasattr(user, 'op_fund_managed_clinic_ids') and user.op_fund_managed_clinic_ids: allowed_ids.update(
+                user.op_fund_managed_clinic_ids.ids)
+            if hasattr(user,
+                       'op_fund_ho_managed_clinic_ids') and user.op_fund_ho_managed_clinic_ids: allowed_ids.update(
+                user.op_fund_ho_managed_clinic_ids.ids)
+            clinic_domain = [('id', 'in', list(allowed_ids))]
+
+        clinics_records = self.env["clinic.clinic"].sudo().search_read(clinic_domain, ["id", "name", "region_id"])
+
+        region_domain = []
+        if not is_manager and clinics_records:
+            allowed_region_ids = [c['region_id'][0] for c in clinics_records if c.get('region_id')]
+            region_domain = [('id', 'in', allowed_region_ids)] if allowed_region_ids else [('id', 'in', [])]
+
+        regions_records = self.env["clinic.region"].sudo().search_read(region_domain, ["id", "name"])
+
         if not clinic_id and clinics_records:
             clinic_id = clinics_records[0]["id"]
 
         if not clinic_id or not target_date:
             return {
-                "therapists": [],
-                "appointments": [],
-                "clinics": [],
-                "regions": [],
-                "selected_clinic_id": 0,
-                "kpis": {
-                    "rs_count": 0,
-                    "fixed_count": 0,
-                    "floater_count": 0,
-                    "utilization": 0,
-                    "total_scheduled": 0,
-                    "allotted_clinic_hv": 0,
-                    "self_scheduled": 0,
-                    "outstanding": 0
-                }
+                "therapists": [], "appointments": [], "clinics": [], "regions": [], "selected_clinic_id": 0,
+                "kpis": {"rs_count": 0, "fixed_count": 0, "floater_count": 0, "utilization": 0, "total_scheduled": 0,
+                         "allotted_clinic_hv": 0, "self_scheduled": 0, "outstanding": 0}
             }
 
-        # Convert parameters
         clinic_id = int(clinic_id)
         target_date_obj = fields.Date.from_string(target_date)
         start_day = datetime.combine(target_date_obj, time(0, 0, 0))
         end_day = datetime.combine(target_date_obj, time(23, 59, 59))
 
-
-        if not clinic_id:
-            return {
-                "therapists": [],
-                "appointments": [],
-                "clinics": clinics_records,
-                "regions": regions_records,
-                "selected_clinic_id": 0,
-                "kpis": {
-                    "rs_count": 0,
-                    "fixed_count": 0,
-                    "floater_count": 0,
-                    "utilization": 0,
-                    "total_scheduled": 0,
-                    "allotted_clinic_hv": 0,
-                    "self_scheduled": 0,
-                    "outstanding": 0
-                }
-            }
-
-        # Fetch appointments for the date range
-
+        # ==========================================
+        # 2. LOCAL APPOINTMENTS (Normal Security)
+        # ==========================================
         appointments_raw = self.search([
             ("clinic_id", "=", clinic_id),
             ("start_datetime", ">=", start_day),
             ("end_datetime", "<=", end_day)
         ], order="start_datetime asc")
 
-        # Get therapist daily states
         daily_states = self.env["clinic.therapist.daily.state"].search([("target_date", "=", target_date)])
         state_map = {s.therapist_id.id: s for s in daily_states}
 
-        # Get therapists for the board (active therapists assigned to this clinic OR buffer therapists)
-        assigned_therapists = self.env["clinic.therapist"].search(
+        assigned_therapists = self.env["clinic.therapist"].sudo().search(
             [("active", "=", True), "|", ("allowed_branch_ids", "in", clinic_id), ("is_buffer", "=", True)]
         )
 
-        # Get cross-clinic appointments for therapists currently rendered on this board
-        cross_clinic_apps = self.search([
+        # ==========================================
+        # 3. CROSS-CLINIC APPOINTMENTS (Sudo Bypass)
+        # ==========================================
+        # We MUST sudo the search itself to bypass branch security rules and find the therapist's location
+        cross_clinic_apps = self.sudo().search([
             ("clinic_id", "!=", clinic_id),
             ("start_datetime", ">=", start_day),
             ("end_datetime", "<=", end_day),
             ("therapist_id", "in", assigned_therapists.ids)
         ])
 
-        # Merge local and cross-clinic appointments for rendering
-        all_apps_to_render = appointments_raw | cross_clinic_apps.sudo()
+        all_apps_to_render = (appointments_raw | cross_clinic_apps).sudo()
 
-        # Build therapist list for display
+        # ... (Therapist array building logic remains unchanged here) ...
         therapists = []
         unassigned_apps = appointments_raw.filtered(lambda a: not a.therapist_id)
-
         if unassigned_apps:
             therapists.append({
                 'id': 0, 'name': '  UNASSIGNED / ACTION REQUIRED', 'designation': 'unassigned',
-                'vendor_id': 'ACTION REQUIRED',
-                'gender_tag': '', 'raw_gender': False, 'is_buffer': False, 'is_absent': False,
-                'overlay_state': 'present', '_sort_score': 1,
-                'shift_timing': '', 'total_allotted_slots': 0
+                'vendor_id': 'ACTION REQUIRED', 'gender_tag': '', 'raw_gender': False, 'is_buffer': False,
+                'is_absent': False,
+                'overlay_state': 'present', '_sort_score': 1, 'shift_timing': '', 'total_allotted_slots': 0
             })
-
         clinic_region_id = next(
             (c['region_id'][0] for c in clinics_records if c['id'] == int(clinic_id) and c['region_id']), False)
         for t in assigned_therapists:
@@ -1184,11 +1178,9 @@ class ClinicScheduleAppointment(models.Model):
             elif clinic_region_id and any(b.region_id.id == clinic_region_id for b in t.allowed_branch_ids):
                 sort_score = 4
 
-            # NEW: Calculate Shift & Total Global Load
             t_apps = [a for a in all_apps_to_render if
                       a.therapist_id.id == t.id and a.slot_type == 'patient' and a.attendance_state != 'no_show']
             total_slots = len(t_apps)
-
             if total_slots > 0:
                 first_app = min(t_apps, key=lambda a: a.start_datetime)
                 local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
@@ -1197,40 +1189,27 @@ class ClinicScheduleAppointment(models.Model):
                 shift_timing = f"{start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
             else:
                 shift_timing = "Not Started"
-
             g_tag = ' (M)' if t.gender == 'm' else (' (F)' if t.gender == 'f' else '')
             therapists.append({
-                'id': t.id, 'name': f"{t.name}", 'designation': t.designation,
-                'vendor_id': t.vendor_id or 'N/A',
-                'gender_tag': g_tag, 'raw_gender': t.gender,
-                'is_buffer': t.is_buffer,
-                'is_absent': bool(is_absent),
-                'overlay_state': t_state.action_type if t_state else 'present',
-                'shift_timing': shift_timing,
-                'total_allotted_slots': total_slots,
-                '_sort_score': sort_score
+                'id': t.id, 'name': f"{t.name}", 'designation': t.designation, 'vendor_id': t.vendor_id or 'N/A',
+                'gender_tag': g_tag, 'raw_gender': t.gender, 'is_buffer': t.is_buffer, 'is_absent': bool(is_absent),
+                'overlay_state': t_state.action_type if t_state else 'present', 'shift_timing': shift_timing,
+                'total_allotted_slots': total_slots, '_sort_score': sort_score
             })
-
         therapists.sort(key=lambda x: (x["_sort_score"], x["name"]))
 
-        # Get patient data for efficient lookup
         patient_ids = all_apps_to_render.mapped("patient_id").ids
-        patient_data = self.env["clinic.patient"].search_read(
-            [("id", "in", patient_ids)],
-            ["id", "name", "gender", "mrn", "remaining_sessions"]
+        patient_data = self.env["clinic.patient"].sudo().search_read(
+            [("id", "in", patient_ids)], ["id", "name", "gender", "mrn", "remaining_sessions"]
         ) if patient_ids else []
         patient_map = {p["id"]: p for p in patient_data}
-
-        # Get enrollment data for KPIs
-
-        # Format appointments for display
 
         slot_dict = dict(self._fields["slot_type"].selection)
         formatted_appointments = []
         scheduled_clinic_hv = 0
         scheduled_self = 0
+        now_utc = datetime.utcnow()
 
-        now_utc = datetime.utcnow()  # For live tracking
         for app in all_apps_to_render:
             is_other_clinic = (app.clinic_id.id != clinic_id)
             local_time = fields.Datetime.context_timestamp(self, app.start_datetime) if app.start_datetime else False
@@ -1238,44 +1217,40 @@ class ClinicScheduleAppointment(models.Model):
             e_time_str = fields.Datetime.context_timestamp(self, app.end_datetime).strftime(
                 "%I:%M %p") if app.end_datetime else ""
 
-            # THE GRID FIX: Snap to 10-minute boundary to prevent table breakage
             if local_time:
                 snapped_minute = (local_time.minute // 10) * 10
                 slot_key = f"{local_time.hour:02d}:{snapped_minute:02d}"
             else:
                 slot_key = "00:00"
 
-                # THE SPAN FIX: Use round() to prevent floating point duration loss (e.g. 59.99 mins)
             if app.end_datetime and app.start_datetime:
                 duration_mins = round((app.end_datetime - app.start_datetime).total_seconds() / 60.0)
             else:
                 duration_mins = 10
             col_span = max(1, int(duration_mins) // 10)
 
-            # ... (keep p_gender, p_name, p_mrn logic here) ...
+            # ==========================================
+            # 4. PAYLOAD SANITIZATION (Data Leak Prevention)
+            # ==========================================
             p_gender, raw_p_gen, p_name, p_mrn = "", False, "", ""
             p_info = None
-            if app.patient_id and app.patient_id.id in patient_map:
+
+            # We ONLY map patient data if the user is authorized for this clinic.
+            # If it's a cross-clinic record, it stays completely blank.
+            if not is_other_clinic and app.patient_id and app.patient_id.id in patient_map:
                 p_info = patient_map[app.patient_id.id]
                 p_name = p_info.get("name") or ""
                 p_mrn = p_info.get("mrn") or ""
                 g_val = (p_info.get("gender") or "").lower()
                 if g_val in ["m", "f"]:
-                    p_gender = gender_map[g_val]
+                    p_gender = " (M)" if g_val == "m" else " (F)"
                     raw_p_gen = g_val
 
-            # DYNAMIC IN-PROGRESS AUTOMATION
             display_state = app.attendance_state
             if display_state == 'scheduled' and app.start_datetime and app.end_datetime:
                 if app.start_datetime <= now_utc <= app.end_datetime:
                     display_state = 'in_progress'
 
-            display_state = app.attendance_state
-            if display_state == 'scheduled' and app.start_datetime and app.end_datetime:
-                if app.start_datetime <= now_utc <= app.end_datetime:
-                    display_state = 'in_progress'
-
-            # ... (keep requires_reallotment logic here) ...
             requires_reallotment = False
             if not is_other_clinic:
                 if app.therapist_id:
@@ -1307,37 +1282,34 @@ class ClinicScheduleAppointment(models.Model):
                 "col_span": col_span,
                 "remaining_sessions": p_info.get("remaining_sessions", 0) if p_info else 0,
                 "time_range": f"{s_time_str} - {e_time_str}" if s_time_str else "",
-                "attendance_state": display_state,  # INJECT DYNAMIC STATE
+                "attendance_state": display_state,
                 "requires_reallotment": requires_reallotment,
                 "notification_status": app.notification_status,
                 "is_other_clinic": is_other_clinic,
+                # Safe because we pulled the record with sudo, but we scrubbed the patient info above
                 "other_clinic_name": app.clinic_id.name if is_other_clinic else ""
             })
 
         # Calculate KPIs (local clinic only)
-
         scheduled_patient_ids = set(
-            app.patient_id.id for app in appointments_raw
-            if app.slot_type == "patient" and app.therapist_id
-        )
-
+            app.patient_id.id for app in appointments_raw if app.slot_type == "patient" and app.therapist_id)
         total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
         outstanding_count = len(total_eligible_patients - scheduled_patient_ids)
-
         fixed_count = sum(1 for t in assigned_therapists if t.designation == 'fixed')
         floater_count = sum(1 for t in assigned_therapists if t.designation in ['floater', 'hv'])
-
         active_capacity_therapists = [t for t in assigned_therapists if not t.is_buffer]
         working_count = len([t for t in active_capacity_therapists if
                              not state_map.get(t.id) or state_map.get(t.id).action_type not in ["no_show", "wo",
                                                                                                 "leave"]])
         total_capacity_mins = working_count * 15 * 60
+
         total_booked_mins = 0
         for app in appointments_raw:
             if app.slot_type == "patient" and app.therapist_id and not app.therapist_id.is_buffer:
                 duration = (
-                                   app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
+                                       app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
                 total_booked_mins += duration
+
         utilization_pct = round((total_booked_mins / total_capacity_mins) * 100) if total_capacity_mins > 0 else 0
 
         return {
@@ -1390,7 +1362,7 @@ class ClinicScheduleAppointment(models.Model):
     @api.model
     def get_roster_data(self, target_date=None):
         clinics = self.env['clinic.clinic'].sudo().search_read([], ['id', 'name'])
-        therapist_records = self.env['clinic.therapist'].search([('active', '=', True)])
+        therapist_records = self.env['clinic.therapist'].sudo().search([('active', '=', True)])
         clinic_active_floaters = {}
         if target_date:
             start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
