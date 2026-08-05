@@ -734,6 +734,16 @@ class OperationalFundDisbursement(models.Model):
     is_system_generated = fields.Boolean(string="System Generated", default=False, readonly=True, copy=False)
     has_pending_allocation = fields.Boolean(string="Has Pending Funds", compute='_compute_has_pending_allocation')
 
+    is_receipt_pdf = fields.Boolean(compute='_compute_document_file_types')
+    is_signed_voucher_pdf = fields.Boolean(compute='_compute_document_file_types')
+
+    @api.depends('receipt_filename', 'signed_voucher_filename')
+    def _compute_document_file_types(self):
+        for rec in self:
+            rec.is_receipt_pdf = bool(rec.receipt_filename and rec.receipt_filename.lower().endswith('.pdf'))
+            rec.is_signed_voucher_pdf = bool(
+                rec.signed_voucher_filename and rec.signed_voucher_filename.lower().endswith('.pdf'))
+
     @api.depends('clinic_id')
     def _compute_has_pending_allocation(self):
         # Optimization: Fetch all pending allocations in a single query instead of a loop
