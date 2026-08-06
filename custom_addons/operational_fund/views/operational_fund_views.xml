@@ -129,22 +129,22 @@
         <field name="arch" type="xml">
             <form string="Operational Fund Disbursement">
                     <header>
-                        <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
+                            <button name="action_print_voucher" string="1. Print Voucher" type="object" class="btn-secondary" invisible="state == 'refunded'"/>
 
-                        <!-- STANDARD SUBMIT (For Manual Vouchers if draft ever applies) -->
-                        <button name="action_submit_for_approval" string="Submit for Approval" type="object" class="oe_highlight" invisible="state != 'draft' or has_pending_allocation"/>
+                            <!-- PATH A: Mark as PAID (Bypass) -->
+                            <button name="action_mark_paid_wizard" string="Mark as PAID" type="object" class="btn-success text-uppercase fw-bold" invisible="is_frozen == True"/>
 
-                        <!-- TIER 1 SYSTEM APPROVAL -->
-                        <button name="action_approve_system_voucher" string="Approve Verified Matrix Payout" type="object" class="btn-success fw-bold text-uppercase" invisible="state not in ('waiting', 'draft') or is_system_generated == False" groups="operational_fund.group_op_fund_custodian"/>
+                            <!-- PATH B: Mark as UNPAID (Route Matrix) -->
+                            <!-- PATH B: Mark as UNPAID (Route Matrix) -->
+<button name="action_submit_for_approval" string="Mark as UNPAID (Route for Approval)" type="object" class="btn-warning text-uppercase fw-bold" invisible="is_frozen == True"/>
 
-                        <!-- STANDARD TIER 2 MANAGER APPROVAL & REJECTION -->
-                        <button name="action_approve" string="Manager Approve" type="object" class="btn-success" invisible="state not in ('waiting', 'draft') or is_system_generated == True" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+                            <!-- Keep your existing Manager Approve/Reject buttons here... -->
 
-                        <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state not in ('waiting', 'draft')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
-
-                        <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
+                            <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
                     </header>
                 <sheet>
+                    <field name="is_frozen" invisible="1"/>
+
                     <field name="has_pending_allocation" invisible="1"/>
                     <field name="is_system_generated" invisible="1"/>
 
@@ -176,35 +176,52 @@
                             <field name="date" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="amount" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                         </group>
-                        <group string="Expense Routing">
-                            <field name="show_employee_payee" invisible="1"/>
-                            <field name="show_therapist_name_input" invisible="1"/>
-                            <field name="show_vendor_payee" invisible="1"/>
-                            <field name="show_clinic_transfer" invisible="1"/>
-                            <field name="show_home_visit" invisible="1"/>
-                            <field name="show_therapist_role" invisible="1"/>
-                            <field name="show_travel_type" invisible="1"/>
-                            <field name="show_office_type" invisible="1"/>
-                            <field name="show_other_expense" invisible="1"/>
+                                                   <group string="Expense Routing">
+                                <field name="show_employee_payee" invisible="1"/>
+                                <field name="show_therapist_name_input" invisible="1"/>
+                                <field name="show_vendor_payee" invisible="1"/>
+                                <field name="show_clinic_transfer" invisible="1"/>
+                                <field name="show_home_visit" invisible="1"/>
+                                <field name="show_therapist_role" invisible="1"/>
+                                <field name="show_travel_type" invisible="1"/>
+                                <field name="show_office_type" invisible="1"/>
+                                <field name="show_other_expense" invisible="1"/>
 
-                            <field name="expense_category" required="not category" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
-                            <field name="therapist_role" invisible="not show_therapist_role" required="show_therapist_role" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
-                            <field name="travel_type" invisible="not show_travel_type" required="show_travel_type" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
-                            <field name="office_expense_type" invisible="not show_office_type" required="show_office_type" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
+                                <field name="expense_category" required="not category" readonly="is_frozen"/>
+                                <field name="therapist_role" invisible="not show_therapist_role" required="show_therapist_role" readonly="is_frozen"/>
+                                <field name="travel_type" invisible="not show_travel_type" required="show_travel_type" readonly="is_frozen"/>
+                                <field name="office_expense_type" invisible="not show_office_type" required="show_office_type" readonly="is_frozen"/>
+                                <field name="therapist_name" string="Therapist (Legacy)" invisible="not show_therapist_name_input or not therapist_name" readonly="1"/>
+                                <field name="vendor_name" string="Vendor (Legacy)" invisible="not show_vendor_payee or not vendor_name" readonly="1"/>
 
-                            <field name="therapist_name" string="Therapist (Legacy)" invisible="not show_therapist_name_input or not therapist_name" readonly="1"/>
-                            <field name="vendor_name" string="Vendor (Legacy)" invisible="not show_vendor_payee or not vendor_name" readonly="1"/>
+                                <!-- 1. CORRECTLY PLACED THERAPIST DROPDOWN -->
+                                <field name="allowed_therapist_ids" invisible="1"/>
+                                <field name="therapist_ref_id" string="Select Therapist"
+                                       invisible="not show_therapist_name_input or therapist_name"
+                                       required="show_therapist_name_input and not therapist_name"
+                                       readonly="is_frozen"
+                                       options="{'no_create': True, 'no_open': True}"
+                                       domain="[('id', 'in', allowed_therapist_ids)]"/>
 
-                            <field name="therapist_ref_id" string="Select Therapist" invisible="not show_therapist_name_input or therapist_name" required="show_therapist_name_input and not therapist_name" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="vendor_ref_id" string="Select Vendor"
-       invisible="not show_vendor_payee or vendor_name"
-       required="show_vendor_payee and not vendor_name"
-       readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"
-       options="{'no_create': True, 'no_open': True}"
-       domain="['|', ('clinic_ids', '=', False), ('clinic_ids', 'in', clinic_id)]"/>
+                                <!-- 2. UPDATED VENDOR DROPDOWN (Now respects the freeze state) -->
+                                <field name="vendor_ref_id" string="Select Vendor"
+                                       invisible="not show_vendor_payee or vendor_name"
+                                       required="show_vendor_payee and not vendor_name"
+                                       readonly="is_frozen"
+                                       options="{'no_create': True, 'no_open': True}"
+                                       domain="['|', ('clinic_ids', '=', False), ('clinic_ids', 'in', clinic_id)]"/>
 
-                            <field name="other_expense_details" invisible="not show_other_expense" required="show_other_expense" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
-                        </group>
+                                <!-- 3. NEATLY STACKED AUTO-POPULATED FIELDS -->
+                                <!-- 3. NEATLY STACKED AUTO-POPULATED FIELDS (Permanently Locked) -->
+                                <field name="therapist_ved_number" invisible="not therapist_ref_id" readonly="1" force_save="1"/>
+                                <field name="therapist_phone" invisible="not therapist_ref_id" readonly="1" force_save="1"/>
+                                <field name="bank_account_name" invisible="not therapist_ref_id and not vendor_ref_id" readonly="1" force_save="1"/>
+                                <field name="bank_account_number" invisible="not therapist_ref_id and not vendor_ref_id" readonly="1" force_save="1"/>
+                                <field name="bank_ifsc_code" invisible="not therapist_ref_id and not vendor_ref_id" readonly="1" force_save="1"/>
+
+                                <field name="who_paid" invisible="state != 'paid'" readonly="1"/>
+                                <field name="other_expense_details" invisible="not show_other_expense" required="show_other_expense" readonly="is_frozen"/>
+                            </group>
                     </group>
 
                     <group string="Clinic Transfer Details" invisible="not show_clinic_transfer">
@@ -238,6 +255,9 @@
                         <group>
                             <field name="signed_voucher_file" filename="signed_voucher_filename" string="Signed Voucher Asset" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="signed_voucher_filename" invisible="1"/>
+                        </group>
+                        <group>
+                        <field name="proof_attachment_ids" widget="many2many_binary" string="Additional Proofs" readonly="is_frozen"/>
                         </group>
                     </group>
 
@@ -899,6 +919,27 @@ action = records.filtered_domain([('state', '=', 'paid')]).action_bulk_download_
         <field name="res_model">operational.fund.utr.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+    </record>
+
+    <record id="view_op_fund_mark_paid_wizard_form" model="ir.ui.view">
+    <field name="name">operational.fund.mark.paid.wizard.form</field>
+    <field name="model">operational.fund.mark.paid.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Mark Voucher as PAID">
+            <div class="alert alert-success" role="alert">
+                <i class="fa fa-money"></i> This will bypass the approval routing matrix and immediately mark this voucher as Paid.
+            </div>
+            <group>
+                <field name="disbursement_id" invisible="1"/>
+                <field name="who_paid" placeholder="Enter the name of the person who paid..."/>
+                <field name="proof_attachment_ids" widget="many2many_binary"/>
+            </group>
+            <footer>
+                <button name="action_confirm_paid" string="Confirm Payment" type="object" class="btn-success"/>
+                <button string="Cancel" class="btn-secondary" special="cancel"/>
+            </footer>
+        </form>
+    </field>
     </record>
 
 </odoo>
