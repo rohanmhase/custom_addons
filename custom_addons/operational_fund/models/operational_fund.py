@@ -935,29 +935,53 @@ class OperationalFundDisbursement(models.Model):
             # Bypass the standard manager routing and auto-approve
             rec.action_approve()
 
-    @api.depends('clinic_id')
+    @api.depends('clinic_id', 'date')
     def _compute_allowed_therapists(self):
         """
-        Dynamically fetches therapists from the clinic.therapist table.
-        Defensively checks the database schema to determine how therapists are linked
-        to clinics (Many2one vs Many2many) to prevent any XML or Python crashes.
+        Daily Roster Scanner: Dynamically fetches therapists allowed for this clinic today.
+        Combines statically assigned therapists + floaters scheduled for sessions today.
         """
         for rec in self:
-            if rec.clinic_id:
-                Therapist = self.env['clinic.therapist'].sudo()
-                domain = []
-
-                # Check the actual database schema safely
-                if 'clinic_ids' in Therapist._fields:
-                    # Therapist can belong to multiple clinics
-                    domain = ['|', ('clinic_ids', '=', False), ('clinic_ids', 'in', rec.clinic_id.id)]
-                elif 'clinic_id' in Therapist._fields:
-                    # Therapist belongs to a single clinic
-                    domain = ['|', ('clinic_id', '=', False), ('clinic_id', '=', rec.clinic_id.id)]
-
-                rec.allowed_therapist_ids = Therapist.search(domain)
-            else:
+            if not rec.clinic_id:
                 rec.allowed_therapist_ids = False
+                continue
+
+            Therapist = self.env['clinic.therapist'].sudo()
+            allowed_ids = set()
+
+            # 1. Fetch Therapists scheduled for sessions at this clinic ON THIS EXACT DATE
+            if 'patient.session' in self.env and rec.date:
+                sessions = self.env['patient.session'].sudo().search([
+                    ('session_date', '=', rec.date),
+                    '|',
+                    ('therapy_clinic_id', '=', rec.clinic_id.id),
+                    ('patient_id.clinic_id', '=', rec.clinic_id.id)
+                ])
+                allowed_ids.update(sessions.mapped('therapist_id').ids)
+
+            # 2. Fetch Therapists statically assigned to this clinic (Schema Safe Fallback)
+            m2m_field = None
+            m2o_field = None
+            for field_name, field_def in Therapist._fields.items():
+                if getattr(field_def, 'comodel_name', '') == 'clinic.clinic':
+                    if field_def.type == 'many2many':
+                        m2m_field = field_name
+                    elif field_def.type == 'many2one':
+                        m2o_field = field_name
+
+            target_field = m2m_field or m2o_field
+            if target_field:
+                if Therapist._fields[target_field].type == 'many2many':
+                    static_therapists = Therapist.search([(target_field, 'in', rec.clinic_id.id)])
+                else:
+                    static_therapists = Therapist.search([(target_field, '=', rec.clinic_id.id)])
+                allowed_ids.update(static_therapists.ids)
+
+            # 3. Assign combined results. (Failsafe: If empty, allow all to prevent hard blocking)
+            if allowed_ids:
+                rec.allowed_therapist_ids = Therapist.browse(list(allowed_ids))
+            else:
+                rec.allowed_therapist_ids = Therapist.search([])
 
     @api.depends('date')
     def _compute_is_today(self):
