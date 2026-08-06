@@ -50,7 +50,7 @@
               name="Configuration"
               parent="menu_operational_fund_root"
               sequence="100"
-              groups="operational_fund.group_op_fund_controller"/>
+              groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
 
     <menuitem id="menu_op_fund_settings"
