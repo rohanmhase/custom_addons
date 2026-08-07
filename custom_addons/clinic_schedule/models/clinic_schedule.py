@@ -107,6 +107,11 @@ class ClinicTherapist(models.Model):
             ))
         return True
 
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True
 
 class ClinicTherapistDailyState(models.Model):
     _name = 'clinic.therapist.daily.state'
