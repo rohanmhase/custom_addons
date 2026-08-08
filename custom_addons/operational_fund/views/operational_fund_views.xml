@@ -277,9 +277,9 @@
 
                     <notebook>
     <!-- Tab 1: Context & Business Purpose -->
-    <page string="Business Purpose">
-        <field name="description" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" placeholder="Specify exact context parameters..."/>
-    </page>
+<!--    <page string="Business Purpose">-->
+<!--        <field name="description" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" placeholder="Specify exact context parameters..."/>-->
+<!--    </page>-->
 
     <!-- Tab 2: Full-Width Signed Voucher Preview -->
     <page string="Signed Voucher Asset" invisible="not signed_voucher_file">
@@ -319,6 +319,13 @@
             <field name="old_signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
         </div>
     </page>
+        <page string="Additional Proofs" name="additional_proofs">
+            <div class="alert alert-info" role="alert">
+                Upload any extra receipts, chat screenshots, or supporting documents here.
+            </div>
+            <!-- The many2many_binary widget creates a clean drag-and-drop file upload interface -->
+            <field name="proof_attachment_ids" widget="many2many_binary"/>
+        </page>
 </notebook>
 
                 </sheet>

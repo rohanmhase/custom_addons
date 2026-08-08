@@ -107,6 +107,21 @@ class ClinicTherapist(models.Model):
             ))
         return True
 
+    @api.model
+    def _cron_reset_daily_floaters(self):
+        """
+        Runs nightly. Strips the temporary branch allocations from all pan-India
+        floaters so they can be freshly requested and routed the next day.
+        """
+        floaters = self.search([
+            ('designation', 'in', ['floater', 'hv']),
+            ('allowed_branch_ids', '!=', False)
+        ])
+        for floater in floaters:
+            # (5, 0, 0) is the ORM command to clear the Many2many relation entirely
+            floater.write({'allowed_branch_ids': [(5, 0, 0)]})
+        _logger.info(f"Nightly Matrix Reset: Cleared branch assignments for {len(floaters)} floaters.")
+
     def unlink(self):
         for record in self:
             record.active = False
@@ -1338,21 +1353,37 @@ class ClinicScheduleAppointment(models.Model):
     def get_clinic_smart_view(self, clinic_id, target_date):
         if not clinic_id or not target_date: return {}
         clinic_id = int(clinic_id)
-        start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
-        end_day = datetime.combine(fields.Date.from_string(target_date), time.max)
-        patient_apps = self.search(
-            [('clinic_id', '=', clinic_id), ('start_datetime', '>=', start_day), ('end_datetime', '<=', end_day),
-             ('slot_type', '=', 'patient')])
+
+        # --- FIX: Strict Local to UTC Time Boundary Conversion ---
+        target_date_obj = fields.Date.from_string(target_date)
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+
+        start_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+
+        start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+        # Apply UTC Boundaries to DB Query
+        patient_apps = self.search([
+            ('clinic_id', '=', clinic_id),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc),
+            ('slot_type', '=', 'patient')
+        ])
+
         daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
         absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
         assigned_staff = self.env['clinic.therapist'].search(
             [('active', '=', True), '|', ('allowed_branch_ids', 'in', clinic_id), ('is_buffer', '=', True)])
+
         active_capacity_staff = assigned_staff.filtered(lambda t: t.id not in absent_staff_ids and not t.is_buffer)
         booked_t_ids = patient_apps.mapped('therapist_id.id')
         free_staff = active_capacity_staff.filtered(lambda t: t.id not in booked_t_ids)
         eligible_patient_ids = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
         unallotted_count = len(
             eligible_patient_ids - set(patient_apps.filtered(lambda a: a.therapist_id).mapped('patient_id.id')))
+
         return {
             'total_scheduled_today': len(patient_apps.filtered(lambda a: a.therapist_id)),
             'clinic_visits_today': len(patient_apps.filtered(lambda a: a.visit_type == 'clinic' and a.therapist_id)),
@@ -1609,65 +1640,77 @@ class ClinicTherapistImportLog(models.Model):
         self.write({'state': 'done', 'records_processed': counter})
 
 
-class ClinicFloaterRequestWizard(models.TransientModel):
-    _name = 'clinic.floater.request.wizard'
-    _description = 'Request Floater Therapist Wizard'
+def action_submit_request(self):
+    self.ensure_one()
+    Therapist = self.env['clinic.therapist']
 
-    clinic_id = fields.Many2one('clinic.clinic', string='Clinic', required=True)
-    target_date = fields.Date(string='Target Date', required=True)
-    gender = fields.Selection([('m', 'Male'), ('f', 'Female')], string='Required Gender', required=True)
+    # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
+    self.clinic_id.with_for_update().read(['id'])
 
-    def action_submit_request(self):
-        self.ensure_one()
-        Therapist = self.env['clinic.therapist']
+    # 2. Enforce the Max 3 limit per gender per day safely
+    existing_requests = Therapist.search_count([
+        ('is_floater_request', '=', True),
+        ('request_clinic_id', '=', self.clinic_id.id),
+        ('request_date', '=', self.target_date),
+        ('gender', '=', self.gender),
+        ('active', '=', True)
+    ])
 
-        # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
-        self.clinic_id.with_for_update().read(['id'])
+    if existing_requests >= 3:
+        gender_str = dict(self._fields['gender'].selection).get(self.gender)
+        raise ValidationError(_(
+            f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} floaters for this date.\n"
+            "You cannot request more than 3 per gender."
+        ))
 
-        # 2. Enforce the Max 3 limit per gender per day safely
-        existing_requests = Therapist.search_count([
-            ('is_floater_request', '=', True),
-            ('request_clinic_id', '=', self.clinic_id.id),
-            ('request_date', '=', self.target_date),
-            ('gender', '=', self.gender),
-            ('active', '=', True)
-        ])
+    # 3. Create the Placeholder Therapist Row
+    gender_label = "M" if self.gender == 'm' else "F"
+    placeholder_name = f"Requested Floater ({gender_label})"
 
-        if existing_requests >= 3:
-            gender_str = dict(self._fields['gender'].selection).get(self.gender)
-            raise ValidationError(_(
-                f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} floaters for this date.\n"
-                "You cannot request more than 3 per gender."
-            ))
+    # FIX 1: Generate a highly unique Vendor ID combining Timestamp + Clinic ID
+    unique_suffix = f"{fields.Datetime.now().strftime('%H%M%S')}_{self.clinic_id.id}"
 
-        # 2. Create the Placeholder Therapist Row
-        gender_label = "M" if self.gender == 'm' else "F"
-        placeholder_name = f"Requested Floater ({gender_label})"
+    placeholder = Therapist.create({
+        'name': placeholder_name,
+        'designation': 'floater',
+        'gender': self.gender,
+        'is_floater_request': True,
+        'request_clinic_id': self.clinic_id.id,
+        'request_date': self.target_date,
+        'request_state': 'pending',
+        'allowed_branch_ids': [(4, self.clinic_id.id)],
+        'vendor_id': f'PENDING_HO_{unique_suffix}',  # Safe from DB crashes
+        'contact_number': '0000000000',
+    })
 
-        # FIX: Generate a highly unique Vendor ID so the SQL constraint doesn't crash on multiple requests!
-        unique_suffix = fields.Datetime.now().strftime('%H%M%S')
+    # FIX 2: Dynamic Regional Manager Routing
+    target_region = self.clinic_id.region_id
+    all_managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
+    regional_managers = self.env['res.users']
 
-        placeholder = Therapist.create({
-            'name': placeholder_name,
-            'designation': 'floater',
-            'gender': self.gender,
-            'is_floater_request': True,
-            'request_clinic_id': self.clinic_id.id,
-            'request_date': self.target_date,
-            'request_state': 'pending',
-            'allowed_branch_ids': [(4, self.clinic_id.id)],
-            'vendor_id': f'PENDING_HO_{unique_suffix}',  # Dynamic ID prevents PostgreSQL duplicate key crash
-            'contact_number': '0000000000',  # FIX: Bypasses the mandatory phone number validation
-        })
+    if target_region:
+        # Safely cross-reference the target region with the manager's assigned regions
+        # without hardcoding dependencies on other modules.
+        for m in all_managers:
+            if hasattr(m, 'region_ids') and target_region.id in m.region_ids.ids:
+                regional_managers |= m
+            elif hasattr(m, 'region_id') and m.region_id.id == target_region.id:
+                regional_managers |= m
+            elif hasattr(m, 'managed_region_ids') and target_region.id in m.managed_region_ids.ids:
+                regional_managers |= m
 
-        # 3. Notify Managers via To-Do Activity (Merged Access)
-        managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
-        for manager in managers:
-            placeholder.activity_schedule(
-                'mail.activity_data_todo',
-                user_id=manager.id,
-                summary='Floater Request Requires Substitution',
-                note=f"<b>{self.clinic_id.name}</b> has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater on the Matrix Board."
-            )
+    # Fallback: If the region has no assigned manager, notify all HO managers
+    users_to_notify = regional_managers if regional_managers else all_managers
 
-        return {'type': 'ir.actions.act_window_close'}
+    # 4. Dispatch the To-Do Activity
+    region_name_str = target_region.name if target_region else 'Unassigned'
+    for user in users_to_notify:
+        placeholder.activity_schedule(
+            'mail.activity_data_todo',
+            user_id=user.id,
+            summary=f'Floater Request: {self.clinic_id.name}',
+            note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. "
+                 f"Please substitute this request with a real floater on the Matrix Board."
+        )
+
+    return {'type': 'ir.actions.act_window_close'}
