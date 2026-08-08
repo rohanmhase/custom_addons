@@ -122,6 +122,11 @@ class ClinicTherapist(models.Model):
             floater.write({'allowed_branch_ids': [(5, 0, 0)]})
         _logger.info(f"Nightly Matrix Reset: Cleared branch assignments for {len(floaters)} floaters.")
 
+    def unlink(self):
+        for record in self:
+            record.active = False
+        # Do not call super() → prevents actual deletion
+        return True
 
 class ClinicTherapistDailyState(models.Model):
     _name = 'clinic.therapist.daily.state'
