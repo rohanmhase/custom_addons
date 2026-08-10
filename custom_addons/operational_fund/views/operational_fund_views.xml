@@ -139,7 +139,8 @@
 <button name="action_submit_for_approval" string="Mark as UNPAID (Route for Approval)" type="object" class="btn-warning text-uppercase fw-bold" invisible="is_frozen == True"/>
 
                             <!-- Keep your existing Manager Approve/Reject buttons here... -->
-
+<button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
+<button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>
                             <field name="state" widget="statusbar" statusbar_visible="draft,waiting,approved,paid,refunded"/>
                     </header>
                 <sheet>
