@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Top-bar: Inventory > Stock Audit (beside Stock Confirmation) -->
+    <menuitem id="menu_stock_audit_wizard"
+              name="Stock Audit"
+              parent="stock.menu_stock_root"
+              action="action_stock_audit_wizard"
+              sequence="90"
+              groups="stock.group_stock_manager"/>
+
+    <!-- Configuration > Stock Audit (non-clickable section heading) -->
+    <menuitem id="menu_stock_audit_section"
+              name="Stock Audit"
+              parent="stock.menu_stock_config_settings"
+              sequence="200"
+              groups="stock.group_stock_manager"/>
+
+    <!-- Configuration > Stock Audit > Audit Regions -->
+    <menuitem id="menu_stock_audit_region"
+              name="Audit Regions"
+              parent="menu_stock_audit_section"
+              action="action_stock_audit_region"
+              sequence="10"
+              groups="stock.group_stock_manager"/>
+
+    <!-- Configuration > Stock Audit > Audit Snapshots -->
+    <menuitem id="menu_stock_audit_snapshot"
+              name="Audit Snapshots"
+              parent="menu_stock_audit_section"
+              action="action_stock_audit_snapshot"
+              sequence="20"
+              groups="stock.group_stock_manager"/>
+
+    <!-- Configuration > Stock Audit > Stock Audit Configuration -->
+    <menuitem id="menu_stock_audit_config"
+              name="Stock Audit Configuration"
+              parent="menu_stock_audit_section"
+              action="action_stock_audit_config_singleton"
+              sequence="30"
+              groups="base.group_system"/>
+
+</odoo>

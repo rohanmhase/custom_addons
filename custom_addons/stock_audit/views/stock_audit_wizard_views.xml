@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Wizard Form -->
+    <record id="view_stock_audit_wizard_form" model="ir.ui.view">
+        <field name="name">stock.audit.wizard.form</field>
+        <field name="model">stock.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Stock Audit">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="filter_type" widget="radio"/>
+                            <field name="region_id"
+                                   invisible="filter_type != 'region'"
+                                   required="filter_type == 'region'"/>
+                            <field name="warehouse_ids"
+                                   widget="many2many_tags"
+                                   invisible="filter_type != 'warehouse'"
+                                   required="filter_type == 'warehouse'"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="Generate Report" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_stock_audit_wizard" model="ir.actions.act_window">
+        <field name="name">Stock Audit</field>
+        <field name="res_model">stock.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Result Tree -->
+    <record id="view_stock_audit_report_line_tree" model="ir.ui.view">
+        <field name="name">stock.audit.report.line.tree</field>
+        <field name="model">stock.audit.report.line</field>
+        <field name="arch" type="xml">
+            <tree string="Stock Audit Report" create="false" edit="false" delete="false">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="opening_qty" sum="Opening"/>
+                <field name="opening_rate" optional="hide"/>
+                <field name="opening_amt" optional="hide" sum="Op Amt"/>
+                <field name="issue_qty" sum="Issue"/>
+                <field name="issue_rate" optional="hide"/>
+                <field name="issue_amt" optional="hide" sum="Iss Amt"/>
+                <field name="receipt_qty" sum="Receipt"/>
+                <field name="receipt_rate" optional="hide"/>
+                <field name="receipt_amt" optional="hide" sum="Rec Amt"/>
+                <field name="sale_qty" sum="Sale"/>
+                <field name="sale_rate" optional="hide"/>
+                <field name="sale_amt" optional="hide" sum="Sale Amt"/>
+                <field name="closing_qty" sum="Closing"/>
+                <field name="closing_rate" optional="hide"/>
+                <field name="closing_amt" optional="hide" sum="Cl Amt"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Result Search (group by warehouse/product) -->
+    <record id="view_stock_audit_report_line_search" model="ir.ui.view">
+        <field name="name">stock.audit.report.line.search</field>
+        <field name="model">stock.audit.report.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_warehouse" string="Warehouse"
+                            context="{'group_by': 'warehouse_id'}"/>
+                    <filter name="group_product" string="Product"
+                            context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_audit_snapshot_tree" model="ir.ui.view">
+        <field name="name">stock.audit.snapshot.tree</field>
+        <field name="model">stock.audit.snapshot</field>
+        <field name="arch" type="xml">
+            <tree string="Snapshots" create="false">
+                <field name="snapshot_date"/>
+                <field name="line_count"/>
+                <field name="created_by"/>
+                <field name="duration_seconds"/>
+                <field name="create_date"/>
+                <field name="state" decoration-success="state == 'done'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-danger="state == 'failed'" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_stock_audit_snapshot_form" model="ir.ui.view">
+        <field name="name">stock.audit.snapshot.form</field>
+        <field name="model">stock.audit.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="Snapshot" create="false">
+                <header>
+                    <button name="action_rebuild" type="object"
+                            string="Rebuild Snapshot" class="btn-primary"
+                            groups="base.group_system"
+                            confirm="This will delete existing lines and rebuild. Continue?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="in_progress,done"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="snapshot_date"/>
+                            <field name="created_by"/>
+                            <field name="line_count"/>
+                        </group>
+                        <group>
+                            <field name="duration_seconds"/>
+                            <field name="create_date"/>
+                            <field name="create_uid"/>
+                        </group>
+                    </group>
+                    <group string="Notes" invisible="not note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Lines">
+                            <field name="line_ids" readonly="1">
+                                <tree>
+                                    <field name="product_id"/>
+                                    <field name="warehouse_id"/>
+                                    <field name="company_id"/>
+                                    <field name="qty"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_audit_snapshot_search" model="ir.ui.view">
+        <field name="name">stock.audit.snapshot.search</field>
+        <field name="model">stock.audit.snapshot</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="snapshot_date"/>
+                <filter name="done" string="Done" domain="[('state','=','done')]"/>
+                <filter name="failed" string="Failed" domain="[('state','=','failed')]"/>
+                <filter name="manual" string="Manual" domain="[('created_by','=','manual')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_stock_audit_snapshot" model="ir.actions.act_window">
+        <field name="name">Audit Snapshots</field>
+        <field name="res_model">stock.audit.snapshot</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>
