@@ -1,0 +1,21 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_audit_config_stock_user,stock.audit.config stock user,model_stock_audit_config,stock.group_stock_user,1,0,0,0
+access_stock_audit_config_stock_manager,stock.audit.config stock manager,model_stock_audit_config,stock.group_stock_manager,1,0,0,0
+access_stock_audit_config_system,stock.audit.config system,model_stock_audit_config,base.group_system,1,1,1,0
+
+access_stock_audit_region_stock_user,stock.audit.region stock user,model_stock_audit_region,stock.group_stock_user,1,0,0,0
+access_stock_audit_region_stock_manager,stock.audit.region stock manager,model_stock_audit_region,stock.group_stock_manager,1,1,1,1
+access_stock_audit_region_system,stock.audit.region system,model_stock_audit_region,base.group_system,1,1,1,1
+
+access_stock_audit_snapshot_stock_user,stock.audit.snapshot stock user,model_stock_audit_snapshot,stock.group_stock_user,1,0,0,0
+access_stock_audit_snapshot_stock_manager,stock.audit.snapshot stock manager,model_stock_audit_snapshot,stock.group_stock_manager,1,0,0,0
+access_stock_audit_snapshot_system,stock.audit.snapshot system,model_stock_audit_snapshot,base.group_system,1,1,1,1
+
+access_stock_audit_snapshot_line_stock_user,stock.audit.snapshot.line stock user,model_stock_audit_snapshot_line,stock.group_stock_user,1,0,0,0
+access_stock_audit_snapshot_line_stock_manager,stock.audit.snapshot.line stock manager,model_stock_audit_snapshot_line,stock.group_stock_manager,1,0,0,0
+access_stock_audit_snapshot_line_system,stock.audit.snapshot.line system,model_stock_audit_snapshot_line,base.group_system,1,1,1,1
+
+access_stock_audit_wizard_stock_manager,stock.audit.wizard stock manager,model_stock_audit_wizard,stock.group_stock_manager,1,1,1,1
+access_stock_audit_wizard_system,stock.audit.wizard system,model_stock_audit_wizard,base.group_system,1,1,1,1
+access_stock_audit_report_line_stock_manager,stock.audit.report.line stock manager,model_stock_audit_report_line,stock.group_stock_manager,1,1,1,1
+access_stock_audit_report_line_system,stock.audit.report.line system,model_stock_audit_report_line,base.group_system,1,1,1,1

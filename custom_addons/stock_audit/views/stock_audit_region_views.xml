@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_audit_region_tree" model="ir.ui.view">
+        <field name="name">stock.audit.region.tree</field>
+        <field name="model">stock.audit.region</field>
+        <field name="arch" type="xml">
+            <tree string="Audit Regions">
+                <field name="name"/>
+                <field name="warehouse_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_stock_audit_region_form" model="ir.ui.view">
+        <field name="name">stock.audit.region.form</field>
+        <field name="model">stock.audit.region</field>
+        <field name="arch" type="xml">
+            <form string="Audit Region">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                            invisible="active"/>
+                    <group>
+                        <field name="name"/>
+                        <field name="active" invisible="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Warehouses">
+                            <field name="warehouse_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="company_id"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_audit_region" model="ir.actions.act_window">
+        <field name="name">Audit Regions</field>
+        <field name="res_model">stock.audit.region</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>
