@@ -159,6 +159,25 @@ class PetEscalationTicket(models.Model):
 
 
 # =========================================================================
+# DYNAMIC CALL REASONS MATRIX
+# =========================================================================
+class PETReasonCategory(models.Model):
+    _name = 'pet.reason.category'
+    _description = 'PET Reason Category'
+
+    name = fields.Char(string="Category Name", required=True)
+    active = fields.Boolean(default=True)
+
+
+class PETReason(models.Model):
+    _name = 'pet.reason'
+    _description = 'PET Reason'
+
+    category_id = fields.Many2one('pet.reason.category', string="Category", required=True, ondelete='cascade')
+    name = fields.Char(string="Reason Name", required=True)
+    active = fields.Boolean(default=True)
+
+# =========================================================================
 # THE DIARY SNAPSHOT WIZARD
 # =========================================================================
 class PETFollowupLine(models.Model):
@@ -183,44 +202,110 @@ class PETFollowupLine(models.Model):
     contact_date = fields.Date(string="Date of Contact", default=fields.Date.context_today, required=True)
     user_id = fields.Many2one('res.users', string="Advisor", default=lambda self: self.env.user, readonly=True)
 
-    not_connected = fields.Boolean(string="Not Connected (No Answer)")
+    call_status = fields.Selection([
+        ('connected', 'Call Connected'),
+        ('not_connected', 'Not Connected'),
+        ('call_back', 'Call-Back'),
+        ('wrong_number', 'Wrong Number'),
+        ('switched_off', 'Switched Off'),
+        ('ringing', 'Ringing'),
+        ('voicemail', 'Voicemail'),
+        ('out_of_service', 'Number Out of Service')
+    ], string="Call Status", default='connected', required=True)
 
-    call_tagging = fields.Selection([('refund','Refund'),
-                                     ('staff_behaviour','Staff Behaviour'),
-                                     ('infrastructure','Infrastructure'),
-                                     ('amount_discrepancy', 'Amount Discrepancy'),
-                                     ('emi_issue','EMI Issue'),
-                                     ('odoo_update_missing','Odoo Update Missing'),
-                                     ('improper_consultation','Improper Consultation'),
-                                     ('wrong_commitments', 'Wrong Commitments'),
-                                     ('completed_treatment', 'completed treatment'),
-                                     ('not_happy', 'not happy with treatment'),
-                                     ('no_relief', 'no relief'),
-                                     ('not_interested', 'not interested'),
-                                     ('out_of_station', 'Out of Station'),
-                                     ('call_back', 'Call Back'),
-                                     ('satisfied', 'Satisfied with treatment'),
-                                     ('will_extend', 'Will Extend'),
-                                     ('no_complaint', 'No Complaint'),
-                                     ], string='Call Tagging', required=True)
+    # Dynamic Relational Reasons
+    primary_category_id = fields.Many2one('pet.reason.category', string="Primary Reason Category")
+    primary_reason_id = fields.Many2one('pet.reason', string="Primary Reason",
+                                        domain="[('category_id', '=', primary_category_id)]")
+    secondary_category_id = fields.Many2one('pet.reason.category', string="Secondary Reason Category")
+    secondary_reason_id = fields.Many2one('pet.reason', string="Secondary Reason",
+                                          domain="[('category_id', '=', secondary_category_id)]")
 
-    other_call_tagging = fields.Selection([('refund','Refund'),
-                                     ('staff_behaviour','Staff Behaviour'),
-                                     ('infrastructure','Infrastructure'),
-                                     ('amount_discrepancy', 'Amount Discrepancy'),
-                                     ('emi_issue','EMI Issue'),
-                                     ('odoo_update_missing','Odoo Update Missing'),
-                                     ('improper_consultation','Improper Consultation'),
-                                     ('wrong_commitments', 'Wrong Commitments'),
-                                     ('completed_treatment', 'completed treatment'),
-                                     ('not_happy', 'not happy with treatment'),
-                                     ('no_relief', 'no relief'),
-                                     ('not_interested', 'not interested'),
-                                     ('out_of_station', 'Out of Station'),
-                                     ('call_back', 'Call Back'),
-                                     ('satisfied', 'Satisfied with treatment'),
-                                     ('will_extend', 'Will Extend')
-                                     ], string='Other')
+    role_complaint_against = fields.Selection([
+        ('admin', 'Admin'),
+        ('bm', 'BM'),
+        ('cs', 'CS'),
+        ('rs', 'RS'),
+        ('therapist', 'Therapist'),
+        ('none', 'None')
+    ], string="Role (Complaint Against)", default='none')
+
+    additional_comments = fields.Text(string="Additional Comments")
+
+    # PRESERVED LEGACY FIELDS (Removed required=True to preserve historical data safely)
+    # PRESERVED LEGACY FIELDS (Kept selection tuples intact so ORM registry loads safely)
+    not_connected = fields.Boolean(string="Not Connected (Legacy)")
+    call_tagging = fields.Selection([
+        ('refund', 'Refund'),
+        ('staff_behaviour', 'Staff Behaviour'),
+        ('infrastructure', 'Infrastructure'),
+        ('amount_discrepancy', 'Amount Discrepancy'),
+        ('emi_issue', 'EMI Issue'),
+        ('odoo_update_missing', 'Odoo Update Missing'),
+        ('improper_consultation', 'Improper Consultation'),
+        ('wrong_commitments', 'Wrong Commitments'),
+        ('completed_treatment', 'completed treatment'),
+        ('not_happy', 'not happy with treatment'),
+        ('no_relief', 'no relief'),
+        ('not_interested', 'not interested'),
+        ('out_of_station', 'Out of Station'),
+        ('call_back', 'Call Back'),
+        ('satisfied', 'Satisfied with treatment'),
+        ('will_extend', 'Will Extend'),
+        ('no_complaint', 'No Complaint'),
+    ], string='Call Tagging (Legacy)', required=False)
+
+    other_call_tagging = fields.Selection([
+        ('refund', 'Refund'),
+        ('staff_behaviour', 'Staff Behaviour'),
+        ('infrastructure', 'Infrastructure'),
+        ('amount_discrepancy', 'Amount Discrepancy'),
+        ('emi_issue', 'EMI Issue'),
+        ('odoo_update_missing', 'Odoo Update Missing'),
+        ('improper_consultation', 'Improper Consultation'),
+        ('wrong_commitments', 'Wrong Commitments'),
+        ('completed_treatment', 'completed treatment'),
+        ('not_happy', 'not happy with treatment'),
+        ('no_relief', 'no relief'),
+        ('not_interested', 'not interested'),
+        ('out_of_station', 'Out of Station'),
+        ('call_back', 'Call Back'),
+        ('satisfied', 'Satisfied with treatment'),
+        ('will_extend', 'Will Extend'),
+    ], string='Other (Legacy)', required=False)
+
+    def init(self):
+        super().init()
+        # Backfill call_status for older database records based on legacy not_connected boolean
+        self.env.cr.execute("""
+            UPDATE pet_followup_line 
+            SET call_status = CASE 
+                WHEN not_connected = TRUE THEN 'not_connected'
+                ELSE 'connected'
+            END
+            WHERE call_status IS NULL;
+        """)
+
+    # Clear reasons when category changes to prevent orphan selections
+    @api.onchange('primary_category_id')
+    def _onchange_primary_category_id(self):
+        if self.primary_reason_id and self.primary_reason_id.category_id != self.primary_category_id:
+            self.primary_reason_id = False
+
+    @api.onchange('primary_reason_id')
+    def _onchange_primary_reason_id(self):
+        if self.primary_reason_id:
+            self.primary_category_id = self.primary_reason_id.category_id
+
+    @api.onchange('secondary_category_id')
+    def _onchange_secondary_category_id(self):
+        if self.secondary_reason_id and self.secondary_reason_id.category_id != self.secondary_category_id:
+            self.secondary_reason_id = False
+
+    @api.onchange('secondary_reason_id')
+    def _onchange_secondary_reason_id(self):
+        if self.secondary_reason_id:
+            self.secondary_category_id = self.secondary_reason_id.category_id
 
     start_date = fields.Date(related='pet_record_id.start_date', string="Start Date")
     last_visit_date = fields.Date(related='pet_record_id.last_visit_date', string="Last Visit Date")
@@ -386,15 +471,18 @@ class PETFollowupLine(models.Model):
         records = super().create(vals_list)
         for rec in records:
             if rec.pet_record_id:
+                # Always log the attempt date and next scheduled follow-up
                 update_vals = {
-                    'last_contact_date': rec.contact_date,
+                    'last_attempt_date': rec.contact_date,
                     'actual_next_followup_date': rec.actual_next_followup_date,
                     'action_taken': rec.action_taken,
                     'remarks': rec.remarks,
                 }
 
-                if not rec.not_connected:
+                # Update clinical parameters & true last_contact_date ONLY if connected
+                if rec.call_status == 'connected':
                     update_vals.update({
+                        'last_contact_date': rec.contact_date,
                         'category_id': rec.category_id.id if rec.category_id else False,
                         'subcategory_id': rec.subcategory_id.id if rec.subcategory_id else False,
                         'patient_status': rec.patient_status.id if rec.patient_status else False,
@@ -414,83 +502,35 @@ class PETFollowupLine(models.Model):
                     })
                 rec.pet_record_id.write(update_vals)
 
-                if not rec.not_connected:
+                # DYNAMIC TICKETING: Trigger ticket if a complaint role is selected
+                if rec.call_status == 'connected' and rec.role_complaint_against and rec.role_complaint_against != 'none':
                     latest_bm_log = self.env['bm.followup.log'].search(
                         [('patient_id', '=', rec.pet_record_id.patient_id.id)], order='timestamp desc', limit=1)
 
-                    if latest_bm_log:
-                        # 1. SYNC REVENUE INSTANTLY
-                        if rec.discount_offered > 0:
-                            latest_bm_log.write({
-                                'pet_discount_offered': rec.discount_offered,
-                                'pet_agent_id': rec.user_id.id
-                            })
+                    t_type = rec.role_complaint_against
+                    assigned_target_id = latest_bm_log.user_id.id if (
+                                t_type == 'bm' and latest_bm_log and latest_bm_log.user_id) else self._discover_and_route_fallback(
+                        rec.pet_record_id.clinic_id)
+                    issue_msg = rec.additional_comments or f"Complaint logged against {t_type.upper()} role."
 
-                    # 2. DYNAMIC BROADCAST TICKETING PIPELINE
-                            # 2. DYNAMIC BROADCAST TICKETING PIPELINE
-                            escalations = [
-                                ('escalate_to_bm', 'bm',
-                                 latest_bm_log.user_id.id if latest_bm_log and latest_bm_log.user_id else self.env.user.id),
-                                ('escalate_to_cs', 'cs', False),
-                                ('escalate_to_admin', 'admin', False),
-                                ('escalate_to_rs', 'rs', False),
-                                ('escalate_to_therapist', 'therapist', False),
-                            ]
+                    new_ticket = self.env['pet.escalation.ticket'].create({
+                        'patient_id': rec.pet_record_id.patient_id.id,
+                        'pet_record_id': rec.pet_record_id.id,
+                        'bm_log_id': latest_bm_log.id if latest_bm_log else False,
+                        'ticket_type': t_type,
+                        'pet_agent_id': rec.user_id.id,
+                        'assigned_bm_id': assigned_target_id,
+                        'issue_description': issue_msg,
+                    })
 
-                            mail_vals_list = []
-                            activity_type_id = self.env.ref('mail.mail_activity_data_todo').id
+                    activity_type_id = self.env.ref('mail.mail_activity_data_todo').id
+                    new_ticket.activity_schedule(
+                        activity_type_id=activity_type_id,
+                        user_id=new_ticket.assigned_bm_id.id,
+                        note=f'<strong>New {t_type.upper()} Escalation:</strong> {issue_msg}',
+                        summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
+                    )
 
-                            for field_name, t_type, default_user_id in escalations:
-                                if getattr(rec, field_name) and rec.escalation_description:
-                                    assigned_target_id = default_user_id if default_user_id else self._discover_and_route_fallback(
-                                        rec.pet_record_id.clinic_id)
-
-                                    new_ticket = self.env['pet.escalation.ticket'].create({
-                                        'patient_id': rec.pet_record_id.patient_id.id,
-                                        'pet_record_id': rec.pet_record_id.id,
-                                        'bm_log_id': latest_bm_log.id if latest_bm_log else False,
-                                        'ticket_type': t_type,
-                                        'pet_agent_id': rec.user_id.id,
-                                        'assigned_bm_id': assigned_target_id,
-                                        'issue_description': rec.escalation_description,
-                                    })
-
-                                    # Safely fetch the label to prevent f-string crashes
-                                    t_label = dict(new_ticket._fields['ticket_type'].selection).get(t_type,
-                                                                                                    'Escalation')
-
-                                    # 1. Schedule To-Do
-                                    new_ticket.activity_schedule(
-                                        activity_type_id=activity_type_id,
-                                        user_id=new_ticket.assigned_bm_id.id,
-                                        note=f'<strong>New {t_label} Escalation:</strong> {rec.escalation_description}',
-                                        summary=f'SLA Ticket Created: {new_ticket.ticket_sequence}'
-                                    )
-
-                                    # 2. Add as follower and post public comment
-                                    target_partner = new_ticket.assigned_bm_id.partner_id.id
-                                    new_ticket.message_subscribe(partner_ids=[target_partner])
-                                    new_ticket.message_post(
-                                        body=f"<h3>New {t_label} Ticket Assigned</h3><p><b>Issue Details:</b> {rec.escalation_description}</p>",
-                                        message_type="comment",
-                                        subtype_xmlid="mail.mt_comment",
-                                        # Changed from mt_note to trigger follower emails
-                                        partner_ids=[target_partner]
-                                    )
-
-                                    # 3. Explicit Email Dispatch Guarantee
-                                    assigned_user = self.env['res.users'].browse(assigned_target_id)
-                                    if assigned_user and assigned_user.email:
-                                        deep_link = f"/web#id={new_ticket.id}&model=pet.escalation.ticket&view_type=form"
-                                        mail_vals_list.append({
-                                            'subject': f'SLA Alert: New {t_label} Ticket ({new_ticket.ticket_sequence})',
-                                            'email_to': assigned_user.email,
-                                            'body_html': f"<h3>New SLA Ticket Assigned</h3><p>A new escalation has been routed to you for patient <b>{new_ticket.patient_id.name}</b>.</p><p><b>Issue:</b> {rec.escalation_description}</p><p><a href='{deep_link}'>Click here to resolve</a></p>",
-                                            'state': 'outgoing',
-                                        })
-
-                            if mail_vals_list:
-                                self.env['mail.mail'].sudo().create(mail_vals_list)
         return records
 
 
@@ -580,6 +620,8 @@ class PETRecord(models.Model):
         [('no_set', 'No follow-up set'), ('overdue', 'Overdue Follow-up'), ('today', 'Due Today'),
          ('on_track', 'On Track')],
         string="Task Status", compute="_compute_all_metrics", store=True, readonly=True, compute_sudo=True)
+
+    last_attempt_date = fields.Date(string="Last Call Attempt Date", tracking=True)
 
     def init(self):
         self.env.cr.execute(

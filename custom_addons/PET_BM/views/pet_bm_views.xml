@@ -58,26 +58,42 @@
                         <group string="LOG INFORMATION">
                             <field name="contact_date" readonly="1" force_save="1"/>
                             <field name="user_id"/>
-                            <field name="not_connected" readonly="is_locked"/>
+                            <field name="call_status" readonly="is_locked" required="1"/>
                             <field name="actual_next_followup_date" required="1" readonly="is_locked"/>
-                            <field name="recommended_next_followup" readonly="1" force_save="1" invisible="not_connected"/>
+                            <field name="recommended_next_followup" readonly="1" force_save="1" invisible="call_status != 'connected'"/>
+                        </group>
+                    </group>
+
+                    <!-- PROPOSED STRUCTURE MATCH -->
+                    <!-- CALL DETAILS & REASONS -->
+                        <group string="CALL DETAILS &amp; REASONS" invisible="call_status != 'connected'">
+                            <group>
+                                <!-- MANDATORY FIELDS -->
+                                <field name="primary_category_id" required="call_status == 'connected'" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="primary_reason_id" required="call_status == 'connected'" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="role_complaint_against" required="call_status == 'connected'"/>
+                            </group>
+                            <group>
+                                <!-- OPTIONAL FIELDS (No required attribute) -->
+                                <field name="secondary_category_id" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="secondary_reason_id" options="{'no_create': True, 'no_open': True}"/>
+                            </group>
+                            <field name="additional_comments" placeholder="Type comments regarding the call or complaint..." colspan="2"/>
                         </group>
 
-                        <group string="Call Tagging">
-                            <field name="call_tagging" readonly="is_locked" required="1" invisible="not_connected"/>
-                            <field name="other_call_tagging" readonly="is_locked" invisible="not_connected"/>
-                        </group>
-
-                        <group string="STATUS UPDATE" invisible="not_connected">
-                            <field name="category_id" required="not not_connected" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
+                    <group string="STATUS UPDATE" invisible="call_status != 'connected'">
+                        <group>
+                            <field name="category_id" required="call_status == 'connected'" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
                             <field name="subcategory_id" domain="[('category_id', '=', category_id)]" readonly="is_locked" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
                             <field name="patient_status" readonly="is_locked" string="Treatment Status" options="{'no_create': True, 'no_open': True}"/>
                             <field name="outcome_status" readonly="is_locked"/>
                             <field name="reason_not_starting_stopping" readonly="is_locked"/>
                         </group>
                     </group>
 
-                    <group string="CLINICAL SNAPSHOT" invisible="not_connected">
+                    <group string="CLINICAL SNAPSHOT" invisible="call_status != 'connected'">
                         <group>
                             <field name="pain_walking_score" readonly="is_locked"/>
                             <field name="pain_resting_score" readonly="is_locked"/>
@@ -89,7 +105,7 @@
                         </group>
                     </group>
 
-                    <group string="FEEDBACK &amp; REFERRALS" invisible="not_connected">
+                    <group string="FEEDBACK &amp; REFERRALS" invisible="call_status != 'connected'">
                         <group>
                             <field name="referral_given" readonly="is_locked"/>
                             <field name="referral_name" invisible="not referral_given" readonly="is_locked"/>
@@ -101,25 +117,8 @@
                         </group>
                     </group>
 
-                    <group string="COMMERCIALS &amp; DISCOUNT" style="background-color:#e8f4f8; border-radius:5px; padding:10px;" invisible="not_connected">
+                    <group string="COMMERCIALS &amp; DISCOUNT" style="background-color:#e8f4f8; border-radius:5px; padding:10px;" invisible="call_status != 'connected'">
                         <field name="discount_offered" readonly="is_locked"/>
-                        <div class="text-muted" colspan="2" invisible="is_locked">
-                            Entering a percentage here (0-100) will automatically calculate and apply the discount to the BM's latest quote!
-                        </div>
-                    </group>
-
-                    <group string="DEPARTMENTAL ESCALATION DASHBOARD" style="background-color:#fff3cd; border-radius:5px; padding:10px;" invisible="not_connected">
-                        <group col="4" colspan="2">
-                            <field name="escalate_to_bm" readonly="is_locked"/>
-                            <field name="escalate_to_cs" readonly="is_locked"/>
-                            <field name="escalate_to_admin" readonly="is_locked"/>
-                            <field name="escalate_to_rs" readonly="is_locked"/>
-                            <field name="escalate_to_therapist" readonly="is_locked"/>
-                        </group>
-                        <field name="escalation_description" placeholder="Provide explicit details regarding the issue. This spins up a 24-Hour strict SLA ticket for the checked department(s)..."
-                               invisible="not escalate_to_bm and not escalate_to_cs and not escalate_to_admin and not escalate_to_rs and not escalate_to_therapist"
-                               required="escalate_to_bm or escalate_to_cs or escalate_to_admin or escalate_to_rs or escalate_to_therapist"
-                               readonly="is_locked"/>
                     </group>
 
                     <group string="LATEST ACTIONS &amp; REMARKS">
@@ -492,5 +491,21 @@
                 records.action_sync_retroactive_todos()
         </field>
     </record>
+
+    <record id="action_pet_reason_category" model="ir.actions.act_window">
+        <field name="name">Reason Categories</field>
+        <field name="res_model">pet.reason.category</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_pet_reason" model="ir.actions.act_window">
+        <field name="name">Reasons</field>
+        <field name="res_model">pet.reason</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_pet_config_root" name="Configuration" parent="menu_pet_escalation_root" sequence="99"/>
+    <menuitem id="menu_pet_reason_category" name="Reason Categories" parent="menu_pet_config_root" action="action_pet_reason_category"/>
+    <menuitem id="menu_pet_reason" name="Reasons" parent="menu_pet_config_root" action="action_pet_reason"/>
 
 </odoo>
