@@ -49,5 +49,75 @@
             <field name="name">Unsatisfied</field>
             <field name="category_id" ref="cat_completed"/>
         </record>
+
+        <!-- ======================================================= -->
+        <!-- CALL REASONS MATRIX SEED DATA                           -->
+        <!-- ======================================================= -->
+
+        <!-- 1. Define All 7 Categories -->
+        <record id="reason_cat_cost" model="pet.reason.category"><field name="name">Cost / Financial</field></record>
+        <record id="reason_cat_infra" model="pet.reason.category"><field name="name">Clinic Infrastructure</field></record>
+        <record id="reason_cat_wait" model="pet.reason.category"><field name="name">Wait Time / Scheduling</field></record>
+        <record id="reason_cat_treatment" model="pet.reason.category"><field name="name">Treatment Related</field></record>
+        <record id="reason_cat_commitment" model="pet.reason.category"><field name="name">Wrong Commitment</field></record>
+        <record id="reason_cat_staff" model="pet.reason.category"><field name="name">Staff / Doctor Behavior</field></record>
+        <record id="reason_cat_misc" model="pet.reason.category"><field name="name">Misc.</field></record>
+
+        <!-- 2. Cost / Financial Reasons -->
+        <record id="rsn_cost_1" model="pet.reason"><field name="name">Cost too high</field><field name="category_id" ref="reason_cat_cost"/></record>
+        <record id="rsn_cost_2" model="pet.reason"><field name="name">Not eligible for EMI</field><field name="category_id" ref="reason_cat_cost"/></record>
+        <record id="rsn_cost_3" model="pet.reason"><field name="name">Wants Mediclaim/insurance coverage</field><field name="category_id" ref="reason_cat_cost"/></record>
+        <record id="rsn_cost_4" model="pet.reason"><field name="name">Refund not processed</field><field name="category_id" ref="reason_cat_cost"/></record>
+        <record id="rsn_cost_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_cost"/></record>
+
+        <!-- 3. Clinic Infrastructure Reasons -->
+        <record id="rsn_infra_1" model="pet.reason"><field name="name">Cleanliness/Hygiene</field><field name="category_id" ref="reason_cat_infra"/></record>
+        <record id="rsn_infra_2" model="pet.reason"><field name="name">Overall clinic maintenance</field><field name="category_id" ref="reason_cat_infra"/></record>
+        <record id="rsn_infra_3" model="pet.reason"><field name="name">AC / ventilation issue</field><field name="category_id" ref="reason_cat_infra"/></record>
+        <record id="rsn_infra_4" model="pet.reason"><field name="name">Bed / pillow quality</field><field name="category_id" ref="reason_cat_infra"/></record>
+        <record id="rsn_infra_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_infra"/></record>
+
+        <!-- 4. Wait Time / Scheduling Reasons -->
+        <record id="rsn_wait_1" model="pet.reason"><field name="name">Long wait for CS consultation</field><field name="category_id" ref="reason_cat_wait"/></record>
+        <record id="rsn_wait_2" model="pet.reason"><field name="name">Long wait for RS / therapy</field><field name="category_id" ref="reason_cat_wait"/></record>
+        <record id="rsn_wait_3" model="pet.reason"><field name="name">Therapy time less than 45 min</field><field name="category_id" ref="reason_cat_wait"/></record>
+        <record id="rsn_wait_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_wait"/></record>
+
+        <!-- 5. Treatment Related Reasons -->
+        <record id="rsn_treat_1" model="pet.reason"><field name="name">No relief felt overall</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_2" model="pet.reason"><field name="name">No relief felt due to therapy gap</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_3" model="pet.reason"><field name="name">Side effects due to medication</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_4" model="pet.reason"><field name="name">Increased pain post-session</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_5" model="pet.reason"><field name="name">Improvement slower than expected</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_6" model="pet.reason"><field name="name">Completed treatment</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_7" model="pet.reason"><field name="name">Satisfied with treatment</field><field name="category_id" ref="reason_cat_treatment"/></record>
+        <record id="rsn_treat_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_treatment"/></record>
+
+        <!-- 6. Wrong Commitment Reasons -->
+        <record id="rsn_commit_1" model="pet.reason"><field name="name">Misinformation on cost/discount</field><field name="category_id" ref="reason_cat_commitment"/></record>
+        <record id="rsn_commit_2" model="pet.reason"><field name="name">Misinformation on EMI</field><field name="category_id" ref="reason_cat_commitment"/></record>
+        <record id="rsn_commit_3" model="pet.reason"><field name="name">Forceful EMI</field><field name="category_id" ref="reason_cat_commitment"/></record>
+        <record id="rsn_commit_4" model="pet.reason"><field name="name">More relief promised</field><field name="category_id" ref="reason_cat_commitment"/></record>
+        <record id="rsn_commit_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_commitment"/></record>
+
+        <!-- 7. Staff / Doctor Behavior Reasons -->
+        <record id="rsn_staff_1" model="pet.reason"><field name="name">Rude/unprofessional tone</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_2" model="pet.reason"><field name="name">Pushy for payment</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_3" model="pet.reason"><field name="name">No dress code/name tag</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_4" model="pet.reason"><field name="name">Therapist assigned to patient changed</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_5" model="pet.reason"><field name="name">Therapist behavior issue</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_6" model="pet.reason"><field name="name">Consultation felt rushed</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_7" model="pet.reason"><field name="name">No x-ray/test asked during consultation</field><field name="category_id" ref="reason_cat_staff"/></record>
+        <record id="rsn_staff_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_staff"/></record>
+
+        <!-- 8. Misc. Reasons -->
+        <record id="rsn_misc_1" model="pet.reason"><field name="name">Odoo data mismatch</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_2" model="pet.reason"><field name="name">Out of station</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_3" model="pet.reason"><field name="name">Not interested anymore</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_4" model="pet.reason"><field name="name">Started treatment somewhere else</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_5" model="pet.reason"><field name="name">Cannot travel to-and-fro to clinic</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_6" model="pet.reason"><field name="name">Will extend</field><field name="category_id" ref="reason_cat_misc"/></record>
+        <record id="rsn_misc_other" model="pet.reason"><field name="name">Other</field><field name="category_id" ref="reason_cat_misc"/></record>
+
     </data>
 </odoo>
