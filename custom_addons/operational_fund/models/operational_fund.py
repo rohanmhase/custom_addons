@@ -855,25 +855,25 @@ class OperationalFundDisbursement(models.Model):
             else:
                 rec.has_pending_allocation = False
 
-    @api.constrains('expense_category', 'therapist_ref_id', 'date', 'is_system_generated')
-    def _prevent_duplicate_allowances(self):
-        """Prevents Clinic Admins from manually creating duplicate OT/Incentives if they already exist."""
-        for rec in self:
-            if not rec.is_system_generated and rec.expense_category in ['incentive',
-                                                                        'overtime'] and rec.therapist_ref_id:
-                existing = self.search([
-                    ('expense_category', '=', rec.expense_category),
-                    ('therapist_ref_id', '=', rec.therapist_ref_id.id),
-                    ('date', '=', rec.date),
-                    ('id', '!=', rec.id),
-                    ('state', '!=', 'rejected')
-                ])
-                if existing:
-                    raise ValidationError(
-                        _("Auditing Lock: An active %s voucher already exists for %s on this date. You cannot create a duplicate manual voucher.") % (
-                            dict(self._fields['expense_category'].selection).get(rec.expense_category),
-                            rec.therapist_ref_id.name
-                        ))
+    # @api.constrains('expense_category', 'therapist_ref_id', 'date', 'is_system_generated')
+    # def _prevent_duplicate_allowances(self):
+    #     """Prevents Clinic Admins from manually creating duplicate OT/Incentives if they already exist."""
+    #     for rec in self:
+    #         if not rec.is_system_generated and rec.expense_category in ['incentive',
+    #                                                                     'overtime'] and rec.therapist_ref_id:
+    #             existing = self.search([
+    #                 ('expense_category', '=', rec.expense_category),
+    #                 ('therapist_ref_id', '=', rec.therapist_ref_id.id),
+    #                 ('date', '=', rec.date),
+    #                 ('id', '!=', rec.id),
+    #                 ('state', '!=', 'rejected')
+    #             ])
+    #             if existing:
+    #                 raise ValidationError(
+    #                     _("Auditing Lock: An active %s voucher already exists for %s on this date. You cannot create a duplicate manual voucher.") % (
+    #                         dict(self._fields['expense_category'].selection).get(rec.expense_category),
+    #                         rec.therapist_ref_id.name
+    #                     ))
 
     def action_submit_for_approval(self):
 
