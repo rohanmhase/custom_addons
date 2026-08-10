@@ -896,9 +896,9 @@ class OperationalFundDisbursement(models.Model):
             active_clinic = rec.clinic_id.master_fund_id or rec.clinic_id
 
             # Validate live balance BEFORE rules
-            if rec.amount > active_clinic.op_fund_balance:
-                raise ValidationError(
-                    _("Insufficient funds in the clinic's operational fund! Available balance is ₹ %s") % active_clinic.op_fund_balance)
+            # if rec.amount > active_clinic.op_fund_balance:
+            #     raise ValidationError(
+            #         _("Insufficient funds in the clinic's operational fund! Available balance is ₹ %s") % active_clinic.op_fund_balance)
 
             #   THE RULES ENGINE EVALUATOR
             matched_rule = False
