@@ -752,6 +752,28 @@ class OperationalFundDisbursement(models.Model):
     # --- HIGHLY CUSTOMIZABLE FREEZE CONTROLLER ---
     is_frozen = fields.Boolean(string="Is Frozen", compute='_compute_is_frozen', store=True)
 
+    @api.model
+    def _get_default_clinics(self):
+        """Fetches the authorized clinic IDs instantly for the dropdown default."""
+        if self.env.user.has_group('operational_fund.group_op_fund_controller') or self.env.user.has_group(
+                'base.group_system'):
+            return self.env['clinic.clinic'].search([]).ids
+        return self._get_user_clinic_ids(self.env.user)
+
+    # Adding the default parameter solves the "No records" bug on New forms
+    allowed_clinic_ids = fields.Many2many(
+        'clinic.clinic',
+        compute='_compute_allowed_clinics',
+        default=lambda self: self._get_default_clinics()
+    )
+
+    @api.depends_context('uid')
+    def _compute_allowed_clinics(self):
+        """Calculates which clinics the current user is allowed to see in the dropdown."""
+        allowed_clinics = self.env['clinic.clinic'].browse(self._get_default_clinics())
+        for rec in self:
+            rec.allowed_clinic_ids = allowed_clinics
+
     @api.depends('state')
     def _compute_is_frozen(self):
         """Centralized control for freezing the voucher.
@@ -1035,12 +1057,21 @@ class OperationalFundDisbursement(models.Model):
     def _get_user_clinic_ids(self, user=None):
         user = user or self.env.user
         clinic_ids = set()
+
+        # 1. Check Primary Clinic
         if hasattr(user, 'clinic_id') and user.clinic_id:
             clinic_ids.add(user.clinic_id.id)
-        if hasattr(user, 'op_fund_managed_clinic_ids'):
+
+        # 2. CRITICAL FIX: Check Multiple Allowed Clinics Array
+        if hasattr(user, 'clinic_ids') and user.clinic_ids:
+            clinic_ids.update(user.clinic_ids.ids)
+
+        # 3. Check Fund Manager Scopes
+        if hasattr(user, 'op_fund_managed_clinic_ids') and user.op_fund_managed_clinic_ids:
             clinic_ids.update(user.op_fund_managed_clinic_ids.ids)
-        if hasattr(user, 'op_fund_ho_managed_clinic_ids'):
+        if hasattr(user, 'op_fund_ho_managed_clinic_ids') and user.op_fund_ho_managed_clinic_ids:
             clinic_ids.update(user.op_fund_ho_managed_clinic_ids.ids)
+
         return list(clinic_ids)
 
     # NEUTRALIZED INTERCEPTORS - Allocations no longer block workflows
@@ -1484,11 +1515,14 @@ class OperationalFundDisbursement(models.Model):
         if not self: return False
         csv_buffer = io.StringIO()
         csv_writer = csv.writer(csv_buffer)
+
+        # 1. UPDATED HEADERS: Re-labeled 'VED ID' to cover both Vendors and Therapists
         csv_writer.writerow([
             'Voucher Number', 'Date', 'Clinic Branch', 'Amount', 'Status',
-            'Payee Name', 'Bank Account Name', 'Account Number', 'IFSC Code',
+            'Payee Name', 'Vendor / VED ID', 'Bank Name', 'Account Number', 'IFSC Code',
             'S3 Receipt URL', 'S3 Voucher URL', 'S3 Payment URL'
         ])
+
         with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_zip:
             with zipfile.ZipFile(temp_zip, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for rec in self:
@@ -1499,26 +1533,29 @@ class OperationalFundDisbursement(models.Model):
                     safe_clinic_name = f"'{clinic_name}" if clinic_name and str(clinic_name).startswith(
                         ('=', '+', '-', '@')) else clinic_name
 
-                    # Fetching Payee & Bank Details
                     payee_name = rec.payee_display or 'N/A'
+                    ved_id = rec.therapist_ved_number or 'N/A'
                     bank_name = acc_num = ifsc = 'N/A'
 
                     if rec.vendor_ref_id:
+                        # 2. DYNAMIC VENDOR ID: Generated on-the-fly (e.g., VND-05-0012)
+                        # This guarantees uniqueness per clinic without altering the database schema
+                        ved_id = f"VND-{rec.clinic_id.id:02d}-{rec.vendor_ref_id.id:04d}"
                         bank_name = rec.vendor_ref_id.bank_name or 'N/A'
                         acc_num = rec.vendor_ref_id.bank_account_number or 'N/A'
                         ifsc = rec.vendor_ref_id.bank_ifsc_code or 'N/A'
                     elif rec.therapist_ref_id:
-                        # Assumes clinic.therapist has these standard bank fields
+                        ved_id = getattr(rec.therapist_ref_id, 'vendor_id', ved_id) or 'N/A'
                         bank_name = getattr(rec.therapist_ref_id, 'bank_name', 'N/A')
                         acc_num = getattr(rec.therapist_ref_id, 'bank_account_number', 'N/A')
                         ifsc = getattr(rec.therapist_ref_id, 'bank_ifsc_code', 'N/A')
 
-                    safe_acc_num = f'="{acc_num}"' if acc_num != 'N/A' else 'N/A'
+                    # 3. RAW ACCOUNT NUMBER: Stripped the =" " formatting entirely
+                    safe_acc_num = f"{acc_num}\t" if acc_num != 'N/A' else 'N/A'
 
-                    # Updated Row Write
                     csv_writer.writerow([
                         safe_name, str(rec.date or ''), safe_clinic_name, rec.amount, rec.state or 'waiting',
-                        payee_name, bank_name, safe_acc_num, ifsc,
+                        payee_name, ved_id, bank_name, safe_acc_num, ifsc,
                                                                                       rec.s3_receipt_url or 'N/A',
                                                                                       rec.s3_voucher_url or 'N/A',
                                                                                       rec.s3_payment_url or 'N/A'
@@ -1551,17 +1588,23 @@ class OperationalFundDisbursement(models.Model):
                     write_document_or_placeholder('receipt_file', 'receipt', rec.s3_receipt_url, 'jpg')
                     write_document_or_placeholder('signed_voucher_file', 'voucher', rec.s3_voucher_url, 'pdf')
                     write_document_or_placeholder('payment_screenshot', 'payment_proof', rec.s3_payment_url, 'jpg')
+
                 csv_buffer.seek(0)
                 zip_file.writestr('audit_manifest.csv', csv_buffer.getvalue().encode('utf-8'))
+
+            self.env['ir.attachment'].sudo().search([('name', '=', 'OFD_Bulk_Financial_Export.zip')]).unlink()
             temp_zip.flush()
+
             with open(temp_zip.name, 'rb') as f:
                 archive_attachment = self.env['ir.attachment'].sudo().create(
                     {'name': 'OFD_Bulk_Financial_Export.zip', 'type': 'binary', 'raw': f.read(),
                      'mimetype': 'application/zip', 'public': False})
+
         try:
             os.unlink(temp_zip.name)
         except Exception:
             pass
+
         return {'type': 'ir.actions.act_url', 'url': f'/web/content/{archive_attachment.id}?download=true',
                 'target': 'self'}
 
@@ -1655,19 +1698,23 @@ class IrAttachment(models.Model):
     @api.model
     def _get_s3_credentials(self):
         if boto3 is None:
-            raise ValidationError(_("System Architecture Error: The Python 'boto3' library is missing. S3 operations cannot proceed. Please install boto3."))
+            _logger.error(
+                "System Architecture Error: The Python 'boto3' library is missing. S3 operations cannot proceed.")
+            return None, None
 
-        # SECURITY FIX: Prioritize secure odoo.conf or OS environment variables for sensitive keys
-        bucket = config.get('op_fund_s3_bucket') or os.environ.get('AWS_S3_BUCKET') or self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_bucket')
-        
-        # Never store or fetch AWS Secret keys from plaintext ir.config_parameter database table
-        access_key = config.get('op_fund_s3_access_key') or os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = config.get('op_fund_s3_secret_key') or os.environ.get('AWS_SECRET_ACCESS_KEY')
-        
-        region = config.get('op_fund_s3_region') or os.environ.get('AWS_DEFAULT_REGION') or self.env['ir.config_parameter'].sudo().get_param('operational_fund.s3_region', 'ap-south-1')
+        bucket = config.get('op_fund_s3_bucket') or os.environ.get('AWS_S3_BUCKET') or self.env[
+            'ir.config_parameter'].sudo().get_param('operational_fund.s3_bucket')
+        access_key = config.get('op_fund_s3_access_key') or os.environ.get('AWS_ACCESS_KEY_ID') or self.env[
+            'ir.config_parameter'].sudo().get_param('operational_fund.s3_access_key')
+        secret_key = config.get('op_fund_s3_secret_key') or os.environ.get('AWS_SECRET_ACCESS_KEY') or self.env[
+            'ir.config_parameter'].sudo().get_param('operational_fund.s3_secret_key')
+
+        region = config.get('op_fund_s3_region') or os.environ.get('AWS_DEFAULT_REGION') or self.env[
+            'ir.config_parameter'].sudo().get_param('operational_fund.s3_region', 'ap-south-1')
         custom_endpoint = config.get('op_fund_s3_endpoint_url') or os.environ.get('AWS_S3_ENDPOINT_URL')
 
         if not bucket: return None, None
+
         try:
             client_kwargs = {'region_name': region}
             if access_key and secret_key:
@@ -1675,12 +1722,12 @@ class IrAttachment(models.Model):
                 client_kwargs['aws_secret_access_key'] = secret_key
             if custom_endpoint:
                 client_kwargs['endpoint_url'] = custom_endpoint
-                
+
             s3_client = boto3.client('s3', **client_kwargs)
             return s3_client, bucket
         except Exception as e:
             _logger.error(f"AWS S3 Client Initialization Failed: {str(e)}")
-            raise ValidationError(_(f"AWS S3 Client Initialization Failed: {str(e)}"))
+            return None, None
 
     def unlink(self):
         for attachment in self:
@@ -1692,19 +1739,15 @@ class IrAttachment(models.Model):
                             _("Auditing Security: You cannot delete attachments from a finalized operational disbursement."))
 
         if boto3:
-            try:
-                s3_client, bucket = self._get_s3_credentials()
-                if s3_client and bucket:
-                    for attachment in self:
-                        if attachment.is_s3_stored and attachment.s3_object_key:
-                            try:
-                                s3_client.delete_object(Bucket=bucket, Key=attachment.s3_object_key)
-                            except Exception as e:
-                                _logger.error(f"Failed to delete orphaned S3 object {attachment.s3_object_key}: {e}")
-                                raise ValidationError(_("Cloud Architecture Error: Failed to delete the asset from AWS S3. Aborting local deletion to prevent data orphaning."))
-            except Exception as outer_e:
-                _logger.error(f"Could not connect to S3 to delete orphaned objects: {outer_e}")
-                raise ValidationError(_("Cloud Architecture Error: Could not connect to AWS S3. Aborting deletion to prevent orphaned assets."))
+            s3_client, bucket = self._get_s3_credentials()
+            if s3_client and bucket:
+                for attachment in self:
+                    if attachment.is_s3_stored and attachment.s3_object_key:
+                        try:
+                            s3_client.delete_object(Bucket=bucket, Key=attachment.s3_object_key)
+                        except Exception as e:
+                            # Soft fail so the user can still delete the local Odoo record
+                            _logger.error(f"Failed to delete orphaned S3 object {attachment.s3_object_key}: {e}")
 
         return super().unlink()
 
@@ -1720,13 +1763,21 @@ class IrAttachment(models.Model):
         for rec in records:
             if rec.res_model in protected_models and rec.type == 'binary' and rec.raw:
                 try:
-                    file_extension = mimetypes.guess_extension(rec.mimetype) or '.bin'
+                    safe_mimetype = rec.mimetype or 'application/octet-stream'
+                    file_extension = mimetypes.guess_extension(safe_mimetype) or '.bin'
                     object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
-                    s3_client.put_object(Bucket=bucket, Key=object_key, Body=rec.raw, ContentType=rec.mimetype)
+
+                    s3_client.put_object(
+                        Bucket=bucket,
+                        Key=object_key,
+                        Body=rec.raw,
+                        ContentType=safe_mimetype
+                    )
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                 except Exception as e:
+                    # Log the error but DO NOT crash the frontend file upload widget
                     _logger.error(f"AWS S3 Cloud Upload Failure for asset {rec.id}: {str(e)}")
-                    raise ValidationError(_("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
+
         return records
 
     @api.depends('store_fname', 'db_datas', 'file_size')

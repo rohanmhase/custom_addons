@@ -173,7 +173,12 @@
 
                     <group invisible="category and not expense_category">
                         <group>
-                            <field name="clinic_id" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" force_save="1" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="allowed_clinic_ids" invisible="1"/>
+                            <field name="clinic_id"
+                                   domain="[('id', 'in', allowed_clinic_ids)]"
+                                   readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"
+                                   force_save="1"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="date" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                             <field name="amount" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')"/>
                         </group>
@@ -321,12 +326,54 @@
         </div>
     </page>
         <page string="Additional Proofs" name="additional_proofs">
-            <div class="alert alert-info" role="alert">
-                Upload any extra receipts, chat screenshots, or supporting documents here.
-            </div>
-            <!-- The many2many_binary widget creates a clean drag-and-drop file upload interface -->
-            <field name="proof_attachment_ids" widget="many2many_binary"/>
-        </page>
+    <div class="alert alert-info" role="alert">
+        Upload any extra receipts, chat screenshots, or supporting documents here.
+    </div>
+
+    <!-- 1. The Standard Upload Box -->
+    <field name="proof_attachment_ids" widget="many2many_binary" readonly="is_frozen"/>
+
+    <!-- 2. The Inline Visual Gallery (No Download Required) -->
+    <div invisible="not proof_attachment_ids" class="mt-4">
+        <h4 style="color: #00a09d; border-bottom: 1px solid #eee; padding-bottom: 8px;">Inline Image Gallery</h4>
+        <field name="proof_attachment_ids" mode="kanban" readonly="1">
+            <kanban>
+                <field name="id"/>
+                <field name="mimetype"/>
+                <field name="name"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click" style="width: 300px; margin: 10px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+
+                            <!-- If the file is an Image: Render it instantly -->
+                            <t t-if="record.mimetype.value and record.mimetype.value.match('image.*')">
+                                <div style="height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                    <img t-attf-src="/web/image/#{record.id.raw_value}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Proof Image"/>
+                                </div>
+                            </t>
+
+                            <!-- If the file is a PDF/Document: Show an Icon -->
+                            <t t-else="">
+                                <div style="height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                    <i class="fa fa-file-text-o fa-5x text-muted" style="margin-bottom: 15px;"></i>
+                                    <span class="badge text-bg-secondary">Document / PDF</span>
+                                </div>
+                            </t>
+
+                            <!-- Filename & Download Button Base -->
+                            <div style="padding: 10px; background-color: #fff; border-top: 1px solid #ddd; text-align: center;">
+                                <strong class="text-truncate d-block" t-att-title="record.name.value"><t t-esc="record.name.value"/></strong>
+                                <a t-attf-href="/web/content/#{record.id.raw_value}?download=true" class="btn btn-sm btn-primary mt-2 w-100">
+                                    <i class="fa fa-download"></i> Download Copy
+                                </a>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </div>
+</page>
 </notebook>
 
                 </sheet>
