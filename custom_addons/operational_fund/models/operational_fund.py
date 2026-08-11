@@ -1504,19 +1504,21 @@ class OperationalFundDisbursement(models.Model):
                     bank_name = acc_num = ifsc = 'N/A'
 
                     if rec.vendor_ref_id:
-                        bank_name = rec.vendor_ref_id.bank_account_name or 'N/A'
+                        bank_name = rec.vendor_ref_id.bank_name or 'N/A'
                         acc_num = rec.vendor_ref_id.bank_account_number or 'N/A'
                         ifsc = rec.vendor_ref_id.bank_ifsc_code or 'N/A'
                     elif rec.therapist_ref_id:
                         # Assumes clinic.therapist has these standard bank fields
-                        bank_name = getattr(rec.therapist_ref_id, 'bank_account_name', 'N/A')
+                        bank_name = getattr(rec.therapist_ref_id, 'bank_name', 'N/A')
                         acc_num = getattr(rec.therapist_ref_id, 'bank_account_number', 'N/A')
                         ifsc = getattr(rec.therapist_ref_id, 'bank_ifsc_code', 'N/A')
+
+                    safe_acc_num = f'="{acc_num}"' if acc_num != 'N/A' else 'N/A'
 
                     # Updated Row Write
                     csv_writer.writerow([
                         safe_name, str(rec.date or ''), safe_clinic_name, rec.amount, rec.state or 'waiting',
-                        payee_name, bank_name, acc_num, ifsc,
+                        payee_name, bank_name, safe_acc_num, ifsc,
                                                                                       rec.s3_receipt_url or 'N/A',
                                                                                       rec.s3_voucher_url or 'N/A',
                                                                                       rec.s3_payment_url or 'N/A'

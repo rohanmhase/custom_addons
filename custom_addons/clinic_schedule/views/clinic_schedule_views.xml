@@ -185,31 +185,31 @@
     </record>
 
     <!-- FLOATER REQUEST WIZARD FORM -->
-    <record id="view_clinic_floater_request_wizard_form" model="ir.ui.view">
-        <field name="name">clinic.floater.request.wizard.form</field>
-        <field name="model">clinic.floater.request.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Request Floater Therapist">
-                <sheet>
-                    <div class="alert alert-info text-center" role="alert">
-                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>
-                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>
-                        Please select the required gender for this floater.
-                        <br/><small>(Max limit: 3 requests per gender, per day)</small>
-                    </div>
-                    <group>
-                        <field name="clinic_id" readonly="1" options="{'no_open': True}"/>
-                        <field name="target_date" readonly="1"/>
-                        <field name="gender" widget="radio" options="{'horizontal': true}"/>
-                    </group>
-                </sheet>
-                <footer>
-                    <button name="action_submit_request" type="object" string="Submit Request" class="btn-primary fw-bold" icon="fa-paper-plane"/>
-                    <button string="Cancel" class="btn-secondary" special="cancel"/>
-                </footer>
-            </form>
-        </field>
-    </record>
+<!--    <record id="view_clinic_floater_request_wizard_form" model="ir.ui.view">-->
+<!--        <field name="name">clinic.floater.request.wizard.form</field>-->
+<!--        <field name="model">clinic.floater.request.wizard</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <form string="Request Floater Therapist">-->
+<!--                <sheet>-->
+<!--                    <div class="alert alert-info text-center" role="alert">-->
+<!--                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>-->
+<!--                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>-->
+<!--                        Please select the required gender for this floater.-->
+<!--                        <br/><small>(Max limit: 3 requests per gender, per day)</small>-->
+<!--                    </div>-->
+<!--                    <group>-->
+<!--                        <field name="clinic_id" readonly="1" options="{'no_open': True}"/>-->
+<!--                        <field name="target_date" readonly="1"/>-->
+<!--                        <field name="gender" widget="radio" options="{'horizontal': true}"/>-->
+<!--                    </group>-->
+<!--                </sheet>-->
+<!--                <footer>-->
+<!--                    <button name="action_submit_request" type="object" string="Submit Request" class="btn-primary fw-bold" icon="fa-paper-plane"/>-->
+<!--                    <button string="Cancel" class="btn-secondary" special="cancel"/>-->
+<!--                </footer>-->
+<!--            </form>-->
+<!--        </field>-->
+<!--    </record>-->
 
     <record id="action_clinic_therapist_directory" model="ir.actions.act_window">
         <field name="name">Master Therapist Directory</field>

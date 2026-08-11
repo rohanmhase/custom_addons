@@ -400,25 +400,25 @@ class ClinicScheduleAppointment(models.Model):
         return ist_date.date()
 
     @api.model
-    def action_reject_floater(self, placeholder_id):
-        """ Rejects the request, deletes the placeholder, and moves patients to UNASSIGNED """
-        placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
-        if not placeholder.exists() or not placeholder.is_floater_request:
-            return False
-
-        # Move any booked appointments to the UNASSIGNED pool
-        apps = self.search([('therapist_id', '=', placeholder.id)])
-        apps.write({'therapist_id': False})
-        for app in apps:
-            app.message_post(body=_(
-                "<b>System Auto-Unassigned:</b> Floater request was rejected by HO. Session moved to unassigned pool."))
-
-        # Archive placeholder
-        placeholder.write({
-            'active': False,
-            'request_state': 'rejected'
-        })
-        return True
+    # def action_reject_floater(self, placeholder_id):
+    #     """ Rejects the request, deletes the placeholder, and moves patients to UNASSIGNED """
+    #     placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
+    #     if not placeholder.exists() or not placeholder.is_floater_request:
+    #         return False
+    #
+    #     # Move any booked appointments to the UNASSIGNED pool
+    #     apps = self.search([('therapist_id', '=', placeholder.id)])
+    #     apps.write({'therapist_id': False})
+    #     for app in apps:
+    #         app.message_post(body=_(
+    #             "<b>System Auto-Unassigned:</b> Floater request was rejected by HO. Session moved to unassigned pool."))
+    #
+    #     # Archive placeholder
+    #     placeholder.write({
+    #         'active': False,
+    #         'request_state': 'rejected'
+    #     })
+    #     return True
 
 
 
@@ -475,28 +475,28 @@ class ClinicScheduleAppointment(models.Model):
 
         return {'status': 'success', 'message': f'Successfully moved {count} sessions to {target_t.name}.'}
 
-    @api.model
-    def action_substitute_floater(self, placeholder_id, real_therapist_id):
-        """ Accepts the request, moves patients to the real floater, and hides the placeholder """
-        placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
-        real_therapist = self.env['clinic.therapist'].browse(int(real_therapist_id))
-
-        if not placeholder.exists() or not real_therapist.exists():
-            raise ValidationError(_("Invalid therapist selection."))
-
-        # Reassign all patients securely to the actual floater
-        apps = self.search([('therapist_id', '=', placeholder.id)])
-        apps.write({'therapist_id': real_therapist.id})
-        for app in apps:
-            app.message_post(body=_(
-                "<b>Audit Log:</b> Session successfully substituted from Requested Placeholder to Real Floater: %s") % real_therapist.name)
-
-        # Approve and archive the placeholder
-        placeholder.write({
-            'active': False,
-            'request_state': 'approved'
-        })
-        return True
+    # @api.model
+    # def action_substitute_floater(self, placeholder_id, real_therapist_id):
+    #     """ Accepts the request, moves patients to the real floater, and hides the placeholder """
+    #     placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
+    #     real_therapist = self.env['clinic.therapist'].browse(int(real_therapist_id))
+    #
+    #     if not placeholder.exists() or not real_therapist.exists():
+    #         raise ValidationError(_("Invalid therapist selection."))
+    #
+    #     # Reassign all patients securely to the actual floater
+    #     apps = self.search([('therapist_id', '=', placeholder.id)])
+    #     apps.write({'therapist_id': real_therapist.id})
+    #     for app in apps:
+    #         app.message_post(body=_(
+    #             "<b>Audit Log:</b> Session successfully substituted from Requested Placeholder to Real Floater: %s") % real_therapist.name)
+    #
+    #     # Approve and archive the placeholder
+    #     placeholder.write({
+    #         'active': False,
+    #         'request_state': 'approved'
+    #     })
+    #     return True
 
     @api.model
     def action_check_floater_eligibility(self, clinic_id, target_date):
@@ -545,18 +545,18 @@ class ClinicScheduleAppointment(models.Model):
                 ))
 
         # 4. If validation passes, route to the Wizard
-        return {
-            'name': _('Request Floater Therapist'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'clinic.floater.request.wizard',
-            'view_mode': 'form',
-            'views': [[False, 'form']],
-            'target': 'new',
-            'context': {
-                'default_clinic_id': clinic_id,
-                'default_target_date': target_date,
-            }
-        }
+        # return {
+        #     'name': _('Request Floater Therapist'),
+        #     'type': 'ir.actions.act_window',
+        #     'res_model': 'clinic.floater.request.wizard',
+        #     'view_mode': 'form',
+        #     'views': [[False, 'form']],
+        #     'target': 'new',
+        #     'context': {
+        #         'default_clinic_id': clinic_id,
+        #         'default_target_date': target_date,
+        #     }
+        # }
 
     @api.model
     def get_user_schedule_defaults(self):
@@ -1640,77 +1640,77 @@ class ClinicTherapistImportLog(models.Model):
         self.write({'state': 'done', 'records_processed': counter})
 
 
-def action_submit_request(self):
-    self.ensure_one()
-    Therapist = self.env['clinic.therapist']
-
-    # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
-    self.clinic_id.with_for_update().read(['id'])
-
-    # 2. Enforce the Max 3 limit per gender per day safely
-    existing_requests = Therapist.search_count([
-        ('is_floater_request', '=', True),
-        ('request_clinic_id', '=', self.clinic_id.id),
-        ('request_date', '=', self.target_date),
-        ('gender', '=', self.gender),
-        ('active', '=', True)
-    ])
-
-    if existing_requests >= 3:
-        gender_str = dict(self._fields['gender'].selection).get(self.gender)
-        raise ValidationError(_(
-            f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} floaters for this date.\n"
-            "You cannot request more than 3 per gender."
-        ))
-
-    # 3. Create the Placeholder Therapist Row
-    gender_label = "M" if self.gender == 'm' else "F"
-    placeholder_name = f"Requested Floater ({gender_label})"
-
-    # FIX 1: Generate a highly unique Vendor ID combining Timestamp + Clinic ID
-    unique_suffix = f"{fields.Datetime.now().strftime('%H%M%S')}_{self.clinic_id.id}"
-
-    placeholder = Therapist.create({
-        'name': placeholder_name,
-        'designation': 'floater',
-        'gender': self.gender,
-        'is_floater_request': True,
-        'request_clinic_id': self.clinic_id.id,
-        'request_date': self.target_date,
-        'request_state': 'pending',
-        'allowed_branch_ids': [(4, self.clinic_id.id)],
-        'vendor_id': f'PENDING_HO_{unique_suffix}',  # Safe from DB crashes
-        'contact_number': '0000000000',
-    })
-
-    # FIX 2: Dynamic Regional Manager Routing
-    target_region = self.clinic_id.region_id
-    all_managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
-    regional_managers = self.env['res.users']
-
-    if target_region:
-        # Safely cross-reference the target region with the manager's assigned regions
-        # without hardcoding dependencies on other modules.
-        for m in all_managers:
-            if hasattr(m, 'region_ids') and target_region.id in m.region_ids.ids:
-                regional_managers |= m
-            elif hasattr(m, 'region_id') and m.region_id.id == target_region.id:
-                regional_managers |= m
-            elif hasattr(m, 'managed_region_ids') and target_region.id in m.managed_region_ids.ids:
-                regional_managers |= m
-
-    # Fallback: If the region has no assigned manager, notify all HO managers
-    users_to_notify = regional_managers if regional_managers else all_managers
-
-    # 4. Dispatch the To-Do Activity
-    region_name_str = target_region.name if target_region else 'Unassigned'
-    for user in users_to_notify:
-        placeholder.activity_schedule(
-            'mail.activity_data_todo',
-            user_id=user.id,
-            summary=f'Floater Request: {self.clinic_id.name}',
-            note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. "
-                 f"Please substitute this request with a real floater on the Matrix Board."
-        )
-
-    return {'type': 'ir.actions.act_window_close'}
+# def action_submit_request(self):
+#     self.ensure_one()
+#     Therapist = self.env['clinic.therapist']
+#
+#     # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
+#     self.clinic_id.with_for_update().read(['id'])
+#
+#     # 2. Enforce the Max 3 limit per gender per day safely
+#     existing_requests = Therapist.search_count([
+#         ('is_floater_request', '=', True),
+#         ('request_clinic_id', '=', self.clinic_id.id),
+#         ('request_date', '=', self.target_date),
+#         ('gender', '=', self.gender),
+#         ('active', '=', True)
+#     ])
+#
+#     if existing_requests >= 3:
+#         gender_str = dict(self._fields['gender'].selection).get(self.gender)
+#         raise ValidationError(_(
+#             f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} floaters for this date.\n"
+#             "You cannot request more than 3 per gender."
+#         ))
+#
+#     # 3. Create the Placeholder Therapist Row
+#     gender_label = "M" if self.gender == 'm' else "F"
+#     placeholder_name = f"Requested Floater ({gender_label})"
+#
+#     # FIX 1: Generate a highly unique Vendor ID combining Timestamp + Clinic ID
+#     unique_suffix = f"{fields.Datetime.now().strftime('%H%M%S')}_{self.clinic_id.id}"
+#
+#     placeholder = Therapist.create({
+#         'name': placeholder_name,
+#         'designation': 'floater',
+#         'gender': self.gender,
+#         'is_floater_request': True,
+#         'request_clinic_id': self.clinic_id.id,
+#         'request_date': self.target_date,
+#         'request_state': 'pending',
+#         'allowed_branch_ids': [(4, self.clinic_id.id)],
+#         'vendor_id': f'PENDING_HO_{unique_suffix}',  # Safe from DB crashes
+#         'contact_number': '0000000000',
+#     })
+#
+#     # FIX 2: Dynamic Regional Manager Routing
+#     target_region = self.clinic_id.region_id
+#     all_managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
+#     regional_managers = self.env['res.users']
+#
+#     if target_region:
+#         # Safely cross-reference the target region with the manager's assigned regions
+#         # without hardcoding dependencies on other modules.
+#         for m in all_managers:
+#             if hasattr(m, 'region_ids') and target_region.id in m.region_ids.ids:
+#                 regional_managers |= m
+#             elif hasattr(m, 'region_id') and m.region_id.id == target_region.id:
+#                 regional_managers |= m
+#             elif hasattr(m, 'managed_region_ids') and target_region.id in m.managed_region_ids.ids:
+#                 regional_managers |= m
+#
+#     # Fallback: If the region has no assigned manager, notify all HO managers
+#     users_to_notify = regional_managers if regional_managers else all_managers
+#
+#     # 4. Dispatch the To-Do Activity
+#     region_name_str = target_region.name if target_region else 'Unassigned'
+#     for user in users_to_notify:
+#         placeholder.activity_schedule(
+#             'mail.activity_data_todo',
+#             user_id=user.id,
+#             summary=f'Floater Request: {self.clinic_id.name}',
+#             note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. "
+#                  f"Please substitute this request with a real floater on the Matrix Board."
+#         )
+#
+#     return {'type': 'ir.actions.act_window_close'}
