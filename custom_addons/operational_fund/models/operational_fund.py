@@ -1508,6 +1508,7 @@ class OperationalFundDisbursement(models.Model):
                         acc_num = rec.vendor_ref_id.bank_account_number or 'N/A'
                         ifsc = rec.vendor_ref_id.bank_ifsc_code or 'N/A'
                     elif rec.therapist_ref_id:
+
                         # Assumes clinic.therapist has these standard bank fields
                         bank_name = getattr(rec.therapist_ref_id, 'bank_name', 'N/A')
                         acc_num = getattr(rec.therapist_ref_id, 'bank_account_number', 'N/A')
