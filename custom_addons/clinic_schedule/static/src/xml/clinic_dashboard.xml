@@ -150,8 +150,12 @@
                                 <span class="text-info-darker fw-bold" style="color: #0d6efd;">
                                     <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.fixed_count"/> Fixed
                                 </span>
-                                <span class="text-warning-darker fw-bold" style="color: #856404;">
-                                    <i class="fa fa-plane me-1"/><t t-esc="state.kpis.floater_count"/> Float/HV
+                                <!-- FIX: Separated Floater and HV Counts -->
+                                <span class="text-warning-darker fw-bold" style="color: #087990;">
+                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.floater_count"/> Floater
+                                </span>
+                                <span class="text-success fw-bold" style="color: #198754;">
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.hv_count"/> HV
                                 </span>
                             </div>
                         </div>
@@ -623,10 +627,10 @@
         <t t-if="state.isAllotModalOpen">
             <div class="modal-backdrop fade show" style="z-index: 1040; background-color: rgba(0,0,0,0.5);" t-on-click="() => this.closeAllotModal()"></div>
             <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
-                <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content shadow-lg border-0 rounded-3">
                         <div class="modal-header bg-light border-0 py-3 px-4">
-                            <h5 class="modal-title fw-bold text-dark"><i class="fa fa-link me-2 text-info"/>Allot Therapist to Clinic</h5>
+                            <h5 class="modal-title fw-bold text-dark"><i class="fa fa-users me-2 text-info"/>Master Therapist Directory - Allotment</h5>
                             <button type="button" class="btn-close" t-on-click="() => this.closeAllotModal()"></button>
                         </div>
                         <div class="modal-body p-4 bg-light">
@@ -637,41 +641,135 @@
                                 </p>
                             </t>
                             <t t-else="">
-                                <div class="input-group shadow-sm mb-3">
-                                    <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-primary"/></span>
-                                    <input type="text" class="form-control border-start-0 ps-0 fw-bold text-dark" placeholder="Search by Name, Badge ID, or Vendor ID..." t-model="state.allotSearchQuery"/>
+                                <!-- NEW POWER FILTERS -->
+                                <div class="row g-2 mb-3 pb-3 border-bottom">
+                                    <div class="col-12 mb-2">
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-primary"/></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-bold text-dark" placeholder="Search by Name, Vendor ID, or Assigned Clinic Name..." t-model="state.allotSearchQuery"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <!-- FIX: Changed text-secondary to text-dark and added border-secondary -->
+                                        <select class="form-select form-select-sm shadow-sm fw-bold text-dark border-secondary" t-model="state.allotFilterRegion" t-on-change="(ev) => this.setAllotFilter('region', ev.target.value)">
+                                            <option value="all">📍 All Regions</option>
+                                            <t t-foreach="state.regions" t-as="reg" t-key="reg.id">
+                                                <option t-att-value="reg.id"><t t-esc="reg.name"/></option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <!-- FIX: Changed text-secondary to text-dark and added border-secondary -->
+                                        <select class="form-select form-select-sm shadow-sm fw-bold text-dark border-secondary" t-model="state.allotFilterClinic" t-on-change="(ev) => this.setAllotFilter('clinic', ev.target.value)">
+                                            <option value="all">🏥 All Clinics</option>
+                                            <t t-foreach="state.clinics" t-as="clin" t-key="clin.id">
+                                                <option t-att-value="clin.id"><t t-esc="clin.name"/></option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 d-flex justify-content-end gap-2">
+                                        <div class="btn-group shadow-sm w-100" role="group">
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterStatus === 'all' ? 'btn-secondary' : 'btn-outline-secondary bg-white'}" t-on-click="() => this.setAllotFilter('status', 'all')">All</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterStatus === 'available' ? 'btn-success' : 'btn-outline-success bg-white'}" t-on-click="() => this.setAllotFilter('status', 'available')">Free</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterStatus === 'busy' ? 'btn-warning text-dark' : 'btn-outline-warning bg-white'}" t-on-click="() => this.setAllotFilter('status', 'busy')">Busy</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <div class="btn-group shadow-sm w-100" role="group">
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterDesignation === 'all' ? 'btn-dark' : 'btn-outline-dark bg-white'}" t-on-click="() => this.setAllotFilter('designation', 'all')">Any Type</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterDesignation === 'fixed' ? 'btn-primary' : 'btn-outline-primary bg-white'}" t-on-click="() => this.setAllotFilter('designation', 'fixed')">Fixed</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterDesignation === 'floater' ? 'btn-info text-white' : 'btn-outline-info bg-white'}" t-on-click="() => this.setAllotFilter('designation', 'floater')">Floater</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterDesignation === 'hv' ? 'btn-success' : 'btn-outline-success bg-white'}" t-on-click="() => this.setAllotFilter('designation', 'hv')">HV</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <div class="btn-group shadow-sm w-100" role="group">
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterGender === 'all' ? 'btn-dark' : 'btn-outline-dark bg-white'}" t-on-click="() => this.setAllotFilter('gender', 'all')">Any Gender</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterGender === 'm' ? 'btn-primary' : 'btn-outline-primary bg-white'}" t-on-click="() => this.setAllotFilter('gender', 'm')"><i class="fa fa-mars"/> Male</button>
+                                            <button type="button" t-attf-class="btn btn-sm fw-bold #{state.allotFilterGender === 'f' ? 'btn-danger' : 'btn-outline-danger bg-white'}" t-on-click="() => this.setAllotFilter('gender', 'f')"><i class="fa fa-venus"/> Female</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="list-group shadow-sm" style="max-height: 250px; overflow-y: auto;">
+
+                                <!-- HIGH CONTRAST THERAPIST LIST -->
+                                <div class="list-group shadow-sm" style="max-height: 400px; overflow-y: auto;">
+                                    <t t-if="filteredAllotableTherapists.length === 0">
+                                        <div class="text-center p-5 text-muted">
+                                            <i class="fa fa-search-minus fs-1 mb-3 opacity-25"/>
+                                            <h5 class="fw-bold">No therapists found</h5>
+                                            <p class="small">Try adjusting your directory filters or search query.</p>
+                                        </div>
+                                    </t>
                                     <t t-foreach="filteredAllotableTherapists" t-as="t" t-key="t.id">
                                         <button type="button"
                                                 t-attf-class="list-group-item list-group-item-action d-flex justify-content-between align-items-center #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'active bg-primary border-primary' : ''}"
-                                                t-on-click="() => this.selectTherapistToAllot(t)">
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold" style="font-size: 0.95rem;"><t t-esc="t.smart_name"/></span>
-                                                <i class="fa fa-briefcase me-1"/>
+                                                t-on-click="() => this.selectTherapistToAllot(t)"
+                                                style="padding: 12px 16px; transition: all 0.2s;">
+                                            <div class="d-flex align-items-center w-75">
+                                                <!-- Dynamic Visual Icon -->
+                                                <div class="me-3 fs-4" style="width: 45px; text-align: center;">
+                                                    <t t-if="t.designation === 'fixed'"><i t-attf-class="fa fa-user-md rounded shadow-sm p-2 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-primary' : 'bg-primary-subtle text-primary'}"/></t>
+                                                    <t t-elif="t.designation === 'floater'"><i t-attf-class="fa fa-refresh rounded shadow-sm p-2 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-info' : 'bg-info-subtle text-info-darker'}"/></t>
+                                                    <t t-elif="t.designation === 'hv'"><i t-attf-class="fa fa-home rounded shadow-sm p-2 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success' : 'bg-success-subtle text-success'}"/></t>
+                                                </div>
+
+                                                <div class="d-flex flex-column text-start w-100">
+                                                    <span t-attf-class="fw-bolder fs-6 mb-1 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-dark'}">
+                                                        <t t-esc="t.name"/>
+                                                        <t t-if="t.gender === 'm'"><i t-attf-class="fa fa-mars ms-1 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-primary'}" title="Male"/></t>
+                                                        <t t-elif="t.gender === 'f'"><i t-attf-class="fa fa-venus ms-1 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-danger'}" title="Female"/></t>
+                                                    </span>
+                                                    <div class="d-flex align-items-center flex-wrap gap-2">
+                                                        <!-- FIX: Forced unselected badges to have text-dark and border-secondary -->
+                                                        <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-primary shadow-sm' : 'bg-white text-dark border border-secondary shadow-sm'}">
+                                                            <i class="fa fa-id-badge me-1"/> <t t-esc="t.vendor_id"/>
+                                                        </span>
+                                                        <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-primary shadow-sm' : 'bg-white text-dark border border-secondary shadow-sm'}">
+                                                            <t t-if="t.designation === 'fixed'">Fixed Deployment</t>
+                                                            <t t-elif="t.designation === 'floater'">Clinic Floater</t>
+                                                            <t t-elif="t.designation === 'hv'">Home Visit Floater</t>
+                                                        </span>
+                                                    </div>
+                                                    <!-- FIX: Changed text-muted to text-dark opacity-75 and added fw-bold -->
+                                                    <small t-attf-class="mt-2 text-truncate w-100 fw-bold #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-dark opacity-75'}" style="font-size: 0.75rem; max-width: 90%;">
+                                                        <i class="fa fa-map-marker me-1"/> Allowed at: <t t-esc="t.allowed_clinics_names or 'No clinics assigned'"/>
+                                                    </small>
+                                                </div>
                                             </div>
-                                            <t t-if="t.is_working_elsewhere">
-                                                <span class="badge bg-warning text-dark border border-warning shadow-sm"><i class="fa fa-car me-1"/>On Shift</span>
-                                            </t>
+                                            <!-- Availability Status Badge -->
+                                            <div class="text-end" style="min-width: 110px;">
+                                                <t t-if="t.status === 'busy'">
+                                                    <span class="badge bg-warning text-dark border border-warning shadow-sm d-block mb-1"><i class="fa fa-car me-1"/>ON SHIFT</span>
+                                                    <small t-attf-class="fw-bold #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-muted'}" style="font-size: 0.65rem;">
+                                                        At <t t-esc="t.working_clinics"/>
+                                                    </small>
+                                                </t>
+                                                <t t-else="">
+                                                    <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success' : 'bg-success text-white'} shadow-sm border border-success d-block">
+                                                        <i class="fa fa-check-circle me-1"/>AVAILABLE
+                                                    </span>
+                                                </t>
+                                            </div>
                                         </button>
                                     </t>
                                 </div>
-                                <t t-if="state.selectedTherapistObj and state.selectedTherapistObj.is_working_elsewhere">
-                                    <div class="alert alert-warning border-0 bg-warning-subtle mt-3 p-3 d-flex align-items-center shadow-sm rounded">
-                                        <i class="fa fa-exclamation-triangle fs-3 me-3 text-warning-darker" style="color: #856404;"></i>
-                                        <p class="small text-dark mb-0" style="line-height: 1.3;">
-                                            <strong class="d-block mb-1">Transit Warning Triggered!</strong>
-                                            This therapist is already scheduled at <b><t t-esc="state.selectedTherapistObj.working_clinics"/></b> today.
-                                        </p>
-                                    </div>
-                                </t>
                             </t>
                         </div>
-                        <div class="modal-footer bg-white border-top py-3 px-4">
-                            <button type="button" class="btn btn-outline-secondary fw-bold" t-on-click="() => this.closeAllotModal()">Cancel</button>
-                            <button t-if="state.selectedTherapistObj" type="button" class="btn btn-info fw-bold text-dark px-4 shadow-sm" t-on-click="() => this.confirmAllotTherapist()">
-                                <i class="fa fa-plus me-1"/> Confirm Allotment
-                            </button>
+                        <div class="modal-footer bg-white border-top py-3 px-4 d-flex justify-content-between">
+                            <span t-attf-class="small fw-bold #{state.selectedTherapistObj ? 'text-success' : 'text-muted'}">
+                                <t t-if="state.selectedTherapistObj">
+                                    <i class="fa fa-check-circle me-1"/> Selected: <t t-esc="state.selectedTherapistObj.name"/>
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-info-circle me-1"/> Select a therapist to proceed.
+                                </t>
+                            </span>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary fw-bold me-2" t-on-click="() => this.closeAllotModal()">Cancel</button>
+                                <button t-if="state.selectedTherapistObj" type="button" class="btn btn-info fw-bold text-dark px-4 shadow-sm" t-on-click="() => this.confirmAllotTherapist()">
+                                    <i class="fa fa-plus me-1"/> Confirm Allotment
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
