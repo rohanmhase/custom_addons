@@ -1738,16 +1738,7 @@ class IrAttachment(models.Model):
                         raise ValidationError(
                             _("Auditing Security: You cannot delete attachments from a finalized operational disbursement."))
 
-        if boto3:
-            s3_client, bucket = self._get_s3_credentials()
-            if s3_client and bucket:
-                for attachment in self:
-                    if attachment.is_s3_stored and attachment.s3_object_key:
-                        try:
-                            s3_client.delete_object(Bucket=bucket, Key=attachment.s3_object_key)
-                        except Exception as e:
-                            # Soft fail so the user can still delete the local Odoo record
-                            _logger.error(f"Failed to delete orphaned S3 object {attachment.s3_object_key}: {e}")
+
 
         return super().unlink()
 
