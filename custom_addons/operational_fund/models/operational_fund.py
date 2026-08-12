@@ -999,6 +999,8 @@ class OperationalFundDisbursement(models.Model):
         Daily Roster Scanner: Dynamically fetches therapists allowed for this clinic today.
         Combines statically assigned therapists + floaters scheduled for sessions today.
         """
+        from datetime import datetime, time  # Added to safely evaluate matrix time boundaries
+
         for rec in self:
             if not rec.clinic_id:
                 rec.allowed_therapist_ids = False
@@ -1007,7 +1009,7 @@ class OperationalFundDisbursement(models.Model):
             Therapist = self.env['clinic.therapist'].sudo()
             allowed_ids = set()
 
-            # 1. Fetch Therapists scheduled for sessions at this clinic ON THIS EXACT DATE
+            # 1. Fetch Therapists scheduled for sessions at this clinic ON THIS EXACT DATE (Legacy)
             if 'patient.session' in self.env and rec.date:
                 sessions = self.env['patient.session'].sudo().search([
                     ('session_date', '=', rec.date),
@@ -1016,6 +1018,17 @@ class OperationalFundDisbursement(models.Model):
                     ('patient_id.clinic_id', '=', rec.clinic_id.id)
                 ])
                 allowed_ids.update(sessions.mapped('therapist_id').ids)
+
+            # 1.5 FIX: Fetch Therapists with scheduled slots on the New Matrix Board today
+            if 'clinic.schedule.appointment' in self.env and rec.date:
+                start_day = datetime.combine(rec.date, time.min)
+                end_day = datetime.combine(rec.date, time.max)
+                matrix_apps = self.env['clinic.schedule.appointment'].sudo().search([
+                    ('clinic_id', '=', rec.clinic_id.id),
+                    ('start_datetime', '>=', start_day),
+                    ('start_datetime', '<=', end_day)
+                ])
+                allowed_ids.update(matrix_apps.mapped('therapist_id').ids)
 
             # 2. Fetch Therapists statically assigned to this clinic (Schema Safe Fallback)
             m2m_field = None
@@ -1026,8 +1039,8 @@ class OperationalFundDisbursement(models.Model):
                         m2m_field = field_name
                     elif field_def.type == 'many2one':
                         m2o_field = field_name
-
             target_field = m2m_field or m2o_field
+
             if target_field:
                 if Therapist._fields[target_field].type == 'many2many':
                     static_therapists = Therapist.search([(target_field, 'in', rec.clinic_id.id)])

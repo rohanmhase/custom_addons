@@ -251,7 +251,11 @@ class ClinicScheduleAppointment(models.Model):
 
             # Strict Conflict & Leave Checking
             if target_therapist_id:
-                if target_therapist_id in absent_staff_ids:
+                # FIX: Do not carry forward transient Floaters/HVs to the next day. Route to UNASSIGNED.
+                if old_app.therapist_id.designation in ['floater', 'hv']:
+                    target_therapist_id = False
+                    is_unassigned = True
+                elif target_therapist_id in absent_staff_ids:
                     target_therapist_id = False
                     is_unassigned = True
                 else:
@@ -420,24 +424,20 @@ class ClinicScheduleAppointment(models.Model):
     #     })
     #     return True
 
-
-
-
     @api.model
     def action_remove_therapist_from_board(self, therapist_id, clinic_id, target_date):
-        """Removes the branch from the therapist and unassigns all their local patients for the day."""
+        """Removes the branch from the therapist and unassigns all their local patients from that day forward."""
         start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
-        end_day = datetime.combine(fields.Date.from_string(target_date), time.max)
 
+        # FIX: Removed end_day boundary to unassign for target date AND all future dates
         apps = self.search([
             ('therapist_id', '=', int(therapist_id)),
             ('clinic_id', '=', int(clinic_id)),
-            ('start_datetime', '>=', start_day),
-            ('start_datetime', '<=', end_day)
+            ('start_datetime', '>=', start_day)
         ])
-
         unassigned_count = len(apps)
         apps.write({'therapist_id': False})
+
         for app in apps:
             app.message_post(body="System Auto-Unassigned: Therapist was removed from the matrix board.")
 
@@ -1003,21 +1003,31 @@ class ClinicScheduleAppointment(models.Model):
         domain = [('active', '=', True)]
         if displayed_therapist_ids: domain.append(('id', 'not in', displayed_therapist_ids))
         therapists = self.env['clinic.therapist'].search(domain)
+
         target_date_obj = fields.Date.from_string(target_date)
         start_day = datetime.combine(target_date_obj, time.min)
         end_day = datetime.combine(target_date_obj, time.max)
+
         appointments = self.sudo().search([
             ('start_datetime', '>=', start_day), ('end_datetime', '<=', end_day), ('therapist_id', '!=', False)
         ])
+
         active_today_map = {}
         for app in appointments:
             t_id = app.therapist_id.id
             if t_id not in active_today_map: active_today_map[t_id] = set()
             active_today_map[t_id].add(app.clinic_id.name)
+
         results = []
         for t in therapists:
             working_clinics = list(active_today_map.get(t.id, set()))
             is_working_elsewhere = len(working_clinics) > 0
+
+            # --- NEW DATA FOR MASTER DIRECTORY FILTERS ---
+            allowed_c_ids = t.allowed_branch_ids.ids
+            allowed_r_ids = t.allowed_branch_ids.mapped('region_id').ids
+            allowed_clinics_names = ", ".join(t.allowed_branch_ids.mapped('name'))
+
             results.append({
                 'id': t.id,
                 'name': t.name,
@@ -1025,7 +1035,11 @@ class ClinicScheduleAppointment(models.Model):
                 'gender': t.gender,
                 'vendor_id': t.vendor_id or 'N/A',
                 'is_working_elsewhere': is_working_elsewhere,
-                'working_clinics': ', '.join(working_clinics) if is_working_elsewhere else ''
+                'working_clinics': ', '.join(working_clinics) if is_working_elsewhere else '',
+                'allowed_clinic_ids': allowed_c_ids,
+                'allowed_region_ids': allowed_r_ids,
+                'allowed_clinics_names': allowed_clinics_names,
+                'status': 'busy' if is_working_elsewhere else 'available'
             })
         return results
 
@@ -1147,6 +1161,7 @@ class ClinicScheduleAppointment(models.Model):
         # ==========================================
         # 2. LOCAL APPOINTMENTS (Normal Security)
         # ==========================================
+        # ... (Keep existing appointments_raw query) ...
         appointments_raw = self.search([
             ("clinic_id", "=", clinic_id),
             ("start_datetime", ">=", start_day),
@@ -1156,9 +1171,29 @@ class ClinicScheduleAppointment(models.Model):
         daily_states = self.env["clinic.therapist.daily.state"].search([("target_date", "=", target_date)])
         state_map = {s.therapist_id.id: s for s in daily_states}
 
-        assigned_therapists = self.env["clinic.therapist"].sudo().search(
-            [("active", "=", True), "|", ("allowed_branch_ids", "in", clinic_id), ("is_buffer", "=", True)]
-        )
+        # FIX: Extract therapists who actively have sessions in the currently viewed day
+        scheduled_therapist_ids = appointments_raw.mapped('therapist_id').ids
+
+        target_date_obj = fields.Date.from_string(target_date)
+        today_obj = fields.Date.context_today(self)
+
+        base_domain = [("active", "=", True)]
+        if target_date_obj > today_obj:
+            # FIX: Hide floaters from future boards unless they specifically have an appointment
+            matrix_condition = [
+                "|", ("is_buffer", "=", True),
+                "|", ("id", "in", scheduled_therapist_ids),
+                "&", ("allowed_branch_ids", "in", clinic_id), ("designation", "=", "fixed")
+            ]
+        else:
+            # For today/past, pull everyone assigned to the branch
+            matrix_condition = [
+                "|", ("is_buffer", "=", True),
+                "|", ("id", "in", scheduled_therapist_ids),
+                ("allowed_branch_ids", "in", clinic_id)
+            ]
+
+        assigned_therapists = self.env["clinic.therapist"].sudo().search(base_domain + matrix_condition)
 
         # ==========================================
         # 3. CROSS-CLINIC APPOINTMENTS (Sudo Bypass)
@@ -1315,8 +1350,11 @@ class ClinicScheduleAppointment(models.Model):
             app.patient_id.id for app in appointments_raw if app.slot_type == "patient" and app.therapist_id)
         total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
         outstanding_count = len(total_eligible_patients - scheduled_patient_ids)
+
+        # FIX: Separated Staffing Counts
         fixed_count = sum(1 for t in assigned_therapists if t.designation == 'fixed')
-        floater_count = sum(1 for t in assigned_therapists if t.designation in ['floater', 'hv'])
+        floater_count = sum(1 for t in assigned_therapists if t.designation == 'floater')
+        hv_count = sum(1 for t in assigned_therapists if t.designation == 'hv')
         active_capacity_therapists = [t for t in assigned_therapists if not t.is_buffer]
         working_count = len([t for t in active_capacity_therapists if
                              not state_map.get(t.id) or state_map.get(t.id).action_type not in ["no_show", "wo",
@@ -1341,6 +1379,7 @@ class ClinicScheduleAppointment(models.Model):
             'kpis': {
                 'fixed_count': fixed_count,
                 'floater_count': floater_count,
+                'hv_count': hv_count,  # Passed to JS
                 'utilization': utilization_pct,
                 'total_scheduled': scheduled_clinic_hv + scheduled_self,
                 'allotted_clinic_hv': scheduled_clinic_hv,
