@@ -1551,7 +1551,7 @@ class OperationalFundDisbursement(models.Model):
                         ifsc = getattr(rec.therapist_ref_id, 'bank_ifsc_code', 'N/A')
 
                     # 3. RAW ACCOUNT NUMBER: Stripped the =" " formatting entirely
-                    safe_acc_num = f"{acc_num}\t" if acc_num != 'N/A' else 'N/A'
+                        safe_acc_num = str(acc_num) if acc_num != 'N/A' else 'N/A'
 
                     csv_writer.writerow([
                         safe_name, str(rec.date or ''), safe_clinic_name, rec.amount, rec.state or 'waiting',
