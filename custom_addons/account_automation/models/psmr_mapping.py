@@ -40,7 +40,7 @@ class DailySalesComparison(models.Model):
 class DailySalesComparisonLine(models.Model):
     _name = 'daily.sales.comparison.line'
     _description = 'Daily Sales Comparison Line'
-    _order = 'status desc, difference_abs desc'
+    _order = 'difference_abs desc, status desc'
 
     comparison_id = fields.Many2one('daily.sales.comparison', string='Comparison Reference', ondelete='cascade')
     pos_config_id = fields.Many2one('pos.config', string='POS Configuration', readonly=True)
