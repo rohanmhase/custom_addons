@@ -1172,24 +1172,28 @@ class ClinicScheduleAppointment(models.Model):
         state_map = {s.therapist_id.id: s for s in daily_states}
 
         # FIX: Extract therapists who actively have sessions in the currently viewed day
+        # Extract therapists who actively have sessions in the currently viewed day
         scheduled_therapist_ids = appointments_raw.mapped('therapist_id').ids
-
         target_date_obj = fields.Date.from_string(target_date)
         today_obj = fields.Date.context_today(self)
-
         base_domain = [("active", "=", True)]
+        pulled_ids = pulled_therapist_ids or []
+
         if target_date_obj > today_obj:
-            # FIX: Hide floaters from future boards unless they specifically have an appointment
+            # FIX: Allow ANY therapist (Fixed, Floater, HV) allotted to this branch to appear on future boards
             matrix_condition = [
-                "|", ("is_buffer", "=", True),
-                "|", ("id", "in", scheduled_therapist_ids),
-                "&", ("allowed_branch_ids", "in", clinic_id), ("designation", "=", "fixed")
+                "|", "|", "|",
+                ("is_buffer", "=", True),
+                ("id", "in", scheduled_therapist_ids),
+                ("id", "in", pulled_ids),
+                ("allowed_branch_ids", "in", clinic_id)
             ]
         else:
             # For today/past, pull everyone assigned to the branch
             matrix_condition = [
-                "|", ("is_buffer", "=", True),
-                "|", ("id", "in", scheduled_therapist_ids),
+                "|", "|",
+                ("is_buffer", "=", True),
+                ("id", "in", scheduled_therapist_ids),
                 ("allowed_branch_ids", "in", clinic_id)
             ]
 
