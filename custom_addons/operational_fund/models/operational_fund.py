@@ -1564,7 +1564,12 @@ class OperationalFundDisbursement(models.Model):
                         ifsc = getattr(rec.therapist_ref_id, 'bank_ifsc_code', 'N/A')
 
                     # 3. RAW ACCOUNT NUMBER: Stripped the =" " formatting entirely
-                        safe_acc_num = str(acc_num) if acc_num != 'N/A' else 'N/A'
+                        if acc_num != 'N/A':
+                            clean_acc_num = str(acc_num).replace('`', '').replace("'", "").replace('=', '').strip()
+                            # Prepending a tab forces Excel to read it as text, hiding the E notation.
+                            safe_acc_num = f"\u200B{clean_acc_num}"
+                        else:
+                            safe_acc_num = 'N/A'
 
                     csv_writer.writerow([
                         safe_name, str(rec.date or ''), safe_clinic_name, rec.amount, rec.state or 'waiting',
@@ -1603,7 +1608,7 @@ class OperationalFundDisbursement(models.Model):
                     write_document_or_placeholder('payment_screenshot', 'payment_proof', rec.s3_payment_url, 'jpg')
 
                 csv_buffer.seek(0)
-                zip_file.writestr('audit_manifest.csv', csv_buffer.getvalue().encode('utf-8'))
+                zip_file.writestr('audit_manifest.csv', csv_buffer.getvalue().encode('utf-8-sig'))
 
             self.env['ir.attachment'].sudo().search([('name', '=', 'OFD_Bulk_Financial_Export.zip')]).unlink()
             temp_zip.flush()
