@@ -14,8 +14,9 @@ class Clinic(models.Model):
     pos_config_id = fields.Many2one("pos.config", string="Point of Sale", readonly=True)
     date_created = fields.Datetime(string="Date Created", readonly=True, default=lambda self: self._ist_date())
 
-    # is_sub_clinic = fields.Boolean(string="Is Sub Clinic", default=False)
-    # is_closed = fields.Boolean(string="Is Closed", default=False)
+    is_sub_clinic = fields.Boolean(string="Is Sub Clinic", default=False)
+    is_closed = fields.Boolean(string="Is Closed", default=False)
+
     _sql_constraints = [
         ('cons_unique_code', 'UNIQUE(code)', 'Code already exists!'),
     ]
