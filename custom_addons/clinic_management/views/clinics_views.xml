@@ -68,8 +68,8 @@
                         <field name="address"/>
                         <field name="phone"/>
                         <field name="region_id"/>
-                        <field name="is_sub_clinic"/>
-                        <field name="is_closed"/>
+<!--                        <field name="is_sub_clinic"/>-->
+<!--                        <field name="is_closed"/>-->
                     </group>
                 </sheet>
             </form>
