@@ -1297,6 +1297,17 @@ class OperationalFundDisbursement(models.Model):
                 vals['name'] = f"{c_code}/{d_code}/{main_code}/{sub_code}/{seq}"
 
         records = super().create(vals_list)
+
+        # ---------------------------------------------------------
+        # FIX ADDITIONAL PROOF ATTACHMENTS
+        # ---------------------------------------------------------
+        for record in records:
+            if record.proof_attachment_ids:
+                record.proof_attachment_ids.sudo().write({
+                    'res_model': 'operational.fund.disbursement',
+                    'res_id': record.id,
+                })
+
         # Auto-routing is handled upon clicking "Submit for Approval"
         return records
 
