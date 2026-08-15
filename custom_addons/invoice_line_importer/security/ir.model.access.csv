@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_import_invoice_lines_wizard_invoice_user,import.invoice.lines.wizard invoice user,model_import_invoice_lines_wizard,account.group_account_invoice,1,1,1,1
+access_import_invoice_lines_wizard_account_user,import.invoice.lines.wizard account user,model_import_invoice_lines_wizard,account.group_account_user,1,1,1,1
