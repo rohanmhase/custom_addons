@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_import_invoice_lines_wizard_form" model="ir.ui.view">
+        <field name="name">import.invoice.lines.wizard.form</field>
+        <field name="model">import.invoice.lines.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Invoice Lines from CSV">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>Import Invoice Lines</h2>
+                        <p class="text-muted">
+                            Upload a CSV file, click <strong>Test File</strong>, then <strong>Import Lines</strong>.
+                            Lines will be appended to the current invoice.
+                        </p>
+                    </div>
+
+                    <!-- Top row: file upload + target invoice (2 columns) -->
+                    <group>
+                        <group string="CSV File Upload">
+                            <field name="csv_file"
+                                   filename="csv_filename"
+                                   widget="binary"/>
+                            <field name="csv_filename" invisible="1"/>
+                            <field name="test_passed" invisible="1"/>
+                            <field name="tested_file_hash" invisible="1"/>
+                        </group>
+                        <group string="Target Invoice">
+                            <field name="invoice_id"
+                                   readonly="1"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <!-- Test result: FULL WIDTH, outside any <group> -->
+                    <div invisible="not test_result_html" class="o_import_test_result"
+                         style="margin: 10px 0; width: 100%;">
+                        <field name="test_result_html"
+                               nolabel="1"
+                               widget="html"
+                               readonly="1"
+                               options="{'style-inline': true}"/>
+                    </div>
+
+                    <!-- CSV Format Guide - full width block -->
+                    <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                        <h4 style="margin-top:0;">📄 CSV Format Guide</h4>
+
+                        <p>
+                            <strong>Required columns:</strong>
+                        </p>
+                        <ul>
+                            <li>
+                                <code>Product</code>
+                                — exact product name or internal reference (case-insensitive)
+                            </li>
+                            <li>
+                                <code>Quantity</code>
+                                — numeric
+                            </li>
+                            <li>
+                                <code>Unit Price</code>
+                                — numeric
+                            </li>
+                        </ul>
+
+                        <p>
+                            <strong>Optional columns:</strong>
+                        </p>
+                        <ul>
+                            <li>
+                                <code>Taxes</code>
+                                — exact tax name(s), comma-separated (wrap in quotes if multiple)
+                            </li>
+                            <li>
+                                <code>Description</code>
+                                — line label; if blank, product name is used
+                            </li>
+                        </ul>
+
+                        <p>
+                            <strong>Example:</strong>
+                        </p>
+                        <pre style="background:#f8f9fa; padding:10px; border-radius:4px; font-size:12px; white-space:pre; overflow-x:auto; margin:5px 0;">
+                            Product,Quantity,Unit Price,Taxes,Description
+                            Laptop,2,1500.00,15% VAT|Cess 1%,Office Laptop
+                            Mouse,5,25.00,15% VAT,
+                            USB Hub,3,45.50,,Accessory hub
+                        </pre>
+
+                        <p>
+                            <strong>⚠ Important Rules:</strong>
+                        </p>
+                        <ul>
+                            <li>Product and tax names must <strong>match exactly</strong> (case-insensitive) with
+                                existing records.
+                            </li>
+                            <li>This import will <strong>NEVER create new products or taxes</strong>.
+                            </li>
+                            <li>File must be saved as <strong>UTF-8</strong>.
+                            </li>
+                            <li>You must click <strong>Test File</strong> and see a success message before Import Lines
+                                is enabled.
+                            </li>
+                        </ul>
+                    </div>
+
+                </sheet>
+
+                <footer>
+                    <button name="action_test_import"
+                            string="🔍 Test File"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not csv_file"/>
+
+                    <button name="action_import_lines"
+                            string="✔ Import Lines"
+                            type="object"
+                            class="btn-success"
+                            invisible="not test_passed"/>
+
+                    <button name="action_download_template"
+                            string="⬇ Download Sample Template"
+                            type="object"
+                            class="btn-secondary"/>
+
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="action_import_invoice_lines_wizard" model="ir.actions.act_window">
+        <field name="name">Import Invoice Lines</field>
+        <field name="res_model">import.invoice.lines.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_import_invoice_lines_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
