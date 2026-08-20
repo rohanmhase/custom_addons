@@ -304,98 +304,98 @@ class ClinicScheduleAppointment(models.Model):
             else:
                 rec.is_future_session = False
 
-    @api.model
-    def _cron_generate_daily_payouts(self):
-        """
-        Runs at 11:55 PM daily. Calculates Time-Fenced Incentives and OT,
-        and routes the financial voucher to the therapist's last clinic of the day.
-        """
-        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
-        target_date = datetime.now(local_tz).date()
-
-        # 1. Calculate strict local time boundaries
-        start_of_day_local = local_tz.localize(datetime.combine(target_date, time.min))
-        end_of_day_local = local_tz.localize(datetime.combine(target_date, time.max))
-
-        # 2. Convert boundaries safely to UTC for database querying
-        start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
-        end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
-
-        # Get all valid worked appointments for the day using UTC boundaries
-        daily_apps = self.search([
-            ('start_datetime', '>=', start_day_utc),
-            ('end_datetime', '<=', end_day_utc),
-            ('attendance_state', 'in', ['completed', 'in_progress']),
-            ('therapist_id', '!=', False)
-        ], order='start_datetime asc')
-
-        # Group chronologically by therapist
-        therapist_map = {}
-        for app in daily_apps:
-            t_id = app.therapist_id
-            if t_id not in therapist_map:
-                therapist_map[t_id] = []
-            therapist_map[t_id].append(app)
-
-        Disbursement = self.env['operational.fund.disbursement'].sudo()
-        vouchers_to_create = []
-
-        for therapist, apps in therapist_map.items():
-            cumulative_hours = 0.0
-            therapies_in_standard_time = 0
-
-            # 1. Chronological Timeline Analysis
-            for app in apps:
-                duration_hours = (app.end_datetime - app.start_datetime).total_seconds() / 3600.0
-
-                # Check if this appointment falls entirely or partially within the 9-hour window
-                if cumulative_hours < 9.0:
-                    if app.slot_type == 'patient' and app.attendance_state == 'completed':
-                        therapies_in_standard_time += 1
-
-                cumulative_hours += duration_hours
+    # @api.model
+    # def _cron_generate_daily_payouts(self):
+    #     """
+    #     Runs at 11:55 PM daily. Calculates Time-Fenced Incentives and OT,
+    #     and routes the financial voucher to the therapist's last clinic of the day.
+    #     """
+    #     local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+    #     target_date = datetime.now(local_tz).date()
+    #
+    #     # 1. Calculate strict local time boundaries
+    #     start_of_day_local = local_tz.localize(datetime.combine(target_date, time.min))
+    #     end_of_day_local = local_tz.localize(datetime.combine(target_date, time.max))
+    #
+    #     # 2. Convert boundaries safely to UTC for database querying
+    #     start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+    #     end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+    #
+    #     # Get all valid worked appointments for the day using UTC boundaries
+    #     daily_apps = self.search([
+    #         ('start_datetime', '>=', start_day_utc),
+    #         ('end_datetime', '<=', end_day_utc),
+    #         ('attendance_state', 'in', ['completed', 'in_progress']),
+    #         ('therapist_id', '!=', False)
+    #     ], order='start_datetime asc')
+    #
+    #     # Group chronologically by therapist
+    #     therapist_map = {}
+    #     for app in daily_apps:
+    #         t_id = app.therapist_id
+    #         if t_id not in therapist_map:
+    #             therapist_map[t_id] = []
+    #         therapist_map[t_id].append(app)
+    #
+    #     Disbursement = self.env['operational.fund.disbursement'].sudo()
+    #     vouchers_to_create = []
+    #
+    #     for therapist, apps in therapist_map.items():
+    #         cumulative_hours = 0.0
+    #         therapies_in_standard_time = 0
+    #
+    #         # 1. Chronological Timeline Analysis
+    #         for app in apps:
+    #             duration_hours = (app.end_datetime - app.start_datetime).total_seconds() / 3600.0
+    #
+    #             # Check if this appointment falls entirely or partially within the 9-hour window
+    #             if cumulative_hours < 9.0:
+    #                 if app.slot_type == 'patient' and app.attendance_state == 'completed':
+    #                     therapies_in_standard_time += 1
+    #
+    #             cumulative_hours += duration_hours
 
             # 2. Identify the Last Clinic
             last_clinic = apps[-1].clinic_id
 
             # 3. Calculate Incentive (Strictly inside the 9-hour window)
-            if therapies_in_standard_time > 6:
-                incentive_amount = (therapies_in_standard_time - 6) * 120.0
-                vouchers_to_create.append({
-                    'clinic_id': last_clinic.id,
-                    'date': target_date,
-                    'expense_category': 'incentive',
-                    'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
-                                                                                         'floater'] else 'fixed',
-                    'therapist_ref_id': therapist.id,
-                    'amount': incentive_amount,
-                    'is_system_generated': True,
-                    'description': f"Automated Matrix Payout: Completed {therapies_in_standard_time} therapies within standard 9-hour shift. Base: 6.",
-                    'state': 'waiting'  # Sends it to Custodian Dashboard
-                })
+            # if therapies_in_standard_time > 6:
+            #     incentive_amount = (therapies_in_standard_time - 6) * 120.0
+            #     vouchers_to_create.append({
+            #         'clinic_id': last_clinic.id,
+            #         'date': target_date,
+            #         'expense_category': 'incentive',
+            #         'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
+            #                                                                              'floater'] else 'fixed',
+            #         'therapist_ref_id': therapist.id,
+            #         'amount': incentive_amount,
+            #         'is_system_generated': True,
+            #         'description': f"Automated Matrix Payout: Completed {therapies_in_standard_time} therapies within standard 9-hour shift. Base: 6.",
+            #         'state': 'waiting'  # Sends it to Custodian Dashboard
+            #     })
 
             # 4. Calculate Overtime (Strictly outside the 9-hour window)
-            if cumulative_hours > 9.0:
-                ot_hours = cumulative_hours - 9.0
-                ot_amount = round(ot_hours * 120.0, 2)
-                vouchers_to_create.append({
-                    'clinic_id': last_clinic.id,
-                    'date': target_date,
-                    'expense_category': 'overtime',
-                    'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
-                                                                                         'floater'] else 'fixed',
-                    'therapist_ref_id': therapist.id,
-                    'amount': ot_amount,
-                    'is_system_generated': True,
-                    'description': f"Automated Matrix Payout: {round(ot_hours, 2)} hours of tracked Overtime.",
-                    'state': 'waiting'
-                })
+            # if cumulative_hours > 9.0:
+            #     ot_hours = cumulative_hours - 9.0
+            #     ot_amount = round(ot_hours * 120.0, 2)
+            #     vouchers_to_create.append({
+            #         'clinic_id': last_clinic.id,
+            #         'date': target_date,
+            #         'expense_category': 'overtime',
+            #         'therapist_role': therapist.designation if therapist.designation in ['home', 'fixed',
+            #                                                                              'floater'] else 'fixed',
+            #         'therapist_ref_id': therapist.id,
+            #         'amount': ot_amount,
+            #         'is_system_generated': True,
+            #         'description': f"Automated Matrix Payout: {round(ot_hours, 2)} hours of tracked Overtime.",
+            #         'state': 'waiting'
+            #     })
 
         # Inject all validated vouchers into the operational fund
-        if vouchers_to_create:
-            Disbursement.create(vouchers_to_create)
-            _logger.info(
-                f"System Matrix generated {len(vouchers_to_create)} automated payout vouchers for {target_date}.")
+        # if vouchers_to_create:
+        #     Disbursement.create(vouchers_to_create)
+        #     _logger.info(
+        #         f"System Matrix generated {len(vouchers_to_create)} automated payout vouchers for {target_date}.")
 
     def _ist_date(self):
         utc = (datetime.now())
