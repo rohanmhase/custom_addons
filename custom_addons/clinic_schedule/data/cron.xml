@@ -13,32 +13,32 @@
             <field name="active" eval="True"/>
         </record>
 
-        <record id="ir_cron_generate_daily_payouts" model="ir.cron">
-            <field name="name">Clinic Schedule: Generate Daily Therapist Payouts</field>
-            <field name="model_id" ref="model_clinic_schedule_appointment"/>
-            <field name="state">code</field>
-            <field name="code">model._cron_generate_daily_payouts()</field>
-            <field name="user_id" ref="base.user_root"/>
-            <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
-            <!-- Sets execution to 11:55 PM Local Time -->
-            <field name="nextcall" eval="(DateTime.now().replace(hour=18, minute=25, second=0) + timedelta(days=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
-            <field name="active" eval="True"/>
-        </record>
+<!--        <record id="ir_cron_generate_daily_payouts" model="ir.cron">-->
+<!--            <field name="name">Clinic Schedule: Generate Daily Therapist Payouts</field>-->
+<!--            <field name="model_id" ref="model_clinic_schedule_appointment"/>-->
+<!--            <field name="state">code</field>-->
+<!--            <field name="code">model._cron_generate_daily_payouts()</field>-->
+<!--            <field name="user_id" ref="base.user_root"/>-->
+<!--            <field name="interval_number">1</field>-->
+<!--            <field name="interval_type">days</field>-->
+<!--            <field name="numbercall">-1</field>-->
+<!--            &lt;!&ndash; Sets execution to 11:55 PM Local Time &ndash;&gt;-->
+<!--            <field name="nextcall" eval="(DateTime.now().replace(hour=18, minute=25, second=0) + timedelta(days=0)).strftime('%Y-%m-%d %H:%M:%S')"/>-->
+<!--            <field name="active" eval="True"/>-->
+<!--        </record>-->
 
-        <record id="ir_cron_reset_daily_floaters" model="ir.cron">
-            <field name="name">Clinic Schedule: Reset Floater Allocations</field>
-            <field name="model_id" ref="model_clinic_therapist"/>
-            <field name="state">code</field>
-            <field name="code">model._cron_reset_daily_floaters()</field>
-            <field name="user_id" ref="base.user_root"/>
-            <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
-            <field name="nextcall" eval="(DateTime.now().replace(hour=18, minute=29, second=0) + timedelta(days=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
-            <field name="active" eval="True"/>
-        </record>
+<!--        <record id="ir_cron_reset_daily_floaters" model="ir.cron">-->
+<!--            <field name="name">Clinic Schedule: Reset Floater Allocations</field>-->
+<!--            <field name="model_id" ref="model_clinic_therapist"/>-->
+<!--            <field name="state">code</field>-->
+<!--            <field name="code">model._cron_reset_daily_floaters()</field>-->
+<!--            <field name="user_id" ref="base.user_root"/>-->
+<!--            <field name="interval_number">1</field>-->
+<!--            <field name="interval_type">days</field>-->
+<!--            <field name="numbercall">-1</field>-->
+<!--            <field name="nextcall" eval="(DateTime.now().replace(hour=18, minute=29, second=0) + timedelta(days=0)).strftime('%Y-%m-%d %H:%M:%S')"/>-->
+<!--            <field name="active" eval="True"/>-->
+<!--        </record>-->
 
     </data>
 </odoo>
