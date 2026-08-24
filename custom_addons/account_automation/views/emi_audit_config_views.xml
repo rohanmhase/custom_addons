@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Configuration Menu Group
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_config_emi_audit_group"
+              name="EMI Audit"
+              parent="menu_account_automation_config"
+              sequence="40"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EMI Provider Configuration — Tree
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_emi_provider_config_tree" model="ir.ui.view">
+        <field name="name">emi.provider.config.tree</field>
+        <field name="model">emi.provider.config</field>
+        <field name="arch" type="xml">
+            <tree string="EMI Provider Configurations">
+                <field name="name" string="Provider Name"/>
+                <field name="match_mode" string="Match Method"/>
+                <field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EMI Provider Configuration — Form
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_emi_provider_config_form" model="ir.ui.view">
+        <field name="name">emi.provider.config.form</field>
+        <field name="model">emi.provider.config</field>
+        <field name="arch" type="xml">
+            <form string="EMI Provider Setup">
+                <sheet>
+                    <group>
+                        <group string="Profile Information">
+                            <field name="name" string="Provider Name"/>
+                            <field name="match_mode" string="Match Method"/>
+                            <field name="payment_method_ids"
+                                   string="POS Payment Methods"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="CSV Column Header Mapping">
+                            <field name="col_identifier" string="Match Column Header"/>
+                            <field name="col_total_loan" string="Total Loan Header"/>
+                            <field name="col_advance" string="Advance Header"/>
+                            <field name="col_final_payout" string="Final Payout Header"/>
+                            <field name="col_fee_1" string="Fee Header 1"/>
+                            <field name="col_fee_2" string="Fee Header 2"/>
+                            <field name="col_settlement_date" string="Settlement Date Header"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Clinic Mappings" invisible="match_mode == 'invoice'">
+                            <div class="mb-2">
+                                <button name="action_import_clinic_mappings"
+                                        string="Import CSV"
+                                        type="object"
+                                        class="btn-secondary"
+                                        icon="fa-upload"/>
+                                <button name="action_export_clinic_mappings"
+                                        string="Export CSV"
+                                        type="object"
+                                        class="btn-secondary"
+                                        icon="fa-download"/>
+                            </div>
+                            <field name="clinic_mapping_ids">
+                                <tree editable="bottom">
+                                    <field name="csv_clinic_name" string="CSV Clinic Name"/>
+                                    <field name="clinic_id"
+                                           string="Odoo Clinic"
+                                           options="{'no_create': True}"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Clinic Mapping Import Wizard — Form
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_emi_clinic_mapping_import_wizard_form" model="ir.ui.view">
+        <field name="name">emi.clinic.mapping.import.wizard.form</field>
+        <field name="model">emi.clinic.mapping.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Clinic Mappings">
+                <sheet>
+                    <group>
+                        <field name="provider_id" readonly="1"/>
+                        <field name="file_data" filename="file_name"/>
+                        <field name="file_name" invisible="1"/>
+                        <field name="replace_all"/>
+                    </group>
+                    <div class="text-muted">
+                        CSV headers required:
+                        <code>csv_clinic_name, odoo_clinic_name</code>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_import"
+                            string="Import"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            special="cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Window Action & Submenus
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="action_emi_provider_config" model="ir.actions.act_window">
+        <field name="name">EMI Provider Configuration</field>
+        <field name="res_model">emi.provider.config</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_sub_emi_provider_config"
+              name="EMI Provider Configuration"
+              parent="menu_config_emi_audit_group"
+              action="action_emi_provider_config"
+              sequence="10"/>
+
+</odoo>

@@ -149,3 +149,21 @@ class AccountAutomationDashboard(models.TransientModel):
     def _compute_overdue_count(self):
         for rec in self:
             rec.overdue_checkpoint_count = self.env['pos.session.cash.checkpoint'].get_overdue_count()
+
+    def action_run_emi_audit(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Run EMI Audit',
+            'res_model': 'emi.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_view_emi_audit_history(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'EMI Audit History',
+            'res_model': 'emi.audit',
+            'view_mode': 'tree,form',
+            'target': 'current',
+        }

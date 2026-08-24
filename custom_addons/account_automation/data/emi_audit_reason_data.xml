@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="emi_reason_carry_forward" model="emi.audit.reason">
+            <field name="name">Pending Settlement — Carry Forward</field>
+            <field name="resolution_type">carry_forward</field>
+            <field name="help_text">Amount will settle in a future period</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="emi_reason_settle_past" model="emi.audit.reason">
+            <field name="name">Settle Against Past Pending</field>
+            <field name="resolution_type">settle_pending</field>
+            <field name="help_text">Match against a previously carried forward amount</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="emi_reason_write_off" model="emi.audit.reason">
+            <field name="name">Drop / Write Off</field>
+            <field name="resolution_type">write_off</field>
+            <field name="help_text">Ignore this variance — no follow-up needed</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <record id="emi_reason_invoice_missing" model="emi.audit.reason">
+            <field name="name">Invoice Not Found in Odoo</field>
+            <field name="resolution_type">carry_forward</field>
+            <field name="help_text">CSV invoice number does not exist in system</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <record id="emi_reason_clinic_not_mapped" model="emi.audit.reason">
+            <field name="name">Clinic Mapping Missing</field>
+            <field name="resolution_type">carry_forward</field>
+            <field name="help_text">CSV clinic name not configured in mapping</field>
+            <field name="sequence">50</field>
+        </record>
+    </data>
+</odoo>
