@@ -323,7 +323,7 @@
     </record>
 
         <!-- Wizard Form View -->
-    <record id="view_op_fund_download_wizard_form" model="ir.ui.view">
+<record id="view_op_fund_download_wizard_form" model="ir.ui.view">
         <field name="name">operational.fund.download.wizard.form</field>
         <field name="model">operational.fund.download.wizard</field>
         <field name="arch" type="xml">
@@ -331,10 +331,18 @@
                 <sheet>
                     <group>
                         <field name="date"/>
+                        <!-- New Checkbox -->
+                        <field name="only_approved"/>
                         <field name="include_paid"/>
                     </group>
+
                     <div class="alert alert-info" role="alert">
-                        This will compile a ZIP file containing the financial CSV manifest (with banking details) and all attached PDF/Image receipts for the selected date.
+                        This will compile a ZIP file containing the financial XLSX manifest (with banking details) and all attached PDF/Image receipts for the selected date.
+                    </div>
+
+                    <!-- Dynamic Warning Message -->
+                    <div class="alert alert-warning mt-2" role="alert" invisible="not include_paid">
+                        <i class="fa fa-exclamation-triangle me-1"></i> <strong>Notice:</strong> You are about to download paid vouchers as well.
                     </div>
                 </sheet>
                 <footer>

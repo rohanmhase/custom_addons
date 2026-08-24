@@ -356,7 +356,7 @@ class ClinicScheduleAppointment(models.Model):
     #             cumulative_hours += duration_hours
 
             # 2. Identify the Last Clinic
-            last_clinic = apps[-1].clinic_id
+            # last_clinic = apps[-1].clinic_id
 
             # 3. Calculate Incentive (Strictly inside the 9-hour window)
             # if therapies_in_standard_time > 6:
