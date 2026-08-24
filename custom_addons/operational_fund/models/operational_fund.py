@@ -3,7 +3,7 @@ import logging
 import mimetypes
 import zipfile
 import base64
-import csv
+import xlsxwriter
 import os
 import tempfile
 from markupsafe import escape
@@ -992,20 +992,37 @@ class OperationalFundDisbursement(models.Model):
                                                                                        'sticky': False,
                                                                                        'type': 'success'}}
 
-    def action_bulk_download_assets(self):
+    def action_bulk_download_assets(self, filename=None):
         if not self: return False
-        csv_buffer = io.StringIO()
-        csv_writer = csv.writer(csv_buffer)
 
-        # 1. UPDATED HEADERS: Re-labeled 'VED ID' to cover both Vendors and Therapists
-        csv_writer.writerow([
+        # --- SMART FALLBACK NAMING ---
+        if not filename:
+            dates = list(set(self.mapped('date')))
+            date_str = str(dates[0]) if len(dates) == 1 else "Multi_Date"
+            filename = f"Vouchers_{date_str}_Export.zip"
+
+        # 1. Initialize the XLSX Workbook in memory
+        xlsx_buffer = io.BytesIO()
+        workbook = xlsxwriter.Workbook(xlsx_buffer, {'in_memory': True})
+        worksheet = workbook.add_worksheet('Audit Manifest')
+
+        # Define styling
+        bold_format = workbook.add_format({'bold': True, 'bg_color': '#f3f4f6'})
+        text_format = workbook.add_format({'num_format': '@'})  # Forces strict text interpretation
+
+        # Write Headers
+        headers = [
             'Voucher Number', 'Date', 'Clinic Branch', 'Amount', 'Status',
             'Payee Name', 'Vendor / VED ID', 'Bank Name', 'Account Number', 'IFSC Code',
             'S3 Receipt URL', 'S3 Voucher URL', 'S3 Payment URL'
-        ])
+        ]
+        for col_num, header in enumerate(headers):
+            worksheet.write(0, col_num, header, bold_format)
+            worksheet.set_column(col_num, col_num, 20)  # Set default column width
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_zip:
             with zipfile.ZipFile(temp_zip, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                row_num = 1
                 for rec in self:
                     clean_code = rec.name.replace('/', '_')
                     clinic_name = rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'
@@ -1013,14 +1030,11 @@ class OperationalFundDisbursement(models.Model):
                         ('=', '+', '-', '@')) else rec.name
                     safe_clinic_name = f"'{clinic_name}" if clinic_name and str(clinic_name).startswith(
                         ('=', '+', '-', '@')) else clinic_name
-
                     payee_name = rec.payee_display or 'N/A'
                     ved_id = rec.therapist_ved_number or 'N/A'
                     bank_name = acc_num = ifsc = 'N/A'
 
                     if rec.vendor_ref_id:
-                        # 2. DYNAMIC VENDOR ID: Generated on-the-fly (e.g., VND-05-0012)
-                        # This guarantees uniqueness per clinic without altering the database schema
                         ved_id = f"VND-{rec.clinic_id.id:02d}-{rec.vendor_ref_id.id:04d}"
                         bank_name = rec.vendor_ref_id.bank_name or 'N/A'
                         acc_num = rec.vendor_ref_id.bank_account_number or 'N/A'
@@ -1031,22 +1045,31 @@ class OperationalFundDisbursement(models.Model):
                         acc_num = getattr(rec.therapist_ref_id, 'bank_account_number', 'N/A')
                         ifsc = getattr(rec.therapist_ref_id, 'bank_ifsc_code', 'N/A')
 
-                    # 3. RAW ACCOUNT NUMBER: Stripped the =" " formatting entirely
-                        if acc_num != 'N/A':
-                            clean_acc_num = str(acc_num).replace('`', '').replace("'", "").replace('=', '').strip()
-                            # Prepending a tab forces Excel to read it as text, hiding the E notation.
-                            safe_acc_num = f"\u200B{clean_acc_num}"
-                        else:
-                            safe_acc_num = 'N/A'
+                    # 2. INDENTATION FIXED: This now properly executes for BOTH vendors and therapists
+                    if acc_num != 'N/A':
+                        safe_acc_num = str(acc_num).replace('`', '').replace("'", "").replace('=', '').strip()
+                    else:
+                        safe_acc_num = 'N/A'
 
-                    csv_writer.writerow([
-                        safe_name, str(rec.date or ''), safe_clinic_name, rec.amount, rec.state or 'waiting',
-                        payee_name, ved_id, bank_name, safe_acc_num, ifsc,
-                                                                                      rec.s3_receipt_url or 'N/A',
-                                                                                      rec.s3_voucher_url or 'N/A',
-                                                                                      rec.s3_payment_url or 'N/A'
-                    ])
+                    # 3. Write data to XLSX rows
+                    worksheet.write_string(row_num, 0, str(safe_name))
+                    worksheet.write_string(row_num, 1, str(rec.date or ''))
+                    worksheet.write_string(row_num, 2, str(safe_clinic_name))
+                    worksheet.write_number(row_num, 3, rec.amount)
+                    worksheet.write_string(row_num, 4, str(rec.state or 'waiting'))
+                    worksheet.write_string(row_num, 5, str(payee_name))
+                    worksheet.write_string(row_num, 6, str(ved_id))
+                    worksheet.write_string(row_num, 7, str(bank_name))
 
+                    # Force the account number as a string using text_format to stop scientific notation
+                    worksheet.write_string(row_num, 8, str(safe_acc_num), text_format)
+
+                    worksheet.write_string(row_num, 9, str(ifsc))
+                    worksheet.write_string(row_num, 10, str(rec.s3_receipt_url or 'N/A'))
+                    worksheet.write_string(row_num, 11, str(rec.s3_voucher_url or 'N/A'))
+                    worksheet.write_string(row_num, 12, str(rec.s3_payment_url or 'N/A'))
+
+                    # 4. Attachment handling (unchanged)
                     def write_document_or_placeholder(field_name, filename_suffix, s3_url, default_ext='pdf'):
                         filename = f"{clean_code}_{filename_suffix}.{default_ext}"
                         att = self.env['ir.attachment'].sudo().search(
@@ -1075,24 +1098,33 @@ class OperationalFundDisbursement(models.Model):
                     write_document_or_placeholder('signed_voucher_file', 'voucher', rec.s3_voucher_url, 'pdf')
                     write_document_or_placeholder('payment_screenshot', 'payment_proof', rec.s3_payment_url, 'jpg')
 
-                csv_buffer.seek(0)
-                zip_file.writestr('audit_manifest.csv', csv_buffer.getvalue().encode('utf-8-sig'))
+                    row_num += 1
 
-            self.env['ir.attachment'].sudo().search([('name', '=', 'OFD_Bulk_Financial_Export.zip')]).unlink()
+                # 5. Close the workbook and write it to the ZIP
+                workbook.close()
+                xlsx_buffer.seek(0)
+                zip_file.writestr('audit_manifest.xlsx', xlsx_buffer.getvalue())
+
+            self.env['ir.attachment'].sudo().search([('name', '=', filename)]).unlink()
             temp_zip.flush()
-
             with open(temp_zip.name, 'rb') as f:
-                archive_attachment = self.env['ir.attachment'].sudo().create(
-                    {'name': 'OFD_Bulk_Financial_Export.zip', 'type': 'binary', 'raw': f.read(),
-                     'mimetype': 'application/zip', 'public': False})
-
+                archive_attachment = self.env['ir.attachment'].sudo().create({
+                    'name': filename,
+                    'type': 'binary',
+                    'raw': f.read(),
+                    'mimetype': 'application/zip',
+                    'public': False
+                })
         try:
             os.unlink(temp_zip.name)
         except Exception:
             pass
 
-        return {'type': 'ir.actions.act_url', 'url': f'/web/content/{archive_attachment.id}?download=true',
-                'target': 'self'}
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{archive_attachment.id}?download=true',
+            'target': 'self'
+        }
 
     @api.constrains('amount')
     def _check_amount_validity(self):
@@ -1156,13 +1188,23 @@ class OperationalFundDownloadWizard(models.TransientModel):
     _description = 'Download Daily Vouchers'
 
     date = fields.Date(string='Date', default=fields.Date.context_today, required=True)
+
+    # New Field
+    only_approved = fields.Boolean(string='Only Approved Vouchers', default=False,
+                                   help="If checked, skips 'Waiting' vouchers and only downloads those explicitly approved.")
+
     include_paid = fields.Boolean(string='Include Paid Vouchers', default=False,
-                                  help="If checked, downloads all vouchers. Otherwise, downloads only unpaid (waiting/approved).")
+                                  help="If checked, downloads vouchers that have already been marked as paid.")
 
     def action_download_vouchers(self):
         self.ensure_one()
-        # Define "Unpaid" as waiting or approved, but not yet paid
-        target_states = ['waiting', 'approved', 'paid'] if self.include_paid else ['waiting', 'approved']
+
+        # 1. Base states based on the new "Only Approved" checkbox
+        target_states = ['approved'] if self.only_approved else ['waiting', 'approved']
+
+        # 2. Append 'paid' if the include paid checkbox is ticked
+        if self.include_paid:
+            target_states.append('paid')
 
         vouchers = self.env['operational.fund.disbursement'].search([
             ('date', '=', self.date),
