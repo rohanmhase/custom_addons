@@ -300,16 +300,18 @@
          6.  MENU ITEMS
          ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- Operations: unchanged -->
     <menuitem id="menu_medicine_transfer_sales_audit_history"
               name="Medicine Transfer vs Sales Audit"
               parent="menu_account_automation_operations"
               action="action_medicine_transfer_sales_audit_history"
               sequence="40"/>
 
+    <!-- Configuration > Clinic Performance -->
     <menuitem id="menu_medicine_transfer_selling_price"
               name="Medicine Selling Prices"
-              parent="menu_account_automation_config"
+              parent="menu_section_clinic_performance"
               action="action_medicine_transfer_selling_price"
-              sequence="30"/>
+              sequence="3"/>
 
 </odoo>

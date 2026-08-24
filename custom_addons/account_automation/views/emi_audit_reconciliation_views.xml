@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Reason Master -->
+    <record id="view_emi_audit_reason_tree" model="ir.ui.view">
+        <field name="name">emi.audit.reason.tree</field>
+        <field name="model">emi.audit.reason</field>
+        <field name="arch" type="xml">
+            <tree string="Variance Reasons" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="resolution_type"/>
+                <field name="help_text"/>
+                <field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_emi_audit_reason_form" model="ir.ui.view">
+        <field name="name">emi.audit.reason.form</field>
+        <field name="model">emi.audit.reason</field>
+        <field name="arch" type="xml">
+            <form string="Variance Reason">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="resolution_type"/>
+                        <field name="help_text"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_emi_audit_reason" model="ir.actions.act_window">
+        <field name="name">EMI Variance Reasons</field>
+        <field name="res_model">emi.audit.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Resolve Wizard -->
+    <record id="view_emi_audit_resolve_wizard_form" model="ir.ui.view">
+        <field name="name">emi.audit.resolve.wizard.form</field>
+        <field name="model">emi.audit.resolve.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve EMI Variance">
+                <sheet>
+                    <group string="Variance Details">
+                        <group>
+                            <field name="clinic_name" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="odoo_emi_sales" readonly="1"/>
+                            <field name="expected_odoo_amount" readonly="1"/>
+                            <field name="difference" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Resolution">
+                        <field name="reason_id" options="{'no_create': True}"/>
+                        <field name="note"/>
+                        <field name="resolution_type" invisible="1"/>
+                    </group>
+
+                    <group string="Settle Against Past Pending"
+                           invisible="resolution_type != 'settle_pending'">
+                        <field name="pending_ids" nolabel="1" colspan="2">
+                            <tree create="false" delete="false" edit="false">
+                                <field name="create_date"/>
+                                <field name="provider_id"/>
+                                <field name="clinic_name"/>
+                                <field name="amount" sum="Total"/>
+                                <field name="reason_id"/>
+                            </tree>
+                        </field>
+                        <field name="remaining_after_settle" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply"
+                            string="Apply"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Pending Ledger -->
+    <record id="view_emi_audit_pending_tree" model="ir.ui.view">
+        <field name="name">emi.audit.pending.tree</field>
+        <field name="model">emi.audit.pending</field>
+        <field name="arch" type="xml">
+            <tree string="EMI Pending Variances"
+                  create="false" delete="false"
+                  decoration-success="state == 'settled'"
+                  decoration-info="state == 'open' and amount &gt; 0"
+                  decoration-warning="state == 'open' and amount &lt; 0">
+                <field name="create_date"/>
+                <field name="provider_id"/>
+                <field name="clinic_name"/>
+                <field name="amount" sum="Net Pending"/>
+                <field name="reason_id"/>
+                <field name="note"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-success="state == 'settled'"
+                       decoration-warning="state == 'open'"/>
+                <field name="settled_audit_date"/>
+                <field name="settled_in_audit_id" widget="many2one_clickable"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_emi_audit_pending_search" model="ir.ui.view">
+        <field name="name">emi.audit.pending.search</field>
+        <field name="model">emi.audit.pending</field>
+        <field name="arch" type="xml">
+            <search string="EMI Pending Variances">
+                <field name="clinic_name"/>
+                <field name="provider_id"/>
+
+                <filter string="Open" name="open" domain="[('state','=','open')]"/>
+                <filter string="Settled" name="settled" domain="[('state','=','settled')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Provider" name="group_provider" context="{'group_by':'provider_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by':'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_emi_audit_pending" model="ir.actions.act_window">
+        <field name="name">EMI Pending Variances</field>
+        <field name="res_model">emi.audit.pending</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_emi_audit_pending_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_sub_emi_audit_pending"
+              name="Pending Variances"
+              parent="menu_emi_audit_parent"
+              action="action_emi_audit_pending"
+              sequence="30"/>
+
+    <menuitem id="menu_sub_emi_audit_reason"
+              name="Variance Reasons"
+              parent="menu_config_emi_audit_group"
+              action="action_emi_audit_reason"
+              sequence="20"/>
+
+</odoo>

@@ -31,7 +31,8 @@
                             <b>How it works:</b>
                             <ul style="margin-bottom:0;">
                                 <li>Cron runs daily at 8 AM IST checking sessions started yesterday.</li>
-                                <li>If a clinic had no session yesterday, its most recent session is checked instead.</li>
+                                <li>If a clinic had no session yesterday, its most recent session is checked instead.
+                                </li>
                                 <li>Emails are sent to the session's responsible user + CC list above.</li>
                                 <li>Email failures never block the cron — they're just logged.</li>
                             </ul>
@@ -155,12 +156,19 @@
         </record>
 
         <!-- ========== MENUS ========== -->
+        <!-- ══════ SECTION: POS Session Alerts ══════ -->
+        <menuitem id="menu_section_pos_session_alert"
+                  name="POS Session Alerts"
+                  parent="menu_account_automation_config"
+                  sequence="40"/>
+
         <menuitem id="menu_pos_session_alert_config"
                   name="Session Cash Alert"
-                  parent="menu_account_automation_config"
+                  parent="menu_section_pos_session_alert"
                   action="action_open_pos_session_alert_config"
-                  sequence="10"/>
+                  sequence="1"/>
 
+        <!-- History stays under Operations (unchanged) -->
         <menuitem id="menu_pos_session_alert_log"
                   name="Session Alert History"
                   parent="menu_account_automation_operations"

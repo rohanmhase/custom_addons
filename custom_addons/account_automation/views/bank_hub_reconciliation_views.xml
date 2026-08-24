@@ -203,9 +203,9 @@
               sequence="30"/>
 
     <menuitem id="menu_sub_bank_sales_audit_reason"
-              name="Variance Reasons"
-              parent="menu_account_automation_config"
-              action="action_bank_sales_audit_reason"
-              sequence="30"/>
+          name="Variance Reasons"
+          parent="menu_section_bank_hub_audit"
+          action="action_bank_sales_audit_reason"
+          sequence="3"/>
 
 </odoo>

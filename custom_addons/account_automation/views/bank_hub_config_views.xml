@@ -107,16 +107,22 @@
               parent="menu_account_automation_root"
               sequence="100"/>
 
+    <!-- ══════ SECTION: Bank vs HUB Audit ══════ -->
+<menuitem id="menu_section_bank_hub_audit"
+          name="Bank vs HUB Audit"
+          parent="menu_account_automation_config"
+          sequence="10"/>
+
     <menuitem id="menu_sub_bank_statement_parser_config"
               name="Bank CSV Configuration"
-              parent="menu_account_automation_config"
+              parent="menu_section_bank_hub_audit"
               action="action_bank_statement_parser_config"
-              sequence="10"/>
+              sequence="1"/>
 
     <menuitem id="menu_sub_tid_clinic_method_mapping"
               name="TID vs Clinic Mapping"
-              parent="menu_account_automation_config"
+              parent="menu_section_bank_hub_audit"
               action="action_tid_clinic_method_mapping"
-              sequence="20"/>
+              sequence="2"/>
 
 </odoo>

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Parent Menu Declaration -->
+    <menuitem id="menu_emi_audit_parent"
+              name="EMI Audit"
+              parent="menu_account_automation_root"
+              sequence="15"/>
+
+    <!-- Wizard Form -->
+    <record id="view_emi_audit_wizard_form" model="ir.ui.view">
+        <field name="name">emi.audit.wizard.form</field>
+        <field name="model">emi.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Run EMI Audit">
+                <sheet>
+                    <group>
+                        <group string="Audit Parameters">
+                            <field name="provider_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group string="EMI Statement">
+                            <field name="emi_statement_file" filename="file_name"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Required CSV Columns for Selected Provider"
+                           invisible="not provider_id">
+                        <field name="required_columns_help" nolabel="1" readonly="1" colspan="2"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_emi_audit" string="Analyze &amp; Generate Report" type="object"
+                            class="btn-primary"/>
+                    <button string="Discard" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Audit Line Tree -->
+    <record id="view_emi_audit_line_tree" model="ir.ui.view">
+        <field name="name">emi.audit.line.tree</field>
+        <field name="model">emi.audit.line</field>
+        <field name="arch" type="xml">
+            <tree string="EMI Audit Clinic Summary" create="false" edit="false" delete="false"
+                  decoration-danger="difference &lt; 0 and resolution_state == 'open'"
+                  decoration-success="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"
+                  decoration-warning="difference &gt; 0 and resolution_state == 'open'">
+
+                <field name="clinic_name" string="Clinic Name"/>
+                <field name="invoice_no" string="Invoice No" optional="show"/>
+                <field name="invoice_date" string="Invoice Date" optional="show"/>
+                <field name="settlement_date" string="Settlement Date" optional="show"/>
+
+                <field name="odoo_emi_sales" string="Odoo Sales" sum="Total Odoo"/>
+                <field name="expected_odoo_amount" string="Expected (CSV)" sum="Total CSV"/>
+                <field name="difference" string="Difference" sum="Net Difference"/>
+
+                <field name="advance_paid" string="Advance" sum="Total Advance" optional="show"/>
+                <field name="fees_deducted" string="Fees" sum="Total Fees" optional="show"/>
+                <field name="final_payout" string="Final Payout" sum="Total Payout" optional="show"/>
+
+                <field name="resolution_state" string="Status"/>
+                <field name="reason_id" string="Reason" optional="show"/>
+                <field name="note" optional="hide"/>
+                <field name="net_difference" string="Remaining Gap" sum="Total Gap" optional="show"/>
+                <field name="pending_status" widget="badge" optional="show"
+                       decoration-success="pending_status == 'settled'"
+                       decoration-warning="pending_status == 'open'"/>
+                <field name="resolved_for_date" string="Gap From" optional="hide"/>
+                <field name="resolved_on_date" string="Cleared On" optional="hide"/>
+
+                <button name="action_open_resolve_wizard" type="object" string="Resolve" class="btn-link"
+                        invisible="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"/>
+                <button name="action_reset_line_to_open" type="object" string="Reset" class="btn-link text-danger"
+                        confirm="Reset this line back to Open?" invisible="resolution_state != 'resolved'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- History Search -->
+    <record id="view_emi_audit_history_search" model="ir.ui.view">
+        <field name="name">emi.audit.history.search</field>
+        <field name="model">emi.audit</field>
+        <field name="arch" type="xml">
+            <search string="EMI Audit History">
+                <field name="name"/>
+                <field name="provider_id"/>
+
+                <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Provider" name="group_provider" context="{'group_by':'provider_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- History Tree -->
+    <record id="view_emi_audit_history_tree" model="ir.ui.view">
+        <field name="name">emi.audit.history.tree</field>
+        <field name="model">emi.audit</field>
+        <field name="arch" type="xml">
+            <tree string="EMI Audit History" create="false" edit="false">
+                <field name="name"/>
+                <field name="provider_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="file_name"/>
+                <field name="run_by"/>
+                <field name="run_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- History Form -->
+    <record id="view_emi_audit_history_form" model="ir.ui.view">
+        <field name="name">emi.audit.history.form</field>
+        <field name="model">emi.audit</field>
+        <field name="arch" type="xml">
+            <form string="EMI Audit Details" create="false">
+                <header>
+                    <button name="action_toggle_chatter" type="object" string="Show Activity Log" class="btn-secondary"
+                            invisible="show_chatter"/>
+                    <button name="action_toggle_chatter" type="object" string="Hide Activity Log" class="btn-secondary"
+                            invisible="not show_chatter"/>
+                    <field name="show_chatter" invisible="1"/>
+                </header>
+
+                <!-- Added max-width: 100% !important so the card stretches full screen when log is hidden -->
+                <sheet style="max-width: 100% !important;">
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Audit Info">
+                            <field name="provider_id" readonly="1"/>
+                            <field name="start_date" readonly="1"/>
+                            <field name="end_date" readonly="1"/>
+                            <field name="file_name" readonly="1"/>
+                        </group>
+                        <group string="Run Info">
+                            <field name="run_by" readonly="1"/>
+                            <field name="run_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Clinic Summary">
+                            <field name="line_ids" readonly="1" nolabel="1">
+                                <tree decoration-danger="difference &lt; 0 and resolution_state == 'open'"
+                                      decoration-success="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"
+                                      decoration-warning="difference &gt; 0 and resolution_state == 'open'">
+
+                                    <field name="clinic_name" string="Clinic Name"/>
+                                    <field name="invoice_no" string="Invoice No" optional="show"/>
+                                    <field name="invoice_date" string="Invoice Date" optional="show"/>
+                                    <field name="settlement_date" string="Settlement Date" optional="show"/>
+
+                                    <field name="odoo_emi_sales" string="Odoo Sales" sum="Total Odoo"/>
+                                    <field name="expected_odoo_amount" string="Expected (CSV)" sum="Total CSV"/>
+                                    <field name="difference" string="Difference" sum="Net Diff"/>
+
+                                    <field name="advance_paid" string="Advance" sum="Total Adv" optional="show"/>
+                                    <field name="fees_deducted" string="Fees" sum="Total Fees" optional="show"/>
+                                    <field name="final_payout" string="Final Payout" sum="Total Payout"
+                                           optional="show"/>
+
+                                    <field name="resolution_state" string="Status"/>
+                                    <field name="reason_id" string="Reason" optional="show"/>
+                                    <field name="note" optional="hide"/>
+                                    <field name="net_difference" string="Remaining Gap" sum="Total Gap"
+                                           optional="show"/>
+                                    <field name="pending_status" widget="badge" optional="show"
+                                           decoration-success="pending_status == 'settled'"
+                                           decoration-warning="pending_status == 'open'"/>
+                                    <field name="resolved_for_date" string="Gap From" optional="hide"/>
+                                    <field name="resolved_on_date" string="Cleared On" optional="hide"/>
+
+                                    <button name="action_open_resolve_wizard" type="object" string="Resolve"
+                                            class="btn-link"
+                                            invisible="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"/>
+                                    <button name="action_reset_line_to_open" type="object" string="Reset"
+                                            class="btn-link text-danger"
+                                            confirm="Reset this line?" invisible="resolution_state != 'resolved'"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <div class="oe_chatter" invisible="not show_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions & Submenus -->
+    <record id="action_emi_audit_wizard" model="ir.actions.act_window">
+        <field name="name">Run EMI Audit</field>
+        <field name="res_model">emi.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_emi_audit_history" model="ir.actions.act_window">
+        <field name="name">EMI Audit History</field>
+        <field name="res_model">emi.audit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_emi_audit_history_search"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_sub_emi_audit_run"
+              name="Run Audit"
+              parent="menu_emi_audit_parent"
+              action="action_emi_audit_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_sub_emi_audit_history"
+              name="View History"
+              parent="menu_emi_audit_parent"
+              action="action_emi_audit_history"
+              sequence="20"/>
+
+</odoo>
