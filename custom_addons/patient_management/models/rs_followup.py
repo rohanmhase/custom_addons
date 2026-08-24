@@ -30,6 +30,8 @@ class PatientAssessment(models.Model):
         "gradation.followup.line", "followup_id", string="Gradation Lines"
     )
 
+    vas_score = fields.Integer(string="VAS Score", default=1, required=True)
+
     # 1. Define the default method
     def _default_assessment_lines(self):
         lines = []
@@ -199,6 +201,17 @@ class PatientAssessment(models.Model):
 
         # 2. Otherwise, allow normal archiving behavior
         return super().action_archive()
+
+    def write(self, vals):
+        # Check if vas_score is in the dictionary of fields being updated
+        if 'vas_score' in vals:
+            for record in self:
+                # Only raise an error if the value is actually being changed to a new number
+                if record.vas_score != vals['vas_score']:
+                    raise ValidationError("The VAS Score cannot be modified once the assessment is generated.")
+
+        return super().write(vals)
+
 
 class PatientAssessmentLine(models.Model):
     _name = 'patient.assessment.line'

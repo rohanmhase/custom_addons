@@ -39,6 +39,8 @@
             'patient_management/static/src/css/form.css',
             'patient_management/static/src/js/prescription_form_controller.js',
             'patient_management/static/src/css/prescription_styles.css',
+            'patient_management/static/src/xml/range_slider.xml',
+            'patient_management/static/src/js/range_slider.js',
 
         ],
         'point_of_sale._assets_pos': [
