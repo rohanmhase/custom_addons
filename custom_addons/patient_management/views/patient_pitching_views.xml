@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_pitching_form" model="ir.ui.view">
+        <field name="name">patient.pitching.form</field>
+        <field name="model">patient.pitching</field>
+        <field name="arch" type="xml">
+
+            <form string="Patient Pitching">
+                <sheet>
+                    <!-- New Pitching -->
+                    <group string="New Pitching">
+                        <field name="patient_id"
+                               readonly="1"
+                               options="{'no_create': True, 'no_open': True}"/>
+
+                        <field name="pitching_type"
+                               widget="radio"
+                               options="{'horizontal': true}"/>
+
+                        <field name="remarks"
+                               placeholder="Enter pitching remarks..."/>
+                    </group>
+
+                    <separator string="Pitching History"/>
+
+                    <!-- Scrollable History -->
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <field name="pitching_history_ids"
+                               nolabel="1">
+                            <tree create="false" edit="false" delete="false">
+                                <field name="create_date" string="Date"/>
+                                <field name="pitching_type" string="Pitching Type"/>
+                                <field name="remarks" string="Remarks"/>
+                                <field name="create_uid" string="Created By"/>
+                            </tree>
+                        </field>
+                    </div>
+
+                </sheet>
+            </form>
+
+        </field>
+    </record>
+</odoo>

@@ -56,3 +56,6 @@ access_patient_billing_queue_user,access.patient.billing.queue.user,model_patien
 
 access_prescription_exempt_product_admin,access.prescription.exempt.product_admin,model_prescription_exempt_product,clinic_management.group_clinic_administrator,1,1,1,1
 access_prescription_exempt_product_user,access.prescription.exempt.product_user,model_prescription_exempt_product,clinic_management.group_clinic_user,1,1,1,1
+
+access_patient_pitching_administrator,access.patient.pitching_administrator,model_patient_pitching,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_pitching_user,access.patient.pitching_user,model_patient_pitching,clinic_management.group_clinic_user,1,1,1,1

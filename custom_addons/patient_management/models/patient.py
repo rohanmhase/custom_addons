@@ -204,6 +204,12 @@ class Patient(models.Model):
         string="Therapy Sessions",
     )
 
+    pitching_ids = fields.One2many(
+        'patient.pitching',
+        'patient_id',
+        string='Pitching History'
+    )
+
     @api.model
     def _get_pain_options(self):
         return [
@@ -237,7 +243,7 @@ class Patient(models.Model):
             if self._origin.id:
                 domain += [('id', '!=', self._origin.id)]
 
-            duplicates = self.env['clinic.patient'].search(domain)
+            duplicates = self.env['clinic.patient'].sudo().search(domain)
             if duplicates:
                 lines = []
                 for i, p in enumerate(duplicates, 1):
@@ -739,6 +745,20 @@ class Patient(models.Model):
             'name': 'Consent Form',
             'type': 'ir.actions.act_window',
             'res_model': 'consent.form',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_patient_id': self.id,
+            },
+        }
+
+    def action_open_pitching(self):
+        self.ensure_one()
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Pitching',
+            'res_model': 'patient.pitching',
             'view_mode': 'form',
             'target': 'new',
             'context': {

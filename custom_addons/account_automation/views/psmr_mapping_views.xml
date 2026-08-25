@@ -17,9 +17,15 @@
         <field name="view_mode">tree</field>
     </record>
 
+    <!-- ══════ SECTION: Daily Sales Comparison ══════ -->
+<menuitem id="menu_section_daily_sales_comparison"
+          name="Daily Sales Comparison"
+          parent="account_automation.menu_account_automation_config"
+          sequence="30"/>
+
     <menuitem id="menu_action_clinic_psmr_mapping"
               name="Clinic Mapping Profiles"
-              parent="account_automation.menu_account_automation_config"
+              parent="menu_section_daily_sales_comparison"
               action="action_clinic_psmr_mapping"
-              sequence="10"/>
+              sequence="1"/>
 </odoo>

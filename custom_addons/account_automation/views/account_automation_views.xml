@@ -20,7 +20,7 @@
         <field name="model">account.automation.dashboard</field>
         <field name="arch" type="xml">
             <form string="Account Automation Workspace" create="false" edit="false" delete="false">
-                <sheet>
+                <sheet style="max-width: 100% !important;">
                     <div class="oe_title mb-4">
                         <h1 style="color: #111827; font-size: 28px; font-weight: 700;">Account Automation Workspace</h1>
                     </div>
@@ -41,7 +41,8 @@
                                         </div>
                                         <div class="ml-3">
                                             <h2 style="margin:0;font-size:22px;color:#7f1d1d;">
-                                                <field name="overdue_checkpoint_count" nolabel="1" readonly="1" class="oe_inline"/>
+                                                <field name="overdue_checkpoint_count" nolabel="1" readonly="1"
+                                                       class="oe_inline"/>
                                                 clinic(s) need cash checkpoint update
                                             </h2>
                                             <p class="text-muted small m-0">
@@ -149,6 +150,45 @@
                                                 type="object"
                                                 class="btn btn-secondary btn-sm"/>
                                         <button name="action_run_bank_hub_audit"
+                                                string="Run New"
+                                                type="object"
+                                                class="btn btn-primary btn-sm"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Card: EMI Audit ── -->
+                        <div class="col-md-4 col-sm-6 p-2">
+                            <div class="card p-3 shadow-sm border-0"
+                                 style="background-color: #f9fafb; border: 1px solid #e5e7eb !important; border-radius: 8px; min-height: 165px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-purple d-flex align-items-center justify-content-center rounded"
+                                             style="font-size: 20px; background-color: #f5f3ff; width: 40px; height: 40px; color: #7c3aed;">
+                                            <i class="fa fa-credit-card" title="EMI Audit"/>
+                                        </div>
+                                        <h3 class="m-0 font-weight-bold ml-3" style="font-size: 16px; color: #1f2937;">
+                                            EMI Audit
+                                        </h3>
+                                    </div>
+                                    <p class="text-muted small m-0" style="line-height: 1.4;">
+                                        Reconcile EMI provider settlement CSVs (Bajaj, SaveIn, Fibe, ShopSe)
+                                        against Odoo EMI sales, clinic-wise.
+                                    </p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2"
+                                     style="border-top: 1px solid #f3f4f6 !important;">
+                                    <button name="account_automation.action_emi_audit_pending"
+                                            string="Pending Variance"
+                                            type="action"
+                                            class="btn btn-secondary btn-sm"/>
+                                    <div class="d-flex gap-2">
+                                        <button name="action_view_emi_audit_history"
+                                                string="View History"
+                                                type="object"
+                                                class="btn btn-secondary btn-sm"/>
+                                        <button name="action_run_emi_audit"
                                                 string="Run New"
                                                 type="object"
                                                 class="btn btn-primary btn-sm"/>
@@ -265,7 +305,7 @@
     <menuitem id="menu_account_automation_operations"
               name="Operations"
               parent="menu_account_automation_root"
-              sequence="10"/>
+              sequence="20"/>
     <menuitem id="menu_account_automation_config"
               name="Configuration"
               parent="menu_account_automation_root"
