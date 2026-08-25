@@ -154,15 +154,18 @@
 
                                     <field name="key" class="text-wrap" width="1" readonly="1" force_save="1"/>
 
-                                    <field name="value" string="Score (0-5)" widget="radio" options="{'horizontal': true}"/>
+                                    <field name="value" string="Score (0-5)" widget="radio"
+                                           options="{'horizontal': true}"/>
 
                                 </tree>
                             </field>
                         </page>
                     </notebook>
-                    <div class="oe_title mb-4">
-                        <label for="vas_score" string="Pain Scale (VAS)"/>
-                        <field name="vas_score" widget="vas_slider" required="1"/>
+                    <div class="mb-4 mt-2">
+                        <h3 class="mb-2">
+                            <label for="vas_score" string="Pain Scale (VAS)"/>
+                        </h3>
+                        <field name="vas_score" widget="vas_slider" required="1" class="w-100"/>
                     </div>
                 </sheet>
             </form>
