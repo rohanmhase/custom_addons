@@ -243,7 +243,7 @@ class Patient(models.Model):
             if self._origin.id:
                 domain += [('id', '!=', self._origin.id)]
 
-            duplicates = self.env['clinic.patient'].search(domain)
+            duplicates = self.env['clinic.patient'].sudo().search(domain)
             if duplicates:
                 lines = []
                 for i, p in enumerate(duplicates, 1):
