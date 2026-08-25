@@ -30,6 +30,8 @@ class PatientAssessment(models.Model):
         "gradation.followup.line", "followup_id", string="Gradation Lines"
     )
 
+    vas_score = fields.Integer(string="VAS Score", required=True)
+
     # 1. Define the default method
     def _default_assessment_lines(self):
         lines = []
@@ -178,6 +180,15 @@ class PatientAssessment(models.Model):
             else:
                 record.day_of_therapy = 1
 
+    @api.constrains('vas_score')
+    def _check_vas_score(self):
+        for record in self:
+            # Odoo treats an empty Integer as 0.
+            # If it's 0, it means the doctor didn't slide it.
+            if record.vas_score < 1 or record.vas_score > 10:
+                raise ValidationError(
+                    "Please interact with the slider to select a valid Pain Scale (VAS) score between 1 and 10.")
+
     def _ist_date(self):
 
         utc = (datetime.now())
@@ -199,6 +210,17 @@ class PatientAssessment(models.Model):
 
         # 2. Otherwise, allow normal archiving behavior
         return super().action_archive()
+
+    def write(self, vals):
+        # Check if vas_score is in the dictionary of fields being updated
+        if 'vas_score' in vals:
+            for record in self:
+                # Only raise an error if the value is actually being changed to a new number
+                if record.vas_score != vals['vas_score']:
+                    raise ValidationError("The VAS Score cannot be modified once the assessment is generated.")
+
+        return super().write(vals)
+
 
 class PatientAssessmentLine(models.Model):
     _name = 'patient.assessment.line'

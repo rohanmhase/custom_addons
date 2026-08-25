@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="FieldRangeSlider" owl="1">
+        <div class="d-flex align-items-center w-100">
+            <!-- Starting Face -->
+            <span class="me-2 fs-4">😄</span>
+
+            <!-- The actual draggable HTML5 slider -->
+            <input type="range"
+                   t-att-value="state.value"
+                   min="1"
+                   max="10"
+                   class="form-range flex-grow-1"
+                   t-on-input="onInput"
+                   t-on-change="onChange" />
+
+            <!-- Ending Face -->
+            <span class="ms-2 fs-4">😭</span>
+
+            <!-- Dynamic Score & Emoji Display -->
+            <div class="ms-4 text-center p-1 rounded bg-light border" style="min-width: 100px;">
+                <span class="fw-bold fs-5"><t t-esc="state.value"/></span>
+                <span class="fs-5 ms-1"><t t-esc="emojis[state.value]"/></span>
+            </div>
+        </div>
+    </t>
+</templates>
