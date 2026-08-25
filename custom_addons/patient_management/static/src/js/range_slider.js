@@ -16,7 +16,7 @@ export class RangeSliderField extends Component {
 
         // Initialize the local state
         this.state = useState({
-            value: this.props.record.data[this.props.name] || 1,
+            value: this.props.record.data[this.props.name] || null,
         });
     }
 

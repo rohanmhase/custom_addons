@@ -162,7 +162,7 @@
                     </notebook>
                     <div class="oe_title mb-4">
                         <label for="vas_score" string="Pain Scale (VAS)"/>
-                        <field name="vas_score" widget="vas_slider"/>
+                        <field name="vas_score" widget="vas_slider" required="1"/>
                     </div>
                 </sheet>
             </form>
