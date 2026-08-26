@@ -116,6 +116,21 @@
                             </div>
                         </div>
 
+                        <div class="col-md-4 col-sm-6 mb-4">
+                            <div class="card shadow-sm border-0 h-100"
+                                 style="background-color: #f8f9fa; border-radius: 8px;">
+                                <div class="card-body text-center p-4">
+                                    <h6 class="text-muted mb-2" style="text-transform: uppercase; font-weight: bold;">Extension Reminder
+                                    </h6>
+                                    <h2 class="mb-3 text-danger" style="font-size: 36px; font-weight: bold;">
+                                        <field name="total_extensions" readonly="1" nolabel="1"/>
+                                    </h2>
+                                    <button name="action_view_extensions" type="object" string="View List"
+                                            class="btn btn-outline-danger btn-sm"/>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </sheet>
             </form>
