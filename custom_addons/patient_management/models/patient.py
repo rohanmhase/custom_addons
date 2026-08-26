@@ -210,6 +210,12 @@ class Patient(models.Model):
         string='Pitching History'
     )
 
+    last_therapy_date = fields.Date(
+        string="Last Therapy Date",
+        compute="_compute_last_therapy_date",
+        store=True  # Must be True so Odoo can sort by it in the database
+    )
+
     @api.model
     def _get_pain_options(self):
         return [
@@ -421,6 +427,17 @@ class Patient(models.Model):
                 ('payment_state', '=', 'paid'),
             ])
             patient.active_enrollment_id = all_enrollments[:1] if all_enrollments else False
+
+    @api.depends('session_ids.session_date', 'session_ids.active')
+    def _compute_last_therapy_date(self):
+        for rec in self:
+            # Filter active sessions that have a valid date
+            valid_sessions = rec.session_ids.filtered(lambda s: s.active and s.session_date)
+            if valid_sessions:
+                # Find the maximum (latest) session date
+                rec.last_therapy_date = max(valid_sessions.mapped('session_date'))
+            else:
+                rec.last_therapy_date = False
 
     @api.constrains('phone')
     def _check_phone_number(self):

@@ -43,6 +43,11 @@ class ClinicDashboard(models.TransientModel):
         compute="_compute_dashboard_counts"
     )
 
+    total_extensions = fields.Integer(
+        string="Extension Patients",
+        compute="_compute_dashboard_counts"
+    )
+
     @api.constrains('from_date', 'to_date')
     def _check_date_range(self):
         for rec in self:
@@ -60,11 +65,20 @@ class ClinicDashboard(models.TransientModel):
                     'total_followups': 0,
                     'total_enrollment': 0,
                     'total_daily_followups': 0,
+                    'total_extensions': 0,
                 })
                 continue
 
             rec.total_patients = self.env['clinic.patient'].search_count(
                 [('clinic_id', '=', rec.clinic_id.id), ('active', '=', True)])
+
+            rec.total_extensions = self.env['clinic.patient'].search_count([
+                ('clinic_id', '=', rec.clinic_id.id),
+                ('active', '=', True),
+                ('remaining_sessions', '>=', 1),
+                ('remaining_sessions', '<=', 5),
+                ('last_therapy_date', '!=', False),
+            ])
 
             rec.today_registered_patients = self.env['clinic.patient'].search_count(
                 [('clinic_id', '=', rec.clinic_id.id), ('enroll_date', '>=', rec.from_date),
@@ -180,4 +194,27 @@ class ClinicDashboard(models.TransientModel):
                 ('assessment_date', '<=', self.to_date)
             ],
             'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
+        }
+
+    def action_view_extensions(self):
+        self.ensure_one()
+
+        tree_view_id = self.env.ref('patient_management.view_patient_extension_dashboard_tree').id
+
+        return {
+            'name': 'Extension List',
+            'type': 'ir.actions.act_window',
+            'res_model': 'clinic.patient',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            # Pass the conditions directly here. The XML default_order will sort it!
+            'domain': [
+                ('clinic_id', '=', self.clinic_id.id),
+                ('active', '=', True),
+                ('remaining_sessions', '>=', 1),
+                ('remaining_sessions', '<=', 5),
+                ('last_therapy_date', '!=', False)
+            ],
+            'context': { 'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True
+            }
         }

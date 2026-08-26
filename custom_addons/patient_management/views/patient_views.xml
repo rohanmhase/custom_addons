@@ -126,6 +126,21 @@
         </field>
     </record>
 
+    <record id="view_patient_extension_dashboard_tree" model="ir.ui.view">
+        <field name="name">clinic.patient.dashboard.tree</field>
+        <field name="model">clinic.patient</field>
+
+        <!-- ADD THIS LINE: High priority hides it from standard menus -->
+        <field name="priority" eval="999"/>
+
+        <field name="arch" type="xml">
+            <tree default_order="last_therapy_date desc" create="false" edit="false" delete="false">
+                <field name="name" string="Patient Name"/>
+                <field name="remaining_sessions" string="Remaining Sessions"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="view_event_event_name_only_tree" model="ir.ui.view">
         <field name="name">event.event.name.only.tree</field>
         <field name="model">event.event</field>
