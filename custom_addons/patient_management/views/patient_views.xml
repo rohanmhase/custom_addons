@@ -282,6 +282,9 @@
                         name="has_active_enrollment"
                         domain="[('enrollment_ids.state', '=', 'active')]"/>
 
+                <filter string="Extension List"
+                        name="filter_extension_patients"
+                        domain="[('remaining_sessions', '&gt;=', 1), ('remaining_sessions', '&lt;=', 5), ('last_therapy_date', '!=', False)]"/>
             </search>
         </field>
     </record>
