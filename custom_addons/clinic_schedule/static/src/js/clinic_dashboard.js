@@ -25,6 +25,7 @@ export class ClinicMatrixDashboard extends Component {
 
         this.state = useState({
             activeTab: "matrix",
+            matrixTherapistFilter: "all",
             selectedRegion: 0,
             selectedClinic: 0,
             selectedDate: tomorrowISO,
@@ -71,6 +72,8 @@ export class ClinicMatrixDashboard extends Component {
             is_manager: false,
             isSubstituteModalOpen: false,
             substituteTargetPlaceholderId: null,
+            pendingRequests: [],
+            isPendingModalOpen: false,
         });
 
         onWillStart(async () => {
@@ -107,6 +110,15 @@ export class ClinicMatrixDashboard extends Component {
 
     get unassignedAppointments() {
         return this.state.appointments.filter(a => a.therapist_id === 0);
+    }
+
+    get filteredMatrixTherapists() {
+    if (this.state.matrixTherapistFilter === "all") {
+        return this.state.therapists;
+    }
+    return this.state.therapists.filter(t =>
+        t.id === 0 || t.designation === this.state.matrixTherapistFilter
+    );
     }
 
     async carryForward() {
@@ -201,6 +213,7 @@ export class ClinicMatrixDashboard extends Component {
         this.state.regions = data.regions || [];
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
+        this.state.pendingRequests = data.pending_requests || [];
         this.state.kpis = data.kpis || this.state.kpis;
         this.state.timeSlots = [...this.baseTimeSlots];
 
@@ -225,7 +238,8 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async loadRosterMetadata() {
-        this.state.rosterData = await this.orm.call("clinic.schedule.appointment", "get_roster_data", [this.state.selectedDate]);
+        const clinicId = parseInt(this.state.selectedClinic) || 0;
+        this.state.rosterData = await this.orm.call("clinic.schedule.appointment", "get_roster_data", [this.state.selectedDate, clinicId]);
     }
 
     async loadAttendanceLedger() {
@@ -261,6 +275,13 @@ export class ClinicMatrixDashboard extends Component {
         const activeSlot = slots.find(e => e.attendance_state !== 'no_show');
         if (activeSlot) return activeSlot;
         return slots[0];
+    }
+
+    openPendingRequestsModal() {
+        this.state.isPendingModalOpen = true;
+    }
+    closePendingRequestsModal() {
+        this.state.isPendingModalOpen = false;
     }
 
     getTherapistRowCells(therapistId) {
@@ -378,10 +399,12 @@ export class ClinicMatrixDashboard extends Component {
     async rejectFloater(placeholderId) {
         await this.orm.call("clinic.schedule.appointment", "action_reject_floater", [placeholderId]);
         this.notificationService.add("Floater request rejected and patients unassigned.", { type: "success" });
+        this.closePendingRequestsModal(); // NEW
         await this.refreshGrid();
     }
 
     async openSubstituteModal(placeholderId) {
+        this.closePendingRequestsModal(); // NEW
         this.state.substituteTargetPlaceholderId = placeholderId;
         const displayedIds = this.state.therapists.map(t => t.id);
         const data = await this.orm.call("clinic.schedule.appointment", "get_allotable_therapists", [parseInt(this.state.selectedClinic), this.state.selectedDate, displayedIds]);
@@ -486,9 +509,18 @@ export class ClinicMatrixDashboard extends Component {
             this.notificationService.add("WhatsApp API credentials pending. Sandbox dispatch disabled.", {type: "warning"});
             return;
         }
-        await this.orm.call("clinic.schedule.appointment", actionName, [[this.state.selectedAppointment.id]]);
+
+        const result = await this.orm.call("clinic.schedule.appointment", actionName, [[this.state.selectedAppointment.id]]);
         this.closeActionModal();
-        await this.refreshGrid();
+
+        // --- NEW: Handle Python Wizard popups dynamically ---
+        if (result && typeof result === 'object' && result.type === 'ir.actions.act_window') {
+            this.actionService.doAction(result, {
+                onClose: () => this.refreshGrid()
+            });
+        } else {
+            await this.refreshGrid();
+        }
     }
 
     async quickRemoveSlot(ev, appId, currentTherapistId) {

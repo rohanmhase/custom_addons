@@ -1,15 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_clinic_schedule_root" name="Clinic Schedule" sequence="40"/>
+    <!-- Root Menu: Visible to anyone who has ANY role in this module -->
+    <menuitem id="menu_clinic_schedule_root" name="Clinic Schedule" sequence="40"
+              groups="clinic_schedule.group_clinic_schedule_viewer,clinic_schedule.group_clinic_schedule_clinic_admin,clinic_schedule.group_clinic_schedule_hr,clinic_schedule.group_clinic_schedule_manager"/>
 
+    <!-- Matrix Dashboard: Viewers, Admins, Managers (HR EXCLUDED) -->
     <menuitem id="menu_schedule_calendar_dashboard" name="Appointments Dashboard" parent="menu_clinic_schedule_root"
-              action="action_clinic_schedule_dashboard_client" sequence="10"/>
+              action="action_clinic_schedule_dashboard_client" sequence="10"
+              groups="clinic_schedule.group_clinic_schedule_viewer,clinic_schedule.group_clinic_schedule_clinic_admin,clinic_schedule.group_clinic_schedule_manager"/>
 
+    <!-- Global Ledger: Managers ONLY -->
+    <menuitem id="menu_schedule_appointment_ledger" name="Global Appointment Ledger" parent="menu_clinic_schedule_root"
+              action="action_clinic_appointment_ledger" sequence="12"
+              groups="clinic_schedule.group_clinic_schedule_manager"/>
+
+    <!-- Therapist Directory: HR and Managers ONLY (Admins EXCLUDED) -->
     <menuitem id="menu_schedule_therapist_directory" name="Therapist Directory" parent="menu_clinic_schedule_root"
               action="action_clinic_therapist_directory" sequence="15"
-              groups="clinic_schedule.group_clinic_schedule_manager,clinic_schedule.group_clinic_schedule_clinic_admin"/>
+              groups="clinic_schedule.group_clinic_schedule_hr,clinic_schedule.group_clinic_schedule_manager"/>
 
+    <!-- Upload Roster: HR and Managers ONLY -->
     <menuitem id="menu_schedule_upload_roster" name="Upload Staff Roster" parent="menu_clinic_schedule_root"
               action="action_clinic_therapist_import_log" sequence="20"
-              groups="clinic_schedule.group_clinic_schedule_manager,clinic_schedule.group_clinic_schedule_clinic_admin"/>
+              groups="clinic_schedule.group_clinic_schedule_hr,clinic_schedule.group_clinic_schedule_manager"/>
 </odoo>

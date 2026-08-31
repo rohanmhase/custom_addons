@@ -148,6 +148,7 @@
                         <group string="Employment Details">
                             <field name="designation" widget="radio" options="{'horizontal': True}"/>
                             <field name="vendor_id"/>
+                            <field name="base_branch_id" options="{'no_create': True}"/>
                             <field name="active" invisible="1"/>
                             <field name="is_buffer" widget="boolean_toggle"/>
                             <field name="allowed_branch_ids" widget="many2many_tags" placeholder="Assign operating clinics..."/>
@@ -184,32 +185,168 @@
         </field>
     </record>
 
-    <!-- FLOATER REQUEST WIZARD FORM -->
-<!--    <record id="view_clinic_floater_request_wizard_form" model="ir.ui.view">-->
-<!--        <field name="name">clinic.floater.request.wizard.form</field>-->
-<!--        <field name="model">clinic.floater.request.wizard</field>-->
-<!--        <field name="arch" type="xml">-->
-<!--            <form string="Request Floater Therapist">-->
-<!--                <sheet>-->
-<!--                    <div class="alert alert-info text-center" role="alert">-->
-<!--                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>-->
-<!--                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>-->
-<!--                        Please select the required gender for this floater.-->
-<!--                        <br/><small>(Max limit: 3 requests per gender, per day)</small>-->
-<!--                    </div>-->
-<!--                    <group>-->
-<!--                        <field name="clinic_id" readonly="1" options="{'no_open': True}"/>-->
-<!--                        <field name="target_date" readonly="1"/>-->
-<!--                        <field name="gender" widget="radio" options="{'horizontal': true}"/>-->
-<!--                    </group>-->
-<!--                </sheet>-->
-<!--                <footer>-->
-<!--                    <button name="action_submit_request" type="object" string="Submit Request" class="btn-primary fw-bold" icon="fa-paper-plane"/>-->
-<!--                    <button string="Cancel" class="btn-secondary" special="cancel"/>-->
-<!--                </footer>-->
-<!--            </form>-->
-<!--        </field>-->
-<!--    </record>-->
+    <!-- Advanced Search for the Ledger -->
+    <record id="view_clinic_schedule_appointment_search" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.search</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <search string="Search Appointments">
+                <field name="patient_id"/>
+                <field name="therapist_id" string="Scheduled Therapist"/>
+                <field name="actual_therapist_id" string="Actual Therapist"/>
+                <field name="clinic_id"/>
+                <field name="name" string="Appointment ID"/>
+
+                <filter string="Completed" name="completed" domain="[('attendance_state', '=', 'completed')]"/>
+                <filter string="No-Show" name="noshow" domain="[('attendance_state', '=', 'no_show')]"/>
+                <separator/>
+                <filter string="Therapist Mismatch" name="mismatch" domain="[('is_therapist_mismatch', '=', True)]"/>
+                <filter string="Manually Forced" name="forced" domain="[('manual_completion_user_id', '!=', False)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Date" name="group_date" context="{'group_by':'start_datetime:day'}"/>
+                    <filter string="Clinic" name="group_clinic" context="{'group_by':'clinic_id'}"/>
+                    <filter string="Scheduled Therapist" name="group_therapist" context="{'group_by':'therapist_id'}"/>
+                    <filter string="Status" name="group_status" context="{'group_by':'attendance_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Upgraded Global List View -->
+    <record id="view_clinic_schedule_appointment_tree" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.tree</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <tree string="All Appointments" create="false" edit="false" delete="false" default_order="start_datetime desc"
+                  decoration-success="attendance_state == 'completed'"
+                  decoration-danger="attendance_state == 'no_show'"
+                  decoration-info="attendance_state == 'in_progress'">
+                <field name="name" string="Ref"/>
+                <field name="start_datetime"/>
+                <field name="clinic_id"/>
+                <field name="patient_id"/>
+                <field name="therapist_id" string="Scheduled Therapist"/>
+                <field name="actual_therapist_id" optional="show" string="Actual Therapist"/>
+                <field name="is_therapist_mismatch" widget="boolean_toggle" readonly="1" optional="show"/>
+                <field name="manual_completion_user_id" optional="hide"/>
+                <field name="attendance_state" widget="badge"
+                       decoration-success="attendance_state == 'completed'"
+                       decoration-danger="attendance_state == 'no_show'"
+                       decoration-info="attendance_state == 'in_progress'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Dedicated Read-Only Form for the Ledger -->
+    <record id="view_clinic_schedule_appointment_ledger_form" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.ledger.form</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <form string="Appointment Audit" create="false" edit="false" delete="false">
+                <header>
+                    <field name="attendance_state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Mismatch" bg_color="text-bg-danger" invisible="not is_therapist_mismatch"/>
+                    <widget name="web_ribbon" title="Forced" bg_color="text-bg-warning" invisible="not manual_completion_user_id"/>
+
+                    <div class="oe_title mb-4">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Core Details">
+                            <field name="patient_id" readonly="1"/>
+                            <field name="clinic_id" readonly="1"/>
+                            <field name="slot_type" readonly="1"/>
+                            <field name="visit_type" readonly="1"/>
+                        </group>
+                        <group string="Schedule &amp; Execution">
+                            <field name="start_datetime" readonly="1"/>
+                            <field name="end_datetime" readonly="1"/>
+                            <field name="therapist_id" readonly="1" string="Scheduled Therapist"/>
+                            <field name="actual_therapist_id" readonly="1" invisible="not actual_therapist_id"/>
+                        </group>
+                    </group>
+                    <group string="Audit Flags" invisible="not is_therapist_mismatch and not manual_completion_user_id">
+                        <field name="is_therapist_mismatch" readonly="1" invisible="not is_therapist_mismatch"/>
+                        <field name="manual_completion_user_id" readonly="1" invisible="not manual_completion_user_id"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Window Action: Strict Binding to Ledger Views -->
+    <record id="action_clinic_appointment_ledger" model="ir.actions.act_window">
+        <field name="name">Global Appointment Ledger</field>
+        <field name="res_model">clinic.schedule.appointment</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_clinic_schedule_appointment_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_clinic_schedule_appointment_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_clinic_schedule_appointment_ledger_form')})
+        ]"/>
+        <field name="context">{'search_default_group_date': 1}</field>
+    </record>
+
+    <!-- Add to your existing top menu under 'Appointments Dashboard' -->
+    <menuitem id="menu_schedule_appointment_ledger"
+              name="Global Appointment Ledger"
+              parent="menu_clinic_schedule_root"
+              action="action_clinic_appointment_ledger"
+              sequence="12"
+              groups="clinic_schedule.group_clinic_schedule_manager"/>
+
+    <record id="view_clinic_manual_complete_wizard" model="ir.ui.view">
+        <field name="name">clinic.manual.complete.wizard</field>
+        <field name="model">clinic.manual.complete.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Confirm Force Completion">
+                <div class="alert alert-warning text-center border-warning shadow-sm" role="alert">
+                    <i class="fa fa-exclamation-triangle fa-3x mb-2 text-warning"></i>
+                    <h5 class="fw-bold text-dark">No Backend Therapy Found!</h5>
+                    <p class="mb-0 text-dark">We could not find an active therapy session record for this patient today. Are you sure you want to force mark this schedule slot as completed?</p>
+                </div>
+                <footer>
+                    <button string="Force Complete" name="action_confirm" type="object" class="btn-danger fw-bold"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+<!--     FLOATER REQUEST WIZARD FORM -->
+    <record id="view_clinic_floater_request_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.floater.request.wizard.form</field>
+        <field name="model">clinic.floater.request.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request Floater Therapist">
+                <sheet>
+                    <div class="alert alert-info text-center" role="alert">
+                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>
+                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>
+                        Please select the required gender for this floater.
+                        <br/><small>(Max limit: 3 requests per gender, per day)</small>
+                    </div>
+                    <group>
+                        <field name="clinic_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="target_date" readonly="1"/>
+                        <field name="gender" widget="radio" options="{'horizontal': true}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_submit_request" type="object" string="Submit Request" class="btn-primary fw-bold" icon="fa-paper-plane"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 
     <record id="action_clinic_therapist_directory" model="ir.actions.act_window">
         <field name="name">Master Therapist Directory</field>
