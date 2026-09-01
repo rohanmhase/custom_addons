@@ -1061,20 +1061,36 @@
                                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-success"/></span>
                                 <input type="text" class="form-control border-start-0 ps-0 fw-bold text-dark" placeholder="Search Real Floaters..." t-model="state.allotSearchQuery"/>
                             </div>
-                            <div class="list-group shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                            <div class="list-group shadow-sm" style="max-height: 350px; overflow-y: auto;">
                                 <t t-foreach="filteredAllotableTherapists" t-as="t" t-key="t.id">
                                     <button type="button"
                                             t-attf-class="list-group-item list-group-item-action d-flex justify-content-between align-items-center #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'active bg-success border-success text-white' : ''}"
-                                            t-on-click="() => this.selectTherapistToAllot(t)">
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-bold" style="font-size: 0.95rem;"><t t-esc="t.smart_name"/></span>
-                                            <small t-attf-class="fw-bold mt-1 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white-50' : 'text-muted'}" style="font-size: 0.75rem;">
-                                                <i class="fa fa-briefcase me-1"/> Vendor: <t t-esc="t.vendor_id"/>
-                                            </small>
+                                            t-on-click="() => this.selectTherapistToAllot(t)"
+                                            style="padding: 12px 16px; transition: all 0.2s;">
+                                        <div class="d-flex flex-column text-start w-75">
+                                            <span class="fw-bolder" style="font-size: 0.95rem;"><t t-esc="t.smart_name"/></span>
+                                            <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success shadow-sm' : 'bg-light text-dark border border-secondary shadow-sm'}">
+                                                    <i class="fa fa-id-badge me-1"/> <t t-esc="t.vendor_id"/>
+                                                </span>
+                                                <small t-attf-class="text-truncate fw-bold #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-muted'}" style="font-size: 0.70rem; max-width: 70%;" t-att-title="t.allowed_clinics_names or 'None'">
+                                                    <i class="fa fa-map-marker me-1"/> Allowed: <t t-esc="t.allowed_clinics_names or 'None'"/>
+                                                </small>
+                                            </div>
                                         </div>
-                                        <t t-if="t.is_working_elsewhere">
-                                            <span class="badge bg-warning text-dark border border-warning shadow-sm"><i class="fa fa-car me-1"/>On Shift</span>
-                                        </t>
+                                        <div class="text-end" style="min-width: 100px;">
+                                            <t t-if="t.is_working_elsewhere">
+                                                <span class="badge bg-warning text-dark border border-warning shadow-sm d-block mb-1"><i class="fa fa-car me-1"/>ON SHIFT</span>
+                                                <small t-attf-class="fw-bold d-block text-truncate #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-muted'}" style="font-size: 0.65rem; max-width: 100px;" t-att-title="t.working_clinics">
+                                                    At <t t-esc="t.working_clinics"/>
+                                                </small>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success' : 'bg-success text-white'} shadow-sm border border-success d-block">
+                                                    <i class="fa fa-check-circle me-1"/>AVAILABLE
+                                                </span>
+                                            </t>
+                                        </div>
                                     </button>
                                 </t>
                             </div>

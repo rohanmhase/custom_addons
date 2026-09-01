@@ -95,6 +95,15 @@ class ClinicTherapist(models.Model):
         ('unique_vendor_id', 'unique(vendor_id)', 'Vendor ID must be unique across all therapists!')
     ]
 
+    # 1. ADD THESE FIELDS inside class ClinicTherapist(models.Model):
+    leaving_date = fields.Date(string="Date of Leaving", tracking=True)
+    leaving_reason = fields.Text(string="Reason for Leaving", tracking=True)
+    aadhaar_document = fields.Binary(string="Aadhaar Card", attachment=True)
+    aadhaar_filename = fields.Char(string="Aadhaar Filename")  # NEW
+
+    pan_document = fields.Binary(string="PAN Card", attachment=True)
+    pan_filename = fields.Char(string="PAN Filename")  # NEW
+
     def action_activate(self):
         """Completes Onboarding"""
         for rec in self:
@@ -102,10 +111,16 @@ class ClinicTherapist(models.Model):
             rec.active = True
 
     def action_offboard(self):
-        """Separates the Therapist"""
-        for rec in self:
-            rec.state = 'offboarded'
-            # Optionally set rec.active = False here if you want them archived automatically
+        """Triggers the Offboarding Wizard"""
+        self.ensure_one()
+        return {
+            'name': _('Offboard Therapist'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'clinic.therapist.offboard.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_therapist_id': self.id}
+        }
 
     def action_reonboard(self):
         """Restores an offboarded therapist back into the onboarding queue"""
@@ -446,21 +461,33 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.model
     def action_substitute_floater(self, placeholder_id, real_therapist_id):
-        """ Accepts the request, moves patients to the real floater, and hides the placeholder """
+        """ Accepts the request, links the branch, moves patients, and cleans up notifications. """
         placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
         real_therapist = self.env['clinic.therapist'].browse(int(real_therapist_id))
 
         if not placeholder.exists() or not real_therapist.exists():
             raise ValidationError(_("Invalid therapist selection."))
 
-        # Reassign all patients securely to the actual floater
-        apps = self.search([('therapist_id', '=', placeholder.id)])
-        apps.write({'therapist_id': real_therapist.id})
-        for app in apps:
-            app.message_post(body=_(
-                "<b>Audit Log:</b> Session successfully substituted from Requested Placeholder to Real Floater: %s") % real_therapist.name)
+        # 1. Grant the real floater temporary access to the requesting clinic's matrix
+        target_clinic_id = placeholder.request_clinic_id.id
+        if target_clinic_id:
+            real_therapist.write({'allowed_branch_ids': [(4, target_clinic_id)]})
 
-        # Approve and archive the placeholder
+        # 2. Reassign any patients already safely booked on the placeholder
+        apps = self.search([('therapist_id', '=', placeholder.id)])
+        if apps:
+            apps.write({'therapist_id': real_therapist.id})
+            for app in apps:
+                app.message_post(body=_(
+                    "<b>Audit Log:</b> Session successfully substituted from Requested Placeholder to Real Floater: %s") % real_therapist.name)
+
+        # 3. Clean up Manager To-Do Activities safely (Odoo 17 Fix)
+        self.env['mail.activity'].search([
+            ('res_model', '=', 'clinic.therapist'),
+            ('res_id', '=', placeholder.id)
+        ]).unlink()
+
+        # 4. Approve and archive the placeholder
         placeholder.write({
             'active': False,
             'request_state': 'approved'
@@ -1092,8 +1119,10 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.model
     def get_allotable_therapists(self, clinic_id, target_date, displayed_therapist_ids=None):
-        domain = [('active', '=', True)]
-        if displayed_therapist_ids: domain.append(('id', 'not in', displayed_therapist_ids))
+        domain = [('active', '=', True), ('state', '=', 'active')]
+        if displayed_therapist_ids:
+            domain.append(('id', 'not in', displayed_therapist_ids))
+
         therapists = self.env['clinic.therapist'].search(domain)
 
         target_date_obj = fields.Date.from_string(target_date)
@@ -1970,4 +1999,25 @@ class ClinicFloaterRequestWizard(models.TransientModel):
                 note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater."
             )
 
+        return {'type': 'ir.actions.act_window_close'}
+
+class ClinicTherapistOffboardWizard(models.TransientModel):
+    _name = 'clinic.therapist.offboard.wizard'
+    _description = 'Offboard Therapist Wizard'
+
+    therapist_id = fields.Many2one('clinic.therapist', required=True)
+    leaving_date = fields.Date(string="Date of Leaving", required=True, default=fields.Date.context_today)
+    leaving_reason = fields.Text(string="Reason (Optional)")
+
+    def action_confirm_offboard(self):
+        self.ensure_one()
+        self.therapist_id.write({
+            'state': 'offboarded',
+            'active': False,
+            'leaving_date': self.leaving_date,
+            'leaving_reason': self.leaving_reason
+        })
+        self.therapist_id.message_post(
+            body=f"<b>Offboarded</b><br/>Date: {self.leaving_date}<br/>Reason: {self.leaving_reason or 'None'}"
+        )
         return {'type': 'ir.actions.act_window_close'}
