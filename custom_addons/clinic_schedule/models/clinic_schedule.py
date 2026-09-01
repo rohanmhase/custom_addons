@@ -1493,20 +1493,23 @@ class ClinicScheduleAppointment(models.Model):
 
             })
 
-        # ==========================================
-        # 1. DYNAMIC PATIENT QUEUE (Unique & Unassigned Inclusive)
-        # ==========================================
-        # Get all valid patient appointments today (excluding no-shows)
-        valid_patient_apps = appointments_raw.filtered(
-            lambda a: a.slot_type == "patient" and a.attendance_state != 'no_show' and a.patient_id
-        )
+            # ==========================================
+            # 1. DYNAMIC PATIENT QUEUE (Unique & Unassigned Inclusive)
+            # ==========================================
+            # Get all valid patient appointments today (excluding no-shows)
+            valid_patient_apps = appointments_raw.filtered(
+                lambda a: a.slot_type == "patient" and a.attendance_state != 'no_show' and a.patient_id
+            )
 
-        # Use sets to prevent double-counting patients taking up multiple slots
-        scheduled_clinic_hv_ids = set(
-            valid_patient_apps.filtered(lambda a: a.visit_type in ['clinic', 'home']).mapped('patient_id.id'))
-        scheduled_self_ids = set(
-            valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
-        total_scheduled_ids = scheduled_clinic_hv_ids.union(scheduled_self_ids)
+            # Use sets to prevent double-counting patients taking up multiple slots
+            scheduled_clinic_ids = set(
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'clinic').mapped('patient_id.id'))
+            scheduled_hv_ids = set(
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'home').mapped('patient_id.id'))
+            scheduled_self_ids = set(
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
+
+            total_scheduled_ids = scheduled_clinic_ids.union(scheduled_hv_ids).union(scheduled_self_ids)
 
         male_patients = sum(1 for p_id in total_scheduled_ids if
                             patient_map.get(p_id, {}).get("gender", "").lower() in ["m", "male"])
@@ -1577,9 +1580,20 @@ class ClinicScheduleAppointment(models.Model):
                 'hv_count': hv_count,
                 'male_therapist_count': male_therapists,
                 'female_therapist_count': female_therapists,
+
+                # --- NEW GENDER-SPECIFIC COUNTS ---
+                'male_fixed': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'fixed'),
+                'male_floater': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'floater'),
+                'male_hv': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'hv'),
+                'female_fixed': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'fixed'),
+                'female_floater': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'floater'),
+                'female_hv': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'hv'),
+                # ----------------------------------
+
                 'utilization': utilization_pct,
                 'total_scheduled': len(total_scheduled_ids),
-                'allotted_clinic_hv': len(scheduled_clinic_hv_ids),
+                'allotted_clinic': len(scheduled_clinic_ids), # Split Clinic
+                'allotted_hv': len(scheduled_hv_ids),         # Split HV
                 'self_scheduled': len(scheduled_self_ids),
                 'outstanding': outstanding_count,
                 'male_patient_count': male_patients,

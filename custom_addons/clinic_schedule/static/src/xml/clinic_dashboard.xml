@@ -137,39 +137,55 @@
                 <!-- KPIS -->
                 <t t-if="state.activeTab === 'matrix' and state.kpis">
                     <div class="d-flex align-items-center gap-4 ms-2 border-start ps-3">
-                        <div class="d-flex flex-column text-center px-3 border-end">
-                            <span class="fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">UTILIZATION</span>
-                            <span t-attf-class="fw-bolder fs-5 #{state.kpis.utilization > 75 ? 'text-success' : 'text-warning'}">
-                                <t t-esc="state.kpis.utilization"/> %
-                            </span>
-                        </div>
+
+                        <!-- MALE STAFFING -->
                         <div class="d-flex flex-column px-3 border-end">
-                            <span class="fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">BRANCH STAFFING</span>
+                            <span class="fw-bold text-primary mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="fa fa-mars me-1"/>MALE STAFFING (<t t-esc="state.kpis.male_therapist_count"/>)
+                            </span>
                             <div class="d-flex gap-3" style="font-size: 0.8rem;">
                                 <span class="text-info-darker fw-bold" style="color: #0d6efd;">
-                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.fixed_count"/> Fixed
+                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.male_fixed"/> Fixed
                                 </span>
-                                <!-- FIX: Separated Floater and HV Counts -->
                                 <span class="text-warning-darker fw-bold" style="color: #087990;">
-                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.floater_count"/> Floater
+                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.male_floater"/> Floater
                                 </span>
                                 <span class="text-success fw-bold" style="color: #198754;">
-                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.hv_count"/> HV
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.male_hv"/> HV
                                 </span>
                             </div>
-                            <div class="d-flex gap-3 mt-1 fw-bold" style="font-size: 0.75rem;">
-        <span class="text-primary"><i class="fa fa-mars me-1"/> <t t-esc="state.kpis.male_therapist_count"/> Male</span>
-        <span class="text-danger"><i class="fa fa-venus me-1"/> <t t-esc="state.kpis.female_therapist_count"/> Female</span>
-    </div>
                         </div>
+
+                        <!-- FEMALE STAFFING -->
+                        <div class="d-flex flex-column px-3 border-end">
+                            <span class="fw-bold text-danger mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="fa fa-venus me-1"/>FEMALE STAFFING (<t t-esc="state.kpis.female_therapist_count"/>)
+                            </span>
+                            <div class="d-flex gap-3" style="font-size: 0.8rem;">
+                                <span class="text-info-darker fw-bold" style="color: #0d6efd;">
+                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.female_fixed"/> Fixed
+                                </span>
+                                <span class="text-warning-darker fw-bold" style="color: #087990;">
+                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.female_floater"/> Floater
+                                </span>
+                                <span class="text-success fw-bold" style="color: #198754;">
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.female_hv"/> HV
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- PATIENT QUEUE -->
                         <div class="d-flex flex-column px-3">
                             <span class="fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">PATIENT QUEUE</span>
                             <div class="d-flex gap-3" style="font-size: 0.8rem;">
                                 <span class="text-dark fw-bold" title="Total Scheduled">
                                     <i class="fa fa-users me-1"/><t t-esc="state.kpis.total_scheduled"/> Total
                                 </span>
-                                <span class="text-success fw-bold" title="Clinic &amp; Home Visits">
-                                    <i class="fa fa-check-circle me-1"/><t t-esc="state.kpis.allotted_clinic_hv"/> Clinic+HV
+                                <span class="text-success fw-bold" title="Clinic Visits">
+                                    <i class="fa fa-building me-1"/><t t-esc="state.kpis.allotted_clinic"/> Clinic
+                                </span>
+                                <span class="text-warning-darker fw-bold" style="color: #fd7e14;" title="Home Visits">
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.allotted_hv"/> HV
                                 </span>
                                 <span class="text-purple fw-bold" style="color: #6f42c1;" title="Self Therapies">
                                     <i class="fa fa-user-circle-o me-1"/><t t-esc="state.kpis.self_scheduled"/> Self
@@ -179,9 +195,9 @@
                                 </span>
                             </div>
                             <div class="d-flex gap-3 mt-1 fw-bold" style="font-size: 0.75rem;">
-        <span class="text-primary"><i class="fa fa-mars me-1"/> <t t-esc="state.kpis.male_patient_count"/> Male</span>
-        <span class="text-danger"><i class="fa fa-venus me-1"/> <t t-esc="state.kpis.female_patient_count"/> Female</span>
-    </div>
+                                <span class="text-primary"><i class="fa fa-mars me-1"/> <t t-esc="state.kpis.male_patient_count"/> Male</span>
+                                <span class="text-danger"><i class="fa fa-venus me-1"/> <t t-esc="state.kpis.female_patient_count"/> Female</span>
+                            </div>
                         </div>
                     </div>
                 </t>
