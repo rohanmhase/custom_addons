@@ -1503,21 +1503,26 @@ class ClinicScheduleAppointment(models.Model):
 
             # Use sets to prevent double-counting patients taking up multiple slots
             scheduled_clinic_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'clinic').mapped('patient_id.id'))
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'clinic').mapped('patient_id.id')
+            )
             scheduled_hv_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'home').mapped('patient_id.id'))
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'home').mapped('patient_id.id')
+            )
             scheduled_self_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
+                valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id')
+            )
 
+            # MUST BE DECLARED FIRST: Combine all lists to get the total scheduled pool
             total_scheduled_ids = scheduled_clinic_ids.union(scheduled_hv_ids).union(scheduled_self_ids)
 
-        male_patients = sum(1 for p_id in total_scheduled_ids if
-                            patient_map.get(p_id, {}).get("gender", "").lower() in ["m", "male"])
-        female_patients = sum(1 for p_id in total_scheduled_ids if
-                              patient_map.get(p_id, {}).get("gender", "").lower() in ["f", "female"])
+            # NOW filter by gender using the combined total
+            male_patients = sum(1 for p_id in total_scheduled_ids if
+                                patient_map.get(p_id, {}).get("gender", "").lower() in ["m", "male"])
+            female_patients = sum(1 for p_id in total_scheduled_ids if
+                                  patient_map.get(p_id, {}).get("gender", "").lower() in ["f", "female"])
 
-        total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
-        outstanding_count = len(total_eligible_patients - total_scheduled_ids)
+            total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
+            outstanding_count = len(total_eligible_patients - total_scheduled_ids)
 
         # ==========================================
         # 2. DYNAMIC BRANCH STAFFING (Exclude Absences)
