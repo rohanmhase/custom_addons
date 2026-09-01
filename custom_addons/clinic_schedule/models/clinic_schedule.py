@@ -1270,8 +1270,13 @@ class ClinicScheduleAppointment(models.Model):
         if not clinic_id or not target_date:
             return {
                 "therapists": [], "appointments": [], "clinics": [], "regions": [], "selected_clinic_id": 0,
-                "kpis": {"rs_count": 0, "fixed_count": 0, "floater_count": 0, "utilization": 0, "total_scheduled": 0,
-                         "allotted_clinic_hv": 0, "self_scheduled": 0, "outstanding": 0}
+                "kpis": {"rs_count": 0, "fixed_count": 0, "floater_count": 0, "hv_count": 0,
+                         "male_therapist_count": 0, "female_therapist_count": 0,
+                         "male_fixed": 0, "male_floater": 0, "male_hv": 0,
+                         "female_fixed": 0, "female_floater": 0, "female_hv": 0,
+                         "utilization": 0, "total_scheduled": 0, "allotted_clinic": 0,
+                         "allotted_hv": 0, "self_scheduled": 0, "outstanding": 0,
+                         "male_patient_count": 0, "female_patient_count": 0}
             }
 
         clinic_id = int(clinic_id)
@@ -1492,112 +1497,111 @@ class ClinicScheduleAppointment(models.Model):
                 "manual_completion_user_name": app.manual_completion_user_id.name if app.manual_completion_user_id else ""
 
             })
+        # ==========================================
+        # 1. DYNAMIC PATIENT QUEUE (Unique & Unassigned Inclusive)
+        # ==========================================
+        valid_patient_apps = appointments_raw.filtered(
+            lambda a: a.slot_type == "patient" and a.attendance_state != 'no_show' and a.patient_id
+        )
 
-            # ==========================================
-            # 1. DYNAMIC PATIENT QUEUE (Unique & Unassigned Inclusive)
-            # ==========================================
-            # Get all valid patient appointments today (excluding no-shows)
-            valid_patient_apps = appointments_raw.filtered(
-                lambda a: a.slot_type == "patient" and a.attendance_state != 'no_show' and a.patient_id
-            )
+        # Use sets to prevent double-counting patients taking up multiple slots
+        scheduled_clinic_ids = set(
+            valid_patient_apps.filtered(lambda a: a.visit_type == 'clinic').mapped('patient_id.id'))
+        scheduled_hv_ids = set(
+            valid_patient_apps.filtered(lambda a: a.visit_type == 'home').mapped('patient_id.id'))
+        scheduled_self_ids = set(
+            valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
 
-            # Use sets to prevent double-counting patients taking up multiple slots
-            scheduled_clinic_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'clinic').mapped('patient_id.id'))
-            scheduled_hv_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'home').mapped('patient_id.id'))
-            scheduled_self_ids = set(
-                valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
+        total_scheduled_ids = scheduled_clinic_ids.union(scheduled_hv_ids).union(scheduled_self_ids)
 
-            total_scheduled_ids = scheduled_clinic_ids.union(scheduled_hv_ids).union(scheduled_self_ids)
+        male_patients = sum(1 for p_id in total_scheduled_ids if
+                            patient_map.get(p_id, {}).get("gender", "").lower() in ["m", "male"])
+        female_patients = sum(1 for p_id in total_scheduled_ids if
+                              patient_map.get(p_id, {}).get("gender", "").lower() in ["f", "female"])
 
-            male_patients = sum(1 for p_id in total_scheduled_ids if
-                                patient_map.get(p_id, {}).get("gender", "").lower() in ["m", "male"])
-            female_patients = sum(1 for p_id in total_scheduled_ids if
-                                  patient_map.get(p_id, {}).get("gender", "").lower() in ["f", "female"])
+        total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
+        outstanding_count = len(total_eligible_patients - total_scheduled_ids)
 
-            total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
-            outstanding_count = len(total_eligible_patients - total_scheduled_ids)
+        # ==========================================
+        # 2. DYNAMIC BRANCH STAFFING (Exclude Absences)
+        # ==========================================
+        present_therapists = [
+            t for t in assigned_therapists
+            if not state_map.get(t.id) or state_map.get(t.id).action_type not in ['wo', 'leave', 'no_show']
+        ]
 
-            # ==========================================
-            # 2. DYNAMIC BRANCH STAFFING (Exclude Absences)
-            # ==========================================
-            # Filter out anyone marked as Week Off, Leave, or No-Show
-            present_therapists = [
-                t for t in assigned_therapists
-                if not state_map.get(t.id) or state_map.get(t.id).action_type not in ['wo', 'leave', 'no_show']
-            ]
+        fixed_count = sum(1 for t in present_therapists if t.designation == 'fixed')
+        floater_count = sum(1 for t in present_therapists if t.designation == 'floater')
+        hv_count = sum(1 for t in present_therapists if t.designation == 'hv')
 
-            fixed_count = sum(1 for t in present_therapists if t.designation == 'fixed')
-            floater_count = sum(1 for t in present_therapists if t.designation == 'floater')
-            hv_count = sum(1 for t in present_therapists if t.designation == 'hv')
+        male_therapists = sum(1 for t in present_therapists if t.gender == 'm')
+        female_therapists = sum(1 for t in present_therapists if t.gender == 'f')
 
-            male_therapists = sum(1 for t in present_therapists if t.gender == 'm')
-            female_therapists = sum(1 for t in present_therapists if t.gender == 'f')
+        # ==========================================
+        # 3. UTILIZATION
+        # ==========================================
+        active_capacity_therapists = [t for t in present_therapists if not t.is_buffer]
+        working_count = len(active_capacity_therapists)
+        total_capacity_mins = working_count * 15 * 60
 
-            # ==========================================
-            # 3. UTILIZATION
-            # ==========================================
-            active_capacity_therapists = [t for t in present_therapists if not t.is_buffer]
-            working_count = len(active_capacity_therapists)
-            total_capacity_mins = working_count * 15 * 60
-            total_booked_mins = 0
+        # Condensed to prevent nested indentation issues
+        total_booked_mins = sum(
+            (
+                        app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
+            for app in appointments_raw
+            if
+            app.slot_type == "patient" and app.therapist_id and not app.therapist_id.is_buffer and app.attendance_state != 'no_show'
+        )
 
-            for app in appointments_raw:
-                if app.slot_type == "patient" and app.therapist_id and not app.therapist_id.is_buffer and app.attendance_state != 'no_show':
-                    duration = (
-                                           app.end_datetime - app.start_datetime).total_seconds() / 60.0 if app.start_datetime and app.end_datetime else 60
-                    total_booked_mins += duration
+        utilization_pct = round((total_booked_mins / total_capacity_mins) * 100) if total_capacity_mins > 0 else 0
 
-            utilization_pct = round((total_booked_mins / total_capacity_mins) * 100) if total_capacity_mins > 0 else 0
+        # --- Fetch Pending Requests for Manager View ---
+        pending_requests = []
+        if is_manager:
+            reqs = self.env['clinic.therapist'].sudo().search([
+                ('is_floater_request', '=', True),
+                ('request_state', '=', 'pending'),
+                ('request_date', '=', target_date)
+            ])
+            for r in reqs:
+                pending_requests.append({
+                    'placeholder_id': r.id,
+                    'clinic_name': r.request_clinic_id.name,
+                    'gender': r.gender,
+                    'name': r.name
+                })
 
-            # --- Fetch Pending Requests for Manager View ---
-            pending_requests = []
-            if is_manager:
-                reqs = self.env['clinic.therapist'].sudo().search([
-                    ('is_floater_request', '=', True),
-                    ('request_state', '=', 'pending'),
-                    ('request_date', '=', target_date)
-                ])
-                for r in reqs:
-                    pending_requests.append({
-                        'placeholder_id': r.id,
-                        'clinic_name': r.request_clinic_id.name,
-                        'gender': r.gender,
-                        'name': r.name
-                    })
-
-            return {
-                'therapists': therapists,
-                'appointments': formatted_appointments,
-                'pending_requests': pending_requests,
-                'clinics': clinics_records,
-                'regions': regions_records,
-                'selected_clinic_id': clinic_id,
-                'kpis': {
-                    'fixed_count': fixed_count,
-                    'floater_count': floater_count,
-                    'hv_count': hv_count,
-                    'male_therapist_count': male_therapists,
-                    'female_therapist_count': female_therapists,
-                    'male_fixed': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'fixed'),
-                    'male_floater': sum(
-                        1 for t in present_therapists if t.gender == 'm' and t.designation == 'floater'),
-                    'male_hv': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'hv'),
-                    'female_fixed': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'fixed'),
-                    'female_floater': sum(
-                        1 for t in present_therapists if t.gender == 'f' and t.designation == 'floater'),
-                    'female_hv': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'hv'),
-                    'utilization': utilization_pct,
-                    'total_scheduled': len(total_scheduled_ids),
-                    'allotted_clinic': len(scheduled_clinic_ids),
-                    'allotted_hv': len(scheduled_hv_ids),
-                    'self_scheduled': len(scheduled_self_ids),
-                    'outstanding': outstanding_count,
-                    'male_patient_count': male_patients,
-                    'female_patient_count': female_patients
-                }
+        return {
+            'therapists': therapists,
+            'appointments': formatted_appointments,
+            'pending_requests': pending_requests,
+            'clinics': clinics_records,
+            'regions': regions_records,
+            'selected_clinic_id': clinic_id,
+            'kpis': {
+                'fixed_count': fixed_count,
+                'floater_count': floater_count,
+                'hv_count': hv_count,
+                'male_therapist_count': male_therapists,
+                'female_therapist_count': female_therapists,
+                'male_fixed': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'fixed'),
+                'male_floater': sum(
+                    1 for t in present_therapists if t.gender == 'm' and t.designation == 'floater'),
+                'male_hv': sum(1 for t in present_therapists if t.gender == 'm' and t.designation == 'hv'),
+                'female_fixed': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'fixed'),
+                'female_floater': sum(
+                    1 for t in present_therapists if t.gender == 'f' and t.designation == 'floater'),
+                'female_hv': sum(1 for t in present_therapists if t.gender == 'f' and t.designation == 'hv'),
+                'utilization': utilization_pct,
+                'total_scheduled': len(total_scheduled_ids),
+                'allotted_clinic': len(scheduled_clinic_ids),
+                'allotted_hv': len(scheduled_hv_ids),
+                'self_scheduled': len(scheduled_self_ids),
+                'outstanding': outstanding_count,
+                'male_patient_count': male_patients,
+                'female_patient_count': female_patients
             }
+        }
 
     @api.model
     def get_clinic_smart_view(self, clinic_id, target_date):
