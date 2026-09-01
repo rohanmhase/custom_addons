@@ -1887,7 +1887,7 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             raise ValidationError(
                 _("Capacity limit not met! You cannot request an additional floater for a gender you already have on staff unless existing staff have 6+ sessions."))
 
-        Therapist = self.env['clinic.therapist']
+        Therapist = self.env['clinic.therapist'].sudo()
 
         # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
         self.clinic_id.with_for_update().read(['id'])

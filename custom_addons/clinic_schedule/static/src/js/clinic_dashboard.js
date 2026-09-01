@@ -325,20 +325,6 @@ export class ClinicMatrixDashboard extends Component {
         return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss");
     }
 
-    async onCreateNewTherapistClick() {
-        this.actionService.doAction({
-            type: "ir.actions.act_window",
-            res_model: "clinic.therapist",
-            views: [[false, "form"]],
-            target: "new",
-            context: {default_allowed_branch_ids: this.state.selectedClinic ? [parseInt(this.state.selectedClinic)] : []}
-        }, {
-            onClose: async () => {
-                await this.refreshGrid();
-                await this.loadRosterMetadata();
-            }
-        });
-    }
 
     async openAllotModal() {
         const displayedIds = this.state.therapists.map(t => t.id);
