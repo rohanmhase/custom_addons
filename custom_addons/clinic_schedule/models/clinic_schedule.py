@@ -648,14 +648,27 @@ class ClinicScheduleAppointment(models.Model):
             })
         return True
 
-
-    def write(self, vals):
-        # 1. ABSOLUTE COMPLETION LOCK
-        business_fields = {'therapist_id', 'start_datetime', 'clinic_id', 'patient_id', 'slot_type', 'visit_type', 'attendance_state'}
-        if any(f in vals for f in business_fields):
+    def unlink(self):
+        """Block non-managers from deleting completed sessions."""
+        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        if not is_manager:
             for rec in self:
                 if rec.attendance_state == 'completed':
-                    raise ValidationError(_("Record Locked: This session is 'Completed'. No further modifications are permitted."))
+                    raise ValidationError(
+                        _("Record Locked: This session is 'Completed'. Only Managers can delete completed sessions."))
+        return super().unlink()
+
+    def write(self, vals):
+        # 1. ABSOLUTE COMPLETION LOCK (Bypassed for Managers)
+        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        business_fields = {'therapist_id', 'start_datetime', 'clinic_id', 'patient_id', 'slot_type', 'visit_type',
+                           'attendance_state'}
+
+        if not is_manager and any(f in vals for f in business_fields):
+            for rec in self:
+                if rec.attendance_state == 'completed':
+                    raise ValidationError(
+                        _("Record Locked: This session is 'Completed'. Only Managers can modify completed sessions."))
 
         for rec in self:
             audit_entries = []
@@ -1885,12 +1898,14 @@ class ClinicFloaterRequestWizard(models.TransientModel):
 
         if underutilized and self.gender not in missing_genders:
             raise ValidationError(
-                _("Capacity limit not met! You cannot request an additional floater for a gender you already have on staff unless existing staff have 6+ sessions."))
+                _("Capacity limit not met! You cannot request an additional floater for a gender you already have on staff unless existing staff have 6+ sessions.")
+            )
 
+        # --- SUDO() BYPASS: Allows Admins to generate placeholders without full Therapist write access ---
         Therapist = self.env['clinic.therapist'].sudo()
 
-        # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests
-        self.clinic_id.with_for_update().read(['id'])
+        # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests safely
+        self.env.cr.execute("SELECT id FROM clinic_clinic WHERE id = %s FOR UPDATE", [self.clinic_id.id])
 
         # 2. Enforce the Max 3 limit per gender per day safely
         existing_requests = Therapist.search_count([
@@ -1900,6 +1915,7 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             ('gender', '=', self.gender),
             ('active', '=', True)
         ])
+
         if existing_requests >= 3:
             gender_str = dict(self._fields['gender'].selection).get(self.gender)
             raise ValidationError(_(
@@ -1910,7 +1926,11 @@ class ClinicFloaterRequestWizard(models.TransientModel):
         # 3. Create the Placeholder Therapist Row
         gender_label = "M" if self.gender == 'm' else "F"
         placeholder_name = f"Requested Floater ({gender_label})"
+
+        time_str = fields.Datetime.now().strftime('%H%M%S')
         unique_suffix = f"{fields.Datetime.now().strftime('%H%M%S')}_{self.clinic_id.id}"
+
+        dummy_phone = f"99{time_str}{str(self.clinic_id.id).zfill(2)}"[:10]
 
         placeholder = Therapist.create({
             'name': placeholder_name,
@@ -1922,13 +1942,14 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             'request_state': 'pending',
             'allowed_branch_ids': [(4, self.clinic_id.id)],
             'vendor_id': f'PENDING_HO_{unique_suffix}',
-            'contact_number': '0000000000',
+            'contact_number': dummy_phone,
         })
 
         # 4. Dispatch the To-Do Activity to Managers
         target_region = self.clinic_id.region_id
         all_managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
         regional_managers = self.env['res.users']
+
         if target_region:
             for m in all_managers:
                 if hasattr(m, 'region_ids') and target_region.id in m.region_ids.ids:
@@ -1940,6 +1961,7 @@ class ClinicFloaterRequestWizard(models.TransientModel):
 
         users_to_notify = regional_managers if regional_managers else all_managers
         region_name_str = target_region.name if target_region else 'Unassigned'
+
         for user in users_to_notify:
             placeholder.activity_schedule(
                 'mail.activity_data_todo',
@@ -1947,4 +1969,5 @@ class ClinicFloaterRequestWizard(models.TransientModel):
                 summary=f'Floater Request: {self.clinic_id.name}',
                 note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater."
             )
+
         return {'type': 'ir.actions.act_window_close'}

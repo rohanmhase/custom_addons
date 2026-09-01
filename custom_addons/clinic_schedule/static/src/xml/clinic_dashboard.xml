@@ -349,10 +349,11 @@
                                                              t-att-title="'No-Show: ' + ghost.patient_name">
                                                             <i class="fa fa-user-times me-1"/>
                                                             <span style="text-decoration: line-through;"><t t-esc="ghost.patient_name"/></span>
-                                                            <i class="fa fa-times float-end mt-1 text-danger hover-text-dark"
-                                                               style="cursor: pointer; z-index: 10;"
-                                                               title="Delete Ghost Record"
-                                                               t-on-click="(ev) => this.quickRemoveSlot(ev, ghost.id, therapist.id)"/>
+                                                            <i class="fa fa-times position-absolute top-0 end-0 m-1 text-muted hover-text-danger bg-white rounded-circle shadow-sm"
+                                                               style="cursor: pointer; z-index: 10; padding: 4px; border: 1px solid #dee2e6;"
+                                                               title="Quick Hard Delete"
+                                                               t-if="active_app.attendance_state !== 'completed' || state.is_manager"
+                                                               t-on-click="(ev) => this.quickRemoveSlot(ev, active_app.id, therapist.id)"/>
                                                         </div>
                                                     </t>
 
@@ -373,7 +374,8 @@
                                                         <t t-elif="active_app.slot_type === 'patient'">
                                                             <i class="fa fa-times position-absolute top-0 end-0 m-1 text-muted hover-text-danger bg-white rounded-circle shadow-sm"
                                                                style="cursor: pointer; z-index: 10; padding: 4px; border: 1px solid #dee2e6;"
-                                                               title="Quick Hard Delete"
+                                                               title="Delete Slot"
+                                                               t-if="active_app.attendance_state !== 'completed' || state.is_manager"
                                                                t-on-click="(ev) => this.quickRemoveSlot(ev, active_app.id, therapist.id)"/>
                                                             <div t-attf-class="fw-bolder text-truncate mb-1 #{active_app.attendance_state === 'no_show' ? 'text-decoration-line-through text-secondary' : 'text-dark'}"
                                                                  style="font-size: 0.85rem; padding-right: 18px;"
@@ -645,12 +647,14 @@
                                 <button class="btn btn-outline-secondary fw-bold py-2 mt-2" t-on-click="() => this.openFullForm()">
                                     <i class="fa fa-pencil me-1"/> Full Edit
                                 </button>
-                                <button class="btn btn-warning fw-bold py-2 mt-2 text-dark shadow-sm" t-on-click="() => this.unassignSlot()">
+                                <button class="btn btn-warning fw-bold py-2 mt-2 text-dark shadow-sm"
+                                        t-if="state.selectedAppointment.attendance_state !== 'completed' || state.is_manager"
+                                        t-on-click="() => this.unassignSlot()">
                                     <i class="fa fa-trash me-1"/> Delete / Unassign
                                 </button>
                             </div>
                             <t t-if="state.selectedAppointment.slot_type === 'patient'">
-                                <div class="mt-4 pt-3 border-top text-start">
+                                <div class="mt-4 pt-3 border-top text-start" t-if="state.selectedAppointment.attendance_state !== 'completed' || state.is_manager">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-2"><i class="fa fa-exchange me-1"/>Rapid Re-Assign</h6>
                                     <div class="input-group input-group-sm">
                                         <select class="form-select border-primary" t-model="state.quickReassignTherapist">
