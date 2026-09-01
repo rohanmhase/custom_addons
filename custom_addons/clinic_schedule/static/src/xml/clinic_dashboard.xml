@@ -61,13 +61,6 @@
                             </button>
                         </div>
                     </t>
-                    <t t-elif="state.activeTab === 'roster'">
-                        <button class="btn btn-sm btn-success fw-bold shadow-sm"
-                                t-on-click="() => this.onCreateNewTherapistClick()">
-                            <i class="fa fa-user-plus me-1"/>
-                            Register Fixed Therapist
-                        </button>
-                    </t>
                     <div class="vr" style="height: 24px; opacity: 0.15;"></div>
                     <h4 class="m-0 text-primary fw-bolder px-2">Clinical Management Dashboard</h4>
                 </div>
