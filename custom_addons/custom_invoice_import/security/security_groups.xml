@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Category for our custom app -->
+        <record id="module_category_custom_import" model="ir.module.category">
+            <field name="name">Invoice Imports</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- View Only (Read) -->
+        <record id="group_custom_import_viewer" model="res.groups">
+            <field name="name">Viewer</field>
+            <field name="category_id" ref="module_category_custom_import"/>
+        </record>
+
+        <!-- Moderator (CRU) -->
+        <record id="group_custom_import_moderator" model="res.groups">
+            <field name="name">Moderator</field>
+            <field name="category_id" ref="module_category_custom_import"/>
+            <field name="implied_ids" eval="[(4, ref('group_custom_import_viewer'))]"/>
+        </record>
+
+        <!-- Admin (CRUD) -->
+        <record id="group_custom_import_admin" model="res.groups">
+            <field name="name">Admin</field>
+            <field name="category_id" ref="module_category_custom_import"/>
+            <field name="implied_ids" eval="[(4, ref('group_custom_import_moderator'))]"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_import_invoices_wizard_viewer,import.invoices.wizard.viewer,model_import_invoices_wizard,group_custom_import_viewer,1,0,0,0
+access_import_invoices_wizard_moderator,import.invoices.wizard.moderator,model_import_invoices_wizard,group_custom_import_moderator,1,1,1,0
+access_import_invoices_wizard_admin,import.invoices.wizard.admin,model_import_invoices_wizard,group_custom_import_admin,1,1,1,1
+
+access_import_customer_existing_admin,import.invoice.customer.existing.admin,model_import_invoice_customer_existing,group_custom_import_viewer,1,1,1,1
+access_import_customer_new_admin,import.invoice.customer.new.admin,model_import_invoice_customer_new,group_custom_import_viewer,1,1,1,1
+
+access_import_payments_wizard_viewer,import.payments.wizard.viewer,model_import_payments_wizard,group_custom_import_viewer,1,0,0,0
+access_import_payments_wizard_moderator,import.payments.wizard.moderator,model_import_payments_wizard,group_custom_import_moderator,1,1,1,0
+access_import_payments_wizard_admin,import.payments.wizard.admin,model_import_payments_wizard,group_custom_import_admin,1,1,1,1
