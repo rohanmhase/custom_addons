@@ -368,8 +368,8 @@
                                                             <i class="fa fa-times position-absolute top-0 end-0 m-1 text-muted hover-text-danger bg-white rounded-circle shadow-sm"
                                                                style="cursor: pointer; z-index: 10; padding: 4px; border: 1px solid #dee2e6;"
                                                                title="Quick Hard Delete"
-                                                               t-if="active_app.attendance_state !== 'completed' || state.is_manager"
-                                                               t-on-click="(ev) => this.quickRemoveSlot(ev, active_app.id, therapist.id)"/>
+                                                               t-if="!active_app || active_app.attendance_state !== 'completed' || state.is_manager"
+                                                               t-on-click="(ev) => this.quickRemoveSlot(ev, ghost.id, therapist.id)"/>
                                                         </div>
                                                     </t>
 

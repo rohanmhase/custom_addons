@@ -585,6 +585,12 @@ class ClinicScheduleAppointment(models.Model):
         daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
         absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
 
+        male_working = working_therapists.filtered(lambda t: t.gender == 'm')
+        female_working = working_therapists.filtered(lambda t: t.gender == 'f')
+
+        male_underutilized = any(therapist_counts[t.id] < 6 for t in male_working) if male_working else False
+        female_underutilized = any(therapist_counts[t.id] < 6 for t in female_working) if female_working else False
+
         working_therapists = self.env['clinic.therapist'].search([
             ('active', '=', True),
             ('is_buffer', '=', False),
@@ -626,6 +632,11 @@ class ClinicScheduleAppointment(models.Model):
             ))
 
         # Uncomment and return the wizard
+        if male_underutilized and female_underutilized:
+            raise ValidationError(_(
+                "Capacity threshold not met: Working therapists must have at least 6 assigned therapies before requesting additional floaters."
+            ))
+
         return {
             'name': _('Request Floater Therapist'),
             'type': 'ir.actions.act_window',
@@ -636,7 +647,8 @@ class ClinicScheduleAppointment(models.Model):
             'context': {
                 'default_clinic_id': clinic_id,
                 'default_target_date': target_date,
-                'underutilized_exists': underutilized_exists,
+                'male_underutilized': male_underutilized,
+                'female_underutilized': female_underutilized,
                 'missing_genders': missing_genders
             }
         }
@@ -677,8 +689,13 @@ class ClinicScheduleAppointment(models.Model):
 
     def unlink(self):
         """Block non-managers from deleting completed sessions."""
-        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
-        if not is_manager:
+        # Stand down if running from system/context token OR if user is a Manager
+        is_authorized = (
+            self.env.su
+            or self.env.context.get('bypass_matrix_lock')
+            or self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        )
+        if not is_authorized:
             for rec in self:
                 if rec.attendance_state == 'completed':
                     raise ValidationError(
@@ -686,12 +703,17 @@ class ClinicScheduleAppointment(models.Model):
         return super().unlink()
 
     def write(self, vals):
-        # 1. ABSOLUTE COMPLETION LOCK (Bypassed for Managers)
-        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
-        business_fields = {'therapist_id', 'start_datetime', 'clinic_id', 'patient_id', 'slot_type', 'visit_type',
-                           'attendance_state'}
-
-        if not is_manager and any(f in vals for f in business_fields):
+        # Stand down if running from system/context token OR if user is a Manager
+        is_authorized = (
+            self.env.su
+            or self.env.context.get('bypass_matrix_lock')
+            or self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        )
+        business_fields = {
+            'therapist_id', 'start_datetime', 'clinic_id', 'patient_id',
+            'slot_type', 'visit_type', 'attendance_state'
+        }
+        if not is_authorized and any(f in vals for f in business_fields):
             for rec in self:
                 if rec.attendance_state == 'completed':
                     raise ValidationError(
@@ -701,31 +723,25 @@ class ClinicScheduleAppointment(models.Model):
             audit_entries = []
             if 'therapist_id' in vals:
                 old_t = rec.therapist_id.name if rec.therapist_id else 'Unassigned'
-                new_t_obj = self.env['clinic.therapist'].browse(vals['therapist_id']) if vals.get(
-                    'therapist_id') else False
+                new_t_obj = self.env['clinic.therapist'].browse(vals['therapist_id']) if vals.get('therapist_id') else False
                 new_t = new_t_obj.name if new_t_obj else 'Unassigned'
                 if old_t != new_t:
-                    audit_entries.append(_("Therapist changed: <b>%s</b> ➔ <b>%s</b>") % (old_t, new_t))
+                    audit_entries.append(_("Therapist changed: <b>%s</b> &rarr; <b>%s</b>") % (old_t, new_t))
             if 'attendance_state' in vals:
-                old_st = dict(self._fields['attendance_state'].selection).get(rec.attendance_state,
-                                                                              rec.attendance_state)
-                new_st = dict(self._fields['attendance_state'].selection).get(vals['attendance_state'],
-                                                                              vals['attendance_state'])
+                old_st = dict(self._fields['attendance_state'].selection).get(rec.attendance_state, rec.attendance_state)
+                new_st = dict(self._fields['attendance_state'].selection).get(vals['attendance_state'], vals['attendance_state'])
                 if old_st != new_st:
-                    audit_entries.append(_("Session Status changed: <b>%s</b> ➔ <b>%s</b>") % (old_st, new_st))
+                    audit_entries.append(_("Session Status changed: <b>%s</b> &rarr; <b>%s</b>") % (old_st, new_st))
             if 'start_datetime' in vals:
-                old_time = fields.Datetime.context_timestamp(self, rec.start_datetime).strftime(
-                    '%d %b %Y, %I:%M %p') if rec.start_datetime else 'None'
+                old_time = fields.Datetime.context_timestamp(self, rec.start_datetime).strftime('%d %b %Y, %I:%M %p') if rec.start_datetime else 'None'
                 new_dt_obj = fields.Datetime.from_string(vals['start_datetime'])
-                new_time = fields.Datetime.context_timestamp(self, new_dt_obj).strftime(
-                    '%d %b %Y, %I:%M %p') if new_dt_obj else 'None'
-                audit_entries.append(_("Schedule Time changed: <b>%s</b> ➔ <b>%s</b>") % (old_time, new_time))
+                new_time = fields.Datetime.context_timestamp(self, new_dt_obj).strftime('%d %b %Y, %I:%M %p') if new_dt_obj else 'None'
+                audit_entries.append(_("Schedule Time changed: <b>%s</b> &rarr; <b>%s</b>") % (old_time, new_time))
             if 'clinic_id' in vals:
                 old_c = rec.clinic_id.name if rec.clinic_id else 'None'
                 new_c_obj = self.env['clinic.clinic'].browse(vals['clinic_id']) if vals.get('clinic_id') else False
                 new_c = new_c_obj.name if new_c_obj else 'None'
-                audit_entries.append(_("Clinic Branch changed: <b>%s</b> ➔ <b>%s</b>") % (old_c, new_c))
-
+                audit_entries.append(_("Clinic Branch changed: <b>%s</b> &rarr; <b>%s</b>") % (old_c, new_c))
             if audit_entries:
                 rec.message_post(body=_("<b>Audit Log (%s):</b><br/>%s") % (
                     self.env.user.name, "<br/>".join(audit_entries)
@@ -2006,6 +2022,16 @@ class ClinicFloaterRequestWizard(models.TransientModel):
 
         users_to_notify = regional_managers if regional_managers else all_managers
         region_name_str = target_region.name if target_region else 'Unassigned'
+
+        male_underutilized = self.env.context.get('male_underutilized', False)
+        female_underutilized = self.env.context.get('female_underutilized', False)
+
+        if self.gender == 'm' and male_underutilized:
+            raise ValidationError(
+                _("Capacity limit not met: Existing male therapists must have at least 6 assigned therapies before requesting another male floater."))
+        if self.gender == 'f' and female_underutilized:
+            raise ValidationError(
+                _("Capacity limit not met: Existing female therapists must have at least 6 assigned therapies before requesting another female floater."))
 
         for user in users_to_notify:
             placeholder.activity_schedule(

@@ -66,10 +66,12 @@ class PatientSession(models.Model):
                 }
 
                 # If slot was unassigned on the board, populate it with the doctor's therapist
+                # If slot was unassigned on the board, populate it with the doctor's therapist
                 if not target_app.therapist_id and rec.therapist_id:
                     vals['therapist_id'] = rec.therapist_id.id
 
-                target_app.write(vals)
+                # NEW: Pass the bypass token so the Matrix accepts backend syncs
+                target_app.with_context(bypass_matrix_lock=True).write(vals)
 
     @api.model_create_multi
     def create(self, vals_list):
