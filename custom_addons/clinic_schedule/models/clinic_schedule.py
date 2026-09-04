@@ -567,7 +567,6 @@ class ClinicScheduleAppointment(models.Model):
     #         'request_state': 'approved'
     #     })
     #     return True
-
     @api.model
     def action_check_floater_eligibility(self, clinic_id, target_date):
         if not clinic_id or not target_date:
@@ -585,12 +584,7 @@ class ClinicScheduleAppointment(models.Model):
         daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
         absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
 
-        male_working = working_therapists.filtered(lambda t: t.gender == 'm')
-        female_working = working_therapists.filtered(lambda t: t.gender == 'f')
-
-        male_underutilized = any(therapist_counts[t.id] < 6 for t in male_working) if male_working else False
-        female_underutilized = any(therapist_counts[t.id] < 6 for t in female_working) if female_working else False
-
+        # 1. DEFINE working_therapists FIRST
         working_therapists = self.env['clinic.therapist'].search([
             ('active', '=', True),
             ('is_buffer', '=', False),
@@ -598,7 +592,7 @@ class ClinicScheduleAppointment(models.Model):
             ('allowed_branch_ids', 'in', clinic_id)
         ]).filtered(lambda t: t.id not in absent_staff_ids)
 
-        # BATCH QUERY: Fetch all target slots in one go instead of looping search_count()
+        # 2. Fetch today's appointments
         today_apps = self.search([
             ('clinic_id', '=', clinic_id),
             ('slot_type', '=', 'patient'),
@@ -608,9 +602,17 @@ class ClinicScheduleAppointment(models.Model):
             ('therapist_id', 'in', working_therapists.ids)
         ])
 
+        # 3. Build therapist_counts
         therapist_counts = {t.id: 0 for t in working_therapists}
         for app in today_apps:
             therapist_counts[app.therapist_id.id] += 1
+
+        # 4. NOW calculate gender specific utilization
+        male_working = working_therapists.filtered(lambda t: t.gender == 'm')
+        female_working = working_therapists.filtered(lambda t: t.gender == 'f')
+
+        male_underutilized = any(therapist_counts[t.id] < 6 for t in male_working) if male_working else False
+        female_underutilized = any(therapist_counts[t.id] < 6 for t in female_working) if female_working else False
 
         underutilized_exists = False
         for t in working_therapists:
@@ -631,7 +633,6 @@ class ClinicScheduleAppointment(models.Model):
                 "Capacity threshold not met: All working therapists must have at least 6 assigned therapies before requesting a floater."
             ))
 
-        # Uncomment and return the wizard
         if male_underutilized and female_underutilized:
             raise ValidationError(_(
                 "Capacity threshold not met: Working therapists must have at least 6 assigned therapies before requesting additional floaters."
