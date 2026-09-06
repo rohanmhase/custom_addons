@@ -392,14 +392,14 @@
             <form string="Request Floater Therapist">
                 <sheet>
                     <div class="alert alert-info text-center" role="alert">
-                        <i class="fa fa-check-circle fa-2x mb-2" title="Success"/><br/>
-                        <strong>Capacity Met:</strong> You are eligible to request a floater.<br/>
-                        Please select the required gender for this floater.
-                        <br/><small>(Max limit: 3 requests per gender, per day)</small>
+                        <i class="fa fa-info-circle fa-2x mb-2"/><br/>
+                        Select the type and gender of the floater you need.
+                        <br/><small>(Max limit: 3 requests per gender/type, per day)</small>
                     </div>
                     <group>
                         <field name="clinic_id" readonly="1" options="{'no_open': True}"/>
                         <field name="target_date" readonly="1"/>
+                        <field name="floater_type" widget="radio" options="{'horizontal': true}"/>
                         <field name="gender" widget="radio" options="{'horizontal': true}"/>
                     </group>
                 </sheet>

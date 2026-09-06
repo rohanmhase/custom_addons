@@ -40,6 +40,9 @@ export class ClinicMatrixDashboard extends Component {
             clinics: [],
             regions: [],
             rosterData: [],
+            myRequests: [],
+            isMyRequestsModalOpen: false,
+            substituteTargetReq: null,
             kpis: {
                 rs_count: 0, fixed_count: 0, floater_count: 0, hv_count: 0, utilization: 0,
                 total_scheduled: 0, allotted_clinic_hv: 0, self_scheduled: 0, outstanding: 0
@@ -208,12 +211,20 @@ export class ClinicMatrixDashboard extends Component {
             this.state.lastFetchedDate = this.state.selectedDate;
             this.state.lastFetchedClinic = currentClinic;
         }
+
+        // 1. 'data' is declared and fetched here
         const data = await this.orm.call("clinic.schedule.appointment", "get_matrix_data", [currentClinic, this.state.selectedDate, this.state.pulledTherapistIds]);
+
+        // 2. State assignments safely use 'data' AFTER the line above
         this.state.clinics = data.clinics || [];
         this.state.regions = data.regions || [];
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
         this.state.pendingRequests = data.pending_requests || [];
+
+        // NEW LINE GOES HERE
+        this.state.myRequests = data.my_requests || [];
+
         this.state.kpis = data.kpis || this.state.kpis;
         this.state.timeSlots = [...this.baseTimeSlots];
 
@@ -222,6 +233,7 @@ export class ClinicMatrixDashboard extends Component {
             const currentRegion = parseInt(this.state.selectedRegion) || 0;
             await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [data.selected_clinic_id, currentRegion]);
         }
+
         if (this.state.activeTab === "roster") await this.loadRosterMetadata();
         if (this.state.activeTab === "attendance") await this.loadAttendanceLedger();
     }
@@ -325,6 +337,24 @@ export class ClinicMatrixDashboard extends Component {
         return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss");
     }
 
+    openMyRequestsModal() {
+        this.state.isMyRequestsModalOpen = true;
+    }
+
+    closeMyRequestsModal() {
+        this.state.isMyRequestsModalOpen = false;
+    }
+
+    async cancelFloaterRequest(placeholderId) {
+        const confirmed = window.confirm("WARNING: Are you sure you want to cancel this request? Any patients currently booked to this placeholder will be forcefully dropped to UNASSIGNED.");
+        if (!confirmed) return;
+
+        const res = await this.orm.call("clinic.schedule.appointment", "action_cancel_floater_request", [placeholderId]);
+        this.notificationService.add(res.message, { type: "success" });
+        this.closeMyRequestsModal();
+        await this.refreshGrid();
+    }
+
 
     async openAllotModal() {
         const displayedIds = this.state.therapists.map(t => t.id);
@@ -390,15 +420,19 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async openSubstituteModal(placeholderId) {
-        this.closePendingRequestsModal(); // NEW
+        this.closePendingRequestsModal();
         this.state.substituteTargetPlaceholderId = placeholderId;
+
+        // Find the request details to show in the UI banner
+        const targetReq = this.state.pendingRequests.find(r => r.placeholder_id === placeholderId);
+        this.state.substituteTargetReq = targetReq || null;
+
         const displayedIds = this.state.therapists.map(t => t.id);
         const data = await this.orm.call("clinic.schedule.appointment", "get_allotable_therapists", [parseInt(this.state.selectedClinic), this.state.selectedDate, displayedIds]);
-        this.state.allotableTherapists = data.map(t => {
-            let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
-            let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
-            return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
-        });
+
+        // Pass clean data without adding raw text tags
+        this.state.allotableTherapists = data;
+
         this.state.allotSearchQuery = "";
         this.state.selectedTherapistObj = null;
         this.state.isSubstituteModalOpen = true;
@@ -408,6 +442,7 @@ export class ClinicMatrixDashboard extends Component {
         this.state.isSubstituteModalOpen = false;
         this.state.substituteTargetPlaceholderId = null;
         this.state.selectedTherapistObj = null;
+        this.state.substituteTargetReq = null;
     }
 
     async confirmSubstitute() {
