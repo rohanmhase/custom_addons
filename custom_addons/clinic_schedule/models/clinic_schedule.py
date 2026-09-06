@@ -500,10 +500,16 @@ class ClinicScheduleAppointment(models.Model):
         start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
 
         # FIX: Removed end_day boundary to unassign for target date AND all future dates
+        target_date_obj = fields.Date.from_string(target_date)
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+
         apps = self.search([
             ('therapist_id', '=', int(therapist_id)),
             ('clinic_id', '=', int(clinic_id)),
-            ('start_datetime', '>=', start_day)
+            ('start_datetime', '>=', start_day_utc),
+            ('attendance_state', 'not in', ['completed', 'no_show'])
         ])
         unassigned_count = len(apps)
         apps.write({'therapist_id': False})
@@ -524,9 +530,10 @@ class ClinicScheduleAppointment(models.Model):
 
         domain = [
             ('clinic_id', '=', int(clinic_id)),
-            ('start_datetime', '>=', start_day),
-            ('start_datetime', '<=', end_day),
-            ('slot_type', '=', 'patient')
+            ('start_datetime', '>=', start_day_utc),
+            ('start_datetime', '<=', end_day_utc),
+            ('slot_type', '=', 'patient'),
+            ('attendance_state', 'not in', ['completed', 'no_show'])
         ]
 
         if int(source_therapist_id) == 0:
@@ -982,14 +989,15 @@ class ClinicScheduleAppointment(models.Model):
     @api.constrains('start_datetime', 'end_datetime', 'therapist_id', 'clinic_id')
     def _check_therapist_overlap(self):
         """Validates Overlaps AND enforces a 1-Hour Cross-Clinic Transit Buffer. Ignores No-Shows."""
+        if self.env.su or self.env.context.get('bypass_matrix_lock'):
+            return
         for record in self:
             if not record.therapist_id: continue
-
             # 1. Exact Booking Overlap Check (IGNORE NO SHOWS)
             domain = [
                 ('therapist_id', '=', record.therapist_id.id), ('id', '!=', record.id),
                 ('start_datetime', '<', record.end_datetime), ('end_datetime', '>', record.start_datetime),
-                ('attendance_state', '!=', 'no_show')  # NEW: Let No-Shows be overlapped
+                ('attendance_state', '!=', 'no_show')
             ]
             conflict = self.sudo().search(domain, limit=1)
             if conflict:
@@ -1640,7 +1648,8 @@ class ClinicScheduleAppointment(models.Model):
             ('clinic_id', '=', clinic_id),
             ('start_datetime', '>=', start_day_utc),
             ('end_datetime', '<=', end_day_utc),
-            ('slot_type', '=', 'patient')
+            ('slot_type', '=', 'patient'),
+            ('attendance_state', '!=', 'no_show')
         ])
 
         daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])

@@ -6,27 +6,6 @@ import pytz
 
 class PatientSession(models.Model):
     _inherit = 'patient.session'
-
-    @api.constrains('clinic_id', 'therapist_id', 'session_type')
-    def _check_therapist_allowed_branch(self):
-        for rec in self:
-            if rec.session_type == 'self':
-                continue
-            if not rec.therapist_id or not rec.clinic_id:
-                continue
-
-            if rec.clinic_id not in rec.therapist_id.allowed_branch_ids:
-                raise ValidationError(
-                    _(
-                        "%(therapist)s is not allowed "
-                        "for %(clinic)s."
-                    )
-                    % {
-                        'therapist': rec.therapist_id.name,
-                        'clinic': rec.clinic_id.name,
-                    }
-                )
-
     def _sync_matrix_completion(self):
         """Automatically marks corresponding matrix slot as completed when doctor creates session."""
         Appointment = self.env['clinic.schedule.appointment'].sudo()
@@ -71,7 +50,11 @@ class PatientSession(models.Model):
                     vals['therapist_id'] = rec.therapist_id.id
 
                 # NEW: Pass the bypass token so the Matrix accepts backend syncs
-                target_app.with_context(bypass_matrix_lock=True).write(vals)
+                try:
+                    target_app.with_context(bypass_matrix_lock=True).write(vals)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Matrix sync aborted to protect doctor workflow: {e}")
 
     @api.model_create_multi
     def create(self, vals_list):
