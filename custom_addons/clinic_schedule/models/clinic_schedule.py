@@ -88,7 +88,8 @@ class ClinicTherapist(models.Model):
     request_state = fields.Selection([
         ('pending', 'Pending Approval'),
         ('approved', 'Approved & Substituted'),
-        ('rejected', 'Rejected')
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled')
     ], string="Request State", tracking=True)
 
     _sql_constraints = [
@@ -460,6 +461,34 @@ class ClinicScheduleAppointment(models.Model):
         return True
 
     @api.model
+    def action_cancel_floater_request(self, placeholder_id):
+        """ Allows Admins to cancel their own pending requests and dump booked slots. """
+        placeholder = self.env['clinic.therapist'].sudo().browse(int(placeholder_id))
+        if not placeholder.exists() or not placeholder.is_floater_request:
+            return False
+
+        # Dump patients to UNASSIGNED
+        apps = self.search([('therapist_id', '=', placeholder.id)])
+        unassigned_count = len(apps)
+        apps.write({'therapist_id': False})
+        for app in apps:
+            app.message_post(body=_("<b>System Auto-Unassigned:</b> Clinic Admin cancelled the floater request."))
+
+        # Clean up pending Manager notification activities
+        self.env['mail.activity'].sudo().search([
+            ('res_model', '=', 'clinic.therapist'),
+            ('res_id', '=', placeholder.id)
+        ]).unlink()
+
+        # Archive the placeholder
+        placeholder.write({
+            'active': False,
+            'request_state': 'cancelled'
+        })
+        return {'status': 'success',
+                'message': f'Request cancelled. {unassigned_count} patients dropped to UNASSIGNED.'}
+
+    @api.model
     def action_substitute_floater(self, placeholder_id, real_therapist_id):
         """ Accepts the request, links the branch, moves patients, and cleans up notifications. """
         placeholder = self.env['clinic.therapist'].browse(int(placeholder_id))
@@ -574,76 +603,97 @@ class ClinicScheduleAppointment(models.Model):
     #         'request_state': 'approved'
     #     })
     #     return True
+    # @api.model
+    # def action_check_floater_eligibility(self, clinic_id, target_date):
+    #     if not clinic_id or not target_date:
+    #         return False
+    #
+    #     clinic_id = int(clinic_id)
+    #     target_date_obj = fields.Date.from_string(target_date)
+    #
+    #     local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+    #     start_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+    #     end_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+    #     start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+    #     end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+    #
+    #     daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
+    #     absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
+    #
+    #     # 1. DEFINE working_therapists FIRST
+    #     working_therapists = self.env['clinic.therapist'].search([
+    #         ('active', '=', True),
+    #         ('is_buffer', '=', False),
+    #         ('is_floater_request', '=', False),
+    #         ('allowed_branch_ids', 'in', clinic_id)
+    #     ]).filtered(lambda t: t.id not in absent_staff_ids)
+    #
+    #     # 2. Fetch today's appointments
+    #     today_apps = self.search([
+    #         ('clinic_id', '=', clinic_id),
+    #         ('slot_type', '=', 'patient'),
+    #         ('attendance_state', '!=', 'no_show'),
+    #         ('start_datetime', '>=', start_day_utc),
+    #         ('start_datetime', '<=', end_day_utc),
+    #         ('therapist_id', 'in', working_therapists.ids)
+    #     ])
+    #
+    #     # 3. Build therapist_counts
+    #     therapist_counts = {t.id: 0 for t in working_therapists}
+    #     for app in today_apps:
+    #         therapist_counts[app.therapist_id.id] += 1
+    #
+    #     # 4. NOW calculate gender specific utilization
+    #     male_working = working_therapists.filtered(lambda t: t.gender == 'm')
+    #     female_working = working_therapists.filtered(lambda t: t.gender == 'f')
+    #
+    #     male_underutilized = any(therapist_counts[t.id] < 6 for t in male_working) if male_working else False
+    #     female_underutilized = any(therapist_counts[t.id] < 6 for t in female_working) if female_working else False
+    #
+    #     underutilized_exists = False
+    #     for t in working_therapists:
+    #         if therapist_counts[t.id] < 6:
+    #             underutilized_exists = True
+    #             break
+    #
+    #     # Calculate if the branch completely lacks a specific gender
+    #     missing_genders = []
+    #     if not any(t.gender == 'm' for t in working_therapists):
+    #         missing_genders.append('m')
+    #     if not any(t.gender == 'f' for t in working_therapists):
+    #         missing_genders.append('f')
+    #
+    #     # Block ONLY if they have underutilized staff AND both genders are already present
+    #     if underutilized_exists and not missing_genders:
+    #         raise ValidationError(_(
+    #             "Capacity threshold not met: All working therapists must have at least 6 assigned therapies before requesting a floater."
+    #         ))
+    #
+    #     if male_underutilized and female_underutilized:
+    #         raise ValidationError(_(
+    #             "Capacity threshold not met: Working therapists must have at least 6 assigned therapies before requesting additional floaters."
+    #         ))
+    #
+    #     return {
+    #         'name': _('Request Floater Therapist'),
+    #         'type': 'ir.actions.act_window',
+    #         'res_model': 'clinic.floater.request.wizard',
+    #         'view_mode': 'form',
+    #         'views': [[False, 'form']],
+    #         'target': 'new',
+    #         'context': {
+    #             'default_clinic_id': clinic_id,
+    #             'default_target_date': target_date,
+    #             'male_underutilized': male_underutilized,
+    #             'female_underutilized': female_underutilized,
+    #             'missing_genders': missing_genders
+    #         }
+    #     }
+
     @api.model
     def action_check_floater_eligibility(self, clinic_id, target_date):
         if not clinic_id or not target_date:
             return False
-
-        clinic_id = int(clinic_id)
-        target_date_obj = fields.Date.from_string(target_date)
-
-        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
-        start_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
-        end_of_day_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
-        start_day_utc = start_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
-        end_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
-
-        daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
-        absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
-
-        # 1. DEFINE working_therapists FIRST
-        working_therapists = self.env['clinic.therapist'].search([
-            ('active', '=', True),
-            ('is_buffer', '=', False),
-            ('is_floater_request', '=', False),
-            ('allowed_branch_ids', 'in', clinic_id)
-        ]).filtered(lambda t: t.id not in absent_staff_ids)
-
-        # 2. Fetch today's appointments
-        today_apps = self.search([
-            ('clinic_id', '=', clinic_id),
-            ('slot_type', '=', 'patient'),
-            ('attendance_state', '!=', 'no_show'),
-            ('start_datetime', '>=', start_day_utc),
-            ('start_datetime', '<=', end_day_utc),
-            ('therapist_id', 'in', working_therapists.ids)
-        ])
-
-        # 3. Build therapist_counts
-        therapist_counts = {t.id: 0 for t in working_therapists}
-        for app in today_apps:
-            therapist_counts[app.therapist_id.id] += 1
-
-        # 4. NOW calculate gender specific utilization
-        male_working = working_therapists.filtered(lambda t: t.gender == 'm')
-        female_working = working_therapists.filtered(lambda t: t.gender == 'f')
-
-        male_underutilized = any(therapist_counts[t.id] < 6 for t in male_working) if male_working else False
-        female_underutilized = any(therapist_counts[t.id] < 6 for t in female_working) if female_working else False
-
-        underutilized_exists = False
-        for t in working_therapists:
-            if therapist_counts[t.id] < 6:
-                underutilized_exists = True
-                break
-
-        # Calculate if the branch completely lacks a specific gender
-        missing_genders = []
-        if not any(t.gender == 'm' for t in working_therapists):
-            missing_genders.append('m')
-        if not any(t.gender == 'f' for t in working_therapists):
-            missing_genders.append('f')
-
-        # Block ONLY if they have underutilized staff AND both genders are already present
-        if underutilized_exists and not missing_genders:
-            raise ValidationError(_(
-                "Capacity threshold not met: All working therapists must have at least 6 assigned therapies before requesting a floater."
-            ))
-
-        if male_underutilized and female_underutilized:
-            raise ValidationError(_(
-                "Capacity threshold not met: Working therapists must have at least 6 assigned therapies before requesting additional floaters."
-            ))
 
         return {
             'name': _('Request Floater Therapist'),
@@ -653,11 +703,8 @@ class ClinicScheduleAppointment(models.Model):
             'views': [[False, 'form']],
             'target': 'new',
             'context': {
-                'default_clinic_id': clinic_id,
+                'default_clinic_id': int(clinic_id),
                 'default_target_date': target_date,
-                'male_underutilized': male_underutilized,
-                'female_underutilized': female_underutilized,
-                'missing_genders': missing_genders
             }
         }
 
@@ -1378,20 +1425,42 @@ class ClinicScheduleAppointment(models.Model):
         for t in assigned_therapists:
             t_state = state_map.get(t.id)
             is_absent = t_state and t_state.action_type in ['no_show', 'wo', 'leave']
-            sort_score = 5
+
+            # --- NEW STRICT MATRIX SORTING LOGIC ---
+            # 1. Base Score by Role and Request Status
             if t.is_buffer and not is_absent:
-                sort_score = 2
-            elif is_absent:
-                sort_score = 6
-            elif t.designation in ['rs', 'fixed'] and int(clinic_id) in t.allowed_branch_ids.ids:
-                sort_score = 3
-            elif clinic_region_id and any(b.region_id.id == clinic_region_id for b in t.allowed_branch_ids):
-                sort_score = 4
+                base_score = 10
+            elif t.designation == 'fixed':
+                base_score = 100
+            elif t.designation == 'floater' and not t.is_floater_request:
+                base_score = 200
+            elif t.designation == 'floater' and t.is_floater_request:
+                base_score = 300
+            elif t.designation == 'hv' and not t.is_floater_request:
+                base_score = 400
+            elif t.designation == 'hv' and t.is_floater_request:
+                base_score = 500
+            else:
+                base_score = 600
+
+            # 2. Gender Modifier (Male first, then Female)
+            if t.gender == 'm':
+                gender_score = 1
+            elif t.gender == 'f':
+                gender_score = 2
+            else:
+                gender_score = 3
+
+            # 3. Final Calculation (Drop absents to the very bottom)
+            sort_score = base_score + gender_score
+            if is_absent:
+                sort_score += 1000
+            # ---------------------------------------
 
             is_outside_base = bool(t.base_branch_id and t.base_branch_id.id != clinic_id)
             base_branch_name = t.base_branch_id.name if t.base_branch_id else ''
 
-
+            # ... (keep the rest of the loop logic the exact same below this)
             t_apps = [a for a in all_apps_to_render if
                       a.therapist_id.id == t.id and a.slot_type == 'patient' and a.attendance_state != 'no_show']
             total_slots = len(t_apps)
@@ -1596,10 +1665,42 @@ class ClinicScheduleAppointment(models.Model):
                     'name': r.name
                 })
 
+        pending_requests = []
+        if is_manager:
+            reqs = self.env['clinic.therapist'].sudo().search([
+                ('is_floater_request', '=', True),
+                ('request_state', '=', 'pending'),
+                ('request_date', '=', target_date)
+            ])
+            for r in reqs:
+                pending_requests.append({
+                    'placeholder_id': r.id,
+                    'clinic_name': r.request_clinic_id.name,
+                    'gender': r.gender,
+                    'name': r.name
+                })
+
+        # --- Fetch 'My Requests' for Clinic Admin View ---
+        my_requests = []
+        # We use active_test=False to retrieve requests that were archived because they were approved/rejected
+        admin_reqs = self.env['clinic.therapist'].sudo().with_context(active_test=False).search([
+            ('is_floater_request', '=', True),
+            ('request_clinic_id', '=', clinic_id),
+            ('request_date', '=', target_date)
+        ])
+        for r in admin_reqs:
+            my_requests.append({
+                'placeholder_id': r.id,
+                'name': r.name,
+                'designation': r.designation,
+                'state': r.request_state
+            })
+
         return {
             'therapists': therapists,
             'appointments': formatted_appointments,
             'pending_requests': pending_requests,
+            'my_requests': my_requests,
             'clinics': clinics_records,
             'regions': regions_records,
             'selected_clinic_id': clinic_id,
@@ -1959,53 +2060,92 @@ class ClinicFloaterRequestWizard(models.TransientModel):
     clinic_id = fields.Many2one('clinic.clinic', string="Clinic", required=True, tracking=True)
     target_date = fields.Date(string="Date", required=True, tracking=True)
     gender = fields.Selection([('m', 'Male'), ('f', 'Female')], string="Gender", required=True, tracking=True)
+    floater_type = fields.Selection([
+        ('floater', 'Clinic Floater'),
+        ('hv', 'Home Visit (HV) Floater')
+    ], string="Floater Type", required=True, default='floater')
 
     def action_submit_request(self):
         self.ensure_one()
-
-        # --- NEW GENDER EXEMPTION LOGIC ---
-        underutilized = self.env.context.get('underutilized_exists')
-        missing_genders = self.env.context.get('missing_genders', [])
-
-        if underutilized and self.gender not in missing_genders:
-            raise ValidationError(
-                _("Capacity limit not met! You cannot request an additional floater for a gender you already have on staff unless existing staff have 6+ sessions.")
-            )
-
-        # --- SUDO() BYPASS: Allows Admins to generate placeholders without full Therapist write access ---
         Therapist = self.env['clinic.therapist'].sudo()
 
-        # 1. Apply PostgreSQL row-level lock on the Clinic to serialize concurrent requests safely
+        # --- 1. DYNAMIC CAPACITY VALIDATION ---
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date_obj = fields.Date.from_string(self.target_date)
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+        daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', self.target_date)])
+        absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
+
+        # Route designated types based on user selection
+        target_designations = ['hv'] if self.floater_type == 'hv' else ['fixed', 'floater']
+
+        working_staff = Therapist.search([
+            ('active', '=', True),
+            ('is_buffer', '=', False),
+            ('is_floater_request', '=', False),
+            ('allowed_branch_ids', 'in', self.clinic_id.id),
+            ('gender', '=', self.gender),
+            ('designation', 'in', target_designations)
+        ]).filtered(lambda t: t.id not in absent_staff_ids)
+
+        # If staff of this gender & type exists, enforce capacity (0 staff = immediate exemption)
+        if working_staff:
+            threshold = 3 if self.floater_type == 'hv' else 6
+
+            today_apps = self.env['clinic.schedule.appointment'].search([
+                ('clinic_id', '=', self.clinic_id.id),
+                ('slot_type', '=', 'patient'),
+                ('attendance_state', '!=', 'no_show'),
+                ('start_datetime', '>=', start_day_utc),
+                ('start_datetime', '<=', end_day_utc),
+                ('therapist_id', 'in', working_staff.ids)
+            ])
+
+            therapist_counts = {t.id: 0 for t in working_staff}
+            for app in today_apps:
+                therapist_counts[app.therapist_id.id] += 1
+
+            underutilized = any(count < threshold for count in therapist_counts.values())
+
+            if underutilized:
+                type_str = "HV Floaters" if self.floater_type == 'hv' else "Working Therapists"
+                gender_str = dict(self._fields['gender'].selection).get(self.gender)
+                raise ValidationError(_(
+                    f"Capacity limit not met! Existing {gender_str} {type_str} must have at least {threshold} assigned therapies before requesting another one."
+                ))
+
+        # --- 2. ENFORCE LIMITS & CREATE PLACEHOLDER ---
         self.env.cr.execute("SELECT id FROM clinic_clinic WHERE id = %s FOR UPDATE", [self.clinic_id.id])
 
-        # 2. Enforce the Max 3 limit per gender per day safely
         existing_requests = Therapist.search_count([
             ('is_floater_request', '=', True),
             ('request_clinic_id', '=', self.clinic_id.id),
             ('request_date', '=', self.target_date),
             ('gender', '=', self.gender),
+            ('designation', '=', self.floater_type),
             ('active', '=', True)
         ])
-
         if existing_requests >= 3:
             gender_str = dict(self._fields['gender'].selection).get(self.gender)
+            type_str = "HV" if self.floater_type == 'hv' else "Clinic"
             raise ValidationError(_(
-                f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} floaters for this date.\n"
-                "You cannot request more than 3 per gender."
+                f"Maximum limit reached: Your clinic has already requested {existing_requests} {gender_str} {type_str} floaters for this date."
             ))
 
-        # 3. Create the Placeholder Therapist Row
         gender_label = "M" if self.gender == 'm' else "F"
-        placeholder_name = f"Requested Floater ({gender_label})"
-
+        type_label = "HV " if self.floater_type == 'hv' else ""
+        placeholder_name = f"Requested {type_label}Floater ({gender_label})"
         time_str = fields.Datetime.now().strftime('%H%M%S')
         unique_suffix = f"{fields.Datetime.now().strftime('%H%M%S')}_{self.clinic_id.id}"
-
         dummy_phone = f"99{time_str}{str(self.clinic_id.id).zfill(2)}"[:10]
 
         placeholder = Therapist.create({
             'name': placeholder_name,
-            'designation': 'floater',
+            'designation': self.floater_type,
             'gender': self.gender,
             'is_floater_request': True,
             'request_clinic_id': self.clinic_id.id,
@@ -2016,7 +2156,7 @@ class ClinicFloaterRequestWizard(models.TransientModel):
             'contact_number': dummy_phone,
         })
 
-        # 4. Dispatch the To-Do Activity to Managers
+        # --- 3. DISPATCH NOTIFICATIONS ---
         target_region = self.clinic_id.region_id
         all_managers = self.env.ref('clinic_schedule.group_clinic_schedule_manager').users
         regional_managers = self.env['res.users']
@@ -2033,22 +2173,12 @@ class ClinicFloaterRequestWizard(models.TransientModel):
         users_to_notify = regional_managers if regional_managers else all_managers
         region_name_str = target_region.name if target_region else 'Unassigned'
 
-        male_underutilized = self.env.context.get('male_underutilized', False)
-        female_underutilized = self.env.context.get('female_underutilized', False)
-
-        if self.gender == 'm' and male_underutilized:
-            raise ValidationError(
-                _("Capacity limit not met: Existing male therapists must have at least 6 assigned therapies before requesting another male floater."))
-        if self.gender == 'f' and female_underutilized:
-            raise ValidationError(
-                _("Capacity limit not met: Existing female therapists must have at least 6 assigned therapies before requesting another female floater."))
-
         for user in users_to_notify:
             placeholder.activity_schedule(
                 'mail.activity_data_todo',
                 user_id=user.id,
-                summary=f'Floater Request: {self.clinic_id.name}',
-                note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} floater for {self.target_date}. Please substitute this request with a real floater."
+                summary=f'{type_label}Floater Request: {self.clinic_id.name}',
+                note=f"<b>{self.clinic_id.name}</b> (Region: {region_name_str}) has requested a {gender_label} {type_label}floater for {self.target_date}."
             )
 
         return {'type': 'ir.actions.act_window_close'}

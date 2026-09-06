@@ -41,11 +41,16 @@
                             </button>
                         </t>
                         <t t-else="">
-                            <button class="btn btn-sm btn-warning fw-bold shadow-sm text-dark"
-                                    t-on-click="() => this.requestFloater()">
-                                <i class="fa fa-user-plus me-1"/>
-                                Request Floater
-                            </button>
+                        <button class="btn btn-sm btn-warning fw-bold shadow-sm text-dark"
+                                t-on-click="() => this.requestFloater()">
+                            <i class="fa fa-user-plus me-1"/>
+                            Request Floater
+                        </button>
+                        <button class="btn btn-sm btn-outline-info fw-bold shadow-sm text-dark ms-2 bg-white"
+                                t-on-click="() => this.openMyRequestsModal()">
+                            <i class="fa fa-list me-1"/>
+                            My Requests
+                        </button>
                         </t>
                         <div class="d-flex gap-2 ms-2 border-start ps-3">
                             <button t-attf-class="btn btn-sm #{state.slotsLocked ? 'btn-outline-danger' : 'btn-outline-secondary'} fw-bold"
@@ -1072,7 +1077,22 @@
                             <button type="button" class="btn-close btn-close-white" t-on-click="() => this.closeSubstituteModal()"></button>
                         </div>
                         <div class="modal-body p-4 bg-light">
-                            <p class="text-muted mb-3">Select the actual floater who will fulfill this request. All scheduled patients will be seamlessly moved to this therapist.</p>
+
+                            <!-- NEW: TARGET CONTEXT BANNER -->
+                            <t t-if="state.substituteTargetReq">
+                                <div class="alert alert-success border-success shadow-sm p-3 mb-3 d-flex align-items-center" style="background-color: #d1e7dd;">
+                                    <i class="fa fa-bullseye fa-2x text-success me-3"/>
+                                    <div>
+                                        <div class="text-success fw-bolder small text-uppercase mb-1" style="letter-spacing: 0.5px;">Fulfilling Request</div>
+                                        <h6 class="fw-bolder text-dark mb-1"><t t-esc="state.substituteTargetReq.name"/></h6>
+                                        <div class="small text-dark fw-bold">
+                                            <i class="fa fa-hospital-o me-1"/> <t t-esc="state.substituteTargetReq.clinic_name"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <p class="text-muted mb-3 small">Select the actual floater who will fulfill this request. All scheduled patients will be seamlessly moved to this therapist.</p>
                             <div class="input-group shadow-sm mb-3">
                                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-success"/></span>
                                 <input type="text" class="form-control border-start-0 ps-0 fw-bold text-dark" placeholder="Search Real Floaters..." t-model="state.allotSearchQuery"/>
@@ -1084,7 +1104,23 @@
                                             t-on-click="() => this.selectTherapistToAllot(t)"
                                             style="padding: 12px 16px; transition: all 0.2s;">
                                         <div class="d-flex flex-column text-start w-75">
-                                            <span class="fw-bolder" style="font-size: 0.95rem;"><t t-esc="t.smart_name"/></span>
+
+                                            <!-- NEW: HIGH CONTRAST VISUAL BADGES -->
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span t-attf-class="fw-bolder fs-6 me-2 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-dark'}">
+                                                    <t t-esc="t.name"/>
+                                                </span>
+                                                <span t-attf-class="badge #{t.gender === 'm' ? 'bg-primary' : 'bg-danger'} shadow-sm me-1" style="font-size: 0.6rem;">
+                                                    <i t-attf-class="fa #{t.gender === 'm' ? 'fa-mars' : 'fa-venus'} me-1"/> <t t-esc="t.gender === 'm' ? 'Male' : 'Female'"/>
+                                                </span>
+                                                <span t-attf-class="badge #{t.designation === 'fixed' ? 'bg-secondary' : (t.designation === 'floater' ? 'bg-info text-dark' : 'bg-success')} shadow-sm" style="font-size: 0.6rem;">
+                                                    <i t-attf-class="fa #{t.designation === 'fixed' ? 'fa-user-md' : (t.designation === 'floater' ? 'fa-refresh' : 'fa-home')} me-1"/>
+                                                    <t t-if="t.designation === 'fixed'">Fixed</t>
+                                                    <t t-elif="t.designation === 'floater'">Floater</t>
+                                                    <t t-elif="t.designation === 'hv'">HV Floater</t>
+                                                </span>
+                                            </div>
+
                                             <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                                 <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success shadow-sm' : 'bg-light text-dark border border-secondary shadow-sm'}">
                                                     <i class="fa fa-id-badge me-1"/> <t t-esc="t.vendor_id"/>
@@ -1116,6 +1152,46 @@
                             <button t-if="state.selectedTherapistObj" type="button" class="btn btn-success fw-bold text-white px-4 shadow-sm" t-on-click="() => this.confirmSubstitute()">
                                 <i class="fa fa-check me-1"/> Confirm Substitution
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+        <!-- MY REQUESTS MODAL (ADMIN ONLY) -->
+        <t t-if="state.isMyRequestsModalOpen">
+            <div class="modal-backdrop fade show" style="z-index: 1040; background-color: rgba(0,0,0,0.5);" t-on-click="() => this.closeMyRequestsModal()"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-3">
+                        <div class="modal-header bg-info text-dark border-0 py-3 px-4">
+                            <h5 class="modal-title fw-bold"><i class="fa fa-list me-2"/>My Requests Today</h5>
+                            <button type="button" class="btn-close" t-on-click="() => this.closeMyRequestsModal()"></button>
+                        </div>
+                        <div class="modal-body p-0 bg-light">
+                            <div class="list-group list-group-flush shadow-sm" style="max-height: 400px; overflow-y: auto;">
+                                <t t-if="state.myRequests.length === 0">
+                                    <div class="text-center p-4 text-muted fw-bold">No requests made for this date.</div>
+                                </t>
+                                <t t-foreach="state.myRequests" t-as="req" t-key="req.placeholder_id">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark fs-6"><t t-esc="req.name"/></span>
+                                            <small class="text-muted fw-bold mt-1">
+                                                Type: <span class="text-uppercase me-2"><t t-esc="req.designation"/></span>
+                                                Status:
+                                                <span t-attf-class="badge #{req.state === 'pending' ? 'bg-warning text-dark' : (req.state === 'approved' ? 'bg-success' : 'bg-secondary')}">
+                                                    <t t-esc="req.state.toUpperCase()"/>
+                                                </span>
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button t-if="req.state === 'pending'" class="btn btn-sm btn-danger fw-bold shadow-sm" t-on-click="() => this.cancelFloaterRequest(req.placeholder_id)">
+                                                <i class="fa fa-times me-1"/> Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
                         </div>
                     </div>
                 </div>
