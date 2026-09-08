@@ -117,6 +117,19 @@
                         </group>
                     </group>
 
+                    <group string="DEMO &amp; CLINIC VISIT" invisible="call_status != 'connected'">
+                        <group>
+                            <field name="demo_session_interest" widget="radio" options="{'horizontal': true}" readonly="is_locked"/>
+                            <field name="will_visit_clinic" widget="radio" options="{'horizontal': true}" readonly="is_locked"/>
+                        </group>
+                        <group>
+                            <field name="visit_date"
+                                   invisible="will_visit_clinic != 'yes'"
+                                   required="will_visit_clinic == 'yes'"
+                                   readonly="is_locked"/>
+                        </group>
+                    </group>
+
                     <group string="COMMERCIALS &amp; DISCOUNT" style="background-color:#e8f4f8; border-radius:5px; padding:10px;" invisible="call_status != 'connected'">
                         <field name="discount_offered" readonly="is_locked"/>
                     </group>
@@ -186,6 +199,16 @@
                             <field name="pain_walking_score" readonly="1" force_save="1"/>
                             <field name="pain_resting_score" readonly="1" force_save="1"/>
                             <field name="satisfaction_score" readonly="1" force_save="1"/>
+                        </group>
+
+                        <group string="DEMO &amp; CLINIC VISIT">
+                            <group>
+                                <field name="demo_session_interest" readonly="1" force_save="1"/>
+                                <field name="will_visit_clinic" readonly="1" force_save="1"/>
+                            </group>
+                            <group>
+                                <field name="visit_date" readonly="1" force_save="1" invisible="will_visit_clinic != 'yes'"/>
+                            </group>
                         </group>
                         <group>
                             <field name="mobility_status" readonly="1" force_save="1"/>

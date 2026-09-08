@@ -213,6 +213,23 @@ class PETFollowupLine(models.Model):
         ('out_of_service', 'Number Out of Service')
     ], string="Call Status", default='connected', required=True)
 
+    demo_session_interest = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No')
+    ], string="Interested for Demo Session")
+    will_visit_clinic = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No')
+    ], string="Will Visit the Clinic")
+    visit_date = fields.Date(string="Date of Visit")
+
+    @api.constrains('will_visit_clinic', 'visit_date')
+    def _check_visit_date(self):
+        for rec in self:
+            if rec.will_visit_clinic == 'yes' and not rec.visit_date:
+                raise ValidationError("Please select the Date of Visit.")
+
+
     # Dynamic Relational Reasons
     primary_category_id = fields.Many2one('pet.reason.category', string="Primary Reason Category")
     primary_reason_id = fields.Many2one('pet.reason', string="Primary Reason",
@@ -477,6 +494,9 @@ class PETFollowupLine(models.Model):
                     'actual_next_followup_date': rec.actual_next_followup_date,
                     'action_taken': rec.action_taken,
                     'remarks': rec.remarks,
+                    'demo_session_interest': rec.demo_session_interest,
+                    'will_visit_clinic': rec.will_visit_clinic,
+                    'visit_date': rec.visit_date,
                 }
 
                 # Update clinical parameters & true last_contact_date ONLY if connected
@@ -623,6 +643,16 @@ class PETRecord(models.Model):
 
     last_attempt_date = fields.Date(string="Last Call Attempt Date", tracking=True)
 
+    demo_session_interest = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No')
+    ], string="Interested for Demo Session", tracking=True)
+    will_visit_clinic = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No')
+    ], string="Will Visit the Clinic", tracking=True)
+    visit_date = fields.Date(string="Date of Visit", tracking=True)
+
     def init(self):
         self.env.cr.execute(
             """UPDATE pet_record SET escalation_needed = CASE WHEN escalation_needed = 'True' THEN 'yes' ELSE 'no' END WHERE escalation_needed NOT IN ('yes', 'no') OR escalation_needed IS NULL""")
@@ -651,6 +681,9 @@ class PETRecord(models.Model):
                 'default_mobility_status': self.mobility_status,
                 'default_therapy_kit_status': self.therapy_kit_status,
                 'default_discount_offered': self.discount_offered,
+                'default_demo_session_interest': self.demo_session_interest,
+                'default_will_visit_clinic': self.will_visit_clinic,
+                'default_visit_date': self.visit_date,
             },
             'target': 'new',
         }
