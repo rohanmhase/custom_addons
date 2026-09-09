@@ -49,12 +49,12 @@ class PETSubCategory(models.Model):
 def _generate_clinic_time_slots():
     slots=[]
     for h in range(8,22):
-        for m in (0,60):
+        for m in (0,30):
             period = 'AM' if h < 12 else 'PM'
             disp_h = h % 12 or 12
             slot_str = f"{disp_h:02d}:{m:02d} {period}"
             slots.append((slot_str, slot_str))
-        return slots
+    return slots
 
 CLINIC_TIME_SLOTS = _generate_clinic_time_slots()
 
