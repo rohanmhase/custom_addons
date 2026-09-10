@@ -1,0 +1,8 @@
+<t t-name="VariableDiscountButtonTemplate" owl="1">
+    <button class="control-button"
+            t-att-class="{ 'disabled': isDisabled }"
+            t-att-disabled="isDisabled"
+            t-on-click="onClick">
+        % Discount
+    </button>
+</t>
