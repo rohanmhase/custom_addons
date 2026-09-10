@@ -1,0 +1,8 @@
+<t t-name="PackageDiscountButtonTemplate">
+    <button
+        class="control-button package-discount-button"
+        t-att-class="{ highlight: isActive, disabled: isDisabled }"
+        t-on-click="onClick">
+        Included in Package
+    </button>
+</t>

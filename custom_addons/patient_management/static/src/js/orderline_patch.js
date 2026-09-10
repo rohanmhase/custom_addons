@@ -49,9 +49,9 @@ patch(Orderline.prototype, {
     // ✅ Block price edit for:
     // 1. Prescription items
     // 2. Free products (even if added manually)
-    if (this.order?.prescription_id || isFreeProduct) {
-        return; // 🔥 silent block (no popup)
-    }
+//    if (this.order?.prescription_id || isFreeProduct) {
+//        return; // 🔥 silent block (no popup)
+//    }
 
     return super.set_unit_price(...arguments);
  }

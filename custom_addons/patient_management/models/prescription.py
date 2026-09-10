@@ -113,7 +113,8 @@ class Prescription(models.Model):
         products = self.env['product.product'].search([
             ('type', '=', 'product'),
             ('sale_ok', '=', True),
-            ('active', '=', True)
+            ('active', '=', True),
+            ('available_in_pos', '=', True)
         ])
 
         medicine_data = []
@@ -432,23 +433,23 @@ class PrescriptionLine(models.Model):
                                ('0 - 0 - 4', '0 - 0 - 4'),
                                ('2 - 2 - 10', '2 - 2 - 10'),],
                               string="Dosage")
-    qty_available = fields.Float(
-        string="Available Qty", compute="_compute_qty_available", readonly=True
-    )
+    # qty_available = fields.Float(
+    #     string="Available Qty", compute="_compute_qty_available", readonly=True
+    # )
 
     active = fields.Boolean(default=True)
 
-    @api.depends("product_id", "prescription_id.clinic_id")
-    def _compute_qty_available(self):
-        for line in self:
-            qty = 0.0
-            if line.product_id and line.prescription_id.clinic_id:
-                warehouse = line.prescription_id.clinic_id.warehouse_id
-                if warehouse and warehouse.lot_stock_id:
-                    qty = line.product_id.with_context(
-                        location=warehouse.lot_stock_id.id
-                    ).qty_available
-            line.qty_available = qty
+    # @api.depends("product_id", "prescription_id.clinic_id")
+    # def _compute_qty_available(self):
+    #     for line in self:
+    #         qty = 0.0
+    #         if line.product_id and line.prescription_id.clinic_id:
+    #             warehouse = line.prescription_id.clinic_id.warehouse_id
+    #             if warehouse and warehouse.lot_stock_id:
+    #                 qty = line.product_id.with_context(
+    #                     location=warehouse.lot_stock_id.id
+    #                 ).qty_available
+    #         line.qty_available = qty
 
     @api.constrains('product_id', 'prescription_id')
     def _check_prescription_followup(self):

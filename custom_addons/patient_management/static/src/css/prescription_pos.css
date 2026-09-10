@@ -10,3 +10,30 @@
 .table-black thead tr {
     border-bottom: 2px solid black !important;
 }
+
+/* Included in Package button */
+.package-discount-button {
+    background-color: #ffffff;
+    border: 1px solid #28a745;
+    color: #28a745;
+}
+
+.package-discount-button.highlight {
+    background-color: #28a745;
+    border: 1px solid #28a745;
+    color: #ffffff;
+}
+
+.package-discount-button:hover {
+    background-color: #e6f4ea;
+}
+
+.package-discount-button.highlight:hover {
+    background-color: #218838;
+}
+
+.package-discount-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Prevents all click interactions */
+}

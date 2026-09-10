@@ -183,11 +183,15 @@ patch(FormController.prototype, {
 
     async onMedicineTileClick(event) {
         const tile = event.currentTarget;
+
+        // 1. Prevent double clicks while waiting for the server
+        if (tile.dataset.processing === "true") {
+            return;
+        }
+
         const productId = parseInt(tile.dataset.productId);
         const qtyAvailable = parseFloat(tile.dataset.qtyAvailable);
         const productName = tile.dataset.productName;
-
-        console.log('Tile clicked:', { productId, productName, qtyAvailable });
 
         if (qtyAvailable <= 0) {
             this.notification.add(
@@ -196,75 +200,66 @@ patch(FormController.prototype, {
             );
         }
 
-        // Get current record
-        const record = this.model?.root;
+        // 2. IMMEDIATE VISUAL FEEDBACK (Makes the UI feel fast)
+        tile.dataset.processing = "true";
+        tile.style.opacity = "0.6"; // Dim the tile
+        tile.style.pointerEvents = "none"; // Disable clicking
 
-        if (!record) {
-            console.error('No record found');
-            this.notification.add(
-                "Error: Form data not available",
-                { type: "danger" }
-            );
-            return;
+        const btnIcon = tile.querySelector('.medicine_add_btn i');
+        const originalIconClass = btnIcon ? btnIcon.className : 'fa fa-plus-circle';
+        if (btnIcon) {
+            btnIcon.className = 'fa fa-circle-o-notch fa-spin'; // Show spinner instantly
         }
 
-        console.log('Current record:', record);
-        console.log('Current line_ids:', record.data?.line_ids);
+        try {
+            const record = this.model?.root;
+            if (!record) throw new Error('Form data not available');
 
-        // Check if medicine already in prescription
-        const lineIds = record.data?.line_ids;
+            const lineIds = record.data?.line_ids;
+            let existingLine = null;
 
-        if (lineIds && lineIds.records) {
-            const existingLine = lineIds.records.find(lineRecord => {
-                const lineProductId = Array.isArray(lineRecord.data.product_id)
-                    ? lineRecord.data.product_id[0]
-                    : lineRecord.data.product_id;
-                return lineProductId === productId;
-            });
+            if (lineIds && lineIds.records) {
+                existingLine = lineIds.records.find(lineRecord => {
+                    const lineProductId = Array.isArray(lineRecord.data.product_id)
+                        ? lineRecord.data.product_id[0]
+                        : lineRecord.data.product_id;
+                    return lineProductId === productId;
+                });
+            }
 
             if (existingLine) {
-                await existingLine.update({
-                    qty: existingLine.data.qty + 1
+                // Update existing line
+                await existingLine.update({ qty: existingLine.data.qty + 1 });
+            } else {
+                // Add new line (This is what takes 200-600ms due to the server request)
+                await record.update({
+                    line_ids: [
+                        [0, 0, {
+                            product_id: [productId, productName],
+                            qty: 1.0,
+                        }]
+                    ]
                 });
-                this.notification.add(`${productName} quantity increased`, { type: "info" });
-                return;
             }
-        }
 
-        // Add new line using the proper Odoo 17 format
-        try {
-            console.log('Adding medicine to prescription...');
-
-            // Use the record's update method with command format
-            await record.update({
-                line_ids: [
-                    [0, 0, {
-                        product_id: [productId,productName],
-                        qty: 1.0,
-                    }]
-                ]
-            });
-
-            console.log('Medicine added successfully');
-
-            this.notification.add(
-                `${productName} added to prescription!`,
-                { type: "success" }
-            );
-
-            // Visual feedback
+            // Success feedback
             tile.classList.add('tile_added');
-            setTimeout(() => {
-                tile.classList.remove('tile_added');
-            }, 500);
+            setTimeout(() => { tile.classList.remove('tile_added'); }, 500);
 
         } catch (error) {
             console.error("Error adding medicine:", error);
-
             this.notification.add(
                 "Error adding medicine: " + (error.message || error),
                 { type: "danger" }
             );
+        } finally {
+            // 3. Restore the tile back to normal once the server responds
+            tile.dataset.processing = "false";
+            tile.style.opacity = "1";
+            tile.style.pointerEvents = "auto";
+            if (btnIcon) {
+                btnIcon.className = originalIconClass;
+            }
         }
     }
 });

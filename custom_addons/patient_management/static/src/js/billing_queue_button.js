@@ -136,6 +136,10 @@ export class BillingQueueButton extends Component {
 
             order.prescription_id = rec.id;
 
+            if (typeof order.activate_package_discount === "function") {
+                order.activate_package_discount();
+            }
+
             for (const line of rec.lines) {
 
                 const product =
@@ -177,6 +181,10 @@ export class BillingQueueButton extends Component {
         ) {
 
             order.enrollment_id = rec.id;
+
+            if (typeof order.deactivate_package_discount === "function") {
+                order.deactivate_package_discount();
+            }
 
             for (const line of rec.lines) {
 
