@@ -46,6 +46,19 @@ class PETSubCategory(models.Model):
     name = fields.Char(string="Sub Category Name", required=True)
 
 
+def _generate_clinic_time_slots():
+    slots=[]
+    for h in range(8,22):
+        for m in (0,30):
+            period = 'AM' if h < 12 else 'PM'
+            disp_h = h % 12 or 12
+            slot_str = f"{disp_h:02d}:{m:02d} {period}"
+            slots.append((slot_str, slot_str))
+    return slots
+
+CLINIC_TIME_SLOTS = _generate_clinic_time_slots()
+
+
 # =========================================================================
 # THE UNIFIED SLA TICKETING SYSTEM
 # =========================================================================
@@ -212,6 +225,63 @@ class PETFollowupLine(models.Model):
         ('voicemail', 'Voicemail'),
         ('out_of_service', 'Number Out of Service')
     ], string="Call Status", default='connected', required=True)
+
+    demo_session_interest = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No'),
+        ('na', 'N/A')
+    ], string="Interested for Demo Session", default='na', required=True)
+
+    will_visit_clinic = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No'),
+        ('na', 'N/A')
+    ], string="Will Visit the Clinic", default='na', required=True)
+
+    visit_date = fields.Date(string="Date of Visit")
+    visit_time = fields.Selection(CLINIC_TIME_SLOTS, string="Time of Visit")
+
+    @api.onchange('will_visit_clinic')
+    def _onchange_will_visit_clinic(self):
+        if self.will_visit_clinic != 'yes':
+            self.visit_date = False
+            self.visit_time = False
+
+        # 4. Mandatory validation & past date guardrail
+    @api.constrains('will_visit_clinic', 'visit_date', 'visit_time')
+    def _check_visit_details(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            if rec.will_visit_clinic == 'yes':
+                if not rec.visit_date:
+                    raise ValidationError("Please select the Date of Visit.")
+                if rec.visit_date < today:
+                    raise ValidationError("The Date of Visit cannot be in the past.")
+                if not rec.visit_time:
+                    raise ValidationError("Please select the Time of Visit.")
+
+    def init(self):
+        super().init()
+        self.env.cr.execute("""
+            UPDATE pet_followup_line 
+            SET call_status = CASE 
+                WHEN not_connected = TRUE THEN 'not_connected'
+                ELSE 'connected'
+            END
+            WHERE call_status IS NULL;
+        """)
+        # Backfill N/A for all older follow-up lines
+        self.env.cr.execute("""
+            UPDATE pet_followup_line 
+            SET demo_session_interest = 'na' 
+            WHERE demo_session_interest IS NULL;
+        """)
+        self.env.cr.execute("""
+            UPDATE pet_followup_line 
+            SET will_visit_clinic = 'na' 
+            WHERE will_visit_clinic IS NULL;
+        """)
+
 
     # Dynamic Relational Reasons
     primary_category_id = fields.Many2one('pet.reason.category', string="Primary Reason Category")
@@ -477,6 +547,9 @@ class PETFollowupLine(models.Model):
                     'actual_next_followup_date': rec.actual_next_followup_date,
                     'action_taken': rec.action_taken,
                     'remarks': rec.remarks,
+                    'demo_session_interest': rec.demo_session_interest,
+                    'will_visit_clinic': rec.will_visit_clinic,
+                    'visit_date': rec.visit_date,
                 }
 
                 # Update clinical parameters & true last_contact_date ONLY if connected
@@ -499,6 +572,10 @@ class PETFollowupLine(models.Model):
                         'referral_name': rec.referral_name,
                         'referral_contact': rec.referral_contact,
                         'review_link': rec.review_link,
+                        'demo_session_interest': rec.demo_session_interest,
+                        'will_visit_clinic': rec.will_visit_clinic,
+                        'visit_date': rec.visit_date,
+                        'visit_time': rec.visit_time,
                     })
                 rec.pet_record_id.write(update_vals)
 
@@ -623,12 +700,37 @@ class PETRecord(models.Model):
 
     last_attempt_date = fields.Date(string="Last Call Attempt Date", tracking=True)
 
+    demo_session_interest = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No'),
+        ('na', 'N/A')
+    ], string="Interested for Demo Session", default='na', tracking=True)
+
+    will_visit_clinic = fields.Selection([
+        ('yes', 'Yes'),
+        ('no', 'No'),
+        ('na', 'N/A')
+    ], string="Will Visit the Clinic", default='na', tracking=True)
+    visit_date = fields.Date(string="Date of Visit", tracking=True)
+    visit_time = fields.Selection(CLINIC_TIME_SLOTS, string="Time of Visit", tracking=True)
+
     def init(self):
         self.env.cr.execute(
             """UPDATE pet_record SET escalation_needed = CASE WHEN escalation_needed = 'True' THEN 'yes' ELSE 'no' END WHERE escalation_needed NOT IN ('yes', 'no') OR escalation_needed IS NULL""")
         self.env.cr.execute("UPDATE pet_record SET priority = '2' WHERE priority = '3'")
         self.env.cr.execute(
             """UPDATE pet_record SET task_status = 'on_track' WHERE task_status NOT IN ('no_set', 'overdue', 'today', 'on_track')""")
+        # Backfill N/A for all existing master records
+        self.env.cr.execute("""
+                UPDATE pet_record 
+                SET demo_session_interest = 'na' 
+                WHERE demo_session_interest IS NULL;
+            """)
+        self.env.cr.execute("""
+                UPDATE pet_record 
+                SET will_visit_clinic = 'na' 
+                WHERE will_visit_clinic IS NULL;
+            """)
 
     def action_create_followup(self):
         return {
@@ -651,6 +753,10 @@ class PETRecord(models.Model):
                 'default_mobility_status': self.mobility_status,
                 'default_therapy_kit_status': self.therapy_kit_status,
                 'default_discount_offered': self.discount_offered,
+                'default_demo_session_interest': self.demo_session_interest or 'na',
+                'default_will_visit_clinic': self.will_visit_clinic or 'na',
+                'default_visit_date': self.visit_date,
+                'default_visit_time': self.visit_time
             },
             'target': 'new',
         }

@@ -7,53 +7,50 @@
         <field name="sequence">10</field>
     </record>
 
-    <!-- 1. VIEWER GROUP (STRICTLY READ-ONLY) -->
+    <!-- 1. VIEWER GROUP -->
     <record id="group_clinic_schedule_viewer" model="res.groups">
-        <field name="name">Viewer (Read-Only)</field>
+        <field name="name">Viewer (Read-Only Matrix)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
     </record>
 
-    <!-- 2. THERAPIST GROUP -->
-    <record id="group_clinic_schedule_therapist" model="res.groups">
-        <field name="name">HR Therapist</field>
-        <field name="category_id" ref="module_category_clinic_schedule"/>
-        <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_viewer'))]"/>
-    </record>
-
-    <!-- 3. CLINIC ADMIN GROUP -->
+    <!-- 2. CLINIC ADMIN GROUP -->
     <record id="group_clinic_schedule_clinic_admin" model="res.groups">
-        <field name="name">Clinic Admin (Manage Local Branch Appointments)</field>
+        <field name="name">Clinic Admin (Manage Matrix)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
+        <!-- Admin inherits Viewer so they can see everything a Viewer sees -->
         <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_viewer'))]"/>
     </record>
 
-    <!-- 4. MANAGER GROUP (FULL ACCESS - Merged TOM) -->
+    <!-- 3. HR GROUP (No Matrix Access, strictly Therapist Directory) -->
+    <record id="group_clinic_schedule_hr" model="res.groups">
+        <field name="name">HR / Operations (Therapist Directory Only)</field>
+        <field name="category_id" ref="module_category_clinic_schedule"/>
+    </record>
+
+    <!-- 4. MANAGER GROUP (Full Access) -->
     <record id="group_clinic_schedule_manager" model="res.groups">
         <field name="name">Manager (Full System Access)</field>
         <field name="category_id" ref="module_category_clinic_schedule"/>
-        <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
+        <!-- Manager inherits Admin AND HR powers -->
+        <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_clinic_admin')), (4, ref('group_clinic_schedule_hr'))]"/>
     </record>
 
-    <!-- RECORD RULES -->
-    <!-- Rule: Clinic Admin Branch Isolation (Safely bypasses deleted user fields) -->
+    <!-- RECORD RULES (Database-Level Isolation) -->
+
+    <!-- Rule: Clinic Admin Branch Isolation (Forces users to only see their allowed clinics) -->
     <record id="rule_clinic_schedule_appointment_clinic_admin" model="ir.rule">
-        <field name="name">Clinic Schedule Appointment: Clinic Admin Branch Isolation</field>
+        <field name="name">Clinic Admin: Branch Isolation</field>
         <field name="model_id" ref="model_clinic_schedule_appointment"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[(4, ref('group_clinic_schedule_clinic_admin'))]"/>
+        <!-- Matches appointments to the clinics explicitly assigned to the user profile -->
+        <field name="domain_force">['|', ('clinic_id', '=', False), ('clinic_id', 'in', user.clinic_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_schedule_clinic_admin')), (4, ref('group_clinic_schedule_viewer'))]"/>
     </record>
 
-    <!-- Rule: Manager Bypass -->
+    <!-- Rule: Manager Bypass (Managers see all clinics) -->
     <record id="rule_clinic_schedule_appointment_manager" model="ir.rule">
-        <field name="name">Clinic Schedule Appointment: Manager Bypass</field>
+        <field name="name">Manager: All Branches Bypass</field>
         <field name="model_id" ref="model_clinic_schedule_appointment"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_clinic_schedule_manager'))]"/>
-    </record>
-
-    <record id="group_clinic_schedule_hr" model="res.groups">
-        <field name="name">HR / Operations (Staff Management)</field>
-        <field name="category_id" ref="module_category_clinic_schedule"/>
-        <field name="implied_ids" eval="[(4, ref('group_clinic_schedule_viewer'))]"/>
     </record>
 </odoo>

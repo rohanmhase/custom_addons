@@ -25,6 +25,7 @@ export class ClinicMatrixDashboard extends Component {
 
         this.state = useState({
             activeTab: "matrix",
+            matrixTherapistFilter: "all",
             selectedRegion: 0,
             selectedClinic: 0,
             selectedDate: tomorrowISO,
@@ -39,6 +40,9 @@ export class ClinicMatrixDashboard extends Component {
             clinics: [],
             regions: [],
             rosterData: [],
+            myRequests: [],
+            isMyRequestsModalOpen: false,
+            substituteTargetReq: null,
             kpis: {
                 rs_count: 0, fixed_count: 0, floater_count: 0, hv_count: 0, utilization: 0,
                 total_scheduled: 0, allotted_clinic_hv: 0, self_scheduled: 0, outstanding: 0
@@ -71,6 +75,8 @@ export class ClinicMatrixDashboard extends Component {
             is_manager: false,
             isSubstituteModalOpen: false,
             substituteTargetPlaceholderId: null,
+            pendingRequests: [],
+            isPendingModalOpen: false,
         });
 
         onWillStart(async () => {
@@ -107,6 +113,15 @@ export class ClinicMatrixDashboard extends Component {
 
     get unassignedAppointments() {
         return this.state.appointments.filter(a => a.therapist_id === 0);
+    }
+
+    get filteredMatrixTherapists() {
+    if (this.state.matrixTherapistFilter === "all") {
+        return this.state.therapists;
+    }
+    return this.state.therapists.filter(t =>
+        t.id === 0 || t.designation === this.state.matrixTherapistFilter
+    );
     }
 
     async carryForward() {
@@ -196,11 +211,20 @@ export class ClinicMatrixDashboard extends Component {
             this.state.lastFetchedDate = this.state.selectedDate;
             this.state.lastFetchedClinic = currentClinic;
         }
+
+        // 1. 'data' is declared and fetched here
         const data = await this.orm.call("clinic.schedule.appointment", "get_matrix_data", [currentClinic, this.state.selectedDate, this.state.pulledTherapistIds]);
+
+        // 2. State assignments safely use 'data' AFTER the line above
         this.state.clinics = data.clinics || [];
         this.state.regions = data.regions || [];
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
+        this.state.pendingRequests = data.pending_requests || [];
+
+        // NEW LINE GOES HERE
+        this.state.myRequests = data.my_requests || [];
+
         this.state.kpis = data.kpis || this.state.kpis;
         this.state.timeSlots = [...this.baseTimeSlots];
 
@@ -209,6 +233,7 @@ export class ClinicMatrixDashboard extends Component {
             const currentRegion = parseInt(this.state.selectedRegion) || 0;
             await this.orm.call("clinic.schedule.appointment", "save_last_operated_clinic", [data.selected_clinic_id, currentRegion]);
         }
+
         if (this.state.activeTab === "roster") await this.loadRosterMetadata();
         if (this.state.activeTab === "attendance") await this.loadAttendanceLedger();
     }
@@ -225,7 +250,8 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async loadRosterMetadata() {
-        this.state.rosterData = await this.orm.call("clinic.schedule.appointment", "get_roster_data", [this.state.selectedDate]);
+        const clinicId = parseInt(this.state.selectedClinic) || 0;
+        this.state.rosterData = await this.orm.call("clinic.schedule.appointment", "get_roster_data", [this.state.selectedDate, clinicId]);
     }
 
     async loadAttendanceLedger() {
@@ -261,6 +287,13 @@ export class ClinicMatrixDashboard extends Component {
         const activeSlot = slots.find(e => e.attendance_state !== 'no_show');
         if (activeSlot) return activeSlot;
         return slots[0];
+    }
+
+    openPendingRequestsModal() {
+        this.state.isPendingModalOpen = true;
+    }
+    closePendingRequestsModal() {
+        this.state.isPendingModalOpen = false;
     }
 
     getTherapistRowCells(therapistId) {
@@ -304,20 +337,24 @@ export class ClinicMatrixDashboard extends Component {
         return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss");
     }
 
-    async onCreateNewTherapistClick() {
-        this.actionService.doAction({
-            type: "ir.actions.act_window",
-            res_model: "clinic.therapist",
-            views: [[false, "form"]],
-            target: "new",
-            context: {default_allowed_branch_ids: this.state.selectedClinic ? [parseInt(this.state.selectedClinic)] : []}
-        }, {
-            onClose: async () => {
-                await this.refreshGrid();
-                await this.loadRosterMetadata();
-            }
-        });
+    openMyRequestsModal() {
+        this.state.isMyRequestsModalOpen = true;
     }
+
+    closeMyRequestsModal() {
+        this.state.isMyRequestsModalOpen = false;
+    }
+
+    async cancelFloaterRequest(placeholderId) {
+        const confirmed = window.confirm("WARNING: Are you sure you want to cancel this request? Any patients currently booked to this placeholder will be forcefully dropped to UNASSIGNED.");
+        if (!confirmed) return;
+
+        const res = await this.orm.call("clinic.schedule.appointment", "action_cancel_floater_request", [placeholderId]);
+        this.notificationService.add(res.message, { type: "success" });
+        this.closeMyRequestsModal();
+        await this.refreshGrid();
+    }
+
 
     async openAllotModal() {
         const displayedIds = this.state.therapists.map(t => t.id);
@@ -378,18 +415,24 @@ export class ClinicMatrixDashboard extends Component {
     async rejectFloater(placeholderId) {
         await this.orm.call("clinic.schedule.appointment", "action_reject_floater", [placeholderId]);
         this.notificationService.add("Floater request rejected and patients unassigned.", { type: "success" });
+        this.closePendingRequestsModal(); // NEW
         await this.refreshGrid();
     }
 
     async openSubstituteModal(placeholderId) {
+        this.closePendingRequestsModal();
         this.state.substituteTargetPlaceholderId = placeholderId;
+
+        // Find the request details to show in the UI banner
+        const targetReq = this.state.pendingRequests.find(r => r.placeholder_id === placeholderId);
+        this.state.substituteTargetReq = targetReq || null;
+
         const displayedIds = this.state.therapists.map(t => t.id);
         const data = await this.orm.call("clinic.schedule.appointment", "get_allotable_therapists", [parseInt(this.state.selectedClinic), this.state.selectedDate, displayedIds]);
-        this.state.allotableTherapists = data.map(t => {
-            let typeTag = t.designation === 'fixed' ? "[FIXED]" : (t.designation === 'floater' ? "[FLOAT]" : "[HV]");
-            let genderTag = t.gender === 'm' ? "(M)" : (t.gender === 'f' ? "(F)" : "");
-            return {...t, smart_name: `${typeTag} ${t.name} ${genderTag}`.trim()};
-        });
+
+        // Pass clean data without adding raw text tags
+        this.state.allotableTherapists = data;
+
         this.state.allotSearchQuery = "";
         this.state.selectedTherapistObj = null;
         this.state.isSubstituteModalOpen = true;
@@ -399,6 +442,7 @@ export class ClinicMatrixDashboard extends Component {
         this.state.isSubstituteModalOpen = false;
         this.state.substituteTargetPlaceholderId = null;
         this.state.selectedTherapistObj = null;
+        this.state.substituteTargetReq = null;
     }
 
     async confirmSubstitute() {
@@ -486,9 +530,18 @@ export class ClinicMatrixDashboard extends Component {
             this.notificationService.add("WhatsApp API credentials pending. Sandbox dispatch disabled.", {type: "warning"});
             return;
         }
-        await this.orm.call("clinic.schedule.appointment", actionName, [[this.state.selectedAppointment.id]]);
+
+        const result = await this.orm.call("clinic.schedule.appointment", actionName, [[this.state.selectedAppointment.id]]);
         this.closeActionModal();
-        await this.refreshGrid();
+
+        // --- NEW: Handle Python Wizard popups dynamically ---
+        if (result && typeof result === 'object' && result.type === 'ir.actions.act_window') {
+            this.actionService.doAction(result, {
+                onClose: () => this.refreshGrid()
+            });
+        } else {
+            await this.refreshGrid();
+        }
     }
 
     async quickRemoveSlot(ev, appId, currentTherapistId) {

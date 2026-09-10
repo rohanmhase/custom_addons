@@ -28,6 +28,12 @@
                 <div class="d-flex align-items-center gap-3">
                     <t t-if="state.activeTab === 'matrix'">
                         <t t-if="state.is_manager">
+                            <button class="btn btn-sm btn-danger fw-bold shadow-sm"
+                                    t-if="state.pendingRequests and state.pendingRequests.length > 0"
+                                    t-on-click="() => this.openPendingRequestsModal()">
+                                <i class="fa fa-bell me-1"/> Pending Requests
+                                <span class="badge bg-white text-danger ms-1"><t t-esc="state.pendingRequests.length"/></span>
+                            </button>
                             <button class="btn btn-sm btn-info fw-bold shadow-sm text-dark"
                                     t-on-click="() => this.openAllotModal()">
                                 <i class="fa fa-link me-1"/>
@@ -35,11 +41,16 @@
                             </button>
                         </t>
                         <t t-else="">
-                            <button class="btn btn-sm btn-warning fw-bold shadow-sm text-dark"
-                                    t-on-click="() => this.requestFloater()">
-                                <i class="fa fa-user-plus me-1"/>
-                                Request Floater
-                            </button>
+                        <button class="btn btn-sm btn-warning fw-bold shadow-sm text-dark"
+                                t-on-click="() => this.requestFloater()">
+                            <i class="fa fa-user-plus me-1"/>
+                            Request Floater
+                        </button>
+                        <button class="btn btn-sm btn-outline-info fw-bold shadow-sm text-dark ms-2 bg-white"
+                                t-on-click="() => this.openMyRequestsModal()">
+                            <i class="fa fa-list me-1"/>
+                            My Requests
+                        </button>
                         </t>
                         <div class="d-flex gap-2 ms-2 border-start ps-3">
                             <button t-attf-class="btn btn-sm #{state.slotsLocked ? 'btn-outline-danger' : 'btn-outline-secondary'} fw-bold"
@@ -54,13 +65,6 @@
                                 Mass Send SMS
                             </button>
                         </div>
-                    </t>
-                    <t t-elif="state.activeTab === 'roster'">
-                        <button class="btn btn-sm btn-success fw-bold shadow-sm"
-                                t-on-click="() => this.onCreateNewTherapistClick()">
-                            <i class="fa fa-user-plus me-1"/>
-                            Register Fixed Therapist
-                        </button>
                     </t>
                     <div class="vr" style="height: 24px; opacity: 0.15;"></div>
                     <h4 class="m-0 text-primary fw-bolder px-2">Clinical Management Dashboard</h4>
@@ -138,35 +142,55 @@
                 <!-- KPIS -->
                 <t t-if="state.activeTab === 'matrix' and state.kpis">
                     <div class="d-flex align-items-center gap-4 ms-2 border-start ps-3">
-                        <div class="d-flex flex-column text-center px-3 border-end">
-                            <span class="fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">UTILIZATION</span>
-                            <span t-attf-class="fw-bolder fs-5 #{state.kpis.utilization > 75 ? 'text-success' : 'text-warning'}">
-                                <t t-esc="state.kpis.utilization"/> %
-                            </span>
-                        </div>
+
+                        <!-- MALE STAFFING -->
                         <div class="d-flex flex-column px-3 border-end">
-                            <span class="fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">BRANCH STAFFING</span>
+                            <span class="fw-bold text-primary mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="fa fa-mars me-1"/>MALE STAFFING (<t t-esc="state.kpis.male_therapist_count"/>)
+                            </span>
                             <div class="d-flex gap-3" style="font-size: 0.8rem;">
                                 <span class="text-info-darker fw-bold" style="color: #0d6efd;">
-                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.fixed_count"/> Fixed
+                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.male_fixed"/> Fixed
                                 </span>
-                                <!-- FIX: Separated Floater and HV Counts -->
                                 <span class="text-warning-darker fw-bold" style="color: #087990;">
-                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.floater_count"/> Floater
+                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.male_floater"/> Floater
                                 </span>
                                 <span class="text-success fw-bold" style="color: #198754;">
-                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.hv_count"/> HV
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.male_hv"/> HV
                                 </span>
                             </div>
                         </div>
+
+                        <!-- FEMALE STAFFING -->
+                        <div class="d-flex flex-column px-3 border-end">
+                            <span class="fw-bold text-danger mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="fa fa-venus me-1"/>FEMALE STAFFING (<t t-esc="state.kpis.female_therapist_count"/>)
+                            </span>
+                            <div class="d-flex gap-3" style="font-size: 0.8rem;">
+                                <span class="text-info-darker fw-bold" style="color: #0d6efd;">
+                                    <i class="fa fa-user-md me-1"/><t t-esc="state.kpis.female_fixed"/> Fixed
+                                </span>
+                                <span class="text-warning-darker fw-bold" style="color: #087990;">
+                                    <i class="fa fa-refresh me-1"/><t t-esc="state.kpis.female_floater"/> Floater
+                                </span>
+                                <span class="text-success fw-bold" style="color: #198754;">
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.female_hv"/> HV
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- PATIENT QUEUE -->
                         <div class="d-flex flex-column px-3">
                             <span class="fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">PATIENT QUEUE</span>
                             <div class="d-flex gap-3" style="font-size: 0.8rem;">
                                 <span class="text-dark fw-bold" title="Total Scheduled">
                                     <i class="fa fa-users me-1"/><t t-esc="state.kpis.total_scheduled"/> Total
                                 </span>
-                                <span class="text-success fw-bold" title="Clinic &amp; Home Visits">
-                                    <i class="fa fa-check-circle me-1"/><t t-esc="state.kpis.allotted_clinic_hv"/> Clinic+HV
+                                <span class="text-success fw-bold" title="Clinic Visits">
+                                    <i class="fa fa-building me-1"/><t t-esc="state.kpis.allotted_clinic"/> Clinic
+                                </span>
+                                <span class="text-warning-darker fw-bold" style="color: #fd7e14;" title="Home Visits">
+                                    <i class="fa fa-home me-1"/><t t-esc="state.kpis.allotted_hv"/> HV
                                 </span>
                                 <span class="text-purple fw-bold" style="color: #6f42c1;" title="Self Therapies">
                                     <i class="fa fa-user-circle-o me-1"/><t t-esc="state.kpis.self_scheduled"/> Self
@@ -174,6 +198,10 @@
                                 <span class="text-danger fw-bold">
                                     <i class="fa fa-clock-o me-1"/><t t-esc="state.kpis.outstanding"/> Remaining
                                 </span>
+                            </div>
+                            <div class="d-flex gap-3 mt-1 fw-bold" style="font-size: 0.75rem;">
+                                <span class="text-primary"><i class="fa fa-mars me-1"/> <t t-esc="state.kpis.male_patient_count"/> Male</span>
+                                <span class="text-danger"><i class="fa fa-venus me-1"/> <t t-esc="state.kpis.female_patient_count"/> Female</span>
                             </div>
                         </div>
                     </div>
@@ -187,11 +215,19 @@
                         <thead t-attf-class="position-sticky top-0 shadow-sm #{isToday ? '' : 'bg-light'}"
                                t-attf-style="z-index: 10; #{isToday ? 'background-color: #fff5f5; border-top: 3px solid #dc3545;' : ''}">
                             <tr class="text-center">
-                                <th style="min-width: 200px; width: 200px; position: sticky; left: 0; z-index: 11; background-color: #f1f3f5;"
-                                    class="fw-bolder align-middle border-end text-start ps-3 text-secondary text-uppercase shadow-sm">
-                                    <i class="fa fa-user-md me-1"/>
-                                    Therapist Profile
-                                </th>
+                                <!-- Replace the existing Therapist Profile <th> on line 125 with this -->
+                                    <th style="min-width: 200px; width: 200px; position: sticky; left: 0; z-index: 11; background-color: #f1f3f5;"
+                                        class="fw-bolder align-middle border-end text-start ps-3 text-secondary text-uppercase shadow-sm">
+                                        <div class="d-flex flex-column gap-1 pe-2 py-1">
+                                            <div><i class="fa fa-user-md me-1"/> Therapist Profile</div>
+                                            <select class="form-select form-select-sm w-100 shadow-sm border-secondary mt-1" t-model="state.matrixTherapistFilter" style="font-size: 0.7rem; font-weight: bold; cursor: pointer;">
+                                                <option value="all">View All Roles</option>
+                                                <option value="fixed">Fixed Therapists</option>
+                                                <option value="floater">Clinic Floaters</option>
+                                                <option value="hv">HV Floaters</option>
+                                            </select>
+                                        </div>
+                                    </th>
                                 <t t-foreach="state.timeSlots" t-as="slotKey" t-key="slotKey">
                                     <th class="fw-bolder align-middle py-2 px-1 text-nowrap"
                                         style="min-width: 85px; width: 85px; font-size: 0.7rem; color: #495057; background-color: #f8f9fa;">
@@ -201,7 +237,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="state.therapists" t-as="therapist" t-key="therapist.id">
+                            <t t-foreach="filteredMatrixTherapists" t-as="therapist" t-key="therapist.id">
                                 <tr t-attf-class="hover-shadow transition-all #{therapist.is_absent ? 'bg-secondary bg-opacity-10' : ''}">
                                     <td t-attf-class="position-sticky start-0 border-end shadow-sm"
                                         t-attf-style="z-index: 5; vertical-align: middle; background-color: #{therapist.raw_gender === 'f' ? '#fce4ec' : (therapist.raw_gender === 'm' ? '#e3f2fd' : '#ffffff')};">
@@ -223,6 +259,13 @@
                                                     <t t-if="therapist.is_buffer">
                                                         <span class="badge bg-warning text-dark border border-warning ms-2" style="font-size: 0.6rem;">
                                                             <i class="fa fa-bolt"/> BUFFER
+                                                        </span>
+                                                    </t>
+                                                    <t t-if="therapist.is_outside_base">
+                                                        <span t-attf-class="badge ms-1 shadow-sm #{therapist.designation === 'fixed' ? 'bg-primary' : (therapist.designation === 'floater' ? 'bg-info text-dark' : 'bg-success')}"
+                                                              style="font-size: 0.65rem; border: 1px solid rgba(0,0,0,0.1);"
+                                                              t-att-title="'Deployed from ' + therapist.base_branch_name">
+                                                            <i class="fa fa-exchange me-1"/> <t t-esc="therapist.base_branch_name"/>
                                                         </span>
                                                     </t>
                                                 </div>
@@ -291,27 +334,28 @@
                                             <t t-set="bg_class" t-value="'bg-white'"/>
                                             <t t-set="border_class" t-value="'border-end border-bottom'"/>
 
-                                            <t t-if="active_app">
-                                                <t t-if="active_app.is_other_clinic">
-                                                    <t t-set="bg_class" t-value="'bg-info bg-opacity-10'"/>
-                                                    <t t-set="border_class" t-value="'border border-info border-1 opacity-75 shadow-sm'"/>
+                                                <t t-if="active_app">
+                                                    <t t-if="active_app.is_other_clinic">
+                                                        <t t-set="bg_class" t-value="'bg-info bg-opacity-10'"/>
+                                                        <t t-set="border_class" t-value="'border border-info border-1 opacity-75 shadow-sm'"/>
+                                                    </t>
+                                                    <t t-elif="active_app.requires_reallotment">
+                                                        <t t-set="bg_class" t-value="'bg-danger-subtle'"/>
+                                                        <t t-set="border_class" t-value="'border border-danger border-2 shadow-sm'"/>
+                                                    </t>
+                                                    <t t-elif="active_app.attendance_state === 'completed'">
+                                                        <t t-set="bg_class" t-value="'bg-light'"/>
+                                                        <t t-set="border_class" t-value="'border border-success border-2 opacity-75'"/>
+                                                    </t>
+                                                    <t t-elif="active_app.attendance_state === 'in_progress'">
+                                                        <t t-set="bg_class" t-value="'bg-success bg-opacity-10'"/>
+                                                        <t t-set="border_class" t-value="'border border-success border-2 shadow pulse'"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <t t-set="bg_class" t-value="'bg-success-subtle'"/>
+                                                        <t t-set="border_class" t-value="'border border-success border-1 shadow-sm'"/>
+                                                    </t>
                                                 </t>
-                                                <t t-elif="active_app.requires_reallotment">
-                                                    <t t-set="bg_class" t-value="'bg-danger-subtle'"/>
-                                                    <t t-set="border_class" t-value="'border border-danger border-2 shadow-sm'"/>
-                                                </t>                                                <t t-elif="active_app.attendance_state === 'completed'">
-                                                    <t t-set="bg_class" t-value="'bg-light'"/>
-                                                    <t t-set="border_class" t-value="'border border-success border-2 opacity-75'"/>
-                                                </t>
-                                                <t t-elif="active_app.attendance_state === 'in_progress'">
-                                                    <t t-set="bg_class" t-value="'bg-success bg-opacity-10'"/>
-                                                    <t t-set="border_class" t-value="'border border-success border-2 shadow pulse'"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <t t-set="bg_class" t-value="'bg-success-subtle'"/>
-                                                    <t t-set="border_class" t-value="'border border-success border-1 shadow-sm'"/>
-                                                </t>
-                                            </t>
 
                                             <td t-attf-class="p-0 click-cell #{bg_class} #{border_class}"
                                                 t-att-colspan="cell.colspan"
@@ -326,9 +370,10 @@
                                                              t-att-title="'No-Show: ' + ghost.patient_name">
                                                             <i class="fa fa-user-times me-1"/>
                                                             <span style="text-decoration: line-through;"><t t-esc="ghost.patient_name"/></span>
-                                                            <i class="fa fa-times float-end mt-1 text-danger hover-text-dark"
-                                                               style="cursor: pointer; z-index: 10;"
-                                                               title="Delete Ghost Record"
+                                                            <i class="fa fa-times position-absolute top-0 end-0 m-1 text-muted hover-text-danger bg-white rounded-circle shadow-sm"
+                                                               style="cursor: pointer; z-index: 10; padding: 4px; border: 1px solid #dee2e6;"
+                                                               title="Quick Hard Delete"
+                                                               t-if="!active_app || active_app.attendance_state !== 'completed' || state.is_manager"
                                                                t-on-click="(ev) => this.quickRemoveSlot(ev, ghost.id, therapist.id)"/>
                                                         </div>
                                                     </t>
@@ -350,7 +395,8 @@
                                                         <t t-elif="active_app.slot_type === 'patient'">
                                                             <i class="fa fa-times position-absolute top-0 end-0 m-1 text-muted hover-text-danger bg-white rounded-circle shadow-sm"
                                                                style="cursor: pointer; z-index: 10; padding: 4px; border: 1px solid #dee2e6;"
-                                                               title="Quick Hard Delete"
+                                                               title="Delete Slot"
+                                                               t-if="active_app.attendance_state !== 'completed' || state.is_manager"
                                                                t-on-click="(ev) => this.quickRemoveSlot(ev, active_app.id, therapist.id)"/>
                                                             <div t-attf-class="fw-bolder text-truncate mb-1 #{active_app.attendance_state === 'no_show' ? 'text-decoration-line-through text-secondary' : 'text-dark'}"
                                                                  style="font-size: 0.85rem; padding-right: 18px;"
@@ -364,18 +410,42 @@
                                                                     <t t-esc="active_app.time_range"/>
                                                                 </div>
                                                             </div>
-                                                            <div class="mb-1">
+                                                            <div class="mb-1 d-flex align-items-center flex-wrap gap-1">
+                                                                <!-- Status / Mismatch Badges -->
                                                                 <t t-if="active_app.requires_reallotment">
                                                                     <span class="badge bg-danger text-white px-2 py-1 shadow-sm" style="font-size: 0.65rem;">
                                                                         <i class="fa fa-warning"/> RE-ASSIGN
                                                                     </span>
+                                                                </t>
+                                                                <t t-if="active_app.is_therapist_mismatch">
+                                                                    <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1 shadow-sm text-truncate"
+                                                                          style="font-size: 0.65rem; max-width: 100%;"
+                                                                          t-att-title="'Scheduled with different therapist. Done by: ' + active_app.actual_therapist_name">
+                                                                        <i class="fa fa-exclamation-circle me-1"/>Done by: <t t-esc="active_app.actual_therapist_name"/>
+                                                                    </span>
+                                                                </t>
+                                                                <t t-elif="active_app.attendance_state === 'completed'">
+                                                                    <t t-if="active_app.manual_completion_user_name">
+                                                                        <span class="badge bg-light text-success border border-success px-2 py-1 shadow-sm text-truncate"
+                                                                              style="font-size: 0.65rem; max-width: 100%;"
+                                                                              t-att-title="'Manually completed by: ' + active_app.manual_completion_user_name">
+                                                                            <i class="fa fa-user me-1"/> Marked by: <t t-esc="active_app.manual_completion_user_name"/>
+                                                                        </span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="badge bg-light text-success border border-success px-2 py-1 shadow-sm" style="font-size: 0.65rem;">
+                                                                            <i class="fa fa-check-circle me-1"/> COMPLETED
+                                                                        </span>
+                                                                    </t>
                                                                 </t>
                                                                 <t t-elif="active_app.attendance_state === 'in_progress'">
                                                                     <span class="badge bg-success text-white px-2 py-1 shadow-sm" style="font-size: 0.65rem;">
                                                                         <i class="fa fa-spinner fa-spin me-1"/> IN PROGRESS
                                                                     </span>
                                                                 </t>
-                                                                <t t-elif="active_app.visit_type === 'home'">
+
+                                                                <!-- Visit Type Badges -->
+                                                                <t t-if="active_app.visit_type === 'home'">
                                                                     <span class="badge bg-warning text-dark px-2 py-1 shadow-sm border border-warning" style="font-size: 0.65rem;">
                                                                         <i class="fa fa-home"/> Home Visit [HV]
                                                                     </span>
@@ -598,12 +668,14 @@
                                 <button class="btn btn-outline-secondary fw-bold py-2 mt-2" t-on-click="() => this.openFullForm()">
                                     <i class="fa fa-pencil me-1"/> Full Edit
                                 </button>
-                                <button class="btn btn-warning fw-bold py-2 mt-2 text-dark shadow-sm" t-on-click="() => this.unassignSlot()">
+                                <button class="btn btn-warning fw-bold py-2 mt-2 text-dark shadow-sm"
+                                        t-if="state.selectedAppointment.attendance_state !== 'completed' || state.is_manager"
+                                        t-on-click="() => this.unassignSlot()">
                                     <i class="fa fa-trash me-1"/> Delete / Unassign
                                 </button>
                             </div>
                             <t t-if="state.selectedAppointment.slot_type === 'patient'">
-                                <div class="mt-4 pt-3 border-top text-start">
+                                <div class="mt-4 pt-3 border-top text-start" t-if="state.selectedAppointment.attendance_state !== 'completed' || state.is_manager">
                                     <h6 class="text-muted small fw-bold text-uppercase mb-2"><i class="fa fa-exchange me-1"/>Rapid Re-Assign</h6>
                                     <div class="input-group input-group-sm">
                                         <select class="form-select border-primary" t-model="state.quickReassignTherapist">
@@ -945,15 +1017,49 @@
                                 </div>
                             </t>
                             <t t-else="">
-                                <div class="list-group shadow-sm">
-                                    <t t-foreach="state.smartViewData.free_staff" t-as="staff" t-key="staff.name">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span class="fw-bold text-dark"><i class="fa fa-user text-primary me-2"/> <t t-esc="staff.name"/></span>
-                                            <span class="badge bg-light text-secondary border text-uppercase"><t t-esc="staff.designation"/></span>
-                                        </div>
-                                    </t>
+                        <div class="list-group shadow-sm">
+                            <t t-foreach="state.smartViewData.free_staff" t-as="staff" t-key="staff.name">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-dark"><i class="fa fa-user text-primary me-2"/> <t t-esc="staff.name"/></span>
+                                    <span class="badge bg-light text-secondary border text-uppercase"><t t-esc="staff.designation"/></span>
                                 </div>
                             </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+<!-- PENDING REQUESTS MODAL (MANAGER ONLY) -->
+        <t t-if="state.isPendingModalOpen">
+            <div class="modal-backdrop fade show" style="z-index: 1040; background-color: rgba(0,0,0,0.5);" t-on-click="() => this.closePendingRequestsModal()"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-3">
+                        <div class="modal-header bg-danger text-white border-0 py-3 px-4">
+                            <h5 class="modal-title fw-bold"><i class="fa fa-bell me-2"/>Pending Floater Requests</h5>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="() => this.closePendingRequestsModal()"></button>
+                        </div>
+                        <div class="modal-body p-0 bg-light">
+                            <div class="list-group list-group-flush shadow-sm" style="max-height: 400px; overflow-y: auto;">
+                                <t t-if="state.pendingRequests.length === 0">
+                                    <div class="text-center p-4 text-muted fw-bold">No active requests for this date.</div>
+                                </t>
+                                <t t-foreach="state.pendingRequests" t-as="req" t-key="req.placeholder_id">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark fs-6"><i class="fa fa-hospital-o me-2 text-primary"/> <t t-esc="req.clinic_name"/></span>
+                                            <small class="text-muted fw-bold mt-1">Requested: <span t-attf-class="badge #{req.gender === 'm' ? 'bg-primary' : 'bg-danger'}"><t t-esc="req.gender === 'm' ? 'Male' : 'Female'"/></span></small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <!-- FIX: Removed the { ; } block syntax -->
+                                            <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" t-on-click="() => this.rejectFloater(req.placeholder_id)">Reject</button>
+                                            <button class="btn btn-sm btn-success fw-bold shadow-sm" t-on-click="() => this.openSubstituteModal(req.placeholder_id)">Substitute</button>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -971,25 +1077,72 @@
                             <button type="button" class="btn-close btn-close-white" t-on-click="() => this.closeSubstituteModal()"></button>
                         </div>
                         <div class="modal-body p-4 bg-light">
-                            <p class="text-muted mb-3">Select the actual floater who will fulfill this request. All scheduled patients will be seamlessly moved to this therapist.</p>
+
+                            <!-- NEW: TARGET CONTEXT BANNER -->
+                            <t t-if="state.substituteTargetReq">
+                                <div class="alert alert-success border-success shadow-sm p-3 mb-3 d-flex align-items-center" style="background-color: #d1e7dd;">
+                                    <i class="fa fa-bullseye fa-2x text-success me-3"/>
+                                    <div>
+                                        <div class="text-success fw-bolder small text-uppercase mb-1" style="letter-spacing: 0.5px;">Fulfilling Request</div>
+                                        <h6 class="fw-bolder text-dark mb-1"><t t-esc="state.substituteTargetReq.name"/></h6>
+                                        <div class="small text-dark fw-bold">
+                                            <i class="fa fa-hospital-o me-1"/> <t t-esc="state.substituteTargetReq.clinic_name"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <p class="text-muted mb-3 small">Select the actual floater who will fulfill this request. All scheduled patients will be seamlessly moved to this therapist.</p>
                             <div class="input-group shadow-sm mb-3">
                                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-success"/></span>
                                 <input type="text" class="form-control border-start-0 ps-0 fw-bold text-dark" placeholder="Search Real Floaters..." t-model="state.allotSearchQuery"/>
                             </div>
-                            <div class="list-group shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                            <div class="list-group shadow-sm" style="max-height: 350px; overflow-y: auto;">
                                 <t t-foreach="filteredAllotableTherapists" t-as="t" t-key="t.id">
                                     <button type="button"
                                             t-attf-class="list-group-item list-group-item-action d-flex justify-content-between align-items-center #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'active bg-success border-success text-white' : ''}"
-                                            t-on-click="() => this.selectTherapistToAllot(t)">
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-bold" style="font-size: 0.95rem;"><t t-esc="t.smart_name"/></span>
-                                            <small t-attf-class="fw-bold mt-1 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white-50' : 'text-muted'}" style="font-size: 0.75rem;">
-                                                <i class="fa fa-briefcase me-1"/> Vendor: <t t-esc="t.vendor_id"/>
-                                            </small>
+                                            t-on-click="() => this.selectTherapistToAllot(t)"
+                                            style="padding: 12px 16px; transition: all 0.2s;">
+                                        <div class="d-flex flex-column text-start w-75">
+
+                                            <!-- NEW: HIGH CONTRAST VISUAL BADGES -->
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span t-attf-class="fw-bolder fs-6 me-2 #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-dark'}">
+                                                    <t t-esc="t.name"/>
+                                                </span>
+                                                <span t-attf-class="badge #{t.gender === 'm' ? 'bg-primary' : 'bg-danger'} shadow-sm me-1" style="font-size: 0.6rem;">
+                                                    <i t-attf-class="fa #{t.gender === 'm' ? 'fa-mars' : 'fa-venus'} me-1"/> <t t-esc="t.gender === 'm' ? 'Male' : 'Female'"/>
+                                                </span>
+                                                <span t-attf-class="badge #{t.designation === 'fixed' ? 'bg-secondary' : (t.designation === 'floater' ? 'bg-info text-dark' : 'bg-success')} shadow-sm" style="font-size: 0.6rem;">
+                                                    <i t-attf-class="fa #{t.designation === 'fixed' ? 'fa-user-md' : (t.designation === 'floater' ? 'fa-refresh' : 'fa-home')} me-1"/>
+                                                    <t t-if="t.designation === 'fixed'">Fixed</t>
+                                                    <t t-elif="t.designation === 'floater'">Floater</t>
+                                                    <t t-elif="t.designation === 'hv'">HV Floater</t>
+                                                </span>
+                                            </div>
+
+                                            <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success shadow-sm' : 'bg-light text-dark border border-secondary shadow-sm'}">
+                                                    <i class="fa fa-id-badge me-1"/> <t t-esc="t.vendor_id"/>
+                                                </span>
+                                                <small t-attf-class="text-truncate fw-bold #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-muted'}" style="font-size: 0.70rem; max-width: 70%;" t-att-title="t.allowed_clinics_names or 'None'">
+                                                    <i class="fa fa-map-marker me-1"/> Allowed: <t t-esc="t.allowed_clinics_names or 'None'"/>
+                                                </small>
+                                            </div>
                                         </div>
-                                        <t t-if="t.is_working_elsewhere">
-                                            <span class="badge bg-warning text-dark border border-warning shadow-sm"><i class="fa fa-car me-1"/>On Shift</span>
-                                        </t>
+                                        <div class="text-end" style="min-width: 100px;">
+                                            <t t-if="t.is_working_elsewhere">
+                                                <span class="badge bg-warning text-dark border border-warning shadow-sm d-block mb-1"><i class="fa fa-car me-1"/>ON SHIFT</span>
+                                                <small t-attf-class="fw-bold d-block text-truncate #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'text-white' : 'text-muted'}" style="font-size: 0.65rem; max-width: 100px;" t-att-title="t.working_clinics">
+                                                    At <t t-esc="t.working_clinics"/>
+                                                </small>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-attf-class="badge #{state.selectedTherapistObj and state.selectedTherapistObj.id === t.id ? 'bg-white text-success' : 'bg-success text-white'} shadow-sm border border-success d-block">
+                                                    <i class="fa fa-check-circle me-1"/>AVAILABLE
+                                                </span>
+                                            </t>
+                                        </div>
                                     </button>
                                 </t>
                             </div>
@@ -999,6 +1152,46 @@
                             <button t-if="state.selectedTherapistObj" type="button" class="btn btn-success fw-bold text-white px-4 shadow-sm" t-on-click="() => this.confirmSubstitute()">
                                 <i class="fa fa-check me-1"/> Confirm Substitution
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+        <!-- MY REQUESTS MODAL (ADMIN ONLY) -->
+        <t t-if="state.isMyRequestsModalOpen">
+            <div class="modal-backdrop fade show" style="z-index: 1040; background-color: rgba(0,0,0,0.5);" t-on-click="() => this.closeMyRequestsModal()"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-3">
+                        <div class="modal-header bg-info text-dark border-0 py-3 px-4">
+                            <h5 class="modal-title fw-bold"><i class="fa fa-list me-2"/>My Requests Today</h5>
+                            <button type="button" class="btn-close" t-on-click="() => this.closeMyRequestsModal()"></button>
+                        </div>
+                        <div class="modal-body p-0 bg-light">
+                            <div class="list-group list-group-flush shadow-sm" style="max-height: 400px; overflow-y: auto;">
+                                <t t-if="state.myRequests.length === 0">
+                                    <div class="text-center p-4 text-muted fw-bold">No requests made for this date.</div>
+                                </t>
+                                <t t-foreach="state.myRequests" t-as="req" t-key="req.placeholder_id">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark fs-6"><t t-esc="req.name"/></span>
+                                            <small class="text-muted fw-bold mt-1">
+                                                Type: <span class="text-uppercase me-2"><t t-esc="req.designation"/></span>
+                                                Status:
+                                                <span t-attf-class="badge #{req.state === 'pending' ? 'bg-warning text-dark' : (req.state === 'approved' ? 'bg-success' : 'bg-secondary')}">
+                                                    <t t-esc="req.state.toUpperCase()"/>
+                                                </span>
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button t-if="req.state === 'pending'" class="btn btn-sm btn-danger fw-bold shadow-sm" t-on-click="() => this.cancelFloaterRequest(req.placeholder_id)">
+                                                <i class="fa fa-times me-1"/> Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
                         </div>
                     </div>
                 </div>

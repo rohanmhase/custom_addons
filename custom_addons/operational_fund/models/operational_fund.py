@@ -145,6 +145,14 @@ class OperationalFundDisbursement(models.Model):
         tracking=True,
         index=True
     )
+    
+    approval_date = fields.Date(
+        string='Approval Date',
+        readonly=True,
+        tracking=True,
+        index=True,
+        copy=False
+    )
 
     # New Strict Relational Fields
     therapist_ref_id = fields.Many2one('clinic.therapist', string='Therapist (Linked)', tracking=True)
@@ -870,6 +878,9 @@ class OperationalFundDisbursement(models.Model):
 
             # (Balance constraint removed. Funding is now strictly a visual ledger.)
             rec.state = 'approved'
+
+            rec.approval_date = fields.Date.context_today(self)
+
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
 
@@ -1200,17 +1211,31 @@ class OperationalFundDownloadWizard(models.TransientModel):
     def action_download_vouchers(self):
         self.ensure_one()
 
-        # 1. Base states based on the new "Only Approved" checkbox
+        # 1. Base states
         target_states = ['approved'] if self.only_approved else ['waiting', 'approved']
-
-        # 2. Append 'paid' if the include paid checkbox is ticked
         if self.include_paid:
             target_states.append('paid')
 
-        vouchers = self.env['operational.fund.disbursement'].search([
-            ('date', '=', self.date),
-            ('state', 'in', target_states)
-        ])
+        # 2. Dynamic Search Domain
+        if self.only_approved or self.include_paid:
+            domain = [
+                '|',  # Odoo OR operator
+                '&',  # Odoo AND operator for the fallback
+                ('approval_date', '=', False),  # If it's an old voucher...
+                ('date', '=', self.date),  # ...use its creation date.
+                ('approval_date', '=', self.date),  # Standard check for newly approved vouchers.
+                ('state', 'in', target_states),
+            ]
+        else:
+            domain = [
+                '|',
+                ('date', '=', self.date),
+                ('approval_date', '=', self.date),
+                ('state', 'in', target_states)
+            ]
+
+        # 3. Execute Search
+        vouchers = self.env['operational.fund.disbursement'].search(domain)
 
         if not vouchers:
             raise ValidationError(f"No vouchers found for {self.date} matching the selected criteria.")
@@ -1650,9 +1675,9 @@ class OperationalFundMarkPaidWizard(models.TransientModel):
 
         disb.write({
             'state': 'paid',
-            'who_paid': self.who_paid
+            'who_paid': self.who_paid,
+            'approval_date': fields.Date.context_today(self)
         })
-
 
         disb.message_post(
             body=f"<div style='color: #28a745;'><i class='fa fa-check-circle'></i> <strong>MARKED AS PAID</strong><br/><b>Paid By:</b> {self.who_paid or 'Not Specified'}</div>")

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================== -->
+    <!-- 1. Wizard View: Import Invoices               -->
+    <!-- ============================================== -->
+    <record id="view_import_invoices_wizard" model="ir.ui.view">
+        <field name="name">import.invoices.wizard.form</field>
+        <field name="model">import.invoices.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Invoices">
+                <sheet>
+                    <group>
+                        <field name="state" invisible="1"/>
+                        <field name="file_name" invisible="1"/>
+                        <field name="file" filename="file_name" options="{'accepted_file_extensions': '.csv'}"/>
+                        <field name="validation_summary" class="fw-bold text-success" invisible="state != 'done'"/>
+                    </group>
+
+                    <!-- Header Guide -->
+                    <group string="Accepted CSV Column Headers" invisible="state == 'done'">
+                        <div colspan="2" class="alert alert-info" role="alert">
+                            <p><b>Required columns</b> (case-insensitive, any order):</p>
+                            <ul>
+                                <li><b>Order Number</b> — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>, <code>Ref</code></li>
+                                <li><b>Customer Name</b> — aliases: <code>Name</code>, <code>Receiver Name</code></li>
+                                <li><b>Receiver_phone</b> — aliases: <code>Receiver Phone</code>,  shower: <code>Phone</code>, <code>Mobile</code>, <code>Mobile Number</code></li>
+                                <li><b>Item Name</b> — aliases: <code>Product Name</code>, <code>Product</code>, <code>Item</code></li>
+                                <li><b>Quantity</b> — aliases: <code>Qty</code>, <code>Item Quantity</code></li>
+                                <li><b>Item Price</b> — aliases: <code>Price</code>, <code>Unit Price</code>, <code>Rate</code></li>
+                                <li><b>Payment Method</b> — aliases: <code>Payment Mode</code>, <code>Payment Type</code> (values: <code>prepaid</code> / <code>pay on delivery</code>)</li>
+                            </ul>
+
+                            <p><b>Optional columns:</b></p>
+                            <ul>
+                                <li><b>Customer Address</b> — aliases: <code>Address</code>, <code>Street</code>, <code>Billing Address</code></li>
+                                <li><b>PIN CODE</b> — aliases: <code>Pincode</code>, <code>Zip</code>, <code>Postal Code</code></li>
+                                <li><b>Place of Supply</b> — aliases: <code>State</code>, <code>State Name</code> (e.g. <code>MH</code>, <code>HR</code>)</li>
+                                <li><b>Item Tax %</b> — aliases: <code>Tax %</code>, <code>Tax</code>, <code>Tax Percent</code></li>
+                                <li><b>Entity Discount Percent</b> — aliases: <code>Discount %</code>, <code>Disc %</code>, <code>Item Discount %</code></li>
+                            </ul>
+                        </div>
+                    </group>
+
+                    <!-- Preview Tables -->
+                    <notebook invisible="state != 'done'">
+                        <page string="Existing Customers (Matched)">
+                            <field name="existing_customer_ids" readonly="1">
+                                <tree decoration-warning="has_warning == True">
+                                    <field name="csv_name"/>
+                                    <field name="csv_phone"/>
+                                    <field name="csv_address"/>
+                                    <field name="db_name"/>
+                                    <field name="db_phone"/>
+                                    <field name="db_address"/>
+                                    <field name="normalized_phone"/>
+                                    <field name="has_warning" column_invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="New Customers (To Create)">
+                            <field name="new_customer_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="phone"/>
+                                    <field name="street"/>
+                                    <field name="zip"/>
+                                    <field name="normalized_phone"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <footer>
+                    <button name="action_validate" string="Test / Validate" type="object" class="btn-secondary" invisible="state == 'done'"/>
+                    <button name="action_import" string="Import &amp; Process" type="object" class="btn-primary" invisible="state != 'done'"/>
+                    <button name="action_reset" string="Reset" type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================== -->
+    <!-- 2. Wizard View: Import POD Payments           -->
+    <!-- ============================================== -->
+    <record id="view_import_payments_wizard" model="ir.ui.view">
+        <field name="name">import.payments.wizard.form</field>
+        <field name="model">import.payments.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import POD Payments">
+                <sheet>
+                    <group>
+                        <field name="file" options="{'accepted_file_extensions': '.csv'}"/>
+                    </group>
+
+                    <group string="Accepted CSV Column Headers">
+                        <div colspan="2" class="alert alert-info" role="alert">
+                            <p><b>Required columns</b> (case-insensitive, any order):</p>
+                            <ul>
+                                <li><b>Order Number</b> — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>, <code>Ref</code>, <code>Source Document</code></li>
+                                <li><b>Payment Date</b> — aliases: <code>Date</code>, <code>Paid Date</code> (format: <code>YYYY-MM-DD</code>)</li>
+                            </ul>
+                        </div>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_import_payments" string="Process Payments" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================== -->
+    <!-- 3. Window Actions                             -->
+    <!-- ============================================== -->
+    <record id="action_import_invoices" model="ir.actions.act_window">
+        <field name="name">Import Invoices from CSV</field>
+        <field name="res_model">import.invoices.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_import_payments" model="ir.actions.act_window">
+        <field name="name">Import POD Payments</field>
+        <field name="res_model">import.payments.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ============================================== -->
+    <!-- 4. Navigation Menus                           -->
+    <!-- ============================================== -->
+    <menuitem id="menu_import_invoices"
+              name="Import CSV Invoices"
+              parent="account.menu_finance_receivables"
+              action="action_import_invoices"
+              sequence="100"
+              groups="group_custom_import_moderator,group_custom_import_admin"/>
+
+    <menuitem id="menu_import_payments"
+              name="Import POD Payments"
+              parent="account.menu_finance_receivables"
+              action="action_import_payments"
+              sequence="101"
+              groups="group_custom_import_moderator,group_custom_import_admin"/>
+
+</odoo>
