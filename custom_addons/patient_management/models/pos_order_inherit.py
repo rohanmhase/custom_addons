@@ -5,12 +5,14 @@ class PosOrder(models.Model):
 
     prescription_id = fields.Many2one("patient.prescription", string="Prescription")
     enrollment_id = fields.Many2one("patient.enrollment", string="Enrollment")
+    included_in_package = fields.Boolean(string="Included in Package", default=False)
 
     def _order_fields(self, ui_order):
         res = super()._order_fields(ui_order)
 
         res["prescription_id"] = ui_order.get("prescription_id") or False
         res["enrollment_id"] = ui_order.get("enrollment_id") or False
+        res['included_in_package'] = ui_order.get('included_in_package') or False
 
         return res
 
@@ -61,3 +63,13 @@ class PosOrder(models.Model):
                 order.enrollment_id.write(vals)
 
         return res
+
+class PosSession(models.Model):
+    _inherit = 'pos.session'
+
+    def _loader_params_pos_order(self):
+        # Load the fields from the backend so the POS Ticket Screen can see them
+        result = super()._loader_params_pos_order()
+        result['search_params']['fields'].append('included_in_package')
+        result['search_params']['fields'].append('enrollment_id')
+        return result

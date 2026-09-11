@@ -21,6 +21,12 @@ export class PackageDiscountButton extends Component {
     get isDisabled() {
         const order = this.pos.get_order();
         return order ? !!order.enrollment_id : false;
+
+        // 2. Detect if any item in the cart is a refund line
+       const isRefund = order.get_orderlines().some(line => line.refunded_orderline_id || line.get_quantity() < 0);
+
+        // 3. Disable the button if it's an enrollment OR a refund
+        return !!order.enrollment_id || isRefund;
     }
 
     onClick() {
@@ -30,10 +36,12 @@ export class PackageDiscountButton extends Component {
             return;
         }
 
-        if (order.enrollment_id) {
+        const isRefund = order.get_orderlines().some(line => line.refunded_orderline_id);
+
+        if (order.enrollment_id || isRefund) {
             this.popup.add(ErrorPopup, {
                 title: "Action Restricted",
-                body: "Package discount cannot be used on enrollment orders.",
+                body: "Package discount cannot be used on enrollment orders or refund orders.",
             });
             return;
         }

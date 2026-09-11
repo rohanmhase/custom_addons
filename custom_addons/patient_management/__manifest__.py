@@ -57,6 +57,7 @@
             "patient_management/static/src/js/enrollment_order_patch.js",
             "patient_management/static/src/js/orderline_patch.js",
             "patient_management/static/src/js/package_order_patch.js",
+            "patient_management/static/src/js/ticket_screen_patch.js",
             "patient_management/static/src/js/package_button.js",
             "patient_management/static/src/js/variable_discount_button.js",
             "patient_management/static/src/css/prescription_pos.css",
