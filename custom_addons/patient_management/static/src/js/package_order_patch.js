@@ -60,6 +60,11 @@ patch(Order.prototype, {
     add_product(product, options = {}) {
         const result = super.add_product(...arguments);
 
+        // DO NOT apply package discounts to refunded lines
+        if (options.refunded_orderline_id) {
+            return result;
+        }
+
         // Auto-apply discount to any product added while the
         // package flag is active.
         if (this.included_in_package) {
