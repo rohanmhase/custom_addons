@@ -171,16 +171,14 @@ class PatientWiseSalesAudit(models.Model):
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('Patient Audit')
 
-        # Shared base formatting
         base_fmt_dict = {'bold': True, 'font_color': '#ffffff', 'border': 1, 'text_wrap': True, 'valign': 'vcenter',
                          'align': 'center'}
 
-        # Color-coded headers
-        fmt_header_base = workbook.add_format({**base_fmt_dict, 'bg_color': '#374151'})  # Gray
-        fmt_header_a = workbook.add_format({**base_fmt_dict, 'bg_color': '#047857'})  # Green
-        fmt_header_b = workbook.add_format({**base_fmt_dict, 'bg_color': '#be123c'})  # Red
-        fmt_header_c = workbook.add_format({**base_fmt_dict, 'bg_color': '#1d4ed8'})  # Blue
-        fmt_header_d = workbook.add_format({**base_fmt_dict, 'bg_color': '#6d28d9'})  # Purple
+        fmt_header_base = workbook.add_format({**base_fmt_dict, 'bg_color': '#374151'})
+        fmt_header_a = workbook.add_format({**base_fmt_dict, 'bg_color': '#047857'})
+        fmt_header_b = workbook.add_format({**base_fmt_dict, 'bg_color': '#be123c'})
+        fmt_header_c = workbook.add_format({**base_fmt_dict, 'bg_color': '#1d4ed8'})
+        fmt_header_d = workbook.add_format({**base_fmt_dict, 'bg_color': '#6d28d9'})
 
         money_fmt = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
         ratio_fmt = workbook.add_format({'num_format': '0.00', 'border': 1})
@@ -190,7 +188,6 @@ class PatientWiseSalesAudit(models.Model):
         fraud_fmt = workbook.add_format({'border': 1, 'text_wrap': True, 'bold': True, 'font_color': '#dc2626'})
         ok_fmt = workbook.add_format({'border': 1, 'text_wrap': True, 'bold': True, 'font_color': '#047857'})
 
-        # Tuple: (Header Name, Format Object)
         headers = [
             ('Clinic', fmt_header_base),
             ('Patient Name', fmt_header_base),
@@ -371,313 +368,305 @@ class PatientWiseSalesAudit(models.Model):
     # ─────────────────────────────────────────────────────────────────
     #  CORE SQL GENERATION
     # ─────────────────────────────────────────────────────────────────
-    # ─────────────────────────────────────────────────────────────────
-    #  CORE SQL GENERATION
-    # ─────────────────────────────────────────────────────────────────
+    def _generate_lines(self, enrollment_types):
+        self.ensure_one()
+        self.line_ids.unlink()
 
+        mrn_clause = "AND (cp.mrn ILIKE %(mrn_search)s OR cp.name ILIKE %(mrn_search)s)" if self.mrn_search_filter else ""
+        type_clause = "AND LOWER(COALESCE(pe.enrollment_type::text, '')) IN %(enrollment_types)s" if len(
+            enrollment_types) < 3 else ""
 
-# ─────────────────────────────────────────────────────────────────
-#  CORE SQL GENERATION
-# ─────────────────────────────────────────────────────────────────
-def _generate_lines(self, enrollment_types):
-    self.ensure_one()
-    self.line_ids.unlink()
+        # Construct Package Lifecycle SQL Clause (Mode B)
+        lifecycle_conditions = []
+        if self.pkg_created_during:
+            lifecycle_conditions.append("(pe.enrollment_date >= %(start_date)s AND pe.enrollment_date <= %(end_date)s)")
+        if self.pkg_active_during:
+            lifecycle_conditions.append("(pe.state = 'active')")
+        if self.pkg_completed_during:
+            lifecycle_conditions.append("""(pe.state = 'completed' AND EXISTS (
+                SELECT 1 FROM patient_session ps 
+                WHERE ps.patient_id = pe.patient_id 
+                  AND ps.session_date >= %(start_date)s 
+                  AND ps.session_date <= %(end_date)s
+                  AND COALESCE(ps.active, true) = true
+            ))""")
 
-    mrn_clause = "AND (cp.mrn ILIKE %(mrn_search)s OR cp.name ILIKE %(mrn_search)s)" if self.mrn_search_filter else ""
-    type_clause = "AND LOWER(COALESCE(pe.enrollment_type::text, '')) IN %(enrollment_types)s" if len(
-        enrollment_types) < 3 else ""
+        if lifecycle_conditions:
+            lifecycle_clause = "AND (" + " OR ".join(lifecycle_conditions) + ")"
+        else:
+            lifecycle_clause = "AND 1=0"
 
-    # Construct Package Lifecycle SQL Clause (Mode B)
-    lifecycle_conditions = []
-    if self.pkg_created_during:
-        lifecycle_conditions.append("(pe.enrollment_date >= %(start_date)s AND pe.enrollment_date <= %(end_date)s)")
-    if self.pkg_active_during:
-        lifecycle_conditions.append("(pe.state = 'active')")
-    if self.pkg_completed_during:
-        lifecycle_conditions.append("""(pe.state = 'completed' AND EXISTS (
-            SELECT 1 FROM patient_session ps 
-            WHERE ps.patient_id = pe.patient_id 
-              AND ps.session_date >= %(start_date)s 
-              AND ps.session_date <= %(end_date)s
-              AND COALESCE(ps.active, true) = true
-        ))""")
+        params = {
+            'start_date': self.start_date,
+            'end_date': self.end_date,
+            'clinic_ids': tuple(self.clinic_ids.ids),
+            'enrollment_types': tuple(t.lower() for t in enrollment_types) or ('',),
+            'mrn_search': f"%{self.mrn_search_filter}%" if self.mrn_search_filter else "",
+            'therapy_term': '%Therapy%',
+            'treatment_term': '%Treatment%',
+            'cons_term': '%Cons%',
+        }
 
-    if lifecycle_conditions:
-        lifecycle_clause = "AND (" + " OR ".join(lifecycle_conditions) + ")"
-    else:
-        lifecycle_clause = "AND 1=0"
-
-    params = {
-        'start_date': self.start_date,
-        'end_date': self.end_date,
-        'clinic_ids': tuple(self.clinic_ids.ids),
-        'enrollment_types': tuple(t.lower() for t in enrollment_types) or ('',),
-        'mrn_search': f"%{self.mrn_search_filter}%" if self.mrn_search_filter else "",
-        'therapy_term': '%Therapy%',
-        'treatment_term': '%Treatment%',
-        'cons_term': '%Cons%',
-    }
-
-    raw_query = """
-        WITH
-        pos_breakdown AS (
+        raw_query = """
+            WITH
+            pos_breakdown AS (
+                SELECT
+                    pe_inner.id AS enrollment_id,
+                    SUM(CASE WHEN pt.name::text ILIKE %(therapy_term)s THEN pol.price_subtotal_incl ELSE 0 END) AS pos_therapy_amount,
+                    SUM(CASE WHEN pt.name::text ILIKE %(treatment_term)s OR pt.name::text ILIKE '%%Medicine%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_treatment_amount,
+                    SUM(CASE WHEN pt.name::text ILIKE %(cons_term)s OR pt.name::text ILIKE '%%Consultation%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_cons_amount
+                FROM patient_enrollment pe_inner
+                JOIN pos_order po ON po.id = pe_inner.pos_order_id
+                JOIN pos_order_line pol ON pol.order_id = po.id
+                JOIN product_product pp ON pp.id = pol.product_id
+                JOIN product_template pt ON pt.id = pp.product_tmpl_id
+                GROUP BY pe_inner.id
+            ),
+            patient_master AS (
+                SELECT
+                    cp.mrn,
+                    cp.id               AS clinic_patient_id,
+                    cp.partner_id       AS partner_id,
+                    cp.name             AS patient_name,
+                    cc.id               AS clinic_id,
+                    cc.name             AS clinic_name,
+                    (ARRAY_AGG(pe.enrollment_type ORDER BY pe.enrollment_date DESC))[1] AS enrollment_type,
+                    (ARRAY_AGG(pe.state ORDER BY pe.enrollment_date DESC))[1] AS enrollment_state,
+                    SUM(COALESCE(pe.total_sessions, 0)) AS total_sessions_bought,
+                    SUM(COALESCE(pe.total_amount, 0)) AS enrol_total_amount,
+                    SUM(
+                        COALESCE(
+                            NULLIF(pe.therapy_amount, 0),
+                            NULLIF(pb.pos_therapy_amount, 0),
+                            CASE WHEN COALESCE(pe.total_sessions, 0) > 0 THEN pe.total_amount ELSE 0 END
+                        )
+                    ) AS enrol_therapy_amount,
+                    SUM(
+                        COALESCE(
+                            NULLIF(pe.therapy_medicine, 0),
+                            NULLIF(pb.pos_treatment_amount, 0),
+                            CASE WHEN COALESCE(pe.total_sessions, 0) = 0 THEN pe.total_amount ELSE 0 END
+                        )
+                    ) AS enrol_treatment_amount,
+                    SUM(
+                        COALESCE(
+                            NULLIF(pe.first_cons_charges, 0),
+                            NULLIF(pb.pos_cons_amount, 0),
+                            0
+                        )
+                    ) AS enrol_cons_amount
+                FROM patient_enrollment pe
+                JOIN clinic_patient cp ON cp.id = pe.patient_id
+                JOIN clinic_clinic  cc ON cc.id = cp.clinic_id
+                LEFT JOIN pos_breakdown pb ON pb.enrollment_id = pe.id
+                WHERE COALESCE(pe.active, true) = True
+                  AND cc.id IN %(clinic_ids)s
+                  AND (pe.enrollment_date IS NULL OR pe.enrollment_date <= %(end_date)s)
+                  #TYPE_CLAUSE#
+                  #LIFECYCLE_CLAUSE#
+                  #MRN_CLAUSE#
+                GROUP BY cp.mrn, cp.id, cp.partner_id, cp.name, cc.id, cc.name
+            ),
+            session_cte AS (
+                SELECT 
+                    patient_id AS clinic_patient_id,
+                    COUNT(id) AS used_total,
+                    COUNT(id) FILTER (WHERE LOWER(session_type) = 'home') AS used_home,
+                    COUNT(id) FILTER (WHERE LOWER(session_type) = 'clinic') AS used_clinic,
+                    COUNT(id) FILTER (WHERE LOWER(session_type) = 'self') AS used_self
+                FROM patient_session
+                WHERE COALESCE(active, true) = true
+                  AND session_date <= %(end_date)s
+                GROUP BY patient_id
+            ),
+            revenue_cte AS (
+                SELECT
+                    am.partner_id,
+                    SUM(CASE WHEN am.move_type = 'out_invoice' THEN am.amount_total ELSE 0 END) AS total_invoiced,
+                    SUM(CASE WHEN am.move_type = 'out_refund' THEN ABS(am.amount_total) ELSE 0 END) AS total_credit_notes
+                FROM account_move am
+                WHERE am.state = 'posted'
+                  AND am.move_type IN ('out_invoice', 'out_refund')
+                  AND am.invoice_date <= %(end_date)s
+                GROUP BY am.partner_id
+            ),
+            medicine_cte AS (
+                SELECT
+                    pp.patient_id,
+                    SUM(ppl.qty * COALESCE(msp.selling_price, 0)) AS medicine_cost
+                FROM patient_prescription pp
+                JOIN patient_prescription_line ppl ON ppl.prescription_id = pp.id AND ppl.active = True
+                JOIN product_product prod ON prod.id = ppl.product_id
+                JOIN product_template pt ON pt.id = prod.product_tmpl_id
+                LEFT JOIN medicine_transfer_selling_price msp ON msp.product_id = ppl.product_id AND msp.active = True
+                WHERE pp.state = 'done'
+                  AND pp.prescription_date <= %(end_date)s
+                  AND pt.type = 'product'
+                GROUP BY pp.patient_id
+            ),
+            travel_cte AS (
+                SELECT
+                    cp2.id AS clinic_patient_id,
+                    SUM(ofd.amount) AS travel_cost,
+                    COUNT(ofd.id) AS voucher_count
+                FROM operational_fund_disbursement ofd
+                JOIN clinic_patient cp2 ON cp2.mrn = ofd.home_visit_mrn_search
+                WHERE ofd.expense_category = 'travel'
+                  AND ofd.travel_type = 'home'
+                  AND ofd.state IN ('approved', 'paid')
+                  AND ofd.date <= %(end_date)s
+                GROUP BY cp2.id
+            )
             SELECT
-                pe_inner.id AS enrollment_id,
-                SUM(CASE WHEN pt.name::text ILIKE %(therapy_term)s THEN pol.price_subtotal_incl ELSE 0 END) AS pos_therapy_amount,
-                SUM(CASE WHEN pt.name::text ILIKE %(treatment_term)s OR pt.name::text ILIKE '%%Medicine%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_treatment_amount,
-                SUM(CASE WHEN pt.name::text ILIKE %(cons_term)s OR pt.name::text ILIKE '%%Consultation%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_cons_amount
-            FROM patient_enrollment pe_inner
-            JOIN pos_order po ON po.id = pe_inner.pos_order_id
-            JOIN pos_order_line pol ON pol.order_id = po.id
-            JOIN product_product pp ON pp.id = pol.product_id
-            JOIN product_template pt ON pt.id = pp.product_tmpl_id
-            GROUP BY pe_inner.id
-        ),
-        patient_master AS (
-            SELECT
-                cp.mrn,
-                cp.id               AS clinic_patient_id,
-                cp.partner_id       AS partner_id,
-                cp.name             AS patient_name,
-                cc.id               AS clinic_id,
-                cc.name             AS clinic_name,
-                (ARRAY_AGG(pe.enrollment_type ORDER BY pe.enrollment_date DESC))[1] AS enrollment_type,
-                (ARRAY_AGG(pe.state ORDER BY pe.enrollment_date DESC))[1] AS enrollment_state,
-                SUM(COALESCE(pe.total_sessions, 0)) AS total_sessions_bought,
-                SUM(COALESCE(pe.total_amount, 0)) AS enrol_total_amount,
-                SUM(
-                    COALESCE(
-                        NULLIF(pe.therapy_amount, 0),
-                        NULLIF(pb.pos_therapy_amount, 0),
-                        CASE WHEN COALESCE(pe.total_sessions, 0) > 0 THEN pe.total_amount ELSE 0 END
-                    )
-                ) AS enrol_therapy_amount,
-                SUM(
-                    COALESCE(
-                        NULLIF(pe.therapy_medicine, 0),
-                        NULLIF(pb.pos_treatment_amount, 0),
-                        CASE WHEN COALESCE(pe.total_sessions, 0) = 0 THEN pe.total_amount ELSE 0 END
-                    )
-                ) AS enrol_treatment_amount,
-                SUM(
-                    COALESCE(
-                        NULLIF(pe.first_cons_charges, 0),
-                        NULLIF(pb.pos_cons_amount, 0),
-                        0
-                    )
-                ) AS enrol_cons_amount
-            FROM patient_enrollment pe
-            JOIN clinic_patient cp ON cp.id = pe.patient_id
-            JOIN clinic_clinic  cc ON cc.id = cp.clinic_id
-            LEFT JOIN pos_breakdown pb ON pb.enrollment_id = pe.id
-            WHERE COALESCE(pe.active, true) = True
-              AND cc.id IN %(clinic_ids)s
-              AND (pe.enrollment_date IS NULL OR pe.enrollment_date <= %(end_date)s)
-              #TYPE_CLAUSE#
-              #LIFECYCLE_CLAUSE#
-              #MRN_CLAUSE#
-            GROUP BY cp.mrn, cp.id, cp.partner_id, cp.name, cc.id, cc.name
-        ),
-        session_cte AS (
-            SELECT 
-                patient_id AS clinic_patient_id,
-                COUNT(id) AS used_total,
-                COUNT(id) FILTER (WHERE LOWER(session_type) = 'home') AS used_home,
-                COUNT(id) FILTER (WHERE LOWER(session_type) = 'clinic') AS used_clinic,
-                COUNT(id) FILTER (WHERE LOWER(session_type) = 'self') AS used_self
-            FROM patient_session
-            WHERE COALESCE(active, true) = true
-              AND session_date <= %(end_date)s
-            GROUP BY patient_id
-        ),
-        revenue_cte AS (
-            SELECT
-                am.partner_id,
-                SUM(CASE WHEN am.move_type = 'out_invoice' THEN am.amount_total ELSE 0 END) AS total_invoiced,
-                SUM(CASE WHEN am.move_type = 'out_refund' THEN ABS(am.amount_total) ELSE 0 END) AS total_credit_notes
-            FROM account_move am
-            WHERE am.state = 'posted'
-              AND am.move_type IN ('out_invoice', 'out_refund')
-              AND am.invoice_date <= %(end_date)s
-            GROUP BY am.partner_id
-        ),
-        medicine_cte AS (
-            SELECT
-                pp.patient_id,
-                SUM(ppl.qty * COALESCE(msp.selling_price, 0)) AS medicine_cost
+                pm.*,
+                COALESCE(s.used_total, 0) AS used_total,
+                COALESCE(s.used_home, 0) AS used_home,
+                COALESCE(s.used_clinic, 0) AS used_clinic,
+                COALESCE(s.used_self, 0) AS used_self,
+                COALESCE(r.total_invoiced, 0) AS total_invoiced,
+                COALESCE(r.total_credit_notes, 0) AS total_credit_notes,
+                COALESCE(r.total_invoiced, 0) - COALESCE(r.total_credit_notes, 0) AS net_sales,
+                COALESCE(m.medicine_cost, 0) AS medicine_cost,
+                COALESCE(t.travel_cost, 0) AS actual_travel_vouchers,
+                COALESCE(t.voucher_count, 0) AS voucher_count
+            FROM patient_master pm
+            LEFT JOIN session_cte s ON s.clinic_patient_id = pm.clinic_patient_id
+            LEFT JOIN revenue_cte r ON r.partner_id = pm.partner_id
+            LEFT JOIN medicine_cte m ON (m.patient_id = pm.clinic_patient_id OR m.patient_id = pm.partner_id)
+            LEFT JOIN travel_cte t ON t.clinic_patient_id = pm.clinic_patient_id
+            ORDER BY pm.clinic_name, pm.patient_name
+        """
+
+        query = raw_query.replace("#TYPE_CLAUSE#", type_clause).replace("#LIFECYCLE_CLAUSE#", lifecycle_clause).replace(
+            "#MRN_CLAUSE#", mrn_clause)
+        self.env.cr.execute(query, params)
+        rows = self.env.cr.dictfetchall()
+
+        uncosted_query = """
+            SELECT DISTINCT pt.id AS tmpl_id
             FROM patient_prescription pp
             JOIN patient_prescription_line ppl ON ppl.prescription_id = pp.id AND ppl.active = True
             JOIN product_product prod ON prod.id = ppl.product_id
-            JOIN product_template pt ON pt.id = prod.product_tmpl_id
+            JOIN product_template pt  ON pt.id  = prod.product_tmpl_id
             LEFT JOIN medicine_transfer_selling_price msp ON msp.product_id = ppl.product_id AND msp.active = True
             WHERE pp.state = 'done'
               AND pp.prescription_date <= %(end_date)s
               AND pt.type = 'product'
-            GROUP BY pp.patient_id
-        ),
-        travel_cte AS (
-            SELECT
-                cp2.id AS clinic_patient_id,
-                SUM(ofd.amount) AS travel_cost,
-                COUNT(ofd.id) AS voucher_count
-            FROM operational_fund_disbursement ofd
-            JOIN clinic_patient cp2 ON cp2.mrn = ofd.home_visit_mrn_search
-            WHERE ofd.expense_category = 'travel'
-              AND ofd.travel_type = 'home'
-              AND ofd.state IN ('approved', 'paid')
-              AND ofd.date <= %(end_date)s
-            GROUP BY cp2.id
-        )
-        SELECT
-            pm.*,
-            COALESCE(s.used_total, 0) AS used_total,
-            COALESCE(s.used_home, 0) AS used_home,
-            COALESCE(s.used_clinic, 0) AS used_clinic,
-            COALESCE(s.used_self, 0) AS used_self,
-            COALESCE(r.total_invoiced, 0) AS total_invoiced,
-            COALESCE(r.total_credit_notes, 0) AS total_credit_notes,
-            COALESCE(r.total_invoiced, 0) - COALESCE(r.total_credit_notes, 0) AS net_sales,
-            COALESCE(m.medicine_cost, 0) AS medicine_cost,
-            COALESCE(t.travel_cost, 0) AS actual_travel_vouchers,
-            COALESCE(t.voucher_count, 0) AS voucher_count
-        FROM patient_master pm
-        LEFT JOIN session_cte s ON s.clinic_patient_id = pm.clinic_patient_id
-        LEFT JOIN revenue_cte r ON r.partner_id = pm.partner_id
-        LEFT JOIN medicine_cte m ON (m.patient_id = pm.clinic_patient_id OR m.patient_id = pm.partner_id)
-        LEFT JOIN travel_cte t ON t.clinic_patient_id = pm.clinic_patient_id
-        ORDER BY pm.clinic_name, pm.patient_name
-    """
-
-    query = raw_query.replace("#TYPE_CLAUSE#", type_clause).replace("#LIFECYCLE_CLAUSE#", lifecycle_clause).replace(
-        "#MRN_CLAUSE#", mrn_clause)
-    self.env.cr.execute(query, params)
-    rows = self.env.cr.dictfetchall()
-
-    uncosted_query = """
-        SELECT DISTINCT pt.id AS tmpl_id
-        FROM patient_prescription pp
-        JOIN patient_prescription_line ppl ON ppl.prescription_id = pp.id AND ppl.active = True
-        JOIN product_product prod ON prod.id = ppl.product_id
-        JOIN product_template pt  ON pt.id  = prod.product_tmpl_id
-        LEFT JOIN medicine_transfer_selling_price msp ON msp.product_id = ppl.product_id AND msp.active = True
-        WHERE pp.state = 'done'
-          AND pp.prescription_date <= %(end_date)s
-          AND pt.type = 'product'
-          AND msp.id IS NULL
-    """
-    self.env.cr.execute(uncosted_query, params)
-    uncosted_ids = [r['tmpl_id'] for r in self.env.cr.dictfetchall()]
-    if uncosted_ids:
-        names = self.env['product.template'].browse(uncosted_ids).mapped('name')
-        self.uncosted_product_names = ', '.join(sorted(n for n in names if n))
-        self.uncosted_product_count = len(uncosted_ids)
-    else:
-        self.uncosted_product_names = ''
-        self.uncosted_product_count = 0
-
-    lines = []
-    for row in rows:
-        net_sales = row['net_sales'] or 0.0
-        total_amt = row['enrol_total_amount'] or 0.0
-        therapy_amt = row['enrol_therapy_amount'] or 0.0
-        treat_amt = row['enrol_treatment_amount'] or 0.0
-        cons_amt = row['enrol_cons_amount'] or 0.0
-        bought = row['total_sessions_bought'] or 0
-        used = row['used_total'] or 0
-
-        # PART A
-        if total_amt > 0:
-            prop = net_sales / total_amt
-            therapy_sales = therapy_amt * prop
-            treatment_sales = treat_amt * prop
-            cons_sales = cons_amt * prop
+              AND msp.id IS NULL
+        """
+        self.env.cr.execute(uncosted_query, params)
+        uncosted_ids = [r['tmpl_id'] for r in self.env.cr.dictfetchall()]
+        if uncosted_ids:
+            names = self.env['product.template'].browse(uncosted_ids).mapped('name')
+            self.uncosted_product_names = ', '.join(sorted(n for n in names if n))
+            self.uncosted_product_count = len(uncosted_ids)
         else:
-            therapy_sales = net_sales if bought > 0 else 0.0
-            treatment_sales = net_sales if bought == 0 else 0.0
-            cons_sales = 0.0
+            self.uncosted_product_names = ''
+            self.uncosted_product_count = 0
 
-        if bought > 0:
-            contracted_price = therapy_amt / bought
-            fraud_status = 'BELOW STANDARD' if contracted_price < FRAUD_THRESHOLD else 'Standard-Compliant'
+        lines = []
+        for row in rows:
+            net_sales = row['net_sales'] or 0.0
+            total_amt = row['enrol_total_amount'] or 0.0
+            therapy_amt = row['enrol_therapy_amount'] or 0.0
+            treat_amt = row['enrol_treatment_amount'] or 0.0
+            cons_amt = row['enrol_cons_amount'] or 0.0
+            bought = row['total_sessions_bought'] or 0
+            used = row['used_total'] or 0
 
-            # FIX: Cap Earned Rev multiplier to max sessions bought (prevents Comp sessions from inflating Revenue)
-            capped_used = min(used, bought)
-            prorated_therapy_sales = contracted_price * capped_used
-        else:
-            contracted_price = 0.0
-            fraud_status = 'N/A'
-            prorated_therapy_sales = 0.0
-
-        # PART B
-        med_cost = row['medicine_cost'] or 0.0
-        used_home = row['used_home'] or 0
-        actual_vouchers = row['actual_travel_vouchers'] or 0.0
-        voucher_count = row['voucher_count'] or 0
-
-        # FIX: Hybrid Travel Fallback Logic
-        if used_home > 0:
-            if voucher_count > 0:
-                unvouchered = max(0, used_home - voucher_count)
-                travel_cost = actual_vouchers + (unvouchered * 60.0)
-                if unvouchered > 0:
-                    travel_source = f"Hybrid: {voucher_count} Vouchers + {unvouchered} Std (60)"
-                else:
-                    travel_source = 'Actual (Vouchers)'
+            # PART A
+            if total_amt > 0:
+                prop = net_sales / total_amt
+                therapy_sales = therapy_amt * prop
+                treatment_sales = treat_amt * prop
+                cons_sales = cons_amt * prop
             else:
-                travel_cost = used_home * 60.0
-                travel_source = 'Standard 60/session (No Vouchers)'
-        else:
-            travel_cost = 0.0
-            travel_source = 'N/A'
+                therapy_sales = net_sales if bought > 0 else 0.0
+                treatment_sales = net_sales if bought == 0 else 0.0
+                cons_sales = 0.0
 
-        total_cost = med_cost + travel_cost
+            if bought > 0:
+                contracted_price = therapy_amt / bought
+                fraud_status = 'BELOW STANDARD' if contracted_price < FRAUD_THRESHOLD else 'Standard-Compliant'
 
-        # PART C
-        total_pl = net_sales - total_cost
-        therapy_pl = prorated_therapy_sales - total_cost
-        treatment_pl = treatment_sales - med_cost
+                # FIX: Cap Earned Rev multiplier to max sessions bought
+                capped_used = min(used, bought)
+                prorated_therapy_sales = contracted_price * capped_used
+            else:
+                contracted_price = 0.0
+                fraud_status = 'N/A'
+                prorated_therapy_sales = 0.0
 
-        # PART D
-        therapy_ratio = (prorated_therapy_sales / total_cost) if total_cost else 0.0
-        treatment_ratio = (treatment_sales / med_cost) if med_cost else 0.0
+            # PART B
+            med_cost = row['medicine_cost'] or 0.0
+            used_home = row['used_home'] or 0
+            actual_vouchers = row['actual_travel_vouchers'] or 0.0
+            voucher_count = row['voucher_count'] or 0
 
-        lines.append((0, 0, {
-            'mrn': row['mrn'],
-            'patient_id': row['clinic_patient_id'],
-            'patient_name': row['patient_name'],
-            'clinic_name': row['clinic_name'],
+            # FIX: Hybrid Travel Fallback Logic
+            if used_home > 0:
+                if voucher_count > 0:
+                    unvouchered = max(0, used_home - voucher_count)
+                    travel_cost = actual_vouchers + (unvouchered * 60.0)
+                    if unvouchered > 0:
+                        travel_source = f"Hybrid: {voucher_count} Vouchers + {unvouchered} Std (60)"
+                    else:
+                        travel_source = 'Actual (Vouchers)'
+                else:
+                    travel_cost = used_home * 60.0
+                    travel_source = 'Standard 60/session (No Vouchers)'
+            else:
+                travel_cost = 0.0
+                travel_source = 'N/A'
 
-            'net_sales': net_sales,
-            'therapy_sales': therapy_sales,
-            'treatment_sales': treatment_sales,
-            'consultation_sales': cons_sales,
-            'prorated_therapy_sales': prorated_therapy_sales,
+            total_cost = med_cost + travel_cost
 
-            'medicine_cost': med_cost,
-            'travel_expense': travel_cost,
-            'travel_source': travel_source,
-            'total_cost': total_cost,
+            # PART C
+            total_pl = net_sales - total_cost
+            therapy_pl = prorated_therapy_sales - total_cost
+            treatment_pl = treatment_sales - med_cost
 
-            'total_pl': total_pl,
-            'therapy_pl': therapy_pl,
-            'treatment_pl': treatment_pl,
+            # PART D
+            therapy_ratio = (prorated_therapy_sales / total_cost) if total_cost else 0.0
+            treatment_ratio = (treatment_sales / med_cost) if med_cost else 0.0
 
-            'contracted_price_session': contracted_price,
-            'fraud_status': fraud_status,
-            'therapy_ratio': therapy_ratio,
-            'treatment_ratio': treatment_ratio,
+            lines.append((0, 0, {
+                'mrn': row['mrn'],
+                'patient_id': row['clinic_patient_id'],
+                'patient_name': row['patient_name'],
+                'clinic_name': row['clinic_name'],
 
-            'sessions_bought': bought,
-            'sessions_used': used,
-            'sessions_home': used_home,
-            'sessions_clinic': row['used_clinic'] or 0,
-            'sessions_self': row['used_self'] or 0,
-            'enrollment_type': row['enrollment_type'],
-            'enrollment_state': row['enrollment_state'],
-            'total_invoiced': row['total_invoiced'] or 0.0,
-            'total_credit_notes': row['total_credit_notes'] or 0.0,
-        }))
-    self.line_ids = lines
+                'net_sales': net_sales,
+                'therapy_sales': therapy_sales,
+                'treatment_sales': treatment_sales,
+                'consultation_sales': cons_sales,
+                'prorated_therapy_sales': prorated_therapy_sales,
+
+                'medicine_cost': med_cost,
+                'travel_expense': travel_cost,
+                'travel_source': travel_source,
+                'total_cost': total_cost,
+
+                'total_pl': total_pl,
+                'therapy_pl': therapy_pl,
+                'treatment_pl': treatment_pl,
+
+                'contracted_price_session': contracted_price,
+                'fraud_status': fraud_status,
+                'therapy_ratio': therapy_ratio,
+                'treatment_ratio': treatment_ratio,
+
+                'sessions_bought': bought,
+                'sessions_used': used,
+                'sessions_home': used_home,
+                'sessions_clinic': row['used_clinic'] or 0,
+                'sessions_self': row['used_self'] or 0,
+                'enrollment_type': row['enrollment_type'],
+                'enrollment_state': row['enrollment_state'],
+                'total_invoiced': row['total_invoiced'] or 0.0,
+                'total_credit_notes': row['total_credit_notes'] or 0.0,
+            }))
+        self.line_ids = lines
 
 
 # ─────────────────────────────────────────────────────────────────────────────
