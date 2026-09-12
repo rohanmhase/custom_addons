@@ -498,22 +498,27 @@ class PatientWiseSalesAudit(models.Model):
                   AND session_date <= %(end_date)s
                 GROUP BY patient_id
             ),
-            revenue_cte AS (
-                SELECT
-                    cp.id AS clinic_patient_id,
-                    SUM(CASE WHEN am.move_type = 'out_invoice' THEN am.amount_total ELSE 0 END) AS total_invoiced,
-                    SUM(CASE WHEN am.move_type = 'out_refund' THEN ABS(am.amount_total) ELSE 0 END) AS total_credit_notes
+            patient_min_enrollment AS (
+                SELECT 
+                    fe.patient_id AS clinic_patient_id,
+                    cp.partner_id,
+                    MIN(COALESCE(fe.enrollment_date, '1900-01-01'::date)) AS min_enrol_date
                 FROM filtered_enrollments fe
                 JOIN clinic_patient cp ON cp.id = fe.patient_id
-                LEFT JOIN pos_order po ON po.id = fe.pos_order_id
-                JOIN account_move am ON (
-                    (po.id IS NOT NULL AND am.id = po.account_move)
-                    OR (fe.pos_order_id IS NULL AND am.partner_id = cp.partner_id AND am.invoice_date >= fe.enrollment_date AND am.invoice_date <= %(end_date)s)
-                )
+                GROUP BY fe.patient_id, cp.partner_id
+            ),
+            revenue_cte AS (
+                SELECT
+                    pme.clinic_patient_id,
+                    SUM(CASE WHEN am.move_type = 'out_invoice' THEN am.amount_total ELSE 0 END) AS total_invoiced,
+                    SUM(CASE WHEN am.move_type = 'out_refund' THEN ABS(am.amount_total) ELSE 0 END) AS total_credit_notes
+                FROM patient_min_enrollment pme
+                JOIN account_move am ON am.partner_id = pme.partner_id
+                                    AND am.invoice_date >= pme.min_enrol_date
+                                    AND am.invoice_date <= %(end_date)s
                 WHERE am.state = 'posted'
                   AND am.move_type IN ('out_invoice', 'out_refund')
-                  AND am.invoice_date <= %(end_date)s
-                GROUP BY cp.id
+                GROUP BY pme.clinic_patient_id
             ),
             medicine_cte AS (
                 SELECT
