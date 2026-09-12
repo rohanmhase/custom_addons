@@ -507,8 +507,7 @@ class PatientWiseSalesAudit(models.Model):
                 JOIN clinic_patient cp ON cp.id = fe.patient_id
                 LEFT JOIN pos_order po ON po.id = fe.pos_order_id
                 JOIN account_move am ON (
-                    am.id = po.account_move 
-                    OR am.pos_order_id = po.id
+                    (po.id IS NOT NULL AND am.id = po.account_move)
                     OR (fe.pos_order_id IS NULL AND am.partner_id = cp.partner_id AND am.invoice_date >= fe.enrollment_date AND am.invoice_date <= %(end_date)s)
                 )
                 WHERE am.state = 'posted'
