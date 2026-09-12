@@ -130,3 +130,5 @@ access_patient_audit_admin,patient.wise.sales.audit.admin,model_patient_wise_sal
 access_patient_audit_line_user,patient.wise.sales.audit.line.user,model_patient_wise_sales_audit_line,group_account_automation_user,1,0,0,0
 access_patient_audit_line_moderator,patient.wise.sales.audit.line.moderator,model_patient_wise_sales_audit_line,group_account_automation_moderator,1,1,1,0
 access_patient_audit_line_admin,patient.wise.sales.audit.line.admin,model_patient_wise_sales_audit_line,group_account_automation_admin,1,1,1,1
+access_patient_audit_product_type_user,patient.audit.product.type.user,model_patient_audit_product_type,account.group_account_user,1,0,0,0
+access_patient_audit_product_type_manager,patient.audit.product.type.manager,model_patient_audit_product_type,account.group_account_manager,1,1,1,1

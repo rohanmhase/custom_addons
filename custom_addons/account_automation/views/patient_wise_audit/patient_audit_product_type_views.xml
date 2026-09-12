@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PRODUCT TYPE CONFIG - Tree
+         ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_patient_audit_product_type_tree" model="ir.ui.view">
+        <field name="name">patient.audit.product.type.tree</field>
+        <field name="model">patient.audit.product.type</field>
+        <field name="arch" type="xml">
+            <tree string="Patient Audit Product Types" editable="bottom">
+                <field name="product_id"/>
+                <field name="audit_type"/>
+                <field name="notes"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PRODUCT TYPE CONFIG - Search
+         ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_patient_audit_product_type_search" model="ir.ui.view">
+        <field name="name">patient.audit.product.type.search</field>
+        <field name="model">patient.audit.product.type</field>
+        <field name="arch" type="xml">
+            <search string="Audit Product Types">
+                <field name="product_id"/>
+                <filter name="therapy" string="Therapy" domain="[('audit_type','=','therapy')]"/>
+                <filter name="treatment" string="Treatment / Medicine" domain="[('audit_type','=','treatment')]"/>
+                <filter name="consultation" string="Consultation" domain="[('audit_type','=','consultation')]"/>
+                <separator/>
+                <filter name="inactive" string="Archived" domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_type" string="Audit Type" context="{'group_by': 'audit_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION
+         ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_patient_audit_product_type" model="ir.actions.act_window">
+        <field name="name">Patient Audit Product Types</field>
+        <field name="res_model">patient.audit.product.type</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_patient_audit_product_type_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Map products to Therapy, Treatment/Medicine, or Consultation
+            </p>
+            <p>
+                Used by <b>Patient Wise Sales vs Medicine Audit</b> to split revenue correctly
+                (e.g. Regrowth Treatment → Therapy, Ashwagandha → Treatment/Medicine).
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         MENU — same section as Medicine Selling Prices
+         Configuration > Clinic Performance
+         ═══════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_patient_audit_product_type"
+              name="Patient Audit Product Types"
+              parent="menu_section_clinic_performance"
+              action="action_patient_audit_product_type"
+              sequence="4"/>
+
+</odoo>

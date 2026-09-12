@@ -8,6 +8,51 @@ FRAUD_THRESHOLD = 2000.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 0.  PRODUCT TYPE CONFIG (Account > Configuration)
+# ─────────────────────────────────────────────────────────────────────────────
+class PatientAuditProductType(models.Model):
+    _name = 'patient.audit.product.type'
+    _description = 'Patient Audit – Product Type (Therapy / Medicine / Consultation)'
+    _rec_name = 'product_id'
+    _order = 'product_id'
+
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product',
+        required=True,
+        ondelete='cascade',
+    )
+    product_tmpl_id = fields.Many2one(
+        'product.template',
+        string='Product Template',
+        related='product_id.product_tmpl_id',
+        store=True,
+        readonly=True,
+    )
+    audit_type = fields.Selection(
+        [
+            ('therapy', 'Therapy'),
+            ('treatment', 'Treatment / Medicine'),
+            ('consultation', 'Consultation'),
+        ],
+        string='Audit Type',
+        required=True,
+        default='therapy',
+        help='How this product is classified in Patient Wise Sales vs Medicine Audit.',
+    )
+    notes = fields.Char(string='Notes')
+    active = fields.Boolean(default=True)
+
+    _sql_constraints = [
+        (
+            'unique_product_audit_type',
+            'unique(product_id)',
+            'This product is already configured. Edit the existing line.',
+        )
+    ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 1.  WIZARD
 # ─────────────────────────────────────────────────────────────────────────────
 class PatientWiseSalesAuditWizard(models.TransientModel):
@@ -189,38 +234,20 @@ class PatientWiseSalesAudit(models.Model):
         ok_fmt = workbook.add_format({'border': 1, 'text_wrap': True, 'bold': True, 'font_color': '#047857'})
 
         headers = [
-            ('Clinic', fmt_header_base),
-            ('Patient Name', fmt_header_base),
-            ('MRN', fmt_header_base),
-
-            ('Net Sales (A=A1+A2+A3)', fmt_header_a),
-            ('Therapy Sales (A1)', fmt_header_a),
-            ('Treatment Sales (A2)', fmt_header_a),
-            ('Cons. Sales (A3)', fmt_header_a),
+            ('Clinic', fmt_header_base), ('Patient Name', fmt_header_base), ('MRN', fmt_header_base),
+            ('Net Sales (A=A1+A2+A3)', fmt_header_a), ('Therapy Sales (A1)', fmt_header_a),
+            ('Treatment Sales (A2)', fmt_header_a), ('Cons. Sales (A3)', fmt_header_a),
             ('Earned Therapy Rev (A1_Earned = D1*E2)', fmt_header_a),
-
-            ('Total Cost (B=B1+B2)', fmt_header_b),
-            ('Medicine Cost (B1)', fmt_header_b),
-            ('Travel Expense (B2)', fmt_header_b),
-            ('Travel Source (B3)', fmt_header_b),
-
-            ('Total P&L (C=A-B)', fmt_header_c),
-            ('Therapy P&L (C1=A1_Earned-B)', fmt_header_c),
+            ('Total Cost (B=B1+B2)', fmt_header_b), ('Medicine Cost (B1)', fmt_header_b),
+            ('Travel Expense (B2)', fmt_header_b), ('Travel Source (B3)', fmt_header_b),
+            ('Total P&L (C=A-B)', fmt_header_c), ('Therapy P&L (C1=A1_Earned-B)', fmt_header_c),
             ('Treatment P&L (C2=A2-B1)', fmt_header_c),
-
-            ('Contracted Price / Session (D1)', fmt_header_d),
-            ('Price Status (D2)', fmt_header_d),
-            ('Therapy Ratio (D3=A1_Earned/B)', fmt_header_d),
-            ('Treatment Ratio (D4=A2/B1)', fmt_header_d),
-
-            ('Sessions Bought (E1)', fmt_header_base),
-            ('Sessions Used (E2)', fmt_header_base),
-            ('Home Sessions (E3)', fmt_header_base),
-            ('Clinic Sessions (E4)', fmt_header_base),
-            ('Self Sessions (E5)', fmt_header_base),
-            ('Total Invoiced (E6)', fmt_header_base),
-            ('Credit Notes (E7)', fmt_header_base),
-            ('Enrollment Type (E8)', fmt_header_base),
+            ('Contracted Price / Session (D1)', fmt_header_d), ('Price Status (D2)', fmt_header_d),
+            ('Therapy Ratio (D3=A1_Earned/B)', fmt_header_d), ('Treatment Ratio (D4=A2/B1)', fmt_header_d),
+            ('Sessions Bought (E1)', fmt_header_base), ('Sessions Used (E2)', fmt_header_base),
+            ('Home Sessions (E3)', fmt_header_base), ('Clinic Sessions (E4)', fmt_header_base),
+            ('Self Sessions (E5)', fmt_header_base), ('Total Invoiced (E6)', fmt_header_base),
+            ('Credit Notes (E7)', fmt_header_base), ('Enrollment Type (E8)', fmt_header_base),
             ('Enrollment State (E9)', fmt_header_base)
         ]
 
@@ -233,27 +260,22 @@ class PatientWiseSalesAudit(models.Model):
             sheet.write(row_idx, 0, line.clinic_name or '', text_fmt)
             sheet.write(row_idx, 1, line.patient_name or '', text_fmt)
             sheet.write(row_idx, 2, line.mrn or '', text_fmt)
-
             sheet.write(row_idx, 3, line.net_sales, money_fmt)
             sheet.write(row_idx, 4, line.therapy_sales, money_fmt)
             sheet.write(row_idx, 5, line.treatment_sales, money_fmt)
             sheet.write(row_idx, 6, line.consultation_sales, money_fmt)
             sheet.write(row_idx, 7, line.prorated_therapy_sales, money_fmt)
-
             sheet.write(row_idx, 8, line.total_cost, money_fmt)
             sheet.write(row_idx, 9, line.medicine_cost, money_fmt)
             sheet.write(row_idx, 10, line.travel_expense, money_fmt)
             sheet.write(row_idx, 11, line.travel_source or '', text_fmt)
-
             sheet.write(row_idx, 12, line.total_pl, money_fmt)
             sheet.write(row_idx, 13, line.therapy_pl, money_fmt)
             sheet.write(row_idx, 14, line.treatment_pl, money_fmt)
-
             sheet.write(row_idx, 15, line.contracted_price_session, money_fmt)
             sheet.write(row_idx, 16, line.fraud_status or '', status_style)
             sheet.write(row_idx, 17, line.therapy_ratio, ratio_fmt)
             sheet.write(row_idx, 18, line.treatment_ratio, ratio_fmt)
-
             sheet.write(row_idx, 19, line.sessions_bought, int_fmt)
             sheet.write(row_idx, 20, line.sessions_used, int_fmt)
             sheet.write(row_idx, 21, line.sessions_home, int_fmt)
@@ -317,34 +339,16 @@ class PatientWiseSalesAudit(models.Model):
 
         for line in self.line_ids:
             writer.writerow([
-                line.clinic_name or '',
-                line.patient_name or '',
-                line.mrn or '',
-                line.net_sales,
-                line.therapy_sales,
-                line.treatment_sales,
-                line.consultation_sales,
-                line.prorated_therapy_sales,
-                line.total_cost,
-                line.medicine_cost,
-                line.travel_expense,
-                line.travel_source or '',
-                line.total_pl,
-                line.therapy_pl,
-                line.treatment_pl,
-                line.contracted_price_session,
-                line.fraud_status or '',
-                line.therapy_ratio,
-                line.treatment_ratio,
-                line.sessions_bought,
-                line.sessions_used,
-                line.sessions_home,
-                line.sessions_clinic,
-                line.sessions_self,
-                line.total_invoiced,
-                line.total_credit_notes,
-                line.enrollment_type or '',
-                line.enrollment_state or '',
+                line.clinic_name or '', line.patient_name or '', line.mrn or '',
+                line.net_sales, line.therapy_sales, line.treatment_sales, line.consultation_sales,
+                line.prorated_therapy_sales, line.total_cost, line.medicine_cost,
+                line.travel_expense, line.travel_source or '',
+                line.total_pl, line.therapy_pl, line.treatment_pl,
+                line.contracted_price_session, line.fraud_status or '',
+                line.therapy_ratio, line.treatment_ratio,
+                line.sessions_bought, line.sessions_used, line.sessions_home, line.sessions_clinic,
+                line.sessions_self, line.total_invoiced, line.total_credit_notes,
+                line.enrollment_type or '', line.enrollment_state or '',
             ])
 
         file_data = base64.b64encode(output.getvalue().encode('utf-8'))
@@ -402,9 +406,6 @@ class PatientWiseSalesAudit(models.Model):
             'clinic_ids': tuple(self.clinic_ids.ids),
             'enrollment_types': tuple(t.lower() for t in enrollment_types) or ('',),
             'mrn_search': f"%{self.mrn_search_filter}%" if self.mrn_search_filter else "",
-            'therapy_term': '%Therapy%',
-            'treatment_term': '%Treatment%',
-            'cons_term': '%Cons%',
         }
 
         raw_query = """
@@ -412,14 +413,26 @@ class PatientWiseSalesAudit(models.Model):
             pos_breakdown AS (
                 SELECT
                     pe_inner.id AS enrollment_id,
-                    SUM(CASE WHEN pt.name::text ILIKE %(therapy_term)s THEN pol.price_subtotal_incl ELSE 0 END) AS pos_therapy_amount,
-                    SUM(CASE WHEN pt.name::text ILIKE %(treatment_term)s OR pt.name::text ILIKE '%%Medicine%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_treatment_amount,
-                    SUM(CASE WHEN pt.name::text ILIKE %(cons_term)s OR pt.name::text ILIKE '%%Consultation%%' THEN pol.price_subtotal_incl ELSE 0 END) AS pos_cons_amount
+                    SUM(CASE
+                        WHEN COALESCE(pat.audit_type, CASE WHEN pt.type = 'service' THEN 'therapy' ELSE NULL END) = 'therapy'
+                        THEN pol.price_subtotal_incl ELSE 0 END
+                    ) AS pos_therapy_amount,
+                    SUM(CASE
+                        WHEN COALESCE(pat.audit_type, CASE WHEN pt.type = 'product' THEN 'treatment' ELSE NULL END) = 'treatment'
+                        THEN pol.price_subtotal_incl ELSE 0 END
+                    ) AS pos_treatment_amount,
+                    SUM(CASE
+                        WHEN pat.audit_type = 'consultation'
+                        THEN pol.price_subtotal_incl ELSE 0 END
+                    ) AS pos_cons_amount
                 FROM patient_enrollment pe_inner
                 JOIN pos_order po ON po.id = pe_inner.pos_order_id
                 JOIN pos_order_line pol ON pol.order_id = po.id
                 JOIN product_product pp ON pp.id = pol.product_id
                 JOIN product_template pt ON pt.id = pp.product_tmpl_id
+                LEFT JOIN patient_audit_product_type pat
+                       ON pat.product_id = pp.id
+                      AND pat.active = true
                 GROUP BY pe_inner.id
             ),
             patient_master AS (
@@ -589,7 +602,7 @@ class PatientWiseSalesAudit(models.Model):
                 contracted_price = therapy_amt / bought
                 fraud_status = 'BELOW STANDARD' if contracted_price < FRAUD_THRESHOLD else 'Standard-Compliant'
 
-                # FIX: Cap Earned Rev multiplier to max sessions bought
+                # Cap Earned Rev multiplier to max sessions bought
                 capped_used = min(used, bought)
                 prorated_therapy_sales = contracted_price * capped_used
             else:
@@ -603,7 +616,7 @@ class PatientWiseSalesAudit(models.Model):
             actual_vouchers = row['actual_travel_vouchers'] or 0.0
             voucher_count = row['voucher_count'] or 0
 
-            # FIX: Hybrid Travel Fallback Logic
+            # Hybrid Travel Fallback Logic
             if used_home > 0:
                 if voucher_count > 0:
                     unvouchered = max(0, used_home - voucher_count)

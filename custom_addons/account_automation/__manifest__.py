@@ -26,6 +26,7 @@
         'views/pos_session_alert/pos_session_alert_views.xml',
         'views/pos_session_alert/pos_session_cash_checkpoint_views.xml',
         'views/patient_wise_audit/patient_wise_audit_views.xml',
+        'views/patient_wise_audit/patient_audit_product_type_views.xml',
     ],
     'installable': True,
     'application': False,
