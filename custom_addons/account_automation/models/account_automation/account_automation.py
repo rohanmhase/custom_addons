@@ -103,6 +103,26 @@ class AccountAutomationDashboard(models.TransientModel):
         })
         return action
 
+    def action_run_patient_wise_audit(self):
+        return {
+            'name': 'Patient Wise Sales vs Medicine Audit',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.wise.sales.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context,
+        }
+
+    def action_view_patient_wise_audit_history(self):
+        action = self.env.ref(
+            'account_automation.action_patient_wise_sales_audit_history'
+        ).read()[0]
+        action.update({
+            'target': 'current',
+            'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
+        })
+        return action
+
     # -------- Session Cash Alerts --------
     def action_run_session_alert(self):
         return {
@@ -164,6 +184,23 @@ class AccountAutomationDashboard(models.TransientModel):
             'type': 'ir.actions.act_window',
             'name': 'EMI Audit History',
             'res_model': 'emi.audit',
+            'view_mode': 'tree,form',
+            'target': 'current',
+        }
+    def action_run_patient_wise_audit(self):
+        return {
+            'name': 'Patient Wise Sales vs Medicine Audit',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.wise.sales.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_view_patient_wise_audit_history(self):
+        return {
+            'name': 'Patient Audit History',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.wise.sales.audit',
             'view_mode': 'tree,form',
             'target': 'current',
         }

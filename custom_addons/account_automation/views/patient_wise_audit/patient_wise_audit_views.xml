@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         1.  WIZARD
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_patient_wise_sales_audit_wizard_form" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.wizard.form</field>
+        <field name="model">patient.wise.sales.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Patient Wise Sales vs Medicine Audit">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2 style="color: #1f2937;">Patient Wise Sales vs Medicine Audit</h2>
+                        <p class="text-muted small">
+                            Analyze patient revenue by Therapy, Treatment, and Consultation (Package Lifecycle Mode).
+                        </p>
+                    </div>
+                    <group>
+                        <group string="Period">
+                            <field name="start_date" string="From Date"/>
+                            <field name="end_date" string="To Date"/>
+                        </group>
+                        <group string="Clinic (Mandatory)">
+                            <field name="clinic_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Package Lifecycle Selection">
+                            <field name="pkg_active_during" string="Packages Active during period"/>
+                            <field name="pkg_completed_during" string="Packages Completed during period"/>
+                            <field name="pkg_created_during" string="Packages Created during period"/>
+                        </group>
+                        <group string="Enrollment Type">
+                            <field name="include_self" string="Self"/>
+                            <field name="include_clinic" string="Clinic"/>
+                            <field name="include_home" string="Home"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Advanced Filters">
+                            <field name="mrn_search" string="MRN Search" placeholder="e.g. HAD-2026"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_audit" string="Run Audit" type="object" class="btn btn-primary" icon="fa-search"/>
+                    <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_patient_wise_sales_audit_wizard" model="ir.actions.act_window">
+        <field name="name">Patient Wise Sales vs Medicine Audit</field>
+        <field name="res_model">patient.wise.sales.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         2.  AUDIT HEADER - Form
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_patient_wise_sales_audit_form" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.form</field>
+        <field name="model">patient.wise.sales.audit</field>
+        <field name="arch" type="xml">
+            <form string="Patient Wise Sales vs Medicine Audit" create="false" edit="false" delete="false">
+                <sheet style="max-width: 100%;">
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active == True"/>
+
+                    <div class="oe_title mb-3" style="width: 100%;">
+                        <h1 style="color: #111827; font-size: 24px; font-weight: 700;">Patient Wise Sales vs Medicine Audit</h1>
+                        <div class="d-flex gap-3 mt-1 small" style="color:#374151;">
+                            <span><i class="fa fa-calendar-o mr-1"/> Period: <strong><field name="start_date" readonly="1" nolabel="1"/></strong> to <strong><field name="end_date" readonly="1" nolabel="1"/></strong></span>
+                            <span><i class="fa fa-hospital-o mr-1"/><field name="clinic_name_filter" readonly="1" nolabel="1"/></span>
+                        </div>
+                        <div class="mt-2 small" style="color: #6b7280; font-style: italic;">
+                            <i class="fa fa-info-circle mr-1"/>
+                            <strong>Price Status (D2):</strong> "Standard-Compliant" = Contracted Price >= ₹2000. "BELOW STANDARD" = Contracted Price &lt; ₹2000.<br/>
+                            <i class="fa fa-info-circle mr-1"/>
+                            <strong>Earned Therapy Rev (A1_Earned):</strong> Contracted Price (D1) × Sessions Used (E2). This aligns revenue accurately with incurred costs!
+                        </div>
+
+                        <div class="d-flex gap-2 mt-2">
+                            <button name="action_open_lines" type="object" class="btn btn-sm btn-primary" icon="fa-search">
+                                Search / Filter Patients
+                            </button>
+                            <button name="action_download_excel" type="object" class="btn btn-sm btn-success" icon="fa-download">
+                                Download Excel
+                            </button>
+                            <button name="action_download_csv" type="object" class="btn btn-sm btn-secondary" icon="fa-file-text-o">
+                                Download CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3" role="alert"
+                         invisible="uncosted_product_count == 0"
+                         style="border-left: 4px solid #f59e0b;">
+                        <div class="d-flex align-items-start">
+                            <i class="fa fa-exclamation-triangle mr-2 mt-1" style="font-size: 16px;"/>
+                            <div>
+                                <strong>
+                                    <field name="uncosted_product_count" readonly="1" nolabel="1"/> product(s)
+                                    prescribed without a configured selling price
+                                </strong>
+                                <p class="mb-1 mt-1" style="color: #92400e;">
+                                    These products were included in medicine cost but valued at ₹0.
+                                    Configure their selling price for accurate audit results.
+                                </p>
+                                <div class="mt-1 px-2 py-1"
+                                     style="background: #fef3c7; border-radius: 4px; font-size: 13px;">
+                                    <field name="uncosted_product_names" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <field name="line_ids" nolabel="1" widget="one2many_list" mode="tree">
+                        <!-- Add decoration-danger so the whole row is slightly tinted if fraud, but the badge makes it clear -->
+                        <tree string="Audit Results" create="false" delete="false" decoration-danger="fraud_status == 'BELOW STANDARD'">
+                            <field name="clinic_name" string="Clinic"/>
+                            <field name="patient_name" string="Patient"/>
+                            <field name="mrn" string="MRN"/>
+
+                            <!-- PART A: Sales -->
+                            <field name="net_sales" string="Net Sales (A=A1+A2+A3)" sum="Total"/>
+                            <field name="therapy_sales" string="Therapy Sales (A1)" sum="Total" optional="hide"/>
+                            <field name="treatment_sales" string="Treatment Sales (A2)" sum="Total" optional="hide"/>
+                            <field name="consultation_sales" string="Cons. Sales (A3)" sum="Total" optional="hide"/>
+                            <field name="prorated_therapy_sales" string="Earned Therapy Rev (A1_Earned = D1*E2)" sum="Total"/>
+
+                            <!-- PART B: Costs -->
+                            <field name="total_cost" string="Total Cost (B=B1+B2)" sum="Total"/>
+                            <field name="medicine_cost" string="Medicine Cost (B1)" sum="Total"/>
+                            <field name="travel_expense" string="Travel Expense (B2)" sum="Total"/>
+                            <field name="travel_source" string="Travel Source (B3)" optional="hide"/>
+
+                            <!-- PART C: P&L -->
+                            <field name="total_pl" string="Total P&amp;L (C=A-B)" sum="Total"/>
+                            <field name="therapy_pl" string="Therapy P&amp;L (C1=A1_Earned-B)" sum="Total"/>
+                            <field name="treatment_pl" string="Treatment P&amp;L (C2=A2-B1)" sum="Total" optional="hide"/>
+
+                            <!-- PART D: Ratios -->
+                            <field name="contracted_price_session" string="Contracted Price / Session (D1)"/>
+
+                            <!-- VISUAL BADGE for Price Status -->
+                            <field name="fraud_status" string="Price Status (D2)" widget="badge"
+                                   decoration-success="fraud_status == 'Standard-Compliant'"
+                                   decoration-danger="fraud_status == 'BELOW STANDARD'"
+                                   decoration-info="fraud_status == 'N/A'"/>
+
+                            <field name="therapy_ratio" string="Therapy Ratio (D3=A1_Earned/B)" avg="Average"/>
+                            <field name="treatment_ratio" string="Treatment Ratio (D4=A2/B1)" avg="Average" optional="hide"/>
+
+                            <!-- PART E: Hidden Details -->
+                            <field name="sessions_bought" string="Sessions Bought (E1)" optional="hide"/>
+                            <field name="sessions_used" string="Sessions Used (E2)" optional="hide"/>
+                            <field name="sessions_home" string="Home Sessions (E3)" optional="hide"/>
+                            <field name="sessions_clinic" string="Clinic Sessions (E4)" optional="hide"/>
+                            <field name="sessions_self" string="Self Sessions (E5)" optional="hide"/>
+                            <field name="total_invoiced" string="Total Invoiced (E6)" sum="Total" optional="hide"/>
+                            <field name="total_credit_notes" string="Credit Notes (E7)" sum="Total" optional="hide"/>
+                            <field name="enrollment_type" string="Enrollment Type (E8)" optional="hide"/>
+                            <field name="enrollment_state" string="Enrollment State (E9)" optional="hide"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         3.  AUDIT LINES - Standalone tree + search
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_patient_wise_sales_audit_line_search" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.line.search</field>
+        <field name="model">patient.wise.sales.audit.line</field>
+        <field name="arch" type="xml">
+            <search string="Patient Audit Lines">
+                <field name="patient_name" string="Patient" filter_domain="[('patient_name','ilike',self)]"/>
+                <field name="mrn" string="MRN" filter_domain="[('mrn','ilike',self)]"/>
+                <field name="clinic_name" string="Clinic" filter_domain="[('clinic_name','ilike',self)]"/>
+                <separator/>
+                <filter name="fraud_flag" string="Below Standard Price" domain="[('fraud_status','=','BELOW STANDARD')]"/>
+                <filter name="loss" string="Net Loss" domain="[('total_pl','&lt;',0)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_clinic" string="Clinic" context="{'group_by':'clinic_name'}"/>
+                    <filter name="group_fraud" string="Price Status" context="{'group_by':'fraud_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_patient_wise_sales_audit_line_full_tree" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.line.full.tree</field>
+        <field name="model">patient.wise.sales.audit.line</field>
+        <field name="arch" type="xml">
+            <tree string="Patient Wise Audit" create="false" delete="false" decoration-danger="fraud_status == 'BELOW STANDARD'">
+                <field name="clinic_name" string="Clinic"/>
+                <field name="patient_name" string="Patient"/>
+                <field name="mrn" string="MRN"/>
+
+                <field name="net_sales" string="Net Sales (A=A1+A2+A3)" sum="Total"/>
+                <field name="therapy_sales" string="Therapy Sales (A1)" sum="Total" optional="hide"/>
+                <field name="treatment_sales" string="Treatment Sales (A2)" sum="Total" optional="hide"/>
+                <field name="consultation_sales" string="Cons. Sales (A3)" sum="Total" optional="hide"/>
+                <field name="prorated_therapy_sales" string="Earned Therapy Rev (A1_Earned = D1*E2)" sum="Total"/>
+
+                <field name="total_cost" string="Total Cost (B=B1+B2)" sum="Total"/>
+                <field name="medicine_cost" string="Medicine Cost (B1)" sum="Total"/>
+                <field name="travel_expense" string="Travel Expense (B2)" sum="Total"/>
+                <field name="travel_source" string="Travel Source (B3)" optional="hide"/>
+
+                <field name="total_pl" string="Total P&amp;L (C=A-B)" sum="Total"/>
+                <field name="therapy_pl" string="Therapy P&amp;L (C1=A1_Earned-B)" sum="Total"/>
+                <field name="treatment_pl" string="Treatment P&amp;L (C2=A2-B1)" sum="Total" optional="hide"/>
+
+                <field name="contracted_price_session" string="Contracted Price / Session (D1)"/>
+
+                <field name="fraud_status" string="Price Status (D2)" widget="badge"
+                       decoration-success="fraud_status == 'Standard-Compliant'"
+                       decoration-danger="fraud_status == 'BELOW STANDARD'"
+                       decoration-info="fraud_status == 'N/A'"/>
+
+                <field name="therapy_ratio" string="Therapy Ratio (D3=A1_Earned/B)" avg="Average"/>
+                <field name="treatment_ratio" string="Treatment Ratio (D4=A2/B1)" avg="Average" optional="hide"/>
+
+                <field name="sessions_bought" string="Sessions Bought (E1)" optional="hide"/>
+                <field name="sessions_used" string="Sessions Used (E2)" optional="hide"/>
+                <field name="sessions_home" string="Home Sessions (E3)" optional="hide"/>
+                <field name="sessions_clinic" string="Clinic Sessions (E4)" optional="hide"/>
+                <field name="sessions_self" string="Self Sessions (E5)" optional="hide"/>
+                <field name="total_invoiced" string="Total Invoiced (E6)" sum="Total" optional="hide"/>
+                <field name="total_credit_notes" string="Credit Notes (E7)" sum="Total" optional="hide"/>
+                <field name="enrollment_type" string="Enrollment Type (E8)" optional="hide"/>
+                <field name="enrollment_state" string="Enrollment State (E9)" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         4.  HISTORY
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_patient_wise_sales_audit_tree" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.tree</field>
+        <field name="model">patient.wise.sales.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Audit History" create="false" decoration-muted="active == False">
+                <field name="active" column_invisible="1"/>
+                <field name="run_on" string="Generated On"/>
+                <field name="start_date" string="From"/>
+                <field name="end_date" string="To"/>
+                <field name="clinic_name_filter" string="Clinics"/>
+                <field name="run_by_id" string="Generated By"/>
+                <field name="uncosted_product_count" string="Uncosted Products"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_patient_wise_sales_audit_search" model="ir.ui.view">
+        <field name="name">patient.wise.sales.audit.search</field>
+        <field name="model">patient.wise.sales.audit</field>
+        <field name="arch" type="xml">
+            <search string="Audit History">
+                <field name="clinic_name_filter" string="Clinic"/>
+                <field name="run_by_id" string="Generated By"/>
+                <filter name="active" string="Active" domain="[('active','=',True)]"/>
+                <filter name="archived" string="Archived" domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_run_by" string="Generated By" context="{'group_by': 'run_by_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_patient_wise_sales_audit_history" model="ir.actions.act_window">
+        <field name="name">Patient Wise Sales vs Medicine Audit - History</field>
+        <field name="res_model">patient.wise.sales.audit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_patient_wise_sales_audit_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         5.  MENU ITEMS
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_patient_wise_sales_audit_history"
+              name="Patient Wise Sales vs Medicine"
+              parent="menu_account_automation_operations"
+              action="action_patient_wise_sales_audit_history"
+              sequence="45"/>
+
+</odoo>
