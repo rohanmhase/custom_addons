@@ -410,9 +410,21 @@ class PatientWiseSalesAudit(models.Model):
 
         raw_query = """
             WITH
+            filtered_enrollments AS (
+                SELECT pe.*
+                FROM patient_enrollment pe
+                JOIN clinic_patient cp ON cp.id = pe.patient_id
+                JOIN clinic_clinic  cc ON cc.id = cp.clinic_id
+                WHERE COALESCE(pe.active, true) = True
+                  AND cc.id IN %(clinic_ids)s
+                  AND (pe.enrollment_date IS NULL OR pe.enrollment_date <= %(end_date)s)
+                  #TYPE_CLAUSE#
+                  #LIFECYCLE_CLAUSE#
+                  #MRN_CLAUSE#
+            ),
             pos_breakdown AS (
                 SELECT
-                    pe_inner.id AS enrollment_id,
+                    fe_inner.id AS enrollment_id,
                     SUM(CASE
                         WHEN COALESCE(pat.audit_type, CASE WHEN pt.type = 'service' THEN 'therapy' ELSE NULL END) = 'therapy'
                         THEN pol.price_subtotal_incl ELSE 0 END
@@ -425,15 +437,15 @@ class PatientWiseSalesAudit(models.Model):
                         WHEN pat.audit_type = 'consultation'
                         THEN pol.price_subtotal_incl ELSE 0 END
                     ) AS pos_cons_amount
-                FROM patient_enrollment pe_inner
-                JOIN pos_order po ON po.id = pe_inner.pos_order_id
+                FROM filtered_enrollments fe_inner
+                JOIN pos_order po ON po.id = fe_inner.pos_order_id
                 JOIN pos_order_line pol ON pol.order_id = po.id
                 JOIN product_product pp ON pp.id = pol.product_id
                 JOIN product_template pt ON pt.id = pp.product_tmpl_id
                 LEFT JOIN patient_audit_product_type pat
                        ON pat.product_id = pp.id
                       AND pat.active = true
-                GROUP BY pe_inner.id
+                GROUP BY fe_inner.id
             ),
             patient_master AS (
                 SELECT
@@ -443,41 +455,35 @@ class PatientWiseSalesAudit(models.Model):
                     cp.name             AS patient_name,
                     cc.id               AS clinic_id,
                     cc.name             AS clinic_name,
-                    (ARRAY_AGG(pe.enrollment_type ORDER BY pe.enrollment_date DESC))[1] AS enrollment_type,
-                    (ARRAY_AGG(pe.state ORDER BY pe.enrollment_date DESC))[1] AS enrollment_state,
-                    SUM(COALESCE(pe.total_sessions, 0)) AS total_sessions_bought,
-                    SUM(COALESCE(pe.total_amount, 0)) AS enrol_total_amount,
+                    (ARRAY_AGG(fe.enrollment_type ORDER BY fe.enrollment_date DESC))[1] AS enrollment_type,
+                    (ARRAY_AGG(fe.state ORDER BY fe.enrollment_date DESC))[1] AS enrollment_state,
+                    SUM(COALESCE(fe.total_sessions, 0)) AS total_sessions_bought,
+                    SUM(COALESCE(fe.total_amount, 0)) AS enrol_total_amount,
                     SUM(
                         COALESCE(
-                            NULLIF(pe.therapy_amount, 0),
+                            NULLIF(fe.therapy_amount, 0),
                             NULLIF(pb.pos_therapy_amount, 0),
-                            CASE WHEN COALESCE(pe.total_sessions, 0) > 0 THEN pe.total_amount ELSE 0 END
+                            CASE WHEN COALESCE(fe.total_sessions, 0) > 0 THEN fe.total_amount ELSE 0 END
                         )
                     ) AS enrol_therapy_amount,
                     SUM(
                         COALESCE(
-                            NULLIF(pe.therapy_medicine, 0),
+                            NULLIF(fe.therapy_medicine, 0),
                             NULLIF(pb.pos_treatment_amount, 0),
-                            CASE WHEN COALESCE(pe.total_sessions, 0) = 0 THEN pe.total_amount ELSE 0 END
+                            CASE WHEN COALESCE(fe.total_sessions, 0) = 0 THEN fe.total_amount ELSE 0 END
                         )
                     ) AS enrol_treatment_amount,
                     SUM(
                         COALESCE(
-                            NULLIF(pe.first_cons_charges, 0),
+                            NULLIF(fe.first_cons_charges, 0),
                             NULLIF(pb.pos_cons_amount, 0),
                             0
                         )
                     ) AS enrol_cons_amount
-                FROM patient_enrollment pe
-                JOIN clinic_patient cp ON cp.id = pe.patient_id
+                FROM filtered_enrollments fe
+                JOIN clinic_patient cp ON cp.id = fe.patient_id
                 JOIN clinic_clinic  cc ON cc.id = cp.clinic_id
-                LEFT JOIN pos_breakdown pb ON pb.enrollment_id = pe.id
-                WHERE COALESCE(pe.active, true) = True
-                  AND cc.id IN %(clinic_ids)s
-                  AND (pe.enrollment_date IS NULL OR pe.enrollment_date <= %(end_date)s)
-                  #TYPE_CLAUSE#
-                  #LIFECYCLE_CLAUSE#
-                  #MRN_CLAUSE#
+                LEFT JOIN pos_breakdown pb ON pb.enrollment_id = fe.id
                 GROUP BY cp.mrn, cp.id, cp.partner_id, cp.name, cc.id, cc.name
             ),
             session_cte AS (
@@ -494,14 +500,21 @@ class PatientWiseSalesAudit(models.Model):
             ),
             revenue_cte AS (
                 SELECT
-                    am.partner_id,
+                    cp.id AS clinic_patient_id,
                     SUM(CASE WHEN am.move_type = 'out_invoice' THEN am.amount_total ELSE 0 END) AS total_invoiced,
                     SUM(CASE WHEN am.move_type = 'out_refund' THEN ABS(am.amount_total) ELSE 0 END) AS total_credit_notes
-                FROM account_move am
+                FROM filtered_enrollments fe
+                JOIN clinic_patient cp ON cp.id = fe.patient_id
+                LEFT JOIN pos_order po ON po.id = fe.pos_order_id
+                JOIN account_move am ON (
+                    am.id = po.account_move 
+                    OR am.pos_order_id = po.id
+                    OR (fe.pos_order_id IS NULL AND am.partner_id = cp.partner_id AND am.invoice_date >= fe.enrollment_date AND am.invoice_date <= %(end_date)s)
+                )
                 WHERE am.state = 'posted'
                   AND am.move_type IN ('out_invoice', 'out_refund')
                   AND am.invoice_date <= %(end_date)s
-                GROUP BY am.partner_id
+                GROUP BY cp.id
             ),
             medicine_cte AS (
                 SELECT
@@ -544,7 +557,7 @@ class PatientWiseSalesAudit(models.Model):
                 COALESCE(t.voucher_count, 0) AS voucher_count
             FROM patient_master pm
             LEFT JOIN session_cte s ON s.clinic_patient_id = pm.clinic_patient_id
-            LEFT JOIN revenue_cte r ON r.partner_id = pm.partner_id
+            LEFT JOIN revenue_cte r ON r.clinic_patient_id = pm.clinic_patient_id
             LEFT JOIN medicine_cte m ON (m.patient_id = pm.clinic_patient_id OR m.patient_id = pm.partner_id)
             LEFT JOIN travel_cte t ON t.clinic_patient_id = pm.clinic_patient_id
             ORDER BY pm.clinic_name, pm.patient_name
