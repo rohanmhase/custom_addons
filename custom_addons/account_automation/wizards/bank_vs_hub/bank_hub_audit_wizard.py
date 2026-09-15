@@ -64,8 +64,8 @@ class BankSalesAuditWizard(models.TransientModel):
         tid_mappings = self.env['tid.clinic.method.mapping'].search([
             ('bank_config_id', '=', cfg.id)
         ])
-        clinic_names_by_tid = {}     # tid -> [clinic names]  (for display)
-        clinic_to_tid = {}           # clinic_id -> tid_number (1 clinic = 1 TID)
+        clinic_names_by_tid = {}  # tid -> [clinic names]  (for display)
+        clinic_to_tid = {}  # clinic_id -> tid_number (1 clinic = 1 TID)
         for m in tid_mappings:
             clinic_names_by_tid.setdefault(m.tid_number, []).append(m.clinic_id.name)
             clinic_to_tid[m.clinic_id.id] = m.tid_number
@@ -151,13 +151,13 @@ class BankSalesAuditWizard(models.TransientModel):
         """, (self.start_date, self.end_date))
 
         # ── 5. Fold into (tid, label) / (clinic_id, label) for unmapped ─────
-        hub_totals = {}          # (tid, label) -> amount
-        unmapped_hub = {}        # (clinic_id, label) -> amount
+        hub_totals = {}  # (tid, label) -> amount
+        unmapped_hub = {}  # (clinic_id, label) -> amount
 
         for clinic_id, method_name, amount in self.env.cr.fetchall():
             label = method_name_to_label.get(method_name)
             if not label:
-                continue   # this payment method isn't part of this bank's tracked set
+                continue  # this payment method isn't part of this bank's tracked set
 
             tid = clinic_to_tid.get(clinic_id)
             if tid:
@@ -190,34 +190,57 @@ class BankSalesAuditWizard(models.TransientModel):
             'file_name': self.file_name,
         })
 
-        # ── 8. Result lines — mapped TIDs ────────────────────────────────────
-        result_lines = []
+        # ── 8. & 9. Build merged result lines (Group by Clinic + Mode) ─────────
+        merged_lines = {}
+
+        # Process mapped TIDs
         for tid, label in all_keys:
             h_amt = hub_totals.get((tid, label), 0.0)
             b_amt = bank_totals.get((tid, label), 0.0)
-            result_lines.append({
-                'audit_id': audit.id,
-                'tid_number': tid,
-                'clinics_display': clinic_display_map.get(tid, 'TID Not Mapped'),
-                'system_mode': label,
-                'hub_amount': h_amt,
-                'bank_amount': b_amt,
-                'difference': h_amt - b_amt,
-            })
+            c_name = clinic_display_map.get(tid, 'TID Not Mapped')
 
-        # ── 9. Result lines — unmapped clinics ───────────────────────────────
+            group_key = (c_name, label)
+            if group_key not in merged_lines:
+                merged_lines[group_key] = {
+                    'audit_id': audit.id,
+                    'tid_number': str(tid),
+                    'clinics_display': c_name,
+                    'system_mode': label,
+                    'hub_amount': h_amt,
+                    'bank_amount': b_amt,
+                    'difference': h_amt - b_amt,
+                }
+            else:
+                existing = merged_lines[group_key]
+                if tid and str(tid) not in existing['tid_number']:
+                    existing['tid_number'] += f" | {tid}"
+                existing['hub_amount'] += h_amt
+                existing['bank_amount'] += b_amt
+                existing['difference'] += (h_amt - b_amt)
+
+        # Process unmapped clinics
         for (clinic_id, label), h_amt in unmapped_hub.items():
-            result_lines.append({
-                'audit_id': audit.id,
-                'tid_number': '— NO TID MAPPED —',
-                'clinics_display': unmapped_clinic_name.get(clinic_id, ''),
-                'system_mode': label,
-                'hub_amount': h_amt,
-                'bank_amount': 0.0,
-                'difference': h_amt,
-            })
+            c_name = unmapped_clinic_name.get(clinic_id, '')
+            group_key = (c_name, label)
 
-        self.env['bank.sales.audit.line'].create(result_lines)
+            if group_key not in merged_lines:
+                merged_lines[group_key] = {
+                    'audit_id': audit.id,
+                    'tid_number': '— NO TID MAPPED —',
+                    'clinics_display': c_name,
+                    'system_mode': label,
+                    'hub_amount': h_amt,
+                    'bank_amount': 0.0,
+                    'difference': h_amt,
+                }
+            else:
+                existing = merged_lines[group_key]
+                if '— NO TID MAPPED —' not in existing['tid_number']:
+                    existing['tid_number'] += " | — NO TID MAPPED —"
+                existing['hub_amount'] += h_amt
+                existing['difference'] += h_amt
+
+        self.env['bank.sales.audit.line'].create(list(merged_lines.values()))
 
         return {
             'type': 'ir.actions.act_window',

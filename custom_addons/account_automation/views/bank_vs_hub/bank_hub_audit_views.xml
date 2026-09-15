@@ -136,16 +136,22 @@
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         Audit History — Form (drill into result lines)
-         NOTE: no "Reset Entire Audit" header button — resetting is done
-         per-line via the Reset button in the embedded tree below.
-    ═══════════════════════════════════════════════════════════════════════ -->
+     Audit History — Form
+═══════════════════════════════════════════════════════════════════════ -->
     <record id="view_bank_sales_audit_history_form" model="ir.ui.view">
         <field name="name">bank.sales.audit.history.form</field>
         <field name="model">bank.sales.audit</field>
         <field name="arch" type="xml">
             <form string="Audit Run Details" create="false">
-                <sheet>
+                <header>
+                    <button name="action_toggle_chatter" type="object" string="Show Activity Log" class="btn-secondary"
+                            invisible="show_chatter"/>
+                    <button name="action_toggle_chatter" type="object" string="Hide Activity Log" class="btn-secondary"
+                            invisible="not show_chatter"/>
+                    <field name="show_chatter" invisible="1"/>
+                </header>
+
+                <sheet style="max-width: 100% !important;">
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -187,7 +193,6 @@
                                     <field name="resolved_for_date" string="Gap From Date"/>
                                     <field name="resolved_on_date" string="Cleared On Date"/>
 
-
                                     <button name="action_open_resolve_wizard"
                                             type="object"
                                             string="Resolve"
@@ -204,6 +209,12 @@
                         </page>
                     </notebook>
                 </sheet>
+
+                <div class="oe_chatter" invisible="not show_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
