@@ -7,7 +7,7 @@ class BankSalesAudit(models.Model):
     _name = 'bank.sales.audit'
     _description = 'Bank vs HUB Audit'
     _order = 'create_date desc'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'chatter.toggle.mixin']
 
     name = fields.Char(required=True, tracking=True)
     bank_config_id = fields.Many2one(
@@ -58,7 +58,18 @@ class BankSalesAudit(models.Model):
 class BankSalesAuditLine(models.Model):
     _name = 'bank.sales.audit.line'
     _description = 'Bank vs HUB Audit Line'
-    _order = 'difference desc, tid_number asc'
+    _order = 'abs_difference desc, tid_number asc'
+
+    abs_difference = fields.Float(
+        string='Abs Variance',
+        compute='_compute_abs_difference',
+        store=True
+    )
+
+    @api.depends('difference')
+    def _compute_abs_difference(self):
+        for line in self:
+            line.abs_difference = abs(line.difference)
 
     audit_date = fields.Date(related='audit_id.start_date', string="Audit Date", store=True, readonly=True)
     audit_id = fields.Many2one(
