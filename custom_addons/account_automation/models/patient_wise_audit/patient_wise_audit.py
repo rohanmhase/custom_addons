@@ -460,26 +460,28 @@ class PatientWiseSalesAudit(models.Model):
                     SUM(COALESCE(fe.total_sessions, 0)) AS total_sessions_bought,
                     SUM(COALESCE(fe.total_amount, 0)) AS enrol_total_amount,
                     SUM(
-                        COALESCE(
-                            NULLIF(fe.therapy_amount, 0),
-                            NULLIF(pb.pos_therapy_amount, 0),
-                            CASE WHEN COALESCE(fe.total_sessions, 0) > 0 THEN fe.total_amount ELSE 0 END
-                        )
+                        CASE
+                            WHEN NULLIF(fe.first_cons_charges, 0) IS NOT NULL THEN fe.first_cons_charges
+                            WHEN pb.enrollment_id IS NOT NULL THEN pb.pos_cons_amount
+                            ELSE 0
+                        END
+                    ) AS enrol_cons_amount,
+                    SUM(
+                        CASE
+                            WHEN NULLIF(fe.therapy_amount, 0) IS NOT NULL THEN fe.therapy_amount
+                            WHEN pb.enrollment_id IS NOT NULL THEN pb.pos_therapy_amount
+                            WHEN COALESCE(fe.total_sessions, 0) > 0 THEN GREATEST(0, COALESCE(fe.total_amount, 0) - COALESCE(fe.first_cons_charges, 0))
+                            ELSE 0
+                        END
                     ) AS enrol_therapy_amount,
                     SUM(
-                        COALESCE(
-                            NULLIF(fe.therapy_medicine, 0),
-                            NULLIF(pb.pos_treatment_amount, 0),
-                            CASE WHEN COALESCE(fe.total_sessions, 0) = 0 THEN fe.total_amount ELSE 0 END
-                        )
-                    ) AS enrol_treatment_amount,
-                    SUM(
-                        COALESCE(
-                            NULLIF(fe.first_cons_charges, 0),
-                            NULLIF(pb.pos_cons_amount, 0),
-                            0
-                        )
-                    ) AS enrol_cons_amount
+                        CASE
+                            WHEN NULLIF(fe.therapy_medicine, 0) IS NOT NULL THEN fe.therapy_medicine
+                            WHEN pb.enrollment_id IS NOT NULL THEN pb.pos_treatment_amount
+                            WHEN COALESCE(fe.total_sessions, 0) = 0 THEN GREATEST(0, COALESCE(fe.total_amount, 0) - COALESCE(fe.first_cons_charges, 0))
+                            ELSE 0
+                        END
+                    ) AS enrol_treatment_amount
                 FROM filtered_enrollments fe
                 JOIN clinic_patient cp ON cp.id = fe.patient_id
                 JOIN clinic_clinic  cc ON cc.id = cp.clinic_id
