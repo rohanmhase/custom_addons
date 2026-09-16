@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_whatsapp_message_queue_user,whatsapp.message.queue.user,model_whatsapp_message_queue,base.group_user,1,0,0,0
+access_whatsapp_message_queue_manager,whatsapp.message.queue.manager,model_whatsapp_message_queue,base.group_system,1,1,1,1
+access_whatsapp_template_user,whatsapp.template.user,model_whatsapp_template,base.group_user,1,0,0,0
+access_whatsapp_template_manager,whatsapp.template.manager,model_whatsapp_template,base.group_system,1,1,1,1

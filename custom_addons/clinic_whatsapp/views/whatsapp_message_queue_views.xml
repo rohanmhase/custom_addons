@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_whatsapp_message_queue_tree" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.tree</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <tree string="WhatsApp Messages"
+                  decoration-success="state == 'sent'"
+                  decoration-danger="state == 'error'"
+                  decoration-warning="state == 'pending'"
+                  create="false">
+                <field name="create_date" string="Created On"/>
+                <field name="template_id" string="Category / Template"/>
+                <field name="patient_name"/>
+                <field name="phone"/>
+                <field name="res_model" string="Source Document" optional="show"/>
+                <field name="sent_date"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sent'"
+                       decoration-danger="state == 'error'"
+                       decoration-warning="state == 'pending'"/>
+                <button name="action_retry" type="object" string="Retry"
+                        class="btn-link" icon="fa-refresh"
+                        invisible="state != 'error'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_whatsapp_message_queue_form" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.form</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Message" create="false">
+                <header>
+                    <button name="action_retry" type="object" string="Retry"
+                            class="oe_highlight" invisible="state != 'error'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,sent,error"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Recipient">
+                            <field name="patient_name" readonly="1"/>
+                            <field name="phone" readonly="1"/>
+                            <field name="sent_date" readonly="1"/>
+                        </group>
+                        <group string="Reference">
+                            <field name="template_id" readonly="1"/>
+                            <field name="res_model" readonly="1"/>
+                            <field name="res_id" readonly="1"/>
+                            <field name="move_id" readonly="1" invisible="not move_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Message Body">
+                            <field name="message_body" readonly="1"/>
+                        </page>
+                        <page string="Error Log" invisible="not error_message">
+                            <field name="error_message" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Single Search View (Deduplicated) -->
+    <record id="view_whatsapp_message_queue_search" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.search</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <search string="Search Messages">
+                <field name="patient_name"/>
+                <field name="phone"/>
+                <field name="template_id"/>
+                <field name="invoice_number"/>
+                <separator/>
+                <filter string="Bills &amp; Invoices" name="filter_invoices"
+                        domain="[('res_model', '=', 'account.move')]"/>
+                <filter string="Clinic Appointments" name="filter_appointments"
+                        domain="[('res_model', '=', 'clinic.schedule.appointment')]"/>
+                <separator/>
+                <filter string="Pending" name="filter_pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Sent" name="filter_sent" domain="[('state', '=', 'sent')]"/>
+                <filter string="Failed" name="filter_error" domain="[('state', '=', 'error')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Template / Category" name="group_by_template" context="{'group_by': 'template_id'}"/>
+                    <filter string="Source Document" name="group_by_model" context="{'group_by': 'res_model'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Sent Date" name="group_by_sent_date" context="{'group_by': 'sent_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_whatsapp_message_queue" model="ir.actions.act_window">
+        <field name="name">WhatsApp Queue</field>
+        <field name="res_model">whatsapp.message.queue</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_whatsapp_message_queue_search"/>
+        <field name="context">{'search_default_filter_pending': 1}</field>
+    </record>
+
+    <!-- Root Menu -->
+    <menuitem id="menu_whatsapp_root" name="WhatsApp" sequence="65"/>
+    <menuitem id="menu_whatsapp_queue" name="Message Queue" parent="menu_whatsapp_root"
+              action="action_whatsapp_message_queue" sequence="10"/>
+</odoo>

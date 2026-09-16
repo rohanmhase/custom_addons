@@ -22,6 +22,52 @@ class ClinicScheduleState(models.Model):
         ('unique_user_state', 'unique(user_id)', 'A user can only have one memory state record!')
     ]
 
+class ClinicScheduleLock(models.Model):
+    _name = 'clinic.schedule.lock'
+    _description = 'Clinic Schedule Date Lock'
+
+    clinic_id = fields.Many2one('clinic.clinic', string='Clinic Location', required=True, ondelete='cascade', index=True)
+    target_date = fields.Date(string='Target Date', required=True, index=True)
+    is_locked = fields.Boolean(string='Is Locked', default=True)
+    locked_by_id = fields.Many2one('res.users', string='Locked By', default=lambda self: self.env.user)
+    locked_datetime = fields.Datetime(string='Locked At', default=fields.Datetime.now)
+
+    _sql_constraints = [
+        ('uniq_clinic_date_lock', 'unique(clinic_id, target_date)', 'A lock record already exists for this clinic and date!')
+    ]
+
+    @api.model
+    def action_toggle_matrix_lock(self, clinic_id, target_date):
+        """Locks or unlocks the matrix for a specific clinic and date. Restricted strictly to Managers."""
+        if not self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager'):
+            raise ValidationError(_("Access Denied: Only Managers can lock or unlock the schedule matrix."))
+
+        if not clinic_id or not target_date:
+            return {'status': 'warning', 'message': _('Missing Clinic or Target Date.')}
+
+        clinic_id = int(clinic_id)
+        Lock = self.env['clinic.schedule.lock']
+        lock_rec = Lock.search([('clinic_id', '=', clinic_id), ('target_date', '=', target_date)], limit=1)
+
+        if lock_rec and lock_rec.is_locked:
+            lock_rec.write({'is_locked': False})
+            return {'status': 'success', 'is_locked': False,
+                    'message': _('Schedule for %s has been unlocked.') % target_date}
+        elif lock_rec:
+            lock_rec.write(
+                {'is_locked': True, 'locked_by_id': self.env.user.id, 'locked_datetime': fields.Datetime.now()})
+            return {'status': 'success', 'is_locked': True,
+                    'message': _('Schedule for %s has been locked.') % target_date}
+        else:
+            Lock.create({
+                'clinic_id': clinic_id,
+                'target_date': target_date,
+                'is_locked': True,
+                'locked_by_id': self.env.user.id,
+                'locked_datetime': fields.Datetime.now()
+            })
+            return {'status': 'success', 'is_locked': True,
+                    'message': _('Schedule for %s has been locked.') % target_date}
 
 class ClinicManualCompleteWizard(models.TransientModel):
     _name = 'clinic.manual.complete.wizard'
@@ -209,13 +255,97 @@ class ClinicScheduleAppointment(models.Model):
         ('failed', 'Failed')
     ], string='Notification Status', default='pending', tracking=True)
     patient_id = fields.Many2one('clinic.patient', string='Patient Name', tracking=True)
-    start_datetime = fields.Datetime(string='Start Time', required=True, default=lambda self: self._ist_date(),
+    start_datetime = fields.Datetime(string='Start Time', required=True, default=fields.Datetime.now,
                                      tracking=True, index=True)
     end_datetime = fields.Datetime(string='End Time', compute='_compute_end_datetime', store=True, readonly=False,
                                    tracking=True)
     allowed_patient_ids = fields.Many2many('clinic.patient', compute='_compute_allowed_patient_ids')
 
     is_live_in_progress = fields.Boolean(compute='_compute_live_status', store=False)
+
+    CRITICAL_SCHEDULE_FIELDS = {
+        'start_datetime', 'end_datetime', 'therapist_id',
+        'clinic_id', 'slot_type', 'visit_type'
+    }
+
+    def write(self, vals):
+        sys_bypass = self.env.su or self.env.context.get('bypass_matrix_lock')
+        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        business_fields = self.CRITICAL_SCHEDULE_FIELDS | {'patient_id', 'attendance_state'}
+
+        # 1. HARD LOCK ENFORCEMENT
+        if not sys_bypass and any(f in vals for f in business_fields):
+            for rec in self:
+                # A. Date Lock - Applies to EVERYONE (including Managers)
+                if rec._is_date_locked(rec.clinic_id.id, rec.start_datetime):
+                    raise ValidationError(
+                        _("Schedule Locked: The schedule for %s on this date is locked. Please unlock the matrix first.") % rec.clinic_id.name)
+
+                # Check if moving appointment to a new date/clinic that is locked
+                target_clinic = vals.get('clinic_id', rec.clinic_id.id)
+                target_dt = vals.get('start_datetime', rec.start_datetime)
+                if (vals.get('clinic_id') or vals.get('start_datetime')) and rec._is_date_locked(target_clinic,
+                                                                                                 target_dt):
+                    raise ValidationError(_("Schedule Locked: Target clinic date is locked. Please unlock it first."))
+
+                # B. 'Completed' Status Lock - Applies only to non-managers
+                if not is_manager and rec.attendance_state == 'completed':
+                    raise ValidationError(
+                        _("Record Locked: This session is 'Completed'. Only Managers can modify completed sessions."))
+
+        # 2. AUDIT LOG GENERATION (Captured before values change)
+        audit_map = {}
+        for rec in self:
+            entries = []
+            if 'therapist_id' in vals:
+                old_t = rec.therapist_id.name if rec.therapist_id else 'Unassigned'
+                new_t_obj = self.env['clinic.therapist'].browse(vals['therapist_id']) if vals.get(
+                    'therapist_id') else False
+                new_t = new_t_obj.name if new_t_obj else 'Unassigned'
+                if old_t != new_t:
+                    entries.append(_("Therapist changed: <b>%s</b> &rarr; <b>%s</b>") % (old_t, new_t))
+            if 'attendance_state' in vals:
+                old_st = dict(self._fields['attendance_state'].selection).get(rec.attendance_state,
+                                                                              rec.attendance_state)
+                new_st = dict(self._fields['attendance_state'].selection).get(vals['attendance_state'],
+                                                                              vals['attendance_state'])
+                if old_st != new_st:
+                    entries.append(_("Session Status changed: <b>%s</b> &rarr; <b>%s</b>") % (old_st, new_st))
+            if 'start_datetime' in vals:
+                old_time = fields.Datetime.context_timestamp(self, rec.start_datetime).strftime(
+                    '%d %b %Y, %I:%M %p') if rec.start_datetime else 'None'
+                new_dt_obj = fields.Datetime.from_string(vals['start_datetime'])
+                new_time = fields.Datetime.context_timestamp(self, new_dt_obj).strftime(
+                    '%d %b %Y, %I:%M %p') if new_dt_obj else 'None'
+                entries.append(_("Schedule Time changed: <b>%s</b> &rarr; <b>%s</b>") % (old_time, new_time))
+            if 'clinic_id' in vals:
+                old_c = rec.clinic_id.name if rec.clinic_id else 'None'
+                new_c_obj = self.env['clinic.clinic'].browse(vals['clinic_id']) if vals.get('clinic_id') else False
+                new_c = new_c_obj.name if new_c_obj else 'None'
+                entries.append(_("Clinic Branch changed: <b>%s</b> &rarr; <b>%s</b>") % (old_c, new_c))
+            if entries:
+                audit_map[rec.id] = entries
+
+        # 3. SAVE CHANGES
+        res = super().write(vals)
+
+        # 4. POST AUDIT ENTRIES TO CHATTER
+        for rec_id, entries in audit_map.items():
+            self.browse(rec_id).message_post(body=_("<b>Audit Log (%s):</b><br/>%s") % (
+                self.env.user.name, "<br/>".join(entries)
+            ))
+
+        # 5. NOTIFICATION RESET TRACKING
+        schedule_modified = any(field in vals for field in self.CRITICAL_SCHEDULE_FIELDS)
+        if schedule_modified and not self.env.context.get('bypass_notification_reset'):
+            for rec in self:
+                if rec.slot_type == 'patient' and rec.notification_status in ['queued', 'wa_delivered',
+                                                                              'sms_delivered']:
+                    rec.with_context(bypass_notification_reset=True, bypass_matrix_lock=True).write(
+                        {'notification_status': 'pending'})
+                    rec.message_post(body=_("<b>Schedule Modified:</b> WhatsApp notification status reset to Pending."))
+
+        return res
 
     # Locate class ClinicScheduleAppointment(models.Model):
     actual_therapist_id = fields.Many2one('clinic.therapist', string="Actually Performed By", tracking=True)
@@ -433,11 +563,22 @@ class ClinicScheduleAppointment(models.Model):
         #     _logger.info(
         #         f"System Matrix generated {len(vouchers_to_create)} automated payout vouchers for {target_date}.")
 
-    def _ist_date(self):
-        utc = (datetime.now())
-        td = timedelta(hours=5, minutes=30)
-        ist_date = utc + td
-        return ist_date.date()
+
+    def _is_date_locked(self, clinic_id, dt):
+        """Checks whether a specific clinic and date is hard-locked in clinic.schedule.lock."""
+        if not clinic_id or not dt:
+            return False
+        if isinstance(dt, str):
+            dt = fields.Datetime.from_string(dt)
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date = pytz.utc.localize(dt).astimezone(local_tz).date() if dt.tzinfo is None else dt.astimezone(
+            local_tz).date()
+
+        return bool(self.env['clinic.schedule.lock'].sudo().search_count([
+            ('clinic_id', '=', int(clinic_id)),
+            ('target_date', '=', target_date),
+            ('is_locked', '=', True),
+        ]))
 
     @api.model
     def action_reject_floater(self, placeholder_id):
@@ -556,6 +697,8 @@ class ClinicScheduleAppointment(models.Model):
         """Mass shifts all sessions from one therapist (or UNASSIGNED) to a target therapist."""
         start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
         end_day = datetime.combine(fields.Date.from_string(target_date), time.max)
+        start_day_utc = start_day.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_day.astimezone(pytz.utc).replace(tzinfo=None)
 
         domain = [
             ('clinic_id', '=', int(clinic_id)),
@@ -743,154 +886,101 @@ class ClinicScheduleAppointment(models.Model):
         return True
 
     def unlink(self):
-        """Block non-managers from deleting completed sessions."""
-        # Stand down if running from system/context token OR if user is a Manager
-        is_authorized = (
-            self.env.su
-            or self.env.context.get('bypass_matrix_lock')
-            or self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
-        )
-        if not is_authorized:
+        sys_bypass = self.env.su or self.env.context.get('bypass_matrix_lock')
+        is_manager = self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
+
+        if not sys_bypass:
             for rec in self:
-                if rec.attendance_state == 'completed':
+                # Date lock applies to EVERYONE
+                if rec._is_date_locked(rec.clinic_id.id, rec.start_datetime):
+                    raise ValidationError(
+                        _("Schedule Locked: Cannot delete sessions from a locked date. Please unlock the matrix first."))
+
+                # Completed status lock applies to non-managers
+                if not is_manager and rec.attendance_state == 'completed':
                     raise ValidationError(
                         _("Record Locked: This session is 'Completed'. Only Managers can delete completed sessions."))
+
         return super().unlink()
 
-    def write(self, vals):
-        # Stand down if running from system/context token OR if user is a Manager
-        is_authorized = (
-            self.env.su
-            or self.env.context.get('bypass_matrix_lock')
-            or self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager')
-        )
-        business_fields = {
-            'therapist_id', 'start_datetime', 'clinic_id', 'patient_id',
-            'slot_type', 'visit_type', 'attendance_state'
-        }
-        if not is_authorized and any(f in vals for f in business_fields):
-            for rec in self:
-                if rec.attendance_state == 'completed':
-                    raise ValidationError(
-                        _("Record Locked: This session is 'Completed'. Only Managers can modify completed sessions."))
-
-        for rec in self:
-            audit_entries = []
-            if 'therapist_id' in vals:
-                old_t = rec.therapist_id.name if rec.therapist_id else 'Unassigned'
-                new_t_obj = self.env['clinic.therapist'].browse(vals['therapist_id']) if vals.get('therapist_id') else False
-                new_t = new_t_obj.name if new_t_obj else 'Unassigned'
-                if old_t != new_t:
-                    audit_entries.append(_("Therapist changed: <b>%s</b> &rarr; <b>%s</b>") % (old_t, new_t))
-            if 'attendance_state' in vals:
-                old_st = dict(self._fields['attendance_state'].selection).get(rec.attendance_state, rec.attendance_state)
-                new_st = dict(self._fields['attendance_state'].selection).get(vals['attendance_state'], vals['attendance_state'])
-                if old_st != new_st:
-                    audit_entries.append(_("Session Status changed: <b>%s</b> &rarr; <b>%s</b>") % (old_st, new_st))
-            if 'start_datetime' in vals:
-                old_time = fields.Datetime.context_timestamp(self, rec.start_datetime).strftime('%d %b %Y, %I:%M %p') if rec.start_datetime else 'None'
-                new_dt_obj = fields.Datetime.from_string(vals['start_datetime'])
-                new_time = fields.Datetime.context_timestamp(self, new_dt_obj).strftime('%d %b %Y, %I:%M %p') if new_dt_obj else 'None'
-                audit_entries.append(_("Schedule Time changed: <b>%s</b> &rarr; <b>%s</b>") % (old_time, new_time))
-            if 'clinic_id' in vals:
-                old_c = rec.clinic_id.name if rec.clinic_id else 'None'
-                new_c_obj = self.env['clinic.clinic'].browse(vals['clinic_id']) if vals.get('clinic_id') else False
-                new_c = new_c_obj.name if new_c_obj else 'None'
-                audit_entries.append(_("Clinic Branch changed: <b>%s</b> &rarr; <b>%s</b>") % (old_c, new_c))
-            if audit_entries:
-                rec.message_post(body=_("<b>Audit Log (%s):</b><br/>%s") % (
-                    self.env.user.name, "<br/>".join(audit_entries)
-                ))
-        return super().write(vals)
-
     def action_send_test_notification(self):
-        """ Manual button trigger for sandbox testing """
-        for rec in self:
-            rec._send_slot_notification(trigger_type='booking_confirmation')
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Test Fired'),
-                'message': _('Notification payload generated and logged to chatter.'),
-                'sticky': False,
-                'type': 'success',
+        """ Manual trigger: Blocks duplicate sending and dynamically reports success/failure """
+        self.ensure_one()
+        if self.notification_status in ['queued', 'wa_delivered', 'sms_delivered']:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Already Dispatched'),
+                    'message': _('Notification has already been sent. Modify the appointment details to re-dispatch.'),
+                    'sticky': False,
+                    'type': 'warning',
+                }
             }
-        }
 
-    def _send_slot_notification(self, trigger_type='booking_confirmation', session=None):
-        """ Centralized Decoupled Notification Wrapper with Mock Fallback Logic """
+        # _send_slot_notification returns True if queued successfully, False if failed
+        was_queued = self._send_slot_notification(trigger_type='booking_confirmation', force_queue=True)
+
+        if was_queued:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Notification Queued'),
+                    'message': _('WhatsApp notification has been staged in the outbox queue.'),
+                    'sticky': False,
+                    'type': 'success',
+                }
+            }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Dispatch Failed'),
+                    'message': _(
+                        'Could not queue notification. Ensure patient phone number and active template exist.'),
+                    'sticky': False,
+                    'type': 'danger',
+                }
+            }
+
+    def _send_slot_notification(self, trigger_type='booking_confirmation', session=None, force_queue=False):
         self.ensure_one()
         if not self.patient_id:
             return False
 
-        params = self.env['ir.config_parameter'].sudo()
-        engati_customer_id = params.get_param('engati.customer_id')
-        engati_bot_key = params.get_param('engati.bot_key')
-        engati_flow_key = params.get_param('engati.flow_key')
-        engati_api_key = params.get_param('engati.api_key')
-
-        if not all([engati_customer_id, engati_bot_key, engati_flow_key, engati_api_key]):
-            self.message_post(body="Notification Failed: Engati System Parameters missing.")
+        # Deduplication Guard: Block if already sent. If called by the cron, allow 'queued' to proceed.
+        blocked_states = ['wa_delivered', 'sms_delivered'] if force_queue else ['queued', 'wa_delivered', 'sms_delivered']
+        if self.notification_status in blocked_states:
+            _logger.info("Skipping notification for appointment %s: already in state %s", self.id, self.notification_status)
             return False
 
-        raw_phone = getattr(self.patient_id, 'mobile', '') or getattr(self.patient_id, 'phone', '')
-        patient_phone = str(raw_phone).replace(" ", "").replace("-", "").strip()
-        if len(patient_phone) == 10 and patient_phone.isdigit():
-            patient_phone = f"+91{patient_phone}"
-        elif patient_phone and not patient_phone.startswith('+'):
-            patient_phone = f"+{patient_phone}"
+        # Deduplication Guard: Never queue if already active or sent without changes
+        if self.notification_status in ['queued', 'wa_delivered', 'sms_delivered']:
+            _logger.info("Skipping notification for appointment %s: already in state %s", self.id, self.notification_status)
+            return False
 
-        patient_name = self.patient_id.name
-        clinic_name = self.clinic_id.name if self.clinic_id else "ResearchAyu Clinic"
+        template = self.env['whatsapp.template'].search([
+            ('model_id.model', '=', self._name),
+            ('active', '=', True)
+        ], limit=1)
 
-        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
-        local_dt = pytz.utc.localize(self.start_datetime).astimezone(local_tz) if self.start_datetime else datetime.now(
-            local_tz)
-        slot_date = local_dt.strftime('%d %B %Y')
-        slot_time = local_dt.strftime('%I:%M %p')
-
-        therapist_name = self.therapist_id.name if self.therapist_id else "Pending Assignment"
-        visit_type_label = dict(self._fields['visit_type'].selection).get(self.visit_type, 'Session')
-
-        url = f"https://api.engati.ai/bot-api/v3.0/customer/{engati_customer_id}/bot/{engati_bot_key}/flow/{engati_flow_key}"
-
-        if not session:
-            session = requests.Session()
-
-        try:
-            engati_payload = {
-                "user.channel": "whatsapp",
-                "user.phone_no": patient_phone,
-                "attribute_appointment_id": str(self.id),
-                "attribute_patient_name": patient_name,
-                "attribute_clinic_name": clinic_name,
-                "attribute_slot_date": slot_date,
-                "attribute_slot_time": slot_time,
-                "attribute_therapist_name": therapist_name,
-                "attribute_visit_type": visit_type_label
-            }
-            headers = {
-                "Authorization": f"Basic {engati_api_key}",
-                "Content-Type": "application/json"
-            }
-            resp_engati = session.post(
-                url,
-                json=engati_payload,
-                headers=headers,
-                timeout=5
-            )
-            resp_engati.raise_for_status()
-            _logger.info("ENGATI SUCCESS: %s", patient_phone)
-            self.message_post(body=f"<b>Engati Delivered:</b> Notification sent to {patient_phone}.")
-            self.write({'notification_status': 'wa_delivered'})
-            return True
-        except requests.exceptions.RequestException as err:
-            err_msg = err.response.text if err.response is not None else str(err)
-            _logger.error("ENGATI NOTIFICATION FAILURE: %s", err_msg)
-            self.message_post(body=f"<b>Notification Delivery Failure.</b><br/><i>Reason: {err_msg}</i>")
+        if not template:
+            _logger.warning("No active WhatsApp template configured for %s", self._name)
+            self.message_post(body=_("<b>Notification Failed:</b> No active WhatsApp template found for Appointments."))
             self.write({'notification_status': 'failed'})
             return False
+
+        created_queue = template.send_messages(self)
+        if created_queue:
+            self.write({'notification_status': 'queued'})
+            self.message_post(body=_("<b>WhatsApp Queued:</b> Notification added to dispatch queue (Queue ID: %s).") % created_queue.id)
+            return True
+
+        self.write({'notification_status': 'failed'})
+        self.message_post(body=_("<b>Notification Failed:</b> Recipient phone missing or render error."))
+        return False
 
     @api.depends('start_datetime')
     def _compute_end_datetime(self):
@@ -1179,15 +1269,21 @@ class ClinicScheduleAppointment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Only cron jobs and background syncs get a system bypass
+        sys_bypass = self.env.su or self.env.context.get('bypass_matrix_lock')
+
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('clinic.schedule.appointment') or _('New')
             if vals.get('slot_type') == 'patient' and not vals.get('patient_id'):
                 raise ValidationError(_("A Patient must be selected for a Patient Session!"))
 
-        # Return the records immediately, omitting the auto_book_vals loop
-        records = super().create(vals_list)
-        return records
+            # Hard Lock Enforcement: Block EVERYONE from booking on locked dates
+            if not sys_bypass and vals.get('clinic_id') and vals.get('start_datetime'):
+                if self._is_date_locked(vals['clinic_id'], vals['start_datetime']):
+                    raise ValidationError(_("Schedule Locked: This clinic date is locked. Please unlock the matrix to create appointments."))
+
+        return super().create(vals_list)
 
     @api.model
     def get_allotable_therapists(self, clinic_id, target_date, displayed_therapist_ids=None):
@@ -1311,6 +1407,7 @@ class ClinicScheduleAppointment(models.Model):
         """Get matrix data for clinic scheduling dashboard"""
         user = self.env.user
         is_manager = user.has_group('clinic_schedule.group_clinic_schedule_manager')
+        total_scheduled_ids = set()
 
         # ==========================================
         # 1. STRICT DROPDOWN ISOLATION
@@ -1346,9 +1443,9 @@ class ClinicScheduleAppointment(models.Model):
                          "male_therapist_count": 0, "female_therapist_count": 0,
                          "male_fixed": 0, "male_floater": 0, "male_hv": 0,
                          "female_fixed": 0, "female_floater": 0, "female_hv": 0,
-                         "utilization": 0, "total_scheduled": 0, "allotted_clinic": 0,
+                         "utilization": 0, "allotted_clinic": 0,
                          "allotted_hv": 0, "self_scheduled": 0, "outstanding": 0,
-                         "male_patient_count": 0, "female_patient_count": 0}
+                         "male_patient_count": 0, "female_patient_count": 0, "total_scheduled": len(total_scheduled_ids),}
             }
 
         clinic_id = int(clinic_id)
@@ -1606,6 +1703,7 @@ class ClinicScheduleAppointment(models.Model):
         scheduled_self_ids = set(
             valid_patient_apps.filtered(lambda a: a.visit_type == 'self').mapped('patient_id.id'))
 
+
         total_scheduled_ids = scheduled_clinic_ids.union(scheduled_hv_ids).union(scheduled_self_ids)
 
         male_patients = sum(1 for p_id in total_scheduled_ids if
@@ -1613,7 +1711,19 @@ class ClinicScheduleAppointment(models.Model):
         female_patients = sum(1 for p_id in total_scheduled_ids if
                               patient_map.get(p_id, {}).get("gender", "").lower() in ["f", "female"])
 
-        total_eligible_patients = set(self.env['clinic.patient'].search([('remaining_sessions', '>', 0)]).ids)
+        # NEW: Strictly filter eligible patients to THIS clinic only (via profile or active enrollment)
+        enrollments = self.env['patient.enrollment'].sudo().search([
+            ('clinic_id', '=', clinic_id),
+            ('payment_state', '=', 'paid'),
+            ('state', '=', 'active')
+        ])
+        enrolled_patient_ids = enrollments.mapped('patient_id').ids
+
+        total_eligible_patients = set(self.env['clinic.patient'].sudo().search([
+            ('remaining_sessions', '>', 0),
+            '|', ('id', 'in', enrolled_patient_ids), ('clinic_id', '=', clinic_id)
+        ]).ids)
+
         outstanding_count = len(total_eligible_patients - total_scheduled_ids)
 
         # ==========================================
@@ -1665,21 +1775,6 @@ class ClinicScheduleAppointment(models.Model):
                     'name': r.name
                 })
 
-        pending_requests = []
-        if is_manager:
-            reqs = self.env['clinic.therapist'].sudo().search([
-                ('is_floater_request', '=', True),
-                ('request_state', '=', 'pending'),
-                ('request_date', '=', target_date)
-            ])
-            for r in reqs:
-                pending_requests.append({
-                    'placeholder_id': r.id,
-                    'clinic_name': r.request_clinic_id.name,
-                    'gender': r.gender,
-                    'name': r.name
-                })
-
         # --- Fetch 'My Requests' for Clinic Admin View ---
         my_requests = []
         # We use active_test=False to retrieve requests that were archived because they were approved/rejected
@@ -1695,8 +1790,17 @@ class ClinicScheduleAppointment(models.Model):
                 'designation': r.designation,
                 'state': r.request_state
             })
+            # Check if the currently viewed clinic & date is locked
+        is_date_locked = False
+        if clinic_id and target_date:
+            is_date_locked = bool(self.env['clinic.schedule.lock'].search_count([
+                ('clinic_id', '=', int(clinic_id)),
+                ('target_date', '=', target_date),
+                ('is_locked', '=', True)
+            ]))
 
         return {
+            'is_locked': is_date_locked,
             'therapists': therapists,
             'appointments': formatted_appointments,
             'pending_requests': pending_requests,
@@ -1892,97 +1996,79 @@ class ClinicScheduleAppointment(models.Model):
             })
         return list(therapists_data.values())
 
+    @api.model
+    def get_today_preview_data(self, clinic_id, target_date):
+        """Generates a high-level daily briefing of capacity and unallotted patients."""
 
-        start_day = datetime.combine(fields.Date.from_string(target_date), time.min)
-        end_day = datetime.combine(fields.Date.from_string(target_date), time.max)
+        # 1. Strict Local to UTC Time Boundary Conversion
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date_obj = fields.Date.from_string(target_date)
 
-        daily_apps = self.search([('start_datetime', '>=', start_day), ('end_datetime', '<=', end_day)])
-        working_therapists = daily_apps.mapped('therapist_id').filtered(lambda t: not t.is_buffer)
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
 
-        male_therapists = working_therapists.filtered(lambda t: t.gender == 'm')
-        female_therapists = working_therapists.filtered(lambda t: t.gender == 'f')
-        vehicle_therapists = working_therapists.filtered(
-            lambda t: t.transport_type in ['two_wheeler', 'four_wheeler', 'company']
-        )
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_local.astimezone(pytz.utc).replace(tzinfo=None)
 
-        patient_apps = daily_apps.filtered(lambda a: a.slot_type == 'patient' and a.patient_id and a.therapist_id)
+        # 2. Fetch Today's Appointments
+        daily_apps = self.search([
+            ('clinic_id', '=', int(clinic_id)),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc)
+        ])
+
+        patient_apps = daily_apps.filtered(
+            lambda a: a.slot_type == 'patient' and a.attendance_state != 'no_show' and a.patient_id)
         scheduled_patients = patient_apps.mapped('patient_id')
-        male_patients = scheduled_patients.filtered(lambda p: getattr(p, 'gender', '') in ['m', 'male'])
-        female_patients = scheduled_patients.filtered(lambda p: getattr(p, 'gender', '') in ['f', 'female'])
 
-        # Pull eligible patients directly from clinic.patient
-        all_eligible_patients = self.env['clinic.patient'].search([('remaining_sessions', '>', 0)])
-        unallotted_patients = all_eligible_patients - scheduled_patients
+        # 3. Calculate Active Staff (Total assigned to branch MINUS absent staff)
+        daily_states = self.env['clinic.therapist.daily.state'].search([('target_date', '=', target_date)])
+        absent_staff_ids = [s.therapist_id.id for s in daily_states if s.action_type in ['no_show', 'wo', 'leave']]
 
-        def format_therapist(t):
-            t_apps = daily_apps.filtered(lambda a: a.therapist_id.id == t.id)
-            return {
-                'id': t.id,
-                'name': t.name,
-                'designation': dict(self.env['clinic.therapist']._fields['designation'].selection).get(t.designation,
-                                                                                                       ''),
-                'badge_vendor': t.vendor_id or 'N/A',
-                'clinics': ", ".join(list(set(t_apps.mapped('clinic_id.name')))),
-                'transport': dict(self.env['clinic.therapist']._fields['transport_type'].selection).get(
-                    t.transport_type, 'None')
-            }
+        working_staff = self.env['clinic.therapist'].search([
+            ('active', '=', True),
+            ('is_buffer', '=', False),
+            ('allowed_branch_ids', 'in', int(clinic_id)),
+            ('id', 'not in', absent_staff_ids)
+        ])
 
-        def format_patient(p, is_scheduled=True):
-            if is_scheduled:
-                p_apps = patient_apps.filtered(lambda a: a.patient_id.id == p.id)
-                time_str = fields.Datetime.context_timestamp(self, p_apps[0].start_datetime).strftime(
-                    '%I:%M %p') if p_apps else ''
-                clinic_name = p_apps[0].clinic_id.name if p_apps else (
-                    p.clinic_id.name if getattr(p, 'clinic_id', False) else 'Unknown')
-            else:
-                time_str = 'Pending Assignment'
-                clinic_name = p.clinic_id.name if getattr(p, 'clinic_id', False) else 'Unknown'
+        # 4. Calculate Outstanding Patient Queue strictly for this clinic
+        enrollments = self.env['patient.enrollment'].sudo().search([
+            ('clinic_id', '=', int(clinic_id)),
+            ('payment_state', '=', 'paid'),
+            ('state', '=', 'active')
+        ])
+        enrolled_patient_ids = enrollments.mapped('patient_id').ids
 
-            return {
-                'id': p.id,
-                'name': p.name,
-                'mrn': getattr(p, 'mrn', 'N/A'),
-                'clinic': clinic_name,
-                'time': time_str,
-                'remaining': getattr(p, 'remaining_sessions', 0)
-            }
+        eligible_patients = self.env['clinic.patient'].sudo().search([
+            ('remaining_sessions', '>', 0),
+            '|', ('id', 'in', enrolled_patient_ids), ('clinic_id', '=', int(clinic_id))
+        ])
 
-        t_count = len(working_therapists)
+        unallotted_count = len(set(eligible_patients.ids) - set(scheduled_patients.ids))
+
+        t_count = len(working_staff)
         p_count = len(scheduled_patients)
-        m_t_count = len(male_therapists)
-        f_t_count = len(female_therapists)
 
         return {
-            'kpis': {
-                'total_therapists': t_count,
-                'male_therapists': m_t_count,
-                'female_therapists': f_t_count,
-                'vehicle_therapists': len(vehicle_therapists),
-                'scheduled_patients': p_count,
-                'unallotted_patients': len(unallotted_patients),
-                't_to_p_ratio': f"1 : {round(p_count / t_count, 1)}" if t_count > 0 else "N/A",
-                'm_to_m_ratio': f"1 : {round(len(male_patients) / m_t_count, 1)}" if m_t_count > 0 else "N/A",
-                'f_to_f_ratio': f"1 : {round(len(female_patients) / f_t_count, 1)}" if f_t_count > 0 else "N/A",
-                'completed_sessions': len(daily_apps.filtered(lambda a: a.attendance_state == 'completed')),
-                'noshow_sessions': len(daily_apps.filtered(lambda a: a.attendance_state == 'no_show'))
-            },
-            'drill_downs': {
-                'total_therapists': [format_therapist(t) for t in working_therapists],
-                'male_therapists': [format_therapist(t) for t in male_therapists],
-                'female_therapists': [format_therapist(t) for t in female_therapists],
-                'vehicle_therapists': [format_therapist(t) for t in vehicle_therapists],
-                'scheduled_patients': [format_patient(p, True) for p in scheduled_patients],
-                'unallotted_patients': [format_patient(p, False) for p in unallotted_patients],
-            }
+            'total_therapists': t_count,
+            'scheduled_patients': p_count,
+            'unallotted_patients': unallotted_count,
+            't_to_p_ratio': f"1 : {round(p_count / t_count, 1)}" if t_count > 0 else "N/A",
+            'completed_sessions': len(daily_apps.filtered(lambda a: a.attendance_state == 'completed')),
+            'noshow_sessions': len(daily_apps.filtered(lambda a: a.attendance_state == 'no_show'))
         }
 
     @api.model
     def action_mass_send_notifications(self, clinic_id, target_date):
+        """ Batch renders appointments and pushes them directly to whatsapp.message.queue """
         if not clinic_id or not target_date:
-            return False
+            return {'status': 'warning', 'message': _('Missing Clinic or Target Date.')}
+
         target_date_obj = fields.Date.from_string(target_date)
         start_day = datetime.combine(target_date_obj, time(0, 0, 0))
         end_day = datetime.combine(target_date_obj, time(23, 59, 59))
+
         appointments = self.search([
             ('clinic_id', '=', int(clinic_id)),
             ('start_datetime', '>=', start_day),
@@ -1991,11 +2077,29 @@ class ClinicScheduleAppointment(models.Model):
             ('therapist_id', '!=', False),
             ('notification_status', 'in', ['pending', 'failed'])
         ])
-        if not appointments:
-            return {'status': 'success', 'message': '0 new notifications to send.'}
 
-        appointments.write({'notification_status': 'queued'})
-        return {'status': 'success', 'message': f'Added {len(appointments)} notifications to dispatch queue.'}
+        if not appointments:
+            return {'status': 'info', 'message': _('0 eligible appointments found for notification.')}
+
+        template = self.env['whatsapp.template'].search([
+            ('model_id.model', '=', self._name),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not template:
+            return {'status': 'warning', 'message': _('No active WhatsApp template configured for Appointments.')}
+
+        created_queue = template.send_messages(appointments)
+        if created_queue:
+            # Mark appointments that were successfully queued
+            queued_app_ids = created_queue.mapped('res_id')
+            appointments.filtered(lambda a: a.id in queued_app_ids).write({'notification_status': 'queued'})
+            return {
+                'status': 'success',
+                'message': _('Successfully added %s notifications to the dispatch queue.') % len(created_queue)
+            }
+
+        return {'status': 'warning', 'message': _('Failed to queue messages (verify patient phone numbers).')}
 
     @api.model
     def _cron_consume_notification_queue(self):
@@ -2006,7 +2110,8 @@ class ClinicScheduleAppointment(models.Model):
         session = requests.Session()
         for app in queued_appointments:
             try:
-                app._send_slot_notification(trigger_type='booking_confirmation', session=session)
+                # Pass force_queue=True so the renderer doesn't block the dispatch
+                app._send_slot_notification(trigger_type='booking_confirmation', session=session, force_queue=True)
             except Exception as e:
                 _logger.error("Fatal transaction handling failure for app ID %s: %s", app.id, str(e))
                 app.write({'notification_status': 'failed'})
