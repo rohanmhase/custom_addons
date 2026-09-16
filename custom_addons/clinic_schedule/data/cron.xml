@@ -10,7 +10,7 @@
             <field name="interval_number">5</field>
             <field name="interval_type">minutes</field>
             <field name="numbercall">-1</field>
-            <field name="active" eval="True"/>
+            <field name="active" eval="False"/>
         </record>
 
 <!--        <record id="ir_cron_generate_daily_payouts" model="ir.cron">-->

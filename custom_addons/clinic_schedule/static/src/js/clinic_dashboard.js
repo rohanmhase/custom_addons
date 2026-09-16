@@ -95,6 +95,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async removeTherapistFromBoard() {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Matrix is locked. Unlock before modifying staff assignments.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedTherapistForAction) return;
         const confirmed = window.confirm(`Are you sure you want to remove ${this.state.selectedTherapistForAction.name} from this branch? All their patients today will be dumped to UNASSIGNED.`);
         if (!confirmed) return;
@@ -210,21 +214,21 @@ export class ClinicMatrixDashboard extends Component {
             this.state.pulledTherapistIds = [];
             this.state.lastFetchedDate = this.state.selectedDate;
             this.state.lastFetchedClinic = currentClinic;
+            // REMOVED data.is_locked FROM HERE
         }
 
         // 1. 'data' is declared and fetched here
         const data = await this.orm.call("clinic.schedule.appointment", "get_matrix_data", [currentClinic, this.state.selectedDate, this.state.pulledTherapistIds]);
 
         // 2. State assignments safely use 'data' AFTER the line above
+        this.state.slotsLocked = Boolean(data.is_locked); // ADDED HERE SAFELY
+
         this.state.clinics = data.clinics || [];
         this.state.regions = data.regions || [];
         this.state.therapists = data.therapists || [];
         this.state.appointments = data.appointments || [];
         this.state.pendingRequests = data.pending_requests || [];
-
-        // NEW LINE GOES HERE
         this.state.myRequests = data.my_requests || [];
-
         this.state.kpis = data.kpis || this.state.kpis;
         this.state.timeSlots = [...this.baseTimeSlots];
 
@@ -271,6 +275,18 @@ export class ClinicMatrixDashboard extends Component {
     closeSmartView() {
         this.state.isSmartViewOpen = false;
         this.state.smartViewData = null;
+    }
+    async openTodayPreview() {
+        const clinicId = parseInt(this.state.selectedClinic);
+        if (!clinicId) return;
+
+        this.state.todayPreviewData = await this.orm.call("clinic.schedule.appointment", "get_today_preview_data", [clinicId, this.state.selectedDate]);
+        this.state.isTodayPreviewOpen = true;
+    }
+
+    closeTodayPreview() {
+        this.state.isTodayPreviewOpen = false;
+        this.state.todayPreviewData = null;
     }
 
     toggleRow(therapistId) {
@@ -475,6 +491,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async applyTherapistAction(actionName) {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedTherapistForAction) return;
         if (actionName === 'late') {
             this.state.isLateModalOpen = true;
@@ -503,6 +523,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async confirmLateAction() {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedTherapistForAction) return;
         try {
             const response = await this.orm.call("clinic.schedule.appointment", "apply_therapist_action",
@@ -526,26 +550,25 @@ export class ClinicMatrixDashboard extends Component {
 
     async triggerQuickAction(actionName) {
         if (!this.state.selectedAppointment) return;
-        if (actionName === 'action_send_test_notification') {
-            this.notificationService.add("WhatsApp API credentials pending. Sandbox dispatch disabled.", {type: "warning"});
-            return;
-        }
-
         const result = await this.orm.call("clinic.schedule.appointment", actionName, [[this.state.selectedAppointment.id]]);
         this.closeActionModal();
-
-        // --- NEW: Handle Python Wizard popups dynamically ---
-        if (result && typeof result === 'object' && result.type === 'ir.actions.act_window') {
-            this.actionService.doAction(result, {
-                onClose: () => this.refreshGrid()
-            });
-        } else {
-            await this.refreshGrid();
+        if (result && typeof result === 'object') {
+            if (result.type === 'ir.actions.act_window' || result.type === 'ir.actions.client') {
+                this.actionService.doAction(result, {
+                    onClose: () => this.refreshGrid()
+                });
+                return;
+            }
         }
+        await this.refreshGrid();
     }
 
     async quickRemoveSlot(ev, appId, currentTherapistId) {
         ev.stopPropagation();
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Cannot delete slots while the matrix is locked.", { type: "warning" });
+            return;
+        }
         if (!appId) return;
         try {
             await this.orm.unlink("clinic.schedule.appointment", [appId]);
@@ -557,6 +580,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async unassignSlot() {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Cannot delete slots while the matrix is locked.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedAppointment) return;
         await this.orm.unlink("clinic.schedule.appointment", [this.state.selectedAppointment.id]);
         this.closeActionModal();
@@ -565,6 +592,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async reassignSlot(newTherapistIdRaw) {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Cannot reassign slots while the matrix is locked.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedAppointment) return;
         const newTherapistId = parseInt(newTherapistIdRaw, 10);
         if (isNaN(newTherapistId)) return;
@@ -598,9 +629,8 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async onSlotClick(therapistId, slotKey) {
-        const therapist = this.state.therapists.find(t => t.id === therapistId);
-        if (therapist && therapist.is_absent) {
-            this.notificationService.add(`Cannot book. ${therapist.name} is currently marked as ${therapist.overlay_state.toUpperCase()}.`, {type: "danger"});
+        if (this.state.slotsLocked) {
+            this.notificationService.add("The schedule is locked for this date. Unlock it to book or modify slots.", { type: "warning" });
             return;
         }
         const existing = this.getSlotData(therapistId, slotKey);
@@ -633,16 +663,47 @@ export class ClinicMatrixDashboard extends Component {
         }
     }
 
-    toggleLockSlots() {
-        this.state.slotsLocked = !this.state.slotsLocked;
-        if (this.state.slotsLocked) {
-            this.notificationService.add("Matrix is now locked. You can now dispatch mass notifications.", {type: "info"});
+    async toggleLockSlots() {
+        if (!this.state.is_manager) {
+            this.notificationService.add("Only Managers can lock or unlock the schedule matrix.", { type: "danger" });
+            return;
         }
+        try {
+            const res = await this.orm.call(
+                "clinic.schedule.lock", // <--- FIX: Point to the lock model
+                "action_toggle_matrix_lock",
+                [parseInt(this.state.selectedClinic), this.state.selectedDate]
+            );
+            if (res && res.message) {
+                this.notificationService.add(res.message, { type: res.status });
+                this.state.slotsLocked = Boolean(res.is_locked);
+            }
+        } catch (error) {
+            console.error("Lock toggle error:", error);
+        }
+        await this.refreshGrid();
     }
 
     async triggerMassSend() {
-        this.notificationService.add("WhatsApp API credentials pending. Mass dispatch disabled.", {type: "warning"});
-        this.state.slotsLocked = false;
+        if (!this.state.slotsLocked) {
+            this.notificationService.add("Matrix must be locked before sending notifications.", { type: "warning" });
+            return;
+        }
+        try {
+            const res = await this.orm.call(
+                "clinic.schedule.appointment",
+                "action_mass_send_notifications",
+                [parseInt(this.state.selectedClinic), this.state.selectedDate]
+            );
+            if (res && res.message) {
+                this.notificationService.add(res.message, {
+                    type: res.status === 'success' ? 'success' : (res.status === 'info' ? 'info' : 'warning')
+                });
+            }
+        } catch (error) {
+            console.error("Mass dispatch error:", error);
+        }
+        await this.refreshGrid();
     }
 
     get filteredAttendance() {
@@ -700,6 +761,10 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     async triggerMassReassign() {
+        if (this.state.slotsLocked) {
+            this.notificationService.add("Matrix is locked. Unlock before reassigning sessions.", { type: "warning" });
+            return;
+        }
         if (!this.state.selectedTherapistForAction || !this.state.massReassignTarget) return;
         const res = await this.orm.call("clinic.schedule.appointment", "action_mass_reassign_sessions", [
             this.state.selectedTherapistForAction.id,

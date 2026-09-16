@@ -53,17 +53,32 @@
                         </button>
                         </t>
                         <div class="d-flex gap-2 ms-2 border-start ps-3">
-                            <button t-attf-class="btn btn-sm #{state.slotsLocked ? 'btn-outline-danger' : 'btn-outline-secondary'} fw-bold"
-                                    t-on-click="() => this.toggleLockSlots()">
-                                <i t-attf-class="fa #{state.slotsLocked ? 'fa-lock' : 'fa-unlock'}"/>
-                                Lock
-                            </button>
-                            <button t-if="state.slotsLocked"
-                                    class="btn btn-sm btn-primary fw-bold shadow-sm"
-                                    t-on-click="() => this.triggerMassSend()">
-                                <i class="fa fa-paper-plane"/>
-                                Mass Send SMS
-                            </button>
+                            <!-- When UNLOCKED: Show Lock button (Managers Only) -->
+                            <t t-if="!state.slotsLocked and state.is_manager">
+                                <button class="btn btn-sm btn-outline-secondary fw-bold"
+                                        t-on-click="() => this.toggleLockSlots()">
+                                    <i class="fa fa-unlock me-1"/> Lock
+                                </button>
+                            </t>
+
+                            <!-- When LOCKED: Show Unlock button (Managers Only) + Mass Send SMS -->
+                            <t t-if="state.slotsLocked">
+                                <t t-if="state.is_manager">
+                                    <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm"
+                                            t-on-click="() => this.toggleLockSlots()">
+                                        <i class="fa fa-lock me-1"/> Unlock
+                                    </button>
+                                </t>
+                                <t t-else="">
+                                    <span class="badge bg-danger d-flex align-items-center px-2 shadow-sm" style="font-size: 0.75rem;">
+                                        <i class="fa fa-lock me-1"/> Locked
+                                    </span>
+                                </t>
+                                <button class="btn btn-sm btn-primary fw-bold shadow-sm"
+                                        t-on-click="() => this.triggerMassSend()">
+                                    <i class="fa fa-paper-plane me-1"/> Mass Send SMS
+                                </button>
+                            </t>
                         </div>
                     </t>
                     <div class="vr" style="height: 24px; opacity: 0.15;"></div>
@@ -97,6 +112,11 @@
                                     t-on-click="() => this.openSmartView()" title="Launch Smart View">
                                 <i class="fa fa-bolt"/>
                             </button>
+                            <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm ms-1"
+                                    t-on-click="() => this.openTodayPreview()" title="Daily Briefing">
+                                <i class="fa fa-bar-chart"/>
+                            </button>
+
                         </div>
                     </div>
                 </t>
@@ -1191,6 +1211,55 @@
                                         </div>
                                     </div>
                                 </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    <!-- TODAY PREVIEW MODAL -->
+        <t t-if="state.isTodayPreviewOpen and state.todayPreviewData">
+            <div class="modal-backdrop fade show" style="z-index: 1060; background-color: rgba(0,0,0,0.6);" t-on-click="() => this.closeTodayPreview()"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1070;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-3">
+                        <div class="modal-header bg-info border-0 py-3 px-4">
+                            <h5 class="modal-title fw-bold text-dark"><i class="fa fa-bar-chart me-2"/> Daily Briefing</h5>
+                            <button type="button" class="btn-close" t-on-click="() => this.closeTodayPreview()"></button>
+                        </div>
+                        <div class="modal-body p-4 bg-light">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="card p-3 shadow-sm text-center border-0 h-100">
+                                        <h6 class="text-muted small fw-bold text-uppercase">Patients Waiting</h6>
+                                        <h2 class="text-danger fw-bold m-0"><t t-esc="state.todayPreviewData.unallotted_patients"/></h2>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card p-3 shadow-sm text-center border-0 h-100">
+                                        <h6 class="text-muted small fw-bold text-uppercase">Load Ratio</h6>
+                                        <h2 class="text-primary fw-bold m-0"><t t-esc="state.todayPreviewData.t_to_p_ratio"/></h2>
+                                        <span class="small text-muted">Therapists : Patients</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 mt-3">
+                                    <div class="card p-2 shadow-sm text-center border-0 bg-success text-white h-100">
+                                        <span class="d-block h4 fw-bold m-0"><t t-esc="state.todayPreviewData.completed_sessions"/></span>
+                                        <span class="small text-uppercase fw-bold">Completed</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 mt-3">
+                                    <div class="card p-2 shadow-sm text-center border-0 bg-secondary text-white h-100">
+                                        <span class="d-block h4 fw-bold m-0"><t t-esc="state.todayPreviewData.total_therapists"/></span>
+                                        <span class="small text-uppercase fw-bold">Staff Active</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 mt-3">
+                                    <div class="card p-2 shadow-sm text-center border-0 bg-danger text-white h-100">
+                                        <span class="d-block h4 fw-bold m-0"><t t-esc="state.todayPreviewData.noshow_sessions"/></span>
+                                        <span class="small text-uppercase fw-bold">No-Shows</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
