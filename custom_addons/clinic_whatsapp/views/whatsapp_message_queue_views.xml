@@ -11,10 +11,10 @@
                   decoration-warning="state == 'pending'"
                   create="false">
                 <field name="create_date" string="Created On"/>
-                <field name="template_id" string="Category / Template"/>
+                <field name="smartchat_template_name" string="Template"/>
                 <field name="patient_name"/>
                 <field name="phone"/>
-                <field name="res_model" string="Source Document" optional="show"/>
+                <field name="wamid" string="Meta Message ID" optional="show"/>
                 <field name="sent_date"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'sent'"
@@ -40,20 +40,24 @@
                 </header>
                 <sheet>
                     <group>
-                        <group string="Recipient">
+                        <group string="Recipient &amp; Delivery">
                             <field name="patient_name" readonly="1"/>
                             <field name="phone" readonly="1"/>
                             <field name="sent_date" readonly="1"/>
+                            <field name="wamid" readonly="1"/>
                         </group>
-                        <group string="Reference">
-                            <field name="template_id" readonly="1"/>
+                        <group string="Routing &amp; Template">
+                            <field name="smartchat_template_name" readonly="1"/>
+                            <field name="broadcast_name" readonly="1"/>
                             <field name="res_model" readonly="1"/>
                             <field name="res_id" readonly="1"/>
-                            <field name="move_id" readonly="1" invisible="not move_id"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Message Body">
+                        <page string="Evaluated Parameters (JSON)">
+                            <field name="params_json" readonly="1"/>
+                        </page>
+                        <page string="Message Preview">
                             <field name="message_body" readonly="1"/>
                         </page>
                         <page string="Error Log" invisible="not error_message">
@@ -65,7 +69,7 @@
         </field>
     </record>
 
-    <!-- Single Search View (Deduplicated) -->
+    <!-- Search View -->
     <record id="view_whatsapp_message_queue_search" model="ir.ui.view">
         <field name="name">whatsapp.message.queue.search</field>
         <field name="model">whatsapp.message.queue</field>
@@ -73,7 +77,8 @@
             <search string="Search Messages">
                 <field name="patient_name"/>
                 <field name="phone"/>
-                <field name="template_id"/>
+                <field name="smartchat_template_name"/>
+                <field name="wamid"/>
                 <field name="invoice_number"/>
                 <separator/>
                 <filter string="Bills &amp; Invoices" name="filter_invoices"
@@ -85,7 +90,7 @@
                 <filter string="Sent" name="filter_sent" domain="[('state', '=', 'sent')]"/>
                 <filter string="Failed" name="filter_error" domain="[('state', '=', 'error')]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Template / Category" name="group_by_template" context="{'group_by': 'template_id'}"/>
+                    <filter string="Template" name="group_by_template" context="{'group_by': 'smartchat_template_name'}"/>
                     <filter string="Source Document" name="group_by_model" context="{'group_by': 'res_model'}"/>
                     <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
                     <filter string="Sent Date" name="group_by_sent_date" context="{'group_by': 'sent_date:day'}"/>
@@ -103,7 +108,7 @@
         <field name="context">{'search_default_filter_pending': 1}</field>
     </record>
 
-    <!-- Root Menu -->
+    <!-- Menus (Declared before child menus in template views) -->
     <menuitem id="menu_whatsapp_root" name="WhatsApp" sequence="65"/>
     <menuitem id="menu_whatsapp_queue" name="Message Queue" parent="menu_whatsapp_root"
               action="action_whatsapp_message_queue" sequence="10"/>

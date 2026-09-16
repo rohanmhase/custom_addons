@@ -6,7 +6,9 @@
         <field name="arch" type="xml">
             <tree string="WhatsApp Templates">
                 <field name="name"/>
+                <field name="smartchat_template_name"/>
                 <field name="model_id"/>
+                <field name="header_type"/>
                 <field name="active" widget="boolean_toggle"/>
             </tree>
         </field>
@@ -20,19 +22,47 @@
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="e.g. Appointment Reminder"/></h1>
+                        <label for="name" string="Internal Name"/>
+                        <h1><field name="name" placeholder="e.g. Appointment Confirmation"/></h1>
                     </div>
                     <group>
-                        <group>
+                        <group string="SmartChat API Identifiers">
+                            <field name="smartchat_template_name" placeholder="e.g. newtemplate"/>
+                            <field name="broadcast_name" placeholder="e.g. Appointment_Reminder"/>
                             <field name="model_id" options="{'no_create': True}"/>
                             <field name="model" invisible="1"/>
                             <field name="phone_field" placeholder="e.g. patient_id.phone"/>
                             <field name="active" invisible="1"/>
                         </group>
+                        <group string="Headers &amp; Interactive Buttons">
+                            <field name="header_type"/>
+                            <field name="header_media_url"
+                                   invisible="header_type == 'none'"
+                                   required="header_type != 'none'"
+                                   placeholder="e.g. https://domain.com/banner.png"/>
+                            <field name="has_button_url"/>
+                            <field name="button_url_suffix"
+                                   invisible="not has_button_url"
+                                   required="has_button_url"
+                                   placeholder="e.g. portal/invoice/{{ object.id }}"/>
+                        </group>
                     </group>
                     <notebook>
-                        <page string="Message Content">
-                            <field name="body" placeholder="Hello {{ object.patient_id.name }}, your appointment is scheduled for {{ object.start_datetime }}..."/>
+                        <page string="Dynamic Parameters ({{1}}, {{2}}...)">
+                            <p class="text-muted small">
+                                Map positional variables in order matching your Meta-approved template. Expressions support
+                                <code>{{ object.field_name }}</code>, <code>{{ format_datetime(...) }}</code>, and <code>{{ format_date(...) }}</code>.
+                            </p>
+                            <field name="param_ids">
+                                <tree editable="bottom">
+                                    <field name="index" style="width: 100px;"/>
+                                    <field name="name" placeholder="e.g. Patient Name"/>
+                                    <field name="value_expression" placeholder="{{ object.patient_id.name }}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Message Preview / Fallback">
+                            <field name="body" placeholder="Informative text preview of what the message looks like..."/>
                         </page>
                     </notebook>
                 </sheet>

@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import requests
@@ -13,13 +14,20 @@ class WhatsappMessageQueue(models.Model):
 
     patient_name = fields.Char(string='Recipient Name')
     phone = fields.Char(string='Phone Number', required=True)
-    message_body = fields.Text(string='Message Body')
+    message_body = fields.Text(string='Message Preview')
 
-    # Generic record tracking
+    # SmartChat Dynamic Fields
+    smartchat_template_name = fields.Char(string='SmartChat Template Name')
+    broadcast_name = fields.Char(string='Broadcast Name', default='Clinic_Notification')
+    use_button_endpoint = fields.Boolean(string='Use Dynamic Button Endpoint', default=False)
+    params_json = fields.Text(string='Dynamic Parameters (JSON)')
+    wamid = fields.Char(string='Meta Message ID (wamid)', readonly=True, index=True)
+
+    # Generic Record Tracking
     res_model = fields.Char(string='Source Model', index=True)
     res_id = fields.Integer(string='Source Record ID', index=True)
 
-    # Legacy fields
+    # Legacy / Invoice Compatibility
     invoice_number = fields.Char(string='Invoice Number')
     invoice_url = fields.Char(string='Invoice URL')
     move_id = fields.Many2one('account.move', string='Invoice', ondelete='set null')
@@ -35,28 +43,25 @@ class WhatsappMessageQueue(models.Model):
 
     @api.model
     def process_message_queue(self, batch_size=50):
-        """Processes pending queue items in isolated batches to prevent worker timeouts and duplicate sends."""
-        api_url = (self.env['ir.config_parameter'].sudo().get_param('clinic_whatsapp.api_url') or '').strip()
-        api_key = (self.env['ir.config_parameter'].sudo().get_param('clinic_whatsapp.api_key') or '').strip()
+        """Dispatches queued messages dynamically to SmartChat API."""
+        raw_api_url = (self.env['ir.config_parameter'].sudo().get_param('clinic_whatsapp.api_url') or
+                       'https://smartchatapi.live/portal/Api').strip().rstrip('/')
+        token = (self.env['ir.config_parameter'].sudo().get_param('clinic_whatsapp.api_key') or '').strip()
 
-        if not api_key or not api_url:
-            _logger.error("WhatsApp API credentials are not configured.")
+        if not token:
+            _logger.error("SmartChat API Token is not configured in Settings.")
             return
 
-        headers = {
-            "apikey": api_key,
-            "Content-Type": "application/json",
-        }
+        base_api = re.sub(r'/(send_template_message.*)$', '', raw_api_url)
 
         pending_messages = self.search([('state', '=', 'pending')], limit=batch_size)
         if not pending_messages:
             return
 
         for record in pending_messages:
-            # 1. Clean and normalize phone to standard format
             clean_phone = re.sub(r'\D', '', record.phone or '')
             if not clean_phone:
-                record.write({'state': 'error', 'error_message': 'Empty or invalid phone number'})
+                record.write({'state': 'error', 'error_message': 'Missing or invalid phone number'})
                 self.env.cr.commit()
                 continue
 
@@ -67,47 +72,81 @@ class WhatsappMessageQueue(models.Model):
             else:
                 formatted_phone = clean_phone
 
-            # 2. Extract message text
-            message_text = record.message_body
-            if not message_text:
-                move = record.move_id
-                amount_total = move.amount_total if move else 0.0
-                invoice_date = move.invoice_date or fields.Date.today()
-                company_name = (move.company_id.name if move and move.company_id else False) or self.env.company.name
-                message_text = (
-                    f"Dear {record.patient_name or 'Patient'},\n\n"
-                    f"This is to confirm your invoice *{record.invoice_number or ''}* for services provided.\n"
-                    f"Amount: {amount_total:.2f}\n"
-                    f"Date: {invoice_date}\n\n"
-                    f"View Bill: {record.invoice_url or ''}\n\n"
-                    f"Thank you for choosing {company_name}."
-                )
+            # 2. Select Appropriate SmartChat Endpoint
+            if record.use_button_endpoint:
+                endpoint = f"{base_api}/send_template_message_using_url"
+            else:
+                endpoint = f"{base_api}/send_template_message"
 
-            payload = {
-                "number": formatted_phone,
-                "text": message_text,
+            # 3. Assemble Dynamic Query Parameters (Always include 'url' fallback)
+            query_params = {
+                'sender_whatsapp_number': formatted_phone,
+                'token': token,
+                'template_name': record.smartchat_template_name or 'therapy_comm',
+                'broadcast_name': record.broadcast_name or 'Clinic_Notification',
+                'url': '',
             }
 
+            if record.params_json:
+                try:
+                    dynamic_params = json.loads(record.params_json)
+                    query_params.update(dynamic_params)
+                except Exception as parse_err:
+                    _logger.error("Failed to parse params_json for queue ID %s: %s", record.id, str(parse_err))
+
+                # 4. Dispatch via GET (SmartChat expects query-based URL parameters)
             try:
-                response = requests.post(api_url, json=payload, headers=headers, timeout=8)
-                if response.status_code in (200, 201):
+                response = requests.get(endpoint, params=query_params, timeout=12)
+                resp_json = response.json() if response.content else {}
+
+                is_success = response.status_code == 200 and str(resp_json.get('status')) == '200'
+
+                if is_success:
+                    wamid = resp_json.get('message_id') or resp_json.get('request_id')
                     record.write({
                         'state': 'sent',
+                        'wamid': wamid,
                         'sent_date': fields.Datetime.now(),
                         'error_message': False,
                     })
+
+                    if record.res_model == 'clinic.schedule.appointment' and record.res_id:
+                        appointment = self.env['clinic.schedule.appointment'].browse(record.res_id)
+                        if appointment.exists():
+                            appointment.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write({
+                                'notification_status': 'wa_delivered'
+                            })
                 else:
+                    err_detail = (
+                            resp_json.get('messsage') or
+                            resp_json.get('message') or
+                            resp_json.get('error') or
+                            resp_json.get('msg') or
+                            f"HTTP {response.status_code}: {response.text[:300]}"
+                    )
                     record.write({
                         'state': 'error',
-                        'error_message': f"HTTP {response.status_code}: {response.text[:500]}",
+                        'error_message': f"SmartChat Error: {err_detail}",
                     })
+                    if record.res_model == 'clinic.schedule.appointment' and record.res_id:
+                        appointment = self.env['clinic.schedule.appointment'].browse(record.res_id)
+                        if appointment.exists():
+                            appointment.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write({
+                                'notification_status': 'failed'
+                            })
+
             except Exception as exc:
                 record.write({
                     'state': 'error',
-                    'error_message': str(exc),
+                    'error_message': f"Connection Error: {str(exc)}",
                 })
+                if record.res_model == 'clinic.schedule.appointment' and record.res_id:
+                    app = self.env['clinic.schedule.appointment'].browse(record.res_id)
+                    if app.exists():
+                        app.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write({
+                            'notification_status': 'failed'
+                        })
 
-            # Commit individual record state so a worker drop does not re-send previous messages
             self.env.cr.commit()
 
     def action_retry(self):
