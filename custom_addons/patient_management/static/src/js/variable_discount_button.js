@@ -14,7 +14,18 @@ export class VariableDiscountButton extends Component {
 
     get isDisabled() {
         const order = this.pos.get_order();
-        return order ? !!order.enrollment_id : false;
+        if (!order) return true;
+
+        // 1. Disable if it is an enrollment order
+        if (order.enrollment_id) return true;
+
+        // 2. Disable if 'Included in Package' is actively selected
+        if (order.included_in_package === true) return true;
+
+        // 3. Disable if the cart is completely empty
+        if (order.get_orderlines().length === 0) return true;
+
+        return false;
     }
 
     async onClick() {
