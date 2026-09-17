@@ -30,7 +30,7 @@ patch(Order.prototype, {
         if (!isRefund && this.get_orderlines().length > 0 && this.included_in_package === null) {
             this.pos.popup.add(ErrorPopup, {
                 title: _t("Selection Required"),
-                body: _t("Please select 'Included in Package' or 'Not Included' before proceeding to payment."),
+                body: _t("Please select 'Mark Included in Package' or 'Mark Not Included in Package' before proceeding to payment."),
             });
             return;
         }
