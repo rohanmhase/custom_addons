@@ -17,6 +17,7 @@
         'views/clinic_transfer_views.xml',
         'views/res_company_views.xml',
         'views/pos_session_edit.xml',
+        'views/report_invoice.xml',
         # 'views/pos_session_view.xml',
     ],
     "assets": {
