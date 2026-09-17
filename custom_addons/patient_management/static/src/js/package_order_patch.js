@@ -10,48 +10,35 @@ const FREE_PRODUCTS = [
 ];
 
 patch(Order.prototype, {
-
     setup() {
         super.setup(...arguments);
+        // Default to null so neither button is active[cite: 5]
         this.included_in_package =
             this.included_in_package !== undefined
                 ? this.included_in_package
-                : true; // default ON for new orders
+                : null;
     },
 
     export_as_JSON() {
         const json = super.export_as_JSON(...arguments);
-        json.included_in_package = this.included_in_package || false;
+        json.included_in_package = this.included_in_package;
         return json;
     },
 
     init_from_JSON(json) {
         super.init_from_JSON(...arguments);
-        this.included_in_package = json.included_in_package || false;
+        this.included_in_package = json.included_in_package !== undefined ? json.included_in_package : null;
     },
 
-    // Toggle the package flag and immediately apply/remove
-    // 100% discount on every existing line (except free combos).
-    toggle_package_discount() {
-        // The check for this.prescription_id has been removed here
-        // to allow the user to toggle the discount off.
-
-        this.included_in_package = !this.included_in_package;
-
+    // Replaces toggle_package_discount to explicitly set states[cite: 5]
+    set_package_status(isIncluded) {
+        this.included_in_package = isIncluded;
         const lines = this.get_orderlines();
 
         lines.forEach(line => {
-            const isFreeProduct = FREE_PRODUCTS.includes(
-                line.product.display_name
-            );
-
-            if (isFreeProduct) {
-                return;
-            }
-
-            line.set_discount(
-                this.included_in_package ? 100 : 0
-            );
+            const isFreeProduct = FREE_PRODUCTS.includes(line.product.display_name);
+            if (isFreeProduct) return;
+            line.set_discount(this.included_in_package ? 100 : 0);
         });
 
         return this.included_in_package;
@@ -60,18 +47,13 @@ patch(Order.prototype, {
     add_product(product, options = {}) {
         const result = super.add_product(...arguments);
 
-        // DO NOT apply package discounts to refunded lines
         if (options.refunded_orderline_id) {
             return result;
         }
 
-        // Auto-apply discount to any product added while the
-        // package flag is active.
-        if (this.included_in_package) {
-            const isFreeProduct = FREE_PRODUCTS.includes(
-                product.display_name
-            );
-
+        // Only auto-apply if explicitly set to true[cite: 5]
+        if (this.included_in_package === true) {
+            const isFreeProduct = FREE_PRODUCTS.includes(product.display_name);
             if (!isFreeProduct) {
                 const line = this.get_selected_orderline();
                 if (line) {
@@ -79,45 +61,6 @@ patch(Order.prototype, {
                 }
             }
         }
-
         return result;
-    },
-
-    activate_package_discount() {
-        // Only trigger if it is currently inactive
-        if (!this.included_in_package) {
-            this.included_in_package = true;
-
-            const lines = this.get_orderlines();
-
-            lines.forEach(line => {
-                const isFreeProduct = FREE_PRODUCTS.includes(
-                    line.product.display_name
-                );
-
-                if (!isFreeProduct) {
-                    line.set_discount(100);
-                }
-            });
-        }
-    },
-
-    deactivate_package_discount() {
-        // Only trigger if it is currently active
-        if (this.included_in_package) {
-            this.included_in_package = false;
-
-            const lines = this.get_orderlines();
-
-            lines.forEach(line => {
-                const isFreeProduct = FREE_PRODUCTS.includes(
-                    line.product.display_name
-                );
-
-                if (!isFreeProduct) {
-                    line.set_discount(0); // Restore price to normal
-                }
-            });
-        }
-    },
+    }
 });

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_invoice_document_custom"
+              inherit_id="account.document_tax_totals_template">
+
+        <xpath expr="//tr[contains(@class, 'o_subtotal')]/td/strong"
+               position="replace">
+
+            <strong>Before Tax Amt.</strong>
+
+        </xpath>
+
+    </template>
+
+</odoo>

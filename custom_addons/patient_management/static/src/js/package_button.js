@@ -6,53 +6,78 @@ import { useService } from "@web/core/utils/hooks";
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 
-export class PackageDiscountButton extends Component {
-
+class BasePackageButton extends Component {
     setup() {
         this.pos = usePos();
         this.popup = useService("popup");
     }
 
-    get isActive() {
-        const order = this.pos.get_order();
-        return order ? !!order.included_in_package : false;
-    }
-
     get isDisabled() {
         const order = this.pos.get_order();
-        return order ? !!order.enrollment_id : false;
+        if (!order || order.get_orderlines().length === 0) {
+            return true;
+        }
 
-        // 2. Detect if any item in the cart is a refund line
-       const isRefund = order.get_orderlines().some(line => line.refunded_orderline_id || line.get_quantity() < 0);
-
-        // 3. Disable the button if it's an enrollment OR a refund
+        // Disable the button if it's an enrollment OR a refund
+        const isRefund = order.get_orderlines().some(line => line.refunded_orderline_id || line.get_quantity() < 0);
         return !!order.enrollment_id || isRefund;
     }
 
-    onClick() {
-        const order = this.pos.get_order();
-
-        if (!order) {
-            return;
+    checkRestrictions(order) {
+        if (order.get_orderlines().length === 0) {
+            this.popup.add(ErrorPopup, {
+                title: "Empty Cart",
+                body: "Please add at least one product before selecting a package option.",
+            });
+            return false;
         }
 
         const isRefund = order.get_orderlines().some(line => line.refunded_orderline_id);
-
         if (order.enrollment_id || isRefund) {
             this.popup.add(ErrorPopup, {
                 title: "Action Restricted",
-                body: "Package discount cannot be used on enrollment orders or refund orders.",
+                body: "Package selection cannot be used on enrollment orders or refund orders.",
             });
-            return;
+            return false;
         }
-
-        order.toggle_package_discount();
+        return true;
     }
 }
 
-PackageDiscountButton.template = "PackageDiscountButtonTemplate";
+// 1. Included Button
+export class IncludedButton extends BasePackageButton {
+    get isActive() {
+        const order = this.pos.get_order();
+        return order ? order.included_in_package === true : false;
+    }
+    onClick() {
+        const order = this.pos.get_order();
+        if (!order || !this.checkRestrictions(order)) return;
+        order.set_package_status(true);
+    }
+}
+IncludedButton.template = "IncludedButtonTemplate";
 
+// 2. Not Included Button
+export class NotIncludedButton extends BasePackageButton {
+    get isActive() {
+        const order = this.pos.get_order();
+        return order ? order.included_in_package === false : false;
+    }
+    onClick() {
+        const order = this.pos.get_order();
+        if (!order || !this.checkRestrictions(order)) return;
+        order.set_package_status(false);
+    }
+}
+NotIncludedButton.template = "NotIncludedButtonTemplate";
+
+// Register both buttons
 ProductScreen.addControlButton({
-    component: PackageDiscountButton,
+    component: IncludedButton,
+    position: ["after", "OrderlineCustomerNoteButton"],
+});
+ProductScreen.addControlButton({
+    component: NotIncludedButton,
     position: ["after", "OrderlineCustomerNoteButton"],
 });

@@ -28,6 +28,9 @@ patch(Order.prototype, {
             // CLEAR ENROLLMENT
             this.enrollment_id = false;
 
+            // CLEAR PACKAGE SELECTION (Un-highlights both buttons)
+            this.included_in_package = null;
+
             /// REMOVE ALL ORDERLINES
             const lines = [...this.get_orderlines()];
 

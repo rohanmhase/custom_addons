@@ -136,10 +136,6 @@ export class BillingQueueButton extends Component {
 
             order.prescription_id = rec.id;
 
-            if (typeof order.activate_package_discount === "function") {
-                order.activate_package_discount();
-            }
-
             for (const line of rec.lines) {
 
                 const product =
@@ -182,8 +178,9 @@ export class BillingQueueButton extends Component {
 
             order.enrollment_id = rec.id;
 
-            if (typeof order.deactivate_package_discount === "function") {
-                order.deactivate_package_discount();
+            // NEW: Automatically force "Not Included" so checkout isn't blocked
+            if (typeof order.set_package_status === "function") {
+                order.set_package_status(false);
             }
 
             for (const line of rec.lines) {
