@@ -9,7 +9,7 @@ import os
 import tempfile
 from markupsafe import escape
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import ValidationError
 from datetime import timedelta
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools import config
@@ -145,7 +145,7 @@ class OperationalFundDisbursement(models.Model):
         tracking=True,
         index=True
     )
-
+    
     approval_date = fields.Date(
         string='Approval Date',
         readonly=True,
@@ -242,6 +242,7 @@ class OperationalFundDisbursement(models.Model):
     bank_account_name = fields.Char(string='Bank Account Name', tracking=True)
     bank_account_number = fields.Char(string='Account Number', tracking=True)
     bank_ifsc_code = fields.Char(string='IFSC Code', tracking=True)
+
 
     who_paid = fields.Char(string='Paid By (Name)', tracking=True)
     proof_attachment_ids = fields.Many2many('ir.attachment', string='Additional Proofs')
@@ -353,6 +354,7 @@ class OperationalFundDisbursement(models.Model):
             rec.is_receipt_pdf = bool(rec.receipt_filename and rec.receipt_filename.lower().endswith('.pdf'))
             rec.is_signed_voucher_pdf = bool(
                 rec.signed_voucher_filename and rec.signed_voucher_filename.lower().endswith('.pdf'))
+
 
     # @api.constrains('expense_category', 'therapist_ref_id', 'date', 'is_system_generated')
     # def _prevent_duplicate_allowances(self):
@@ -801,8 +803,7 @@ class OperationalFundDisbursement(models.Model):
         """
         for rec in self:
             # 1. Fetch active routing rules ordered by sequence
-            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)],
-                                                                             order='sequence, id')
+            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
             matched_rule = False
             approvers = self.env['res.users']
 
@@ -871,11 +872,9 @@ class OperationalFundDisbursement(models.Model):
         for rec in self:
             # 1. ADD VALIDATION HERE: Check for documents before allowing approval
             if rec.therapist_ref_id and not rec.signed_voucher_file:
-                raise ValidationError(
-                    _("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
+                raise ValidationError(_("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
             if rec.vendor_ref_id and not rec.receipt_file:
-                raise ValidationError(
-                    _("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
+                raise ValidationError(_("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
 
             # (Balance constraint removed. Funding is now strictly a visual ledger.)
             rec.state = 'approved'
@@ -904,8 +903,7 @@ class OperationalFundDisbursement(models.Model):
         for rec in self:
             if rec.state not in ['draft', 'waiting']:
                 if not self.env.user.has_group('operational_fund.group_op_fund_controller'):
-                    raise ValidationError(
-                        _("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
+                    raise ValidationError(_("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
         self.unlink()
         return {'type': 'ir.actions.act_window', 'name': 'Disbursements', 'res_model': 'operational.fund.disbursement',
                 'view_mode': 'kanban,tree,form', 'target': 'current'}
@@ -1156,6 +1154,7 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("Auditing Restriction: Vouchers can only be created for today's date. Yesterday or tomorrow is not allowed."))
 
+
     def unlink(self):
         for rec in self:
             if rec.state not in ['draft', 'waiting']:
@@ -1163,9 +1162,6 @@ class OperationalFundDisbursement(models.Model):
                     raise ValidationError(
                         _("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
         return super().unlink()
-
-    def copy(self, default=None):
-        raise UserError(_("⚠️ Duplication of this record is not allowed."))
 
 
 class ProjectTask(models.Model):
@@ -1296,6 +1292,8 @@ class IrAttachment(models.Model):
                         raise ValidationError(
                             _("Auditing Security: You cannot delete attachments from a finalized operational disbursement."))
 
+
+
         return super().unlink()
 
     @api.model_create_multi
@@ -1403,6 +1401,7 @@ class IrAttachment(models.Model):
                         _("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
 
         return records
+
 
     @api.model
     def action_migrate_local_attachments_to_s3(self):
@@ -1553,7 +1552,6 @@ class OperationalFundVendor(models.Model):
     bank_ifsc_code = fields.Char(string='IFSC Code')
     active = fields.Boolean(default=True)
 
-
 class OperationalFundUtrWizard(models.TransientModel):
     _name = 'operational.fund.utr.wizard'
     _description = 'Batch UTR Upload Wizard'
@@ -1581,8 +1579,7 @@ class OperationalFundUtrWizard(models.TransientModel):
             u_key = next((row_keys[k] for k in row_keys if 'utr' in k or 'ref' in k), None)
 
             if not v_key or not u_key:
-                raise ValidationError(
-                    _("Invalid CSV Format. The system could not detect columns for 'Voucher' and 'UTR'."))
+                raise ValidationError(_("Invalid CSV Format. The system could not detect columns for 'Voucher' and 'UTR'."))
 
             voucher_code, utr_number = str(row.get(v_key, '')).strip(), str(row.get(u_key, '')).strip()
             if not voucher_code or not utr_number: continue
@@ -1607,12 +1604,7 @@ class OperationalFundUtrWizard(models.TransientModel):
         if mail_vals_list:
             self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
-        return {'type': 'ir.actions.client', 'tag': 'display_notification',
-                'params': {'title': _('Batch Processing Complete'), 'message': _(
-                    'Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count,
-                                                                                                          skipped_count),
-                           'sticky': False, 'type': 'success'}}
-
+        return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Batch Processing Complete'), 'message': _('Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count, skipped_count), 'sticky': False, 'type': 'success'}}
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
