@@ -78,12 +78,7 @@
                             <!-- PATH B: Mark as UNPAID (Route Matrix) -->
                             <!-- PATH B: Mark as UNPAID (Route Matrix) -->
 <button name="action_submit_for_approval" string="Mark as UNPAID (Route for Approval)" type="object" class="btn-warning text-uppercase fw-bold" invisible="is_frozen == True"/>
-<button name="action_backup_to_s3"
-        string="Sync to S3"
-        type="object"
-        class="btn-outline-info"
-        invisible="state not in ('approved', 'paid')"
-        groups="operational_fund.group_op_fund_controller"/>
+
                             <!-- Keep your existing Manager Approve/Reject buttons here... -->
 <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'waiting'" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state in ('rejected', 'paid', 'refunded', 'refund_requested')" groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller" form_novalidate="1"/>

@@ -14,7 +14,6 @@ from datetime import timedelta
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools import config
 
-
 try:
     import boto3
 except ImportError:
@@ -81,15 +80,15 @@ class Clinic(models.Model):
     #         self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
 
-# class OperationalFundVendor(models.Model):
-#     _name = 'operational.fund.vendor'
-#     _description = 'Operational Fund Local Vendor'
-#
-#     name = fields.Char(string='Vendor Name', required=True)
-#     bank_account_name = fields.Char(string='Bank Account Name')
-#     bank_account_number = fields.Char(string='Account Number')
-#     bank_ifsc_code = fields.Char(string='IFSC Code')
-#     active = fields.Boolean(default=True)
+class OperationalFundVendor(models.Model):
+    _name = 'operational.fund.vendor'
+    _description = 'Operational Fund Local Vendor'
+
+    name = fields.Char(string='Vendor Name', required=True)
+    bank_account_name = fields.Char(string='Bank Account Name')
+    bank_account_number = fields.Char(string='Account Number')
+    bank_ifsc_code = fields.Char(string='IFSC Code')
+    active = fields.Boolean(default=True)
 
 
 class OperationalFundDisbursement(models.Model):
@@ -146,7 +145,7 @@ class OperationalFundDisbursement(models.Model):
         tracking=True,
         index=True
     )
-    
+
     approval_date = fields.Date(
         string='Approval Date',
         readonly=True,
@@ -177,12 +176,12 @@ class OperationalFundDisbursement(models.Model):
     other_expense_details = fields.Char(string='Specify Other Expense', tracking=True)
     description = fields.Text(string='Business Purpose')
 
-    receipt_file = fields.Binary(string='Receipt Attachment', attachment=True)
+    receipt_file = fields.Binary(string='Receipt Attachment')
     receipt_filename = fields.Char(string='Receipt Filename')
     is_receipt_mandatory = fields.Boolean(compute='_compute_is_receipt_mandatory')
     is_receipt_image = fields.Boolean(compute='_compute_is_receipt_image', store=True)
 
-    signed_voucher_file = fields.Binary(string='Signed Voucher (Upload)', attachment=True)
+    signed_voucher_file = fields.Binary(string='Signed Voucher (Upload)')
     signed_voucher_filename = fields.Char(string='Signed Voucher Filename')
     is_signed_voucher_image = fields.Boolean(compute='_compute_is_signed_voucher_image', store=True)
 
@@ -200,7 +199,7 @@ class OperationalFundDisbursement(models.Model):
         ('refunded', 'Refunded'),
     ], string='Status', default='draft', tracking=True, index=True)
 
-    payment_screenshot = fields.Binary(string='Transaction Proof Screenshot', attachment=True)
+    payment_screenshot = fields.Binary(string='Transaction Proof Screenshot')
     payment_screenshot_filename = fields.Char(string='Payment Proof Filename')
     is_payment_screenshot_image = fields.Boolean(compute='_compute_is_payment_image', store=True)
 
@@ -244,7 +243,6 @@ class OperationalFundDisbursement(models.Model):
     bank_account_number = fields.Char(string='Account Number', tracking=True)
     bank_ifsc_code = fields.Char(string='IFSC Code', tracking=True)
 
-
     who_paid = fields.Char(string='Paid By (Name)', tracking=True)
     proof_attachment_ids = fields.Many2many('ir.attachment', string='Additional Proofs')
 
@@ -279,46 +277,6 @@ class OperationalFundDisbursement(models.Model):
         If you ever need to change when a voucher locks, you only change it here."""
         for rec in self:
             rec.is_frozen = rec.state != 'draft'
-
-    def _sync_attachments_to_s3(self):
-        """Pushes documents and generated PDFs to S3 ONLY for Approved or Paid vouchers."""
-        for rec in self:
-            if rec.state not in ('approved', 'paid'):
-                continue
-
-            # 1. Ensure the compiled audit PDF exists in ir.attachment
-            pdf_name = f"Voucher_{rec.name.replace('/', '_')}.pdf"
-            existing_pdf = self.env['ir.attachment'].sudo().search([
-                ('res_model', '=', 'operational.fund.disbursement'),
-                ('res_id', '=', rec.id),
-                ('name', '=', pdf_name)
-            ], limit=1)
-            if not existing_pdf:
-                try:
-                    report = self.env['ir.actions.report']._get_report_from_name(
-                        'operational_fund.report_voucher_template'
-                    )
-                    pdf_content, _dummy = report.sudo()._render_qweb_pdf(rec.id)
-                    self.env['ir.attachment'].sudo().create({
-                        'name': pdf_name,
-                        'type': 'binary',
-                        'raw': pdf_content,
-                        'res_model': 'operational.fund.disbursement',
-                        'res_id': rec.id,
-                        'mimetype': 'application/pdf',
-                    })
-                except Exception as e:
-                    _logger.error(f"Failed to generate backup PDF for {rec.name}: {str(e)}")
-
-            # 2. Gather all related attachments (receipts, vouchers, proofs, PDF)
-            attachments = self.env['ir.attachment'].sudo().search([
-                ('res_model', '=', 'operational.fund.disbursement'),
-                ('res_id', '=', rec.id),
-                ('is_s3_stored', '=', False),
-                ('type', '=', 'binary')
-            ])
-            if attachments:
-                attachments._force_s3_upload()
 
     # --- AUTO-POPULATION LOGIC ---
     @api.onchange('therapist_ref_id')
@@ -395,7 +353,6 @@ class OperationalFundDisbursement(models.Model):
             rec.is_receipt_pdf = bool(rec.receipt_filename and rec.receipt_filename.lower().endswith('.pdf'))
             rec.is_signed_voucher_pdf = bool(
                 rec.signed_voucher_filename and rec.signed_voucher_filename.lower().endswith('.pdf'))
-
 
     # @api.constrains('expense_category', 'therapist_ref_id', 'date', 'is_system_generated')
     # def _prevent_duplicate_allowances(self):
@@ -844,7 +801,8 @@ class OperationalFundDisbursement(models.Model):
         """
         for rec in self:
             # 1. Fetch active routing rules ordered by sequence
-            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
+            rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)],
+                                                                             order='sequence, id')
             matched_rule = False
             approvers = self.env['res.users']
 
@@ -913,9 +871,11 @@ class OperationalFundDisbursement(models.Model):
         for rec in self:
             # 1. ADD VALIDATION HERE: Check for documents before allowing approval
             if rec.therapist_ref_id and not rec.signed_voucher_file:
-                raise ValidationError(_("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
+                raise ValidationError(
+                    _("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
             if rec.vendor_ref_id and not rec.receipt_file:
-                raise ValidationError(_("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
+                raise ValidationError(
+                    _("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
 
             # (Balance constraint removed. Funding is now strictly a visual ledger.)
             rec.state = 'approved'
@@ -924,7 +884,6 @@ class OperationalFundDisbursement(models.Model):
 
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
-            rec._sync_attachments_to_s3()
 
             if rec.create_uid and rec.create_uid.email:
                 mail_vals_list.append(
@@ -945,7 +904,8 @@ class OperationalFundDisbursement(models.Model):
         for rec in self:
             if rec.state not in ['draft', 'waiting']:
                 if not self.env.user.has_group('operational_fund.group_op_fund_controller'):
-                    raise ValidationError(_("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
+                    raise ValidationError(
+                        _("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
         self.unlink()
         return {'type': 'ir.actions.act_window', 'name': 'Disbursements', 'res_model': 'operational.fund.disbursement',
                 'view_mode': 'kanban,tree,form', 'target': 'current'}
@@ -1030,7 +990,7 @@ class OperationalFundDisbursement(models.Model):
                 try:
                     report = self.env['ir.actions.report']._get_report_from_name(
                         'operational_fund.report_voucher_template')
-                    pdf_content, _dummy = report.sudo()._render_qweb_pdf(rec.id)
+                    pdf_content, _ = report.sudo()._render_qweb_pdf(rec.id)
                     self.env['ir.attachment'].sudo().create({'name': pdf_name, 'type': 'binary', 'raw': pdf_content,
                                                              'res_model': 'operational.fund.disbursement',
                                                              'res_id': rec.id, 'mimetype': 'application/pdf'})
@@ -1196,7 +1156,6 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("Auditing Restriction: Vouchers can only be created for today's date. Yesterday or tomorrow is not allowed."))
 
-
     def unlink(self):
         for rec in self:
             if rec.state not in ['draft', 'waiting']:
@@ -1337,8 +1296,6 @@ class IrAttachment(models.Model):
                         raise ValidationError(
                             _("Auditing Security: You cannot delete attachments from a finalized operational disbursement."))
 
-
-
         return super().unlink()
 
     @api.model_create_multi
@@ -1390,35 +1347,28 @@ class IrAttachment(models.Model):
                                 f"Failed to stream down asset from S3 bucket via key {attach.s3_object_key}: {str(e)}")
 
     def _force_s3_upload(self):
-        if not boto3:
-            _logger.warning("AWS S3: 'boto3' is not installed.")
-            return
+        if not boto3: return
         s3_client, bucket = self._get_s3_credentials()
-        if not s3_client or not bucket:
-            _logger.warning("AWS S3: Credentials or bucket missing.")
-            return
-
+        if not s3_client or not bucket: return
         for rec in self:
-            if not rec.is_s3_stored:
-                # Bypass bin_size context so full raw bytes are read
-                raw_data = rec.with_context(bin_size=False).raw or (base64.b64decode(rec.datas) if rec.datas else None)
-                if not raw_data:
-                    continue
+            if not rec.is_s3_stored and rec.raw:
                 try:
+                    # FIX: Handle False/None mimetypes safely
                     safe_mimetype = rec.mimetype or 'application/octet-stream'
-                    file_ext = mimetypes.guess_extension(safe_mimetype) or '.bin'
-                    field_part = f"_{rec.res_field}" if rec.res_field else ""
-                    object_key = f"operational_funds/{rec.res_model}/{rec.res_id}{field_part}_{rec.id}{file_ext}"
+                    file_extension = mimetypes.guess_extension(safe_mimetype) or '.bin'
 
+                    object_key = f"operational_funds/{rec.res_model}/{rec.res_id}_{rec.id}{file_extension}"
+
+                    # FIX: Pass the safe_mimetype to AWS
                     s3_client.put_object(
                         Bucket=bucket,
                         Key=object_key,
-                        Body=raw_data,
+                        Body=rec.raw,
                         ContentType=safe_mimetype
                     )
                     rec.sudo().write({'is_s3_stored': True, 's3_object_key': object_key})
                 except Exception as e:
-                    _logger.error(f"S3 Cloud Upload Failure for attachment {rec.id}: {str(e)}")
+                    _logger.error(f"Force Migration Failure for asset {rec.id}: {str(e)}")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -1453,7 +1403,6 @@ class IrAttachment(models.Model):
                         _("Cloud Architecture Error: Failed to upload the asset to AWS S3. Transaction aborted to maintain cloud sync integrity."))
 
         return records
-
 
     @api.model
     def action_migrate_local_attachments_to_s3(self):
@@ -1553,7 +1502,6 @@ class OperationalFundUtrWizard(models.TransientModel):
                     'utr_reference': utr_number,
                     'state': 'paid'
                 })
-                voucher._sync_attachments_to_s3()
                 success_count += 1
 
                 # Batch email notification generation
@@ -1605,59 +1553,66 @@ class OperationalFundVendor(models.Model):
     bank_ifsc_code = fields.Char(string='IFSC Code')
     active = fields.Boolean(default=True)
 
-# class OperationalFundUtrWizard(models.TransientModel):
-#     _name = 'operational.fund.utr.wizard'
-#     _description = 'Batch UTR Upload Wizard'
-#
-#     csv_file = fields.Binary(string='Bank Payment Sheet (CSV)', required=True)
-#     file_name = fields.Char(string='File Name')
-#
-#     def action_process_csv(self):
-#         self.ensure_one()
-#         if not self.csv_file:
-#             raise ValidationError(_("Please upload a CSV file."))
-#
-#         try:
-#             decoded_file = base64.b64decode(self.csv_file).decode('utf-8-sig')
-#         except UnicodeDecodeError:
-#             decoded_file = base64.b64decode(self.csv_file).decode('latin1')
-#
-#         reader = csv.DictReader(io.StringIO(decoded_file))
-#         success_count, skipped_count = 0, 0
-#         mail_vals_list = []
-#
-#         for row in reader:
-#             row_keys = {k.strip().lower(): k for k in row.keys() if k}
-#             v_key = next((row_keys[k] for k in row_keys if 'voucher' in k or 'name' in k or 'code' in k), None)
-#             u_key = next((row_keys[k] for k in row_keys if 'utr' in k or 'ref' in k), None)
-#
-#             if not v_key or not u_key:
-#                 raise ValidationError(_("Invalid CSV Format. The system could not detect columns for 'Voucher' and 'UTR'."))
-#
-#             voucher_code, utr_number = str(row.get(v_key, '')).strip(), str(row.get(u_key, '')).strip()
-#             if not voucher_code or not utr_number: continue
-#
-#             voucher = self.env['operational.fund.disbursement'].search([('name', '=', voucher_code)], limit=1)
-#
-#             # SECURITY GUARD: Only process if structurally approved
-#             if voucher and voucher.state == 'approved':
-#                 voucher.write({'utr_reference': utr_number, 'state': 'paid'})
-#                 success_count += 1
-#                 if voucher.create_uid and voucher.create_uid.email:
-#                     mail_vals_list.append({
-#                         'subject': f'Paid: Voucher {voucher.name}',
-#                         'email_from': '<noreply@researchayu.com>',
-#                         'email_to': voucher.create_uid.email,
-#                         'body_html': f'<div style="padding: 20px;"><h2 style="color: #17a2b8;">Voucher Paid</h2><p>Your voucher <strong>{escape(voucher.name)}</strong> has been finalized by Accounts.</p><p><strong>Bank UTR Reference:</strong> {escape(utr_number)}</p></div>',
-#                         'state': 'outgoing',
-#                     })
-#             else:
-#                 skipped_count += 1
-#
-#         if mail_vals_list:
-#             self.env['mail.mail'].sudo().create(mail_vals_list).send()
-#
-#         return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {'title': _('Batch Processing Complete'), 'message': _('Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count, skipped_count), 'sticky': False, 'type': 'success'}}
+
+class OperationalFundUtrWizard(models.TransientModel):
+    _name = 'operational.fund.utr.wizard'
+    _description = 'Batch UTR Upload Wizard'
+
+    csv_file = fields.Binary(string='Bank Payment Sheet (CSV)', required=True)
+    file_name = fields.Char(string='File Name')
+
+    def action_process_csv(self):
+        self.ensure_one()
+        if not self.csv_file:
+            raise ValidationError(_("Please upload a CSV file."))
+
+        try:
+            decoded_file = base64.b64decode(self.csv_file).decode('utf-8-sig')
+        except UnicodeDecodeError:
+            decoded_file = base64.b64decode(self.csv_file).decode('latin1')
+
+        reader = csv.DictReader(io.StringIO(decoded_file))
+        success_count, skipped_count = 0, 0
+        mail_vals_list = []
+
+        for row in reader:
+            row_keys = {k.strip().lower(): k for k in row.keys() if k}
+            v_key = next((row_keys[k] for k in row_keys if 'voucher' in k or 'name' in k or 'code' in k), None)
+            u_key = next((row_keys[k] for k in row_keys if 'utr' in k or 'ref' in k), None)
+
+            if not v_key or not u_key:
+                raise ValidationError(
+                    _("Invalid CSV Format. The system could not detect columns for 'Voucher' and 'UTR'."))
+
+            voucher_code, utr_number = str(row.get(v_key, '')).strip(), str(row.get(u_key, '')).strip()
+            if not voucher_code or not utr_number: continue
+
+            voucher = self.env['operational.fund.disbursement'].search([('name', '=', voucher_code)], limit=1)
+
+            # SECURITY GUARD: Only process if structurally approved
+            if voucher and voucher.state == 'approved':
+                voucher.write({'utr_reference': utr_number, 'state': 'paid'})
+                success_count += 1
+                if voucher.create_uid and voucher.create_uid.email:
+                    mail_vals_list.append({
+                        'subject': f'Paid: Voucher {voucher.name}',
+                        'email_from': '<noreply@researchayu.com>',
+                        'email_to': voucher.create_uid.email,
+                        'body_html': f'<div style="padding: 20px;"><h2 style="color: #17a2b8;">Voucher Paid</h2><p>Your voucher <strong>{escape(voucher.name)}</strong> has been finalized by Accounts.</p><p><strong>Bank UTR Reference:</strong> {escape(utr_number)}</p></div>',
+                        'state': 'outgoing',
+                    })
+            else:
+                skipped_count += 1
+
+        if mail_vals_list:
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
+
+        return {'type': 'ir.actions.client', 'tag': 'display_notification',
+                'params': {'title': _('Batch Processing Complete'), 'message': _(
+                    'Successfully marked %s vouchers as Paid. Skipped %s invalid or unapproved rows.') % (success_count,
+                                                                                                          skipped_count),
+                           'sticky': False, 'type': 'success'}}
+
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
@@ -1714,7 +1669,6 @@ class OperationalFundMarkPaidWizard(models.TransientModel):
     def action_confirm_paid(self):
         self.ensure_one()
         disb = self.disbursement_id
-        disb._sync_attachments_to_s3()
 
         # CRITICAL FIX: Transfer ownership of attachments to prevent Odoo auto-deletion
         if self.proof_attachment_ids:
