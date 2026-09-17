@@ -1,8 +1,20 @@
-<t t-name="PackageDiscountButtonTemplate">
-    <button
-        class="control-button package-discount-button"
-        t-att-class="{ highlight: isActive, disabled: isDisabled }"
-        t-on-click="onClick">
-        Included in Package
-    </button>
-</t>
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- Included Button -->
+    <t t-name="IncludedButtonTemplate" owl="1">
+        <button class="control-button package-discount-button"
+            t-att-class="{ highlight: isActive, disabled: isDisabled }"
+            t-on-click="onClick">
+            Mark Included in Package
+        </button>
+    </t>
+
+    <!-- Not Included Button -->
+    <t t-name="NotIncludedButtonTemplate" owl="1">
+        <button class="control-button package-discount-button"
+            t-att-class="{ highlight: isActive, disabled: isDisabled }"
+            t-on-click="onClick">
+            Mark Not Included in Package
+        </button>
+    </t>
+</templates>
