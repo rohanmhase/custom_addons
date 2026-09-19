@@ -3,9 +3,9 @@
 
     <template id="report_invoice_document_bill_of_supply"
               inherit_id="account.report_invoice_document"
-              priority="9999">
+              priority="99">
 
-        <!-- Target any h2 tag in the report -->
+        <!-- Replace Invoice Title Header -->
         <xpath expr="//h2" position="replace">
             <h2>
                 <span t-if="proforma">PROFORMA </span>
