@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Inherit base invoice report with high priority so it wins over l10n_in -->
     <template id="report_invoice_document_bill_of_supply"
               inherit_id="account.report_invoice_document"
-              priority="100">
+              priority="9999">
 
-        <!-- Replace the whole title block -->
+        <!-- Target any h2 tag in the report -->
         <xpath expr="//h2" position="replace">
             <h2>
                 <span t-if="proforma">PROFORMA </span>
 
                 <!-- Customer Invoice / Bill of Supply -->
                 <t t-if="o.move_type == 'out_invoice'">
-                    <!-- Only real non-zero tax amount => Tax Invoice -->
                     <t t-set="has_tax"
-                       t-value="bool(o.currency_id and not o.currency_id.is_zero(o.amount_tax)) if o.currency_id else bool(o.amount_tax)"/>
+                       t-value="bool(o.currency_id and not o.currency_id.is_zero(o.amount_tax)) if (o and o.currency_id) else bool(o.amount_tax if o else False)"/>
                     <t t-set="doc_title"
                        t-value="'Tax Invoice' if has_tax else 'Bill of Supply'"/>
 
@@ -39,23 +37,26 @@
             </h2>
         </xpath>
 
-        <!-- Payment method block (unchanged logic) -->
+        <!-- Payment Label Override -->
         <xpath expr="//i[hasclass('oe_payment_label')]" position="replace">
             <i class="oe_form_field text-end oe_payment_label">
                 Paid on
-                <t t-out="payment_vals['date']" t-options='{"widget": "date"}'/>
+                <t t-out="payment_vals.get('date')" t-options='{"widget": "date"}'>2021-09-19</t>
 
-                <t t-set="payment_move"
-                   t-value="o.env['account.move'].browse(payment_vals.get('move_id'))"/>
+                <t t-set="payment_move_id" t-value="payment_vals.get('move_id') if isinstance(payment_vals, dict) else False"/>
+                <t t-set="payment_move" t-value="o.env['account.move'].browse(payment_move_id) if payment_move_id else False"/>
                 <t t-set="method_name" t-value="False"/>
 
                 <t t-if="payment_move and 'pos_payment_ids' in payment_move._fields and payment_move.pos_payment_ids">
-                    <t t-set="method_name"
-                       t-value="', '.join(payment_move.pos_payment_ids.mapped('payment_method_id.name'))"/>
+                    <t t-set="method_name" t-value="', '.join(payment_move.pos_payment_ids.mapped('payment_method_id.name'))"/>
                 </t>
 
                 <t t-if="not method_name and payment_move and payment_move.journal_id">
                     <t t-set="method_name" t-value="payment_move.journal_id.name"/>
+                </t>
+
+                <t t-if="not method_name and isinstance(payment_vals, dict) and payment_vals.get('journal_name')">
+                    <t t-set="method_name" t-value="payment_vals.get('journal_name')"/>
                 </t>
 
                 <t t-if="method_name">
