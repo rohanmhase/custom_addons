@@ -9,7 +9,7 @@ import os
 import tempfile
 from markupsafe import escape
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools import config
@@ -1162,6 +1162,9 @@ class OperationalFundDisbursement(models.Model):
                     raise ValidationError(
                         _("Auditing Security: Only Tier 3 Controllers can delete vouchers that have already been approved or processed."))
         return super().unlink()
+
+    def copy(self, default=None):
+        raise UserError(_("⚠️ Duplication of this record is not allowed."))
 
 
 class ProjectTask(models.Model):
