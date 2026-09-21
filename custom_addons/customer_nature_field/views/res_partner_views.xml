@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Nature field to Partner FORM -->
+    <record id="view_partner_form_nature" model="ir.ui.view">
+        <field name="name">res.partner.form.nature</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="nature_id"
+                       options="{'no_create': True, 'no_create_edit': True}"
+                       placeholder="e.g. Clinic Sales"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add Nature column to Partner TREE -->
+    <record id="view_partner_tree_nature" model="ir.ui.view">
+        <field name="name">res.partner.tree.nature</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="nature_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
