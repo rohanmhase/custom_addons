@@ -25,8 +25,11 @@
             "clinic_management/static/src/js/product_screen.js",
             "clinic_management/static/src/js/pos_cc_validation.js",
             "clinic_management/static/src/js/pos_store_patch.js",
+            "clinic_management/static/src/js/payment_screen_patch.js",
+            "clinic_management/static/src/js/payment_summary_popup.js",
             "clinic_management/static/src/css/pos_custom.css",
             "clinic_management/static/src/xml/order_receipt.xml",
+            "clinic_management/static/src/xml/payment_summary_popup.xml",
         ]
     },
     "installable": True,
