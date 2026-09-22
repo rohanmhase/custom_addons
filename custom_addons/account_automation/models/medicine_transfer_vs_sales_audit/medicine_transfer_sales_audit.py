@@ -297,16 +297,40 @@ class MedicineTransferSalesAudit(models.Model):
                   AND sp.date_done::date >= %(start_date)s
                   AND sp.date_done::date <= %(end_date)s
                 GROUP BY cc.id
+            ),
+                        medicine_receipts_cte AS (
+                SELECT
+                    cc.id AS clinic_id,
+                    SUM(sm.quantity * COALESCE(msp.selling_price, 0)) AS medicine_receipt_value
+                FROM clinic_clinic cc
+                JOIN stock_warehouse          sw  ON sw.id               = cc.warehouse_id
+                JOIN stock_picking            sp  ON sp.location_dest_id = sw.lot_stock_id
+                JOIN stock_picking_type       spt ON spt.id              = sp.picking_type_id
+                JOIN stock_move               sm  ON sm.picking_id       = sp.id
+                JOIN product_product          pp  ON pp.id               = sm.product_id
+                JOIN product_template         pt  ON pt.id               = pp.product_tmpl_id
+                LEFT JOIN medicine_transfer_selling_price msp
+                       ON msp.product_id = pp.id
+                      AND msp.active     = true
+                WHERE spt.code       = 'incoming'
+                  AND sp.state       = 'done'
+                  AND pt.type        = 'product'
+                  AND sp.date_done::date >= %(start_date)s
+                  AND sp.date_done::date <= %(end_date)s
+                GROUP BY cc.id
             )
 
             SELECT
                 cm.clinic_id,
                 cm.clinic_name,
                 COALESCE(s.total_sales,              0) AS total_sales,
-                COALESCE(m.medicine_transfer_value,  0) AS medicine_transfer_value
+                COALESCE(m.medicine_transfer_value,  0) AS medicine_transfer_value,
+                COALESCE(r.medicine_receipt_value,   0) AS medicine_receipt_value,
+                (COALESCE(m.medicine_transfer_value, 0) + COALESCE(r.medicine_receipt_value, 0)) AS total_medicine_value
             FROM      clinic_master  cm
             LEFT JOIN sales_cte      s   ON s.pos_config_id  = cm.pos_config_id
             LEFT JOIN medicine_cte   m   ON m.clinic_id      = cm.clinic_id
+            LEFT JOIN medicine_receipts_cte r ON r.clinic_id = cm.clinic_id
             ORDER BY cm.clinic_name
         """
 
@@ -326,7 +350,7 @@ class MedicineTransferSalesAudit(models.Model):
             LEFT JOIN medicine_transfer_selling_price msp
                    ON msp.product_id = pp.id
                   AND msp.active     = true
-            WHERE spt.code      = 'internal'
+            WHERE spt.code IN ('internal', 'incoming')
               AND sp.state      = 'done'
               AND pt.type       = 'product'
               AND sp.date_done::date >= %(start_date)s
@@ -348,13 +372,17 @@ class MedicineTransferSalesAudit(models.Model):
         for row in rows:
             ts = row['total_sales'] or 0.0
             mtv = row['medicine_transfer_value'] or 0.0
-            ratio = (ts / mtv) if mtv else 0.0
+            mrv = row['medicine_receipt_value'] or 0.0
+            tot_med = row['total_medicine_value'] or 0.0
+            ratio = (ts / tot_med) if tot_med else 0.0
             lines.append((0, 0, {
-                'clinic_db_id':              row['clinic_id'],
-                'clinic_name':               row['clinic_name'],
-                'total_sales':               ts,
-                'medicine_transfer_value':   mtv,
-                'sales_medicine_ratio':      ratio,
+                'clinic_db_id': row['clinic_id'],
+                'clinic_name': row['clinic_name'],
+                'total_sales': ts,
+                'medicine_transfer_value': mtv,
+                'medicine_receipt_value': mrv,
+                'total_medicine_value': tot_med,
+                'sales_medicine_ratio': ratio,
             }))
         self.line_ids = lines
 
@@ -378,6 +406,10 @@ class MedicineTransferSalesAuditLine(models.Model):
 
     total_sales = fields.Float(string='Total Sales', digits=(16, 2))
     medicine_transfer_value = fields.Float(
-        string='Medicine Transfer Value', digits=(16, 2))
+        string='Internal Transfer', digits=(16, 2))
+    medicine_receipt_value = fields.Float(
+        string='Receipts', digits=(16, 2))
+    total_medicine_value = fields.Float(
+        string='Total Medicine', digits=(16, 2))
     sales_medicine_ratio = fields.Float(
         string='Sales / Medicine', digits=(16, 2))

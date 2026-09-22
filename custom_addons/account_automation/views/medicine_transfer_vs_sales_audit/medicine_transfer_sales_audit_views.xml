@@ -201,10 +201,10 @@
                         <tree string="Audit Results" create="false" delete="false">
                             <field name="clinic_name" string="Clinic"/>
                             <field name="total_sales" string="Total Sales" sum="Total"/>
-                            <field name="medicine_transfer_value"
-                                   string="Medicine Transfer Value" sum="Total"/>
-                            <field name="sales_medicine_ratio"
-                                   string="Sales / Medicine" avg="Average"/>
+                            <field name="medicine_transfer_value" string="Internal Transfer" sum="Total"/>
+                            <field name="medicine_receipt_value" string="Receipts" sum="Total"/>
+                            <field name="total_medicine_value" string="Total Medicine" sum="Total"/>
+                            <field name="sales_medicine_ratio" string="Sales / Medicine" avg="Average"/>
                         </tree>
                     </field>
                 </sheet>
@@ -239,10 +239,10 @@
             <tree string="Medicine Transfer vs Sales Audit" create="false" delete="false">
                 <field name="clinic_name" string="Clinic"/>
                 <field name="total_sales" string="Total Sales" sum="Total"/>
-                <field name="medicine_transfer_value"
-                       string="Medicine Transfer Value" sum="Total"/>
-                <field name="sales_medicine_ratio"
-                       string="Sales / Medicine" avg="Average"/>
+                <field name="medicine_transfer_value" string="Internal Transfer" sum="Total"/>
+                <field name="medicine_receipt_value" string="Receipts" sum="Total"/>
+                <field name="total_medicine_value" string="Total Medicine" sum="Total"/>
+                <field name="sales_medicine_ratio" string="Sales / Medicine" avg="Average"/>
             </tree>
         </field>
     </record>
