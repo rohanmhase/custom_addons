@@ -11,9 +11,7 @@ access_comparison_admin,daily.sales.comparison.admin,model_daily_sales_compariso
 access_comparison_line_admin,daily.sales.comparison.line.admin,model_daily_sales_comparison_line,group_account_automation_admin,1,1,1,1
 access_clinic_mapping_admin,clinic.psmr.mapping.admin,model_clinic_psmr_mapping,group_account_automation_admin,1,1,1,1
 access_wizard_admin,psmr.reconciliation.wizard.admin,model_psmr_reconciliation_wizard,group_account_automation_admin,1,1,1,1
-access_act_window_user,act.window.user,base.model_ir_actions_act_window,group_account_automation_user,1,0,0,0
-access_act_window_moderator,act.window.moderator,base.model_ir_actions_act_window,group_account_automation_moderator,1,1,1,0
-access_act_window_admin,act.window.admin,base.model_ir_actions_act_window,group_account_automation_admin,1,1,1,1
+
 access_bank_config_user,bank.statement.parser.config.user,model_bank_statement_parser_config,group_account_automation_user,1,0,0,0
 access_bank_config_mod,bank.statement.parser.config.mod,model_bank_statement_parser_config,group_account_automation_moderator,1,1,1,0
 access_bank_config_admin,bank.statement.parser.config.admin,model_bank_statement_parser_config,group_account_automation_admin,1,1,1,1
