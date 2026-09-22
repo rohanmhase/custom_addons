@@ -13,7 +13,7 @@ class AccountAutomationDashboard(models.TransientModel):
 
     def action_view_history(self):
         # Bypasses normal form target context to completely wipe technical IDs from the breadcrumb stack
-        action = self.env.ref('account_automation.action_daily_sales_comparison').read()[0]
+        action = self.env.ref('account_automation.action_daily_sales_comparison').sudo().read()[0]
         action.update({
             'target': 'current',
             'context': {'clear_breadcrumbs': True}
@@ -76,7 +76,7 @@ class AccountAutomationDashboard(models.TransientModel):
         """
         action = self.env.ref(
             'account_automation.action_clinic_performance_report_history'
-        ).read()[0]
+        ).sudo().read()[0]
         action.update({
             'target': 'current',
             'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
@@ -96,7 +96,7 @@ class AccountAutomationDashboard(models.TransientModel):
     def action_view_medicine_transfer_audit_history(self):
         action = self.env.ref(
             'account_automation.action_medicine_transfer_sales_audit_history'
-        ).read()[0]
+        ).sudo().read()[0]
         action.update({
             'target': 'current',
             'context': {'search_default_active': 1, 'clear_breadcrumbs': True},
@@ -134,7 +134,7 @@ class AccountAutomationDashboard(models.TransientModel):
         }
 
     def action_view_session_alert_history(self):
-        action = self.env.ref('account_automation.action_pos_session_alert_log').read()[0]
+        action = self.env.ref('account_automation.action_pos_session_alert_log').sudo().read()[0]
         action.update({'target': 'current', 'context': {'clear_breadcrumbs': True}})
         return action
 
@@ -158,7 +158,7 @@ class AccountAutomationDashboard(models.TransientModel):
         }
 
     def action_view_checkpoint_history(self):
-        action = self.env.ref('account_automation.action_pos_session_cash_checkpoint').read()[0]
+        action = self.env.ref('account_automation.action_pos_session_cash_checkpoint').sudo().read()[0]
         action.update({'target': 'current', 'context': {'clear_breadcrumbs': True}})
         return action
 
