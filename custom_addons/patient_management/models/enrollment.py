@@ -219,10 +219,7 @@ class Enrollment(models.Model):
             'total_sessions',
             'total_amount',
         }
-        is_system_update = (
-            self.env.context.get('service_config_recompute')
-            or all(key in allowed_system_fields for key in vals.keys())
-        )
+        is_system_update = all(key in allowed_system_fields for key in vals.keys())
 
         for rec in self:
             # Only trigger the lock if a human/script is trying to edit a non-system field
@@ -264,13 +261,6 @@ class Enrollment(models.Model):
     #
     @api.constrains('total_sessions')
     def _check_total_sessions_zero(self):
-        # Saving/updating Enrollment Service Configuration can intentionally
-        # recompute stored totals on historical enrollment records. Those
-        # internal recomputations must not be blocked by the interactive
-        # 100-session validation used when users create/edit enrollments.
-        if self.env.context.get('service_config_recompute'):
-            return
-
         for rec in self:
             if rec.total_sessions > 100:
                 raise ValidationError(_("You can enter a maximum of 100 therapy sessions."))
@@ -283,9 +273,9 @@ class Enrollment(models.Model):
 
     @api.constrains('enrollment_date')
     def _check_enrollment_date(self):
-        today = date.today()
         for record in self:
-            if record.enrollment_date and record.enrollment_date > today:
+            today_ist = record._ist_date()
+            if record.enrollment_date and record.enrollment_date > today_ist:
                 raise ValidationError(
                     _("The enrollment date must be today or earlier.")
                 )
@@ -412,7 +402,8 @@ class EnrollmentLine(models.Model):
         'product.product',
         string="Service",
         domain="[('detailed_type','=','service'), ('available_in_pos', '=', True)]",
-        required=True
+        required=True,
+        index=True,
     )
 
     service_config_id = fields.Many2one(
@@ -421,6 +412,7 @@ class EnrollmentLine(models.Model):
         compute='_compute_service_config_id',
         store=True,
         readonly=True,
+        index=True,
     )
 
     service_category = fields.Selection(
@@ -525,7 +517,6 @@ class EnrollmentLine(models.Model):
     @api.depends(
         'service_product_id',
         'service_config_id',
-        'service_config_id.counts_as_sessions',
         'pos_qty'
     )
     def _compute_total_sessions(self):
@@ -551,13 +542,6 @@ class EnrollmentLine(models.Model):
 
     @api.constrains('pos_qty', 'service_product_id', 'service_config_id')
     def _check_treatment_qty(self):
-        # Saving/changing a service configuration can refresh the linked
-        # configuration/compute fields on historical enrollment lines.
-        # Do not re-validate old data during that internal recomputation;
-        # normal user creates/edits still enforce the positive-quantity rule.
-        if self.env.context.get('service_config_recompute'):
-            return
-
         for rec in self:
             if (
                 rec.service_product_id

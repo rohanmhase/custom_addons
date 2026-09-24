@@ -105,65 +105,49 @@ class EnrollmentServiceConfig(models.Model):
             ('product_id', '=', product.id)
         ], limit=1)
 
-    def _recompute_lines_for_products(self, products):
-        if not products:
-            return
-
-        # This operation intentionally refreshes historical enrollment lines so
-        # existing services receive their configuration.  The context flag tells
-        # patient.enrollment.write() that any resulting stored-compute writes are
-        # internal recomputations, not an attempt by a user to edit a paid record.
-        lines = self.env['patient.enrollment.line'].with_context(
-            service_config_recompute=True
-        ).search([
-            ('service_product_id', 'in', products.ids)
-        ])
-        if lines:
-            lines._compute_service_config_id()
-            lines._compute_total_sessions()
-
-            enrollments = lines.mapped('enrollment_id').with_context(
-                service_config_recompute=True
-            )
-            if enrollments:
-                enrollments._compute_totals()
-                enrollments._update_patient_status()
-
-        products.invalidate_recordset(['display_name'])
-
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        if not self.env.context.get('skip_service_recompute'):
-            records._recompute_lines_for_products(records.mapped('product_id'))
+        # Do not touch historical enrollment lines here.  Service configuration
+        # saves must stay lightweight even when the database contains a large
+        # enrollment history.  Historical links are backfilled separately.
+        records.mapped('product_id').invalidate_recordset(['display_name'])
         return records
 
     def write(self, vals):
+        # A configuration must stay attached to the same product once that
+        # product has ever been used in an enrollment.  Check by product rather
+        # than service_config_id because historical lines may not have been
+        # backfilled yet.
         if 'product_id' in vals:
-            linked_lines = self.env['patient.enrollment.line'].search_count([
-                ('service_config_id', 'in', self.ids)
-            ])
-            if linked_lines:
-                raise ValidationError(_(
-                    'You cannot change the Service Product after this configuration has been used in an enrollment. '
-                    'Archive this configuration and create a new one if needed.'
-                ))
+            EnrollmentLine = self.env['patient.enrollment.line']
+            for rec in self:
+                if rec.product_id and EnrollmentLine.search_count([
+                    ('service_product_id', '=', rec.product_id.id)
+                ]):
+                    raise ValidationError(_(
+                        'You cannot change the Service Product after this product has been used in an enrollment. '
+                        'Archive this configuration and create a new one if needed.'
+                    ))
 
         old_products = self.mapped('product_id')
         res = super().write(vals)
-        if not self.env.context.get('skip_service_recompute'):
-            self._recompute_lines_for_products(old_products | self.mapped('product_id'))
+
+        # Configuration changes apply prospectively.  Do not recompute historical
+        # enrollment lines/totals/statuses when an administrator saves this form.
+        (old_products | self.mapped('product_id')).invalidate_recordset(['display_name'])
         return res
 
     def unlink(self):
-        linked_lines = self.env['patient.enrollment.line'].search_count([
-            ('service_config_id', 'in', self.ids)
-        ])
-        if linked_lines:
-            raise ValidationError(_(
-                'You cannot delete an Enrollment Service Configuration that has already been used. '
-                'Archive it instead so historical enrollments remain correct.'
-            ))
+        EnrollmentLine = self.env['patient.enrollment.line']
+        for rec in self:
+            if rec.product_id and EnrollmentLine.search_count([
+                ('service_product_id', '=', rec.product_id.id)
+            ]):
+                raise ValidationError(_(
+                    'You cannot delete an Enrollment Service Configuration whose product has already been used. '
+                    'Archive it instead so historical enrollments remain correct.'
+                ))
 
         products = self.mapped('product_id')
         res = super().unlink()
