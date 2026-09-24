@@ -570,16 +570,16 @@ class EnrollmentLine(models.Model):
                     % rec.service_product_id.display_name
                 )
 
-    @api.constrains('therapy_amount')
-    def _check_therapy_amount_decimals(self):
-        for rec in self:
-            if rec.therapy_amount and not rec.therapy_amount.is_integer():
-                raise ValidationError(
-                    _(
-                        "The Per Session Amount must be a whole number. "
-                        "Decimal values like %s are not allowed."
-                    ) % rec.therapy_amount
-                )
+    # @api.constrains('therapy_amount')
+    # def _check_therapy_amount_decimals(self):
+    #     for rec in self:
+    #         if rec.therapy_amount and not rec.therapy_amount.is_integer():
+    #             raise ValidationError(
+    #                 _(
+    #                     "The Per Session Amount must be a whole number. "
+    #                     "Decimal values like %s are not allowed."
+    #                 ) % rec.therapy_amount
+    #             )
 
 
 class ProductProduct(models.Model):
