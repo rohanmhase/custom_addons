@@ -23,6 +23,7 @@
         'views/diet_chart_views.xml',
         'views/followup_views.xml',
         'views/enrollment_views.xml',
+        'views/enrollment_service_config_views.xml',
         'views/session_views.xml',
         'views/xray_views.xml',
         'views/prescription_views.xml',

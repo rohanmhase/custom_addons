@@ -525,77 +525,84 @@ class Patient(models.Model):
         # Fetch patients who are either on therapy or on medicine
         patients = self.search([('patient_status', 'in', ['active', 'on_medicine'])])
 
-        medicine_products = [
-            'Diabetes Treatment',
-            'Digestion Improvement Treatment',
-            'PCOD Treatment',
-            'Regeneration Treatment',
-            'Weight Management Treatment'
-        ]
-
         for patient in patients:
-
-            # ==========================================
-            # 1. LOGIC FOR ACTIVE/ON THERAPY (7 DAYS)
-            # ==========================================
             if patient.patient_status == 'active':
-
-                # Check for the most recent session
                 last_session = self.env['patient.session'].search([
                     ('patient_id', '=', patient.id),
                     ('active', '=', True)
                 ], order='session_date desc', limit=1)
 
-                # Determine the exact date to compare against
                 last_date = False
                 if last_session and last_session.session_date:
                     last_date = last_session.session_date
                 elif patient.active_enrollment_id:
-                    # Fallback: They paid but haven't taken a session yet
                     last_date = patient.active_enrollment_id.enrollment_date
                 else:
-                    # Absolute fallback if no enrollment is found
                     last_date = patient.enroll_date
 
-                # Check if 7 days have passed OR if they ran out of remaining sessions
-                if patient.remaining_sessions <= 0 or (last_date and (today - last_date).days >= 7):
+                therapy_window = 7
+                if patient.active_enrollment_id:
+                    therapy_windows = patient.active_enrollment_id.line_ids.filtered(
+                        lambda line: line.service_config_id
+                        and line.service_config_id.service_category == 'therapy'
+                    ).mapped('service_config_id.activity_window_days')
+                    if therapy_windows:
+                        therapy_window = max(therapy_windows)
 
-                    # BEFORE making them inactive, check if they are still within a 30-day medicine window
+                if (
+                    patient.remaining_sessions <= 0
+                    or (last_date and (today - last_date).days >= therapy_window)
+                ):
                     last_medicine = self.env['patient.enrollment'].search([
                         ('patient_id', '=', patient.id),
                         ('payment_state', '=', 'paid'),
-                        ('line_ids.service_product_id.name', 'in', medicine_products)
-                    ], order='enrollment_date desc', limit=1)
+                        ('line_ids.service_config_id.service_category', '=', 'medicine')
+                    ], order='enrollment_date desc, id desc', limit=1)
 
                     if last_medicine and last_medicine.enrollment_date:
+                        medicine_windows = last_medicine.line_ids.filtered(
+                            lambda line: line.service_config_id
+                            and line.service_config_id.service_category == 'medicine'
+                        ).mapped('service_config_id.activity_window_days')
+                        medicine_window = max(medicine_windows or [30])
                         med_diff_days = (today - last_medicine.enrollment_date).days
-                        if med_diff_days < 30:
-                            # Safely downgrade to medicine
-                            patient.with_context(from_cron=True).sudo().write({'patient_status': 'on_medicine'})
+
+                        if med_diff_days < medicine_window:
+                            patient.with_context(from_cron=True).sudo().write({
+                                'patient_status': 'on_medicine'
+                            })
                             continue
 
-                    # If no valid medicine is found, then they are truly inactive
-                    patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
+                    patient.with_context(from_cron=True).sudo().write({
+                        'patient_status': 'inactive'
+                    })
 
-            # ==========================================
-            # 2. LOGIC FOR ON MEDICINE (30 DAYS)
-            # ==========================================
             elif patient.patient_status == 'on_medicine':
-                # Find the latest paid enrollment that contains ANY medicine treatment
                 last_medicine_enrollment = self.env['patient.enrollment'].search([
                     ('patient_id', '=', patient.id),
                     ('payment_state', '=', 'paid'),
-                    ('line_ids.service_product_id.name', 'in', medicine_products)
-                ], order='enrollment_date desc', limit=1)
+                    ('line_ids.service_config_id.service_category', '=', 'medicine')
+                ], order='enrollment_date desc, id desc', limit=1)
 
-                # Use the medicine enrollment date, fallback to general enroll date
-                last_date = last_medicine_enrollment.enrollment_date if last_medicine_enrollment else patient.enroll_date
+                last_date = (
+                    last_medicine_enrollment.enrollment_date
+                    if last_medicine_enrollment
+                    else patient.enroll_date
+                )
 
-                # Calculate difference and update status (30 Days Inactivity)
-                if last_date:
-                    diff_days = (today - last_date).days
-                    if diff_days >= 30:
-                        patient.with_context(from_cron=True).sudo().write({'patient_status': 'inactive'})
+                medicine_window = 30
+                if last_medicine_enrollment:
+                    medicine_windows = last_medicine_enrollment.line_ids.filtered(
+                        lambda line: line.service_config_id
+                        and line.service_config_id.service_category == 'medicine'
+                    ).mapped('service_config_id.activity_window_days')
+                    if medicine_windows:
+                        medicine_window = max(medicine_windows)
+
+                if last_date and (today - last_date).days >= medicine_window:
+                    patient.with_context(from_cron=True).sudo().write({
+                        'patient_status': 'inactive'
+                    })
 
     @api.constrains('enroll_date')
     def _check_visit_date(self):

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_patient_enrollment_tree" model="ir.ui.view">
         <field name="name">clinic.patient.enrollment.tree</field>
@@ -19,7 +18,7 @@
         </field>
     </record>
 
-        <record id="view_clinic_enrollment_dashboard_tree" model="ir.ui.view">
+    <record id="view_clinic_enrollment_dashboard_tree" model="ir.ui.view">
         <field name="name">clinic.enrollment.dashboard.tree</field>
         <field name="model">patient.enrollment</field>
 
@@ -35,7 +34,6 @@
             </tree>
         </field>
     </record>
-
     <record id="view_enrollment_form" model="ir.ui.view">
         <field name="name">clinic.patient.enrollment.form</field>
         <field name="model">patient.enrollment</field>
@@ -92,92 +90,49 @@
                             <field name="line_ids" context="{'show_custom_regeneration_name': True}">
 
                                 <tree string="Enrollment Lines">
-                                    <field name="is_demo_session" column_invisible="1"/>
-                                    <field name="is_complementary" column_invisible="1"/>
-                                    <field name="is_consultation" column_invisible="1"/>
-                                    <field name="is_diabetes_treatment" column_invisible="1"/>
-                                    <field name="is_digestion_improvement" column_invisible="1"/>
-                                    <field name="is_home_visit" column_invisible="1"/>
-                                    <field name="is_pcod" column_invisible="1"/>
-                                    <field name="is_regeneration_therapy" column_invisible="1"/>
-                                    <field name="is_regeneration_treatment" column_invisible="1"/>
-                                    <field name="is_self_therapy" column_invisible="1"/>
-                                    <field name="is_weight_management_treatment" column_invisible="1"/>
-
+                                    <field name="service_config_id" column_invisible="1"/>
+                                    <field name="quantity_mode" column_invisible="1"/>
+                                    <field name="show_total_amount" column_invisible="1"/>
+                                    <field name="show_unit_amount" column_invisible="1"/>
                                     <field name="service_product_id" options="{'no_create': True, 'no_open': True}"/>
-
-                                    <field name="total_amount"
-                                           readonly="1"
-                                           force_save="1"/>
-
-                                    <field name="pos_qty"
-                                           readonly="1"
-                                           force_save="1"/>
-
-                                    <field name="used_sessions"
-                                           readonly="1"
-                                           force_save="1"
-                                           optional="hide"/>
-
-                                    <field name="therapy_amount"
-                                           readonly="1"
-                                           force_save="1"
-                                           optional="hide"/>
+                                    <field name="total_amount" readonly="1" force_save="1"/>
+                                    <field name="pos_qty" readonly="1" force_save="1"/>
+                                    <field name="used_sessions" readonly="1" force_save="1" optional="hide"/>
+                                    <field name="therapy_amount" readonly="1" force_save="1" optional="hide"/>
                                 </tree>
-
                                 <form string="Enrollment Service Line">
                                     <sheet>
-                                        <div style="font-size:18px; padding-bottom: 10px; font-weight: bold;">
-                                            Service Details
+                                        <div style="font-size:18px; padding-bottom: 10px; font-weight: bold;">Service
+                                            Details
                                         </div>
                                         <group>
                                             <group>
-                                                <field name="is_demo_session" invisible="1"/>
-                                                <field name="is_complementary" invisible="1"/>
-                                                <field name="is_consultation" invisible="1"/>
-                                                <field name="is_diabetes_treatment" invisible="1"/>
-                                                <field name="is_digestion_improvement" invisible="1"/>
-                                                <field name="is_home_visit" invisible="1"/>
-                                                <field name="is_pcod" invisible="1"/>
-                                                <field name="is_regeneration_therapy" invisible="1"/>
-                                                <field name="is_regeneration_treatment" invisible="1"/>
-                                                <field name="is_self_therapy" invisible="1"/>
-                                                <field name="is_weight_management_treatment" invisible="1"/>
-
+                                                <field name="service_config_id" invisible="1"/>
+                                                <field name="quantity_mode" invisible="1"/>
+                                                <field name="show_total_amount" invisible="1"/>
+                                                <field name="show_unit_amount" invisible="1"/>
                                                 <field name="service_product_id"
                                                        options="{'no_create': True, 'no_open': True}"
                                                        context="{'show_custom_regeneration_name': True}"/>
-
-                                                <field name="therapy_amount"
-                                                       invisible="is_demo_session
-                                                       or is_complementary
-                                                       or is_consultation"
+                                                <field name="therapy_amount" invisible="not show_unit_amount"
                                                        readonly="1"/>
                                             </group>
                                             <group>
-                                                <field name="pos_qty"
-                                                       invisible="is_consultation"
-                                                       readonly="is_demo_session"/>
-
-                                                <field name="used_sessions"
-                                                       invisible="1"/>
-
-                                                <field name="total_amount"
-                                                       invisible="is_complementary"/>
+                                                <field name="pos_qty" invisible="quantity_mode == 'hidden'"
+                                                       readonly="quantity_mode == 'fixed'"/>
+                                                <field name="used_sessions" invisible="1"/>
+                                                <field name="total_amount" invisible="not show_total_amount"/>
                                             </group>
                                         </group>
                                     </sheet>
                                 </form>
-
                             </field>
                         </page>
                     </notebook>
-
                     <group>
                         <field name="notes" placeholder="Add internal notes here..."/>
                     </group>
                 </sheet>
-
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
                     <field name="activity_ids" widget="mail_activity"/>
@@ -186,7 +141,6 @@
             </form>
         </field>
     </record>
-
     <record id="action_enrollment" model="ir.actions.act_window">
         <field name="name">Enrollment</field>
         <field name="res_model">patient.enrollment</field>

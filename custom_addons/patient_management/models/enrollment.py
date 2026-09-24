@@ -119,14 +119,12 @@ class Enrollment(models.Model):
 
             patient = rec.patient_id
 
-            # Fetch ALL paid enrollments for this patient, ordered by newest first
             paid_enrollments = self.env['patient.enrollment'].search([
                 ('patient_id', '=', patient.id),
                 ('payment_state', '=', 'paid'),
                 ('active', '=', True)
             ], order='enrollment_date desc, id desc')
 
-            # If they have zero paid enrollments
             if not paid_enrollments:
                 if patient.patient_status not in ['active', 'on_medicine', 'inactive']:
                     patient.patient_status = 'visit'
@@ -134,81 +132,69 @@ class Enrollment(models.Model):
 
             has_active_therapy = False
             has_active_medicine = False
-
-            therapy_products = [
-                'Complementary Therapy',
-                'Demo Session',
-                'Regrowth Therapy',
-                'Self Therapy'
-            ]
-
-            medicine_products = [
-                'Diabetes Treatment',
-                'Digestion Improvement Treatment',
-                'PCOD Treatment',
-                'Regrowth Treatment',
-                'Weight Management Treatment'
-            ]
-
             today = fields.Date.today()
 
-            # Find the patient's most recent session date
             last_session = self.env['patient.session'].search([
                 ('patient_id', '=', patient.id),
                 ('active', '=', True)
             ], order='session_date desc', limit=1)
-
             last_session_date = last_session.session_date if last_session else False
 
-            # Check ALL lines across ALL paid enrollments
             for enr in paid_enrollments:
-                product_names = enr.line_ids.mapped('service_product_id.name')
+                therapy_lines = enr.line_ids.filtered(
+                    lambda line: line.service_config_id
+                    and line.service_config_id.service_category == 'therapy'
+                )
+                medicine_lines = enr.line_ids.filtered(
+                    lambda line: line.service_config_id
+                    and line.service_config_id.service_category == 'medicine'
+                )
 
-                # 1. Check for Active Therapies (Must have sessions AND be within the 7-day window)
-                if any(p in product_names for p in therapy_products):
-                    if enr.total_sessions > enr.used_sessions:
+                if therapy_lines and enr.total_sessions > enr.used_sessions:
+                    active_date = last_session_date or enr.enrollment_date
+                    if active_date:
+                        therapy_window = max(
+                            therapy_lines.mapped('service_config_id.activity_window_days') or [0]
+                        )
+                        diff_days = (today - active_date).days
+                        if therapy_window > 0 and diff_days <= therapy_window:
+                            has_active_therapy = True
 
-                        # Determine if this therapy is abandoned or active
-                        active_date = last_session_date if last_session_date else enr.enrollment_date
-                        if active_date:
-                            diff_days = (today - active_date).days
-                            if diff_days <= 7:
-                                has_active_therapy = True
+                if medicine_lines and enr.enrollment_date:
+                    medicine_window = max(
+                        medicine_lines.mapped('service_config_id.activity_window_days') or [0]
+                    )
+                    diff_days = (today - enr.enrollment_date).days
+                    if medicine_window > 0 and diff_days < medicine_window:
+                        has_active_medicine = True
 
-                # 2. Check for Medicine/Treatments (Must be within the 30-day window)
-                if any(p in product_names for p in medicine_products):
-                    if enr.enrollment_date:
-                        diff_days = (today - enr.enrollment_date).days
-                        if diff_days < 30:
-                            has_active_medicine = True
-
-            # Apply Status based on Highest Priority Hierarchy
             if has_active_therapy:
                 patient.patient_status = 'active'
-
             elif has_active_medicine:
                 patient.patient_status = 'on_medicine'
-
             else:
-                # No valid active therapies and no active medicines.
                 latest_enr = paid_enrollments[0]
-                latest_products = latest_enr.line_ids.mapped('service_product_id.name')
+                latest_categories = set(
+                    latest_enr.line_ids.filtered('service_config_id').mapped(
+                        'service_config_id.service_category'
+                    )
+                )
 
-                # If their most recent transaction was ONLY a consultation
-                if 'Consultation Charges' in latest_products and not any(
-                        p in latest_products for p in therapy_products + medicine_products):
+                has_consultation = 'consultation' in latest_categories
+                has_major_service = bool({'therapy', 'medicine'} & latest_categories)
 
-                    # BULLETPROOF CHECK: Have they EVER bought a therapy or medicine in their history?
+                if has_consultation and not has_major_service:
                     past_major_enrollments = paid_enrollments.filtered(
-                        lambda e: any(p in therapy_products + medicine_products for p in
-                                      e.line_ids.mapped('service_product_id.name'))
+                        lambda enrollment: any(
+                            line.service_config_id
+                            and line.service_config_id.service_category in ('therapy', 'medicine')
+                            for line in enrollment.line_ids
+                        )
                     )
 
                     if past_major_enrollments:
-                        # They are an old patient whose packages expired.
                         patient.patient_status = 'inactive'
                     else:
-                        # They are a brand new patient who only ever bought a consultation.
                         patient.patient_status = 'visit'
                 else:
                     patient.patient_status = 'inactive'
@@ -221,8 +207,22 @@ class Enrollment(models.Model):
                     raise UserError(_('You cannot archive an enrollment that has already been paid.'))
         # 1. Create a bypass for autonomous system updates
         # If Odoo is ONLY trying to update these specific fields, let it pass.
-        allowed_system_fields = {'payment_state', 'state', 'active', 'used_sessions', 'remaining_sessions'}
-        is_system_update = all(key in allowed_system_fields for key in vals.keys())
+        # Stored computed fields can be recomputed by Odoo when an Enrollment
+        # Service Configuration is created/updated. Those are system updates and
+        # must not be blocked by the paid/completed enrollment edit lock.
+        allowed_system_fields = {
+            'payment_state',
+            'state',
+            'active',
+            'used_sessions',
+            'remaining_sessions',
+            'total_sessions',
+            'total_amount',
+        }
+        is_system_update = (
+            self.env.context.get('service_config_recompute')
+            or all(key in allowed_system_fields for key in vals.keys())
+        )
 
         for rec in self:
             # Only trigger the lock if a human/script is trying to edit a non-system field
@@ -264,6 +264,13 @@ class Enrollment(models.Model):
     #
     @api.constrains('total_sessions')
     def _check_total_sessions_zero(self):
+        # Saving/updating Enrollment Service Configuration can intentionally
+        # recompute stored totals on historical enrollment records. Those
+        # internal recomputations must not be blocked by the interactive
+        # 100-session validation used when users create/edit enrollments.
+        if self.env.context.get('service_config_recompute'):
+            return
+
         for rec in self:
             if rec.total_sessions > 100:
                 raise ValidationError(_("You can enter a maximum of 100 therapy sessions."))
@@ -408,8 +415,33 @@ class EnrollmentLine(models.Model):
         required=True
     )
 
-    service_display_name = fields.Char(
-        compute="_compute_service_display_name"
+    service_config_id = fields.Many2one(
+        'patient.enrollment.service.config',
+        string='Service Configuration',
+        compute='_compute_service_config_id',
+        store=True,
+        readonly=True,
+    )
+
+    service_category = fields.Selection(
+        related='service_config_id.service_category',
+        readonly=True,
+    )
+    quantity_mode = fields.Selection(
+        related='service_config_id.quantity_mode',
+        readonly=True,
+    )
+    show_total_amount = fields.Boolean(
+        related='service_config_id.show_total_amount',
+        readonly=True,
+    )
+    show_unit_amount = fields.Boolean(
+        related='service_config_id.show_unit_amount',
+        readonly=True,
+    )
+    require_positive_quantity = fields.Boolean(
+        related='service_config_id.require_positive_quantity',
+        readonly=True,
     )
 
     total_amount = fields.Integer(
@@ -440,144 +472,113 @@ class EnrollmentLine(models.Model):
         tracking=True
     )
 
+    @api.depends('service_product_id')
+    def _compute_service_config_id(self):
+        products = self.mapped('service_product_id')
+        configs = self.env['patient.enrollment.service.config'].with_context(
+            active_test=False
+        ).search([
+            ('product_id', 'in', products.ids)
+        ]) if products else self.env['patient.enrollment.service.config']
+
+        config_by_product = {config.product_id.id: config for config in configs}
+        for rec in self:
+            rec.service_config_id = config_by_product.get(rec.service_product_id.id)
+
     @api.onchange('service_product_id')
     def _onchange_service_product_id(self):
-
         self.total_amount = 0
         self.pos_qty = 0
         self.used_sessions = 0
         self.therapy_amount = 0
 
         if not self.service_product_id:
+            self.service_config_id = False
             return
 
-        product_name = self.service_product_id.name
+        config = self.env['patient.enrollment.service.config'].get_config_for_product(
+            self.service_product_id
+        )
+        self.service_config_id = config
 
-        # DEMO SESSION
-        if product_name == 'Demo Session':
+        if not config or not config.active:
+            return {
+                'warning': {
+                    'title': _('Service Not Configured'),
+                    'message': _(
+                        'This service has no active Enrollment Service Configuration. '
+                        'Please configure it before using it in an enrollment.'
+                    ),
+                }
+            }
 
-            self.pos_qty = 1
-
-        # CONSULTATION
-        elif product_name == 'Consultation Charges':
-
-            self.pos_qty = 1
-
-        # TREATMENTS
-        elif product_name in [
-            'Diabetes Treatment',
-            'Digestion Improvement Treatment',
-            'PCOD Treatment',
-            'Regrowth Treatment',
-            'Weight Management Treatment',
-        ]:
-
-            if not self.pos_qty:
-                self.pos_qty = 1
-
+        self.pos_qty = config.default_quantity
 
     @api.depends('total_amount', 'pos_qty')
     def _compute_therapy_amount(self):
-
         for rec in self:
-
             if rec.pos_qty > 0:
-
-                rec.therapy_amount = (
-                        rec.total_amount / rec.pos_qty
-                )
-
+                rec.therapy_amount = rec.total_amount / rec.pos_qty
             else:
-
                 rec.therapy_amount = 0
 
-    @api.depends('service_product_id', 'pos_qty')
+    @api.depends(
+        'service_product_id',
+        'service_config_id',
+        'service_config_id.counts_as_sessions',
+        'pos_qty'
+    )
     def _compute_total_sessions(self):
-
         for rec in self:
-
-            product_name = (
-                rec.service_product_id.name
-                if rec.service_product_id else ''
-            )
-
-            # SESSION BASED SERVICES
-            if product_name in [
-                'Demo Session',
-                'Complementary Therapy',
-                'Regrowth Therapy',
-                'Self Therapy',
-            ]:
-
+            if rec.service_config_id and rec.service_config_id.counts_as_sessions:
                 rec.total_sessions = rec.pos_qty
-
-            # NON SESSION SERVICES
             else:
-
                 rec.total_sessions = 0
 
-
-    is_demo_session = fields.Boolean(compute="_compute_service_flags")
-    is_complementary = fields.Boolean(compute="_compute_service_flags")
-    is_consultation = fields.Boolean(compute="_compute_service_flags")
-    is_diabetes_treatment = fields.Boolean(compute="_compute_service_flags")
-    is_digestion_improvement = fields.Boolean(compute="_compute_service_flags")
-    is_home_visit = fields.Boolean(compute="_compute_service_flags")
-    is_pcod = fields.Boolean(compute="_compute_service_flags")
-    is_regeneration_therapy = fields.Boolean(compute="_compute_service_flags")
-    is_regeneration_treatment = fields.Boolean(compute="_compute_service_flags")
-    is_self_therapy = fields.Boolean(compute="_compute_service_flags")
-    is_weight_management_treatment = fields.Boolean(compute="_compute_service_flags")
-
-    @api.depends('service_product_id')
-    def _compute_service_flags(self):
+    @api.constrains('service_product_id')
+    def _check_service_configuration(self):
+        Config = self.env['patient.enrollment.service.config']
         for rec in self:
-            # Safely get the product name, default to empty string if not set
-            product_name = rec.service_product_id.name if rec.service_product_id else ""
+            if not rec.service_product_id:
+                continue
 
-            rec.is_demo_session = (product_name == 'Demo Session')
-            rec.is_complementary = (product_name == 'Complementary Therapy')
-            rec.is_consultation = (product_name == 'Consultation Charges')
-            rec.is_diabetes_treatment = (product_name == 'Diabetes Treatment')
-            rec.is_digestion_improvement = (product_name == 'Digestion Improvement Treatment')
-            rec.is_home_visit = (product_name == 'Home Visit Charges')
-            rec.is_pcod = (product_name == 'PCOD Treatment')
-            rec.is_regeneration_therapy = (product_name == 'Regrowth Therapy')
-            rec.is_regeneration_treatment = (product_name == 'Regrowth Treatment')
-            rec.is_self_therapy = (product_name == 'Self Therapy')
-            rec.is_weight_management_treatment = (product_name == 'Weight Management Treatment')
+            config = Config.get_config_for_product(rec.service_product_id)
+            if not config or not config.active:
+                raise ValidationError(_(
+                    'Service "%s" is not configured for enrollment. '
+                    'Please create/activate its Enrollment Service Configuration first.'
+                ) % rec.service_product_id.display_name)
 
-    @api.constrains('pos_qty', 'service_product_id')
+    @api.constrains('pos_qty', 'service_product_id', 'service_config_id')
     def _check_treatment_qty(self):
-
-        # List of all treatments that require a quantity greater than 0
-        restricted_treatments = [
-            'Regrowth Therapy',
-            'Diabetes Treatment',
-            'Digestion Improvement Treatment',
-            'PCOD Treatment',
-            'Regrowth Treatment',
-            'Weight Management Treatment',
-            'Self Therapy',
-            'Complementary Therapy',
-        ]
+        # Saving/changing a service configuration can refresh the linked
+        # configuration/compute fields on historical enrollment lines.
+        # Do not re-validate old data during that internal recomputation;
+        # normal user creates/edits still enforce the positive-quantity rule.
+        if self.env.context.get('service_config_recompute'):
+            return
 
         for rec in self:
-            if rec.service_product_id and rec.service_product_id.name in restricted_treatments:
-                if rec.pos_qty <= 0:
-                    # Dynamic error message based on the exact product name
-                    raise ValidationError(
-                        _("The quantity (Days) for %s must be greater than 0.") % rec.service_product_id.name
-                    )
-
+            if (
+                rec.service_product_id
+                and rec.service_config_id
+                and rec.service_config_id.require_positive_quantity
+                and rec.pos_qty <= 0
+            ):
+                raise ValidationError(
+                    _("The quantity (Days) for %s must be greater than 0.")
+                    % rec.service_product_id.display_name
+                )
 
     @api.constrains('therapy_amount')
     def _check_therapy_amount_decimals(self):
         for rec in self:
-            # Check if the float has a non-zero decimal part (e.g., 1200.02)
             if rec.therapy_amount and not rec.therapy_amount.is_integer():
                 raise ValidationError(
-                    _("The Per Session Amount must be a whole number. Decimal values like %s are not allowed.") % rec.therapy_amount
+                    _(
+                        "The Per Session Amount must be a whole number. "
+                        "Decimal values like %s are not allowed."
+                    ) % rec.therapy_amount
                 )
 
 
@@ -587,13 +588,25 @@ class ProductProduct(models.Model):
     @api.depends('name')
     @api.depends_context('show_custom_regeneration_name')
     def _compute_display_name(self):
-        # 1. Call standard behavior
         super()._compute_display_name()
 
-        # 2. Check context (with cache bypassing enabled)
-        if self.env.context.get('show_custom_regeneration_name'):
-            for product in self:
-                if product.name == 'Regrowth Therapy':
-                    product.display_name = 'Regrowth Therapy(Therapy + Medicine + Consultation)'
-                elif product.name == 'Regrowth Treatment':
-                    product.display_name = 'Regrowth Treatment(Medicine + Consultation)'
+        if not self.env.context.get('show_custom_regeneration_name'):
+            return
+
+        configs = self.env['patient.enrollment.service.config'].with_context(
+            active_test=False
+        ).search([
+            ('product_id', 'in', self.ids),
+            ('display_name_override', '!=', False),
+        ])
+        override_by_product = {
+            config.product_id.id: config.display_name_override
+            for config in configs
+            if config.display_name_override
+        }
+
+        for product in self:
+            override = override_by_product.get(product.id)
+            if override:
+                product.display_name = override
+
