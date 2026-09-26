@@ -187,6 +187,7 @@ class AccountAutomationDashboard(models.TransientModel):
             'view_mode': 'tree,form',
             'target': 'current',
         }
+
     def action_run_patient_wise_audit(self):
         return {
             'name': 'Patient Wise Sales vs Medicine Audit',
@@ -206,6 +207,17 @@ class AccountAutomationDashboard(models.TransientModel):
         }
 
     # -------- Cash Deposit Audit --------
+    def action_view_cash_deposit_pending(self):
+        """Opens the pending cash deposit variance gaps list."""
+        return {
+            'name': 'Cash Deposit Pending Gaps',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cash.deposit.pending',
+            'view_mode': 'tree',
+            'domain': [('state', '=', 'open')],
+            'target': 'current',
+        }
+
     def action_run_cash_deposit_audit(self):
         return {
             'name': 'Cash Deposit Audit',
