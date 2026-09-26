@@ -344,14 +344,14 @@
                                     </p>
                                 </div>
 
-                                <!-- UPDATED FOOTER: Matches Bank vs HUB layout -->
+                                <!-- FOOTER -->
                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2"
                                      style="border-top: 1px solid #f3f4f6 !important;">
 
-                                    <!-- Left Side: Pending Variance Button (Calls the XML Action directly) -->
-                                    <button name="account_automation.action_cash_deposit_pending"
+                                    <!-- Left Side: Pending Variance (Changed type="action" -> type="object") -->
+                                    <button name="action_view_cash_deposit_pending"
                                             string="Pending Variance"
-                                            type="action"
+                                            type="object"
                                             class="btn btn-secondary btn-sm"/>
 
                                     <!-- Right Side: History and Run Buttons -->
