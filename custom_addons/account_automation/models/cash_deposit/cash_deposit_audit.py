@@ -214,6 +214,13 @@ class CashDepositAuditLine(models.Model):
         }
 
     def action_reset_line_to_open(self):
+        user = self.env.user
+        is_mod = user.has_group('account_automation.group_account_automation_moderator')
+        is_admin = user.has_group('account_automation.group_account_automation_admin')
+
+        if not (is_mod or is_admin):
+            raise UserError("Only Account Automation Moderators and Admins can reset resolved lines.")
+
         for line in self:
             if line.resolution_state == 'open' and not line.reason_id:
                 continue
@@ -293,4 +300,4 @@ class CashDepositPending(models.Model):
     def action_permanent_purge(self):
         if not self.env.user.has_group('base.group_system'):
             raise AccessError("Only administrators can purge pending cash deposit entries.")
-        self.write({'active': False})   
+        self.write({'active': False})
