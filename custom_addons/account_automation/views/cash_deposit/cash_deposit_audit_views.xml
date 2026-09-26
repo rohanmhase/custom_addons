@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Audit Tree -->
+    <record id="view_cash_deposit_audit_tree" model="ir.ui.view">
+        <field name="name">cash.deposit.audit.tree</field>
+        <field name="model">cash.deposit.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Cash Deposit Audits" create="false"
+                  decoration-muted="not active"
+                  decoration-danger="is_purged">
+                <field name="name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="run_by"/>
+                <field name="run_date"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
+                <field name="is_purged" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Search view with archive filter -->
+    <record id="view_cash_deposit_audit_search" model="ir.ui.view">
+        <field name="name">cash.deposit.audit.search</field>
+        <field name="model">cash.deposit.audit</field>
+        <field name="arch" type="xml">
+            <search string="Search Cash Deposit Audits">
+                <field name="name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="run_by"/>
+                <separator/>
+                <filter string="Active" name="filter_active"
+                        domain="[('active', '=', True), ('is_purged', '=', False)]"/>
+                <filter string="Archived" name="filter_archived"
+                        domain="[('active', '=', False), ('is_purged', '=', False)]"/>
+                <filter string="Purged (Admin Only)" name="filter_purged"
+                        domain="[('is_purged', '=', True)]"/>
+                <separator/>
+                <filter string="My Audits" name="filter_mine"
+                        domain="[('run_by', '=', uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Run By" name="group_run_by" context="{'group_by': 'run_by'}"/>
+                    <filter string="Start Date" name="group_start" context="{'group_by': 'start_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Audit Form -->
+    <record id="view_cash_deposit_audit_form" model="ir.ui.view">
+        <field name="name">cash.deposit.audit.form</field>
+        <field name="model">cash.deposit.audit</field>
+        <field name="arch" type="xml">
+            <form string="Cash Deposit Audit" create="false" edit="false">
+                <header>
+                    <button name="action_toggle_chatter"
+                            string="Show/Hide Activity Log"
+                            type="object"
+                            class="btn-secondary"/>
+                    <button name="action_restore_from_archive"
+                            string="Restore from Archive"
+                            type="object"
+                            class="btn-warning"
+                            invisible="active or is_purged"/>
+                    <button name="action_restore_from_purge"
+                            string="Restore from Purge"
+                            type="object"
+                            class="btn-danger"
+                            invisible="not is_purged"/>
+                </header>
+                <sheet>
+                    <!-- Archive / Purge banners -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="active or is_purged">
+                        <i class="fa fa-archive"/>
+                        This audit is <strong>Archived</strong>.
+                        Click "Restore from Archive" or press Delete again to purge from UI.
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="not is_purged">
+                        <i class="fa fa-trash"/>
+                        This audit is <strong>Purged from UI</strong>.
+                        It still exists in the database. Only Admins can restore or permanently delete it.
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="start_date" readonly="1"/>
+                            <field name="end_date" readonly="1"/>
+                            <field name="file_name" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="run_by" readonly="1"/>
+                            <field name="run_date" readonly="1"/>
+                            <field name="show_chatter" invisible="1"/>
+                            <field name="active" invisible="1"/>
+                            <field name="is_purged" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Clinic-wise Comparison">
+                            <field name="line_ids">
+                                <tree create="false" delete="false"
+                                      decoration-danger="difference != 0 and resolution_state == 'open'"
+                                      decoration-success="difference == 0 or resolution_state == 'resolved'">
+
+                                    <!-- Core Data -->
+                                    <field name="audit_date" readonly="1"/>
+                                    <field name="clinic_display" readonly="1"/>
+                                    <field name="pos_cash_in" sum="Total Cash In" readonly="1"/>
+                                    <field name="pos_cash_out" sum="Total Cash Out" readonly="1"/>
+                                    <field name="total_expected_deposit" sum="Total Expected" readonly="1"/>
+                                    <field name="bank_received" sum="Total Received" readonly="1"/>
+                                    <field name="difference" sum="Total Variance" readonly="1"/>
+                                    <field name="responsible_person" readonly="1"/>
+
+                                    <!-- Resolution & Gap Tracking (Matches Bank vs HUB) -->
+                                    <field name="reason_id" readonly="1"/>
+                                    <field name="note" readonly="1"/>
+                                    <field name="net_difference" string="Remaining Gap" readonly="1"/>
+                                    <field name="pending_status" string="Remaining Gap Status" readonly="1"
+                                           widget="badge"
+                                           decoration-warning="pending_status == 'open'"
+                                           decoration-success="pending_status == 'settled'"/>
+                                    <field name="resolved_for_date" string="Gap From Date" readonly="1"/>
+                                    <field name="resolved_on_date" string="Cleared On Date" readonly="1"/>
+
+                                    <field name="resolution_state" widget="badge" string="Status"
+                                           decoration-success="resolution_state == 'resolved'"
+                                           decoration-danger="resolution_state == 'open'"/>
+
+                                    <!-- Action Buttons -->
+                                    <button name="action_open_resolve_wizard"
+                                            string="Resolve"
+                                            type="object"
+                                            icon="fa-check-circle"
+                                            class="btn-success"
+                                            invisible="difference == 0 or resolution_state == 'resolved'"/>
+                                    <button name="action_reset_line_to_open"
+                                            string="Reset"
+                                            type="object"
+                                            icon="fa-undo"
+                                            class="btn-warning"
+                                            invisible="resolution_state == 'open'"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter" invisible="not show_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard: Run Audit -->
+    <record id="view_cash_deposit_audit_wizard_form" model="ir.ui.view">
+        <field name="name">cash.deposit.audit.wizard.form</field>
+        <field name="model">cash.deposit.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Run Cash Deposit Audit">
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">
+                        <i class="fa fa-info-circle"/>
+                        Mandatory CSV Columns
+                    </h4>
+                    <p class="mb-1">The uploaded CSV file <b>must</b> contain the following column headers exactly:
+                    </p>
+                    <ul class="mb-1">
+                        <li>
+                            <b>Date</b>
+                        </li>
+                        <li>
+                            <b>DEPOSIT AMT</b>
+                        </li>
+                        <li>
+                            <b>Clinic</b>
+                        </li>
+                    </ul>
+                    <span class="text-muted small">All other columns will be ignored.</span>
+                </div>
+                <group>
+                    <group>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                    </group>
+                    <group>
+                        <field name="bank_statement_file" filename="file_name"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_run_audit"
+                            string="Run Audit"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action + Menu -->
+    <record id="action_cash_deposit_audit" model="ir.actions.act_window">
+        <field name="name">Cash Deposit Audits</field>
+        <field name="res_model">cash.deposit.audit</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_cash_deposit_audit_history"
+              name="Cash Deposit Audits"
+              parent="account_automation.menu_account_automation_operations"
+              action="action_cash_deposit_audit"
+              sequence="45"/>
+
+</odoo>

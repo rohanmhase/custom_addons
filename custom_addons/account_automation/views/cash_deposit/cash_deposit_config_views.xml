@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Clinic Mapping Tree -->
+    <record id="view_cash_deposit_clinic_mapping_tree" model="ir.ui.view">
+        <field name="name">cash.deposit.clinic.mapping.tree</field>
+        <field name="model">cash.deposit.clinic.mapping</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" string="CSV Clinic Mappings">
+                <field name="raw_clinic_name"/>
+                <field name="clinic_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cash_deposit_clinic_mapping" model="ir.actions.act_window">
+        <field name="name">CSV Clinic Mappings</field>
+        <field name="res_model">cash.deposit.clinic.mapping</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Reason Tree -->
+    <record id="view_cash_deposit_reason_tree" model="ir.ui.view">
+        <field name="name">cash.deposit.audit.reason.tree</field>
+        <field name="model">cash.deposit.audit.reason</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" string="Cash Deposit Reasons">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="resolution_type"/>
+                <field name="help_text"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cash_deposit_reason" model="ir.actions.act_window">
+        <field name="name">Cash Deposit Reasons</field>
+        <field name="res_model">cash.deposit.audit.reason</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- 1. The Non-Clickable Group Header -->
+    <menuitem id="menu_cash_deposit_config_header"
+              name="Cash Deposit Audit"
+              parent="account_automation.menu_account_automation_config"
+              sequence="60"/>
+
+    <!-- 2. The Indented Clickable Children -->
+    <menuitem id="menu_cash_deposit_clinic_mapping"
+              name="Clinic Mappings"
+              parent="menu_cash_deposit_config_header"
+              action="action_cash_deposit_clinic_mapping"
+              sequence="10"/>
+
+    <menuitem id="menu_cash_deposit_reason"
+              name="Variance Reasons"
+              parent="menu_cash_deposit_config_header"
+              action="action_cash_deposit_reason"
+              sequence="20"/>
+
+</odoo>

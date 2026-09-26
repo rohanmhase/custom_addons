@@ -9,3 +9,4 @@ from . import clinic_performance
 from . import account_automation
 from . import medicine_transfer_vs_sales_audit
 from . import patient_wise_audit
+from . import cash_deposit

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Resolve Wizard -->
+    <record id="view_cash_deposit_resolve_wizard_form" model="ir.ui.view">
+        <field name="name">cash.deposit.resolve.wizard.form</field>
+        <field name="model">cash.deposit.resolve.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Cash Deposit Variance">
+                <group string="Context">
+                    <group>
+                        <field name="audit_date"/>
+                        <field name="clinic_display"/>
+                        <field name="pos_cash_in"/>
+                        <field name="pos_cash_out"/>
+                    </group>
+                    <group>
+                        <field name="total_expected_deposit"/>
+                        <field name="bank_received"/>
+                        <field name="difference" class="font-weight-bold"
+                               decoration-danger="difference != 0"/>
+                        <field name="amount_to_resolve" class="text-warning font-weight-bold"/>
+                    </group>
+                </group>
+
+                <group string="Resolution">
+                    <group>
+                        <field name="reason_id" options="{'no_create': True}"/>
+                        <field name="resolution_type" invisible="1"/>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Enter explanation or reference..."/>
+                    </group>
+                </group>
+
+                <notebook invisible="resolution_type != 'settle_pending'">
+                    <page string="Available Open Pending Gaps">
+                        <div class="alert alert-warning" role="alert">
+                            Select prior pending records for this clinic to settle against the current variance.
+                        </div>
+                        <field name="pending_ids" widget="many2many" domain="[('state','=','open')]">
+                            <tree create="false" edit="false">
+                                <field name="clinic_display"/>
+                                <field name="amount" sum="Selected Pending Sum"/>
+                                <field name="note"/>
+                                <field name="create_date" string="Created On"/>
+                            </tree>
+                        </field>
+                        <group class="oe_subtotal_footer oe_right">
+                            <field name="remaining_after_settle"
+                                   class="oe_subtotal_footer_separator font-weight-bold"/>
+                        </group>
+                    </page>
+                </notebook>
+
+                <footer>
+                    <button name="action_apply"
+                            string="Apply Resolution"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Pending Ledger List -->
+    <record id="view_cash_deposit_pending_tree" model="ir.ui.view">
+        <field name="name">cash.deposit.pending.tree</field>
+        <field name="model">cash.deposit.pending</field>
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false"
+                  decoration-muted="state == 'settled'"
+                  decoration-warning="state == 'open'">
+                <field name="clinic_display"/>
+                <field name="amount" class="font-weight-bold"/>
+                <field name="reason_id"/>
+                <field name="note"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'open'"
+                       decoration-success="state == 'settled'"/>
+                <field name="create_date" string="Generated On"/>
+                <field name="settled_audit_date" string="Settled On"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cash_deposit_pending" model="ir.actions.act_window">
+        <field name="name">Cash Deposit Pending Gaps</field>
+        <field name="res_model">cash.deposit.pending</field>
+        <field name="view_mode">tree</field>
+        <field name="domain">[('state','=','open')]</field>
+    </record>
+
+</odoo>
