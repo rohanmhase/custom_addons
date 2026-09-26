@@ -95,10 +95,13 @@ class CashDepositAuditWizard(models.TransientModel):
             bank_data[key] = bank_data.get(key, 0.0) + dep_amt
 
         # ── 3. Pull POS Cash In / Cash Out with backdating logic ──
-        # Raw SQL already bypasses ORM record rules, so all clinics are returned.
-        # target_date rule (Req #7):
-        #  - if create_date is within session start/stop → use create_date::date
-        #  - else fallback to session.start_at::date
+        # Uses LEFT JOIN so open sessions and missing relations are never dropped.
+        #
+        # Target Date logic (Req #7):
+        #  - If session is active (s_stop is NULL or create_dt <= s_stop), the cash entry
+        #    was added live while session was running → use create_dt.date()
+        #  - If cash entry was created AFTER session was closed (s_stop < create_dt),
+        #    it is a retroactive fix for an old closed session → fallback to s_start.date()
         self.env.cr.execute("""
             SELECT
                 absl.id,
@@ -111,9 +114,9 @@ class CashDepositAuditWizard(models.TransientModel):
                 cc.name    AS clinic_name,
                 rp.name    AS responsible_person
             FROM account_bank_statement_line absl
-            JOIN pos_session ps ON ps.id = absl.pos_session_id
-            JOIN pos_config  pc ON pc.id = ps.config_id
-            JOIN clinic_clinic cc ON cc.id = pc.clinic_id
+            LEFT JOIN pos_session ps ON ps.id = absl.pos_session_id
+            LEFT JOIN pos_config  pc ON pc.id = ps.config_id
+            LEFT JOIN clinic_clinic cc ON cc.id = pc.clinic_id
             LEFT JOIN res_users   ru ON ru.id = absl.create_uid
             LEFT JOIN res_partner rp ON rp.id = ru.partner_id
             WHERE (absl.payment_ref ILIKE '%%-in-%%' OR absl.payment_ref ILIKE '%%-out-%%')
@@ -132,10 +135,22 @@ class CashDepositAuditWizard(models.TransientModel):
             s_start = r['session_start']
             s_stop = r['session_stop']
 
-            if s_start and s_stop and (s_start <= create_dt <= s_stop):
-                target_date = create_dt.date()
-            elif s_start:
-                target_date = s_start.date()
+            if s_start:
+                if s_stop:
+                    # Session is CLOSED
+                    if s_start <= create_dt <= s_stop:
+                        # Live cash entry created while session was running
+                        target_date = create_dt.date()
+                    else:
+                        # Retroactive cash entry added after session closed
+                        target_date = s_start.date()
+                else:
+                    # Session is OPEN
+                    if create_dt >= s_start:
+                        # Live cash entry in active open session
+                        target_date = create_dt.date()
+                    else:
+                        target_date = s_start.date()
             else:
                 target_date = create_dt.date()
 
@@ -146,10 +161,11 @@ class CashDepositAuditWizard(models.TransientModel):
             is_in = '-in-' in payment_ref
             amt = abs(r['amount'] or 0.0)
             resp = r['responsible_person'] or 'Unknown'
-            gk = (target_date, r['clinic_id'])
+            clinic_id = r['clinic_id']
+
+            gk = (target_date, clinic_id)
 
             if gk not in pos_grouped:
-                # clinic_name from SQL may be JSONB dict in some DBs; normalise
                 cname = r['clinic_name']
                 if isinstance(cname, dict):
                     cname = cname.get('en_US') or next(iter(cname.values()), '')
@@ -157,7 +173,7 @@ class CashDepositAuditWizard(models.TransientModel):
                     'in': 0.0,
                     'out': 0.0,
                     'responsibles': set(),
-                    'clinic_name': cname or '',
+                    'clinic_name': cname or 'Unknown Clinic',
                 }
 
             if is_in:
@@ -204,12 +220,14 @@ class CashDepositAuditWizard(models.TransientModel):
             )
             bank_amt = bank_data.get((date_key, clinic_id), 0.0)
 
-            # .sudo().browse so name resolves even if user has no access to that clinic
-            clinic = self.env['clinic.clinic'].sudo().browse(clinic_id)
-            if clinic.exists():
-                clinic_name = clinic.name
+            if isinstance(clinic_id, int):
+                clinic = self.env['clinic.clinic'].sudo().browse(clinic_id)
+                if clinic.exists():
+                    clinic_name = clinic.name
+                else:
+                    clinic_name = info.get('clinic_name') or 'Unknown Clinic'
             else:
-                clinic_name = info.get('clinic_name') or 'Unknown'
+                clinic_name = info.get('clinic_name') or 'Unknown Clinic'
 
             expected = info['out'] - info['in']
             diff = expected - bank_amt
@@ -217,7 +235,7 @@ class CashDepositAuditWizard(models.TransientModel):
             lines_to_create.append({
                 'audit_id': audit.id,
                 'audit_date': date_key,
-                'clinic_id': clinic_id,
+                'clinic_id': clinic_id if isinstance(clinic_id, int) else False,
                 'clinic_display': clinic_name,
                 'pos_cash_in': info['in'],
                 'pos_cash_out': info['out'],
