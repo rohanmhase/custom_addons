@@ -27,6 +27,11 @@
         'views/pos_session_alert/pos_session_cash_checkpoint_views.xml',
         'views/patient_wise_audit/patient_wise_audit_views.xml',
         'views/patient_wise_audit/patient_audit_product_type_views.xml',
+        # ── Cash Deposit Module ──
+        'data/cash_deposit/cash_deposit_reason_data.xml',
+        'views/cash_deposit/cash_deposit_config_views.xml',
+        'views/cash_deposit/cash_deposit_reconciliation_views.xml',
+        'views/cash_deposit/cash_deposit_audit_views.xml',
     ],
     'installable': True,
     'application': False,

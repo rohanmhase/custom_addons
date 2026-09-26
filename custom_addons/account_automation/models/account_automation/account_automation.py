@@ -204,3 +204,23 @@ class AccountAutomationDashboard(models.TransientModel):
             'view_mode': 'tree,form',
             'target': 'current',
         }
+
+    # -------- Cash Deposit Audit --------
+    def action_run_cash_deposit_audit(self):
+        return {
+            'name': 'Cash Deposit Audit',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cash.deposit.audit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context,
+        }
+
+    def action_view_cash_deposit_history(self):
+        return {
+            'name': 'Cash Deposit Audit History',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cash.deposit.audit',
+            'view_mode': 'tree,form',
+            'target': 'current',
+        }
