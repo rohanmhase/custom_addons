@@ -229,7 +229,8 @@ class CashDepositAuditLine(models.Model):
                 target_pending = line.created_pending_id
                 line.write({'created_pending_id': False})
                 if target_pending.state == 'open':
-                    target_pending.unlink()
+                    # Use .sudo() so Moderator reset workflow can clean up the pending entry
+                    target_pending.sudo().unlink()
                 elif target_pending.state == 'settled':
                     raise UserError(
                         f"Cannot reset line for {line.clinic_display or 'N/A'}.\n\n"
@@ -238,7 +239,8 @@ class CashDepositAuditLine(models.Model):
                     )
 
             if line.settled_pending_ids:
-                line.settled_pending_ids.write({
+                # Re-open any past pending gaps that were consumed by this line
+                line.settled_pending_ids.sudo().write({
                     'state': 'open',
                     'settled_by_line_id': False,
                 })
