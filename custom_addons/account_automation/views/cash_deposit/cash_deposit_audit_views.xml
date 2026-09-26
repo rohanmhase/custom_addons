@@ -142,12 +142,15 @@
                                             type="object"
                                             icon="fa-check-circle"
                                             class="btn-success"
-                                            invisible="difference == 0 or resolution_state == 'resolved'"/>
+                                            invisible="(resolution_state == 'open' and difference == 0) or (resolution_state == 'resolved' and net_difference == 0)"/>
+
+                                    <!-- Reset: Available to Moderator and Admin -->
                                     <button name="action_reset_line_to_open"
                                             string="Reset"
                                             type="object"
                                             icon="fa-undo"
                                             class="btn-warning"
+                                            groups="account_automation.group_account_automation_moderator,account_automation.group_account_automation_admin"
                                             invisible="resolution_state == 'open'"/>
                                 </tree>
                             </field>
