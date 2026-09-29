@@ -58,4 +58,17 @@
               sequence="5"
               groups="operational_fund.group_op_fund_manager,operational_fund.group_op_fund_controller"/>
 
+    <menuitem id="menu_op_fund_disbursement"
+              name="Disbursements"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_disbursement"
+              sequence="5"/>
+
+    <!-- NEW PASSBOOK MENU -->
+    <menuitem id="menu_op_fund_passbook"
+              name="Passbook &amp; Analytics"
+              parent="menu_operational_fund_root"
+              action="action_op_fund_passbook"
+              sequence="10"/>
+
 </odoo>

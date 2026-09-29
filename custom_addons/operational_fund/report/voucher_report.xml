@@ -9,8 +9,6 @@
         <field name="print_report_name">'Voucher - %s' % (object.name)</field>
         <field name="binding_model_id" ref="model_operational_fund_disbursement"/>
         <field name="binding_type">report</field>
-
-        <!-- Auto-cache PDF mapping pointer logic -->
         <field name="attachment_use">True</field>
         <field name="attachment">(object.state in ('approved', 'paid', 'refund_requested', 'refunded')) and ('Voucher_' + object.name.replace('/', '_') + '.pdf')</field>
     </record>
@@ -19,149 +17,175 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
-                    <div class="page">
-                        <!-- Voucher Header Status Node -->
-                        <div class="row mt-4 mb-4">
-                            <div class="col-8">
-                                <h2>DISBURSEMENT VOUCHER</h2>
-                                <h4><t t-esc="doc.name"/></h4>
-                            </div>
-                            <div class="col-4 text-end" style="padding-top: 15px;">
-                                <!-- 🚨 NEW: Absolute Clear Status Badges for S3 Accounting Audits 🚨 -->
-                                <span t-if="doc.state == 'draft'" style="padding: 8px 15px; background-color: #f1f2f3; color: #333; font-weight: bold; border-radius: 4px;">DRAFT VOUCHER</span>
-                                <span t-if="doc.state == 'waiting'" style="padding: 8px 15px; background-color: #f0ad4e; color: white; font-weight: bold; border-radius: 4px;">WAITING APPROVAL</span>
-                                <span t-if="doc.state == 'approved'" style="padding: 8px 15px; background-color: #0275d8; color: white; font-weight: bold; border-radius: 4px;">APPROVED (UNPAID)</span>
-                                <span t-if="doc.state == 'paid'" style="padding: 8px 15px; background-color: #5cb85c; color: white; font-weight: bold; border-radius: 4px;">PAID VOUCHER</span>
-                                <span t-if="doc.state == 'rejected'" style="padding: 8px 15px; background-color: #d9534f; color: white; font-weight: bold; border-radius: 4px;">REJECTED</span>
-                                <span t-if="doc.state == 'refunded'" style="padding: 8px 15px; background-color: #292b2c; color: white; font-weight: bold; border-radius: 4px;">REFUNDED</span>
-                            </div>
-                        </div>
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #212529;">
 
-                        <!-- Core Meta Table -->
-                        <table class="table table-bordered mt-4">
+                        <!-- Header Banner -->
+                        <table style="width: 100%; border-bottom: 2px solid #dee2e6; margin-bottom: 15px; padding-bottom: 10px;">
                             <tr>
-                                <td>
-                                    <strong>Date:</strong> <t t-esc="doc.date"/><br/>
-                                    <strong>Fund Account:</strong> <t t-esc="doc.clinic_id.name"/><br/>
-                                    <strong>Category:</strong> <t t-esc="doc.display_category"/>
+                                <td style="width: 60%; vertical-align: top;">
+                                    <h2 style="font-weight: bold; margin: 0; color: #1a252f; font-size: 20px;">PAYMENT DISBURSEMENT VOUCHER</h2>
+                                    <div style="color: #6c757d; font-size: 13px; margin-top: 4px;">
+                                        Branch: <strong style="color: #212529;"><t t-esc="doc.clinic_id.name"/></strong>
+                                    </div>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: top;">
+                                    <h4 style="font-weight: bold; color: #6c757d; margin: 0 0 6px 0; font-size: 15px;"><t t-esc="doc.name"/></h4>
+                                    <span t-if="doc.state == 'draft'" style="padding: 4px 10px; background-color: #f8f9fa; border: 1px solid #ccc; font-weight: bold; border-radius: 3px;">DRAFT</span>
+                                    <span t-if="doc.state == 'waiting'" style="padding: 4px 10px; background-color: #f0ad4e; color: white; font-weight: bold; border-radius: 3px;">WAITING APPROVAL</span>
+                                    <span t-if="doc.state == 'approved'" style="padding: 4px 10px; background-color: #0275d8; color: white; font-weight: bold; border-radius: 3px;">APPROVED (UNPAID)</span>
+                                    <span t-if="doc.state == 'paid'" style="padding: 4px 10px; background-color: #5cb85c; color: white; font-weight: bold; border-radius: 3px;">PAID</span>
+                                    <span t-if="doc.state == 'rejected'" style="padding: 4px 10px; background-color: #d9534f; color: white; font-weight: bold; border-radius: 3px;">REJECTED</span>
+                                    <span t-if="doc.state == 'refunded'" style="padding: 4px 10px; background-color: #292b2c; color: white; font-weight: bold; border-radius: 3px;">REFUNDED</span>
                                 </td>
                             </tr>
                         </table>
 
-                        <!-- Main Financial Description Table -->
-                        <table class="table mt-4">
+                        <!-- Cross-Cluster Notice -->
+                        <div t-if="doc.is_cross_cluster_visit" style="padding: 8px 12px; margin-bottom: 15px; border-left: 4px solid #d9534f; background-color: #fdf7f7; color: #d9534f;">
+                            <strong>Cross-Cluster Alert:</strong> Patient is registered outside this clinic's home cluster.
+                        </div>
+
+                        <!-- 2-Column Meta & Banking Information -->
+                        <table style="width: 100%; margin-bottom: 20px;" cellspacing="10">
+                            <tr>
+                                <td style="width: 50%; vertical-align: top; border: 1px solid #dee2e6; border-radius: 4px; padding: 12px; background-color: #fafafa;">
+                                    <div style="font-size: 11px; text-transform: uppercase; color: #6c757d; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-bottom: 8px;">Voucher Summary</div>
+                                    <table style="width: 100%; font-size: 12px;">
+                                        <tr>
+                                            <td style="color: #6c757d; width: 40%; padding: 3px 0;">Creation Date:</td>
+                                            <td style="font-weight: bold;"><t t-esc="doc.date"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6c757d; padding: 3px 0;">Approval Date:</td>
+                                            <td style="font-weight: bold;"><t t-esc="doc.approval_date or 'Pending'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6c757d; padding: 3px 0;">Category:</td>
+                                            <td style="font-weight: bold;"><t t-esc="doc.display_category"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6c757d; padding: 3px 0;">Prepared By:</td>
+                                            <td style="font-weight: bold;"><t t-esc="doc.created_by_name or 'System'"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 50%; vertical-align: top; border: 1px solid #dee2e6; border-radius: 4px; padding: 12px; background-color: #fafafa;">
+                                    <div style="font-size: 11px; text-transform: uppercase; color: #6c757d; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-bottom: 8px;">Payee &amp; Banking Details</div>
+                                    <table style="width: 100%; font-size: 12px;">
+                                        <tr>
+                                            <td style="color: #6c757d; width: 40%; padding: 3px 0;">Payee Name:</td>
+                                            <td style="font-weight: bold;"><t t-esc="doc.payee_display"/></td>
+                                        </tr>
+                                        <tr t-if="doc.therapist_ved_number">
+                                            <td style="color: #6c757d; padding: 3px 0;">VED Number:</td>
+                                            <td><t t-esc="doc.therapist_ved_number"/></td>
+                                        </tr>
+                                        <tr t-if="doc.therapist_phone">
+                                            <td style="color: #6c757d; padding: 3px 0;">Phone:</td>
+                                            <td><t t-esc="doc.therapist_phone"/></td>
+                                        </tr>
+                                        <tr t-if="doc.bank_account_number">
+                                            <td style="color: #6c757d; padding: 3px 0;">Bank &amp; Account:</td>
+                                            <td>
+                                                <t t-esc="doc.bank_name or 'Bank'"/><br/>
+                                                <strong style="font-family: monospace;"><t t-esc="doc.bank_account_number"/></strong>
+                                                (<t t-esc="doc.bank_ifsc_code"/>)
+                                            </td>
+                                        </tr>
+                                        <tr t-if="doc.utr_reference">
+                                            <td style="color: #6c757d; padding: 3px 0;">Bank UTR Ref:</td>
+                                            <td style="font-weight: bold; color: #28a745; font-family: monospace;"><t t-esc="doc.utr_reference"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Main Financial Table -->
+                        <table class="table table-bordered mb-4" style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr>
-                                    <th style="width: 30%;">Payee / Vendor</th>
-                                    <th style="width: 50%;">Business Purpose &amp; Details</th>
-                                    <th class="text-end" style="width: 20%;">Amount</th>
+                                <tr style="background-color: #f8f9fa; font-size: 11px; text-transform: uppercase;">
+                                    <th style="width: 25%; padding: 8px; border: 1px solid #dee2e6;">Expense Head</th>
+                                    <th style="width: 55%; padding: 8px; border: 1px solid #dee2e6;">Operational Details &amp; Purpose</th>
+                                    <th style="width: 20%; padding: 8px; border: 1px solid #dee2e6; text-align: right;">Total Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>
-                                        <t t-esc="doc.payee_display"/>
+                                    <td style="padding: 10px; border: 1px solid #dee2e6; vertical-align: top;">
+                                        <strong style="color: #1a252f;"><t t-esc="doc.display_category"/></strong>
+                                        <div t-if="doc.office_expense_type" style="color: #6c757d; font-size: 11px; margin-top: 4px;">
+                                            Type: <t t-esc="doc.office_expense_type.replace('_', ' ').title()"/>
+                                        </div>
                                     </td>
-
-                                    <td>
-                                        <!-- Base Description Text -->
-                                        <t t-if="doc.description">
-                                            <t t-esc="doc.description"/>
-                                        </t>
-
-                                        <!-- Custom Context Specific Details -->
-                                        <t t-if="(doc.expense_category == 'other' or doc.category == 'other') and doc.other_expense_details">
-                                            <div class="mt-2">
-                                                <strong>Specific Expense:</strong> <t t-esc="doc.other_expense_details"/>
-                                            </div>
-                                        </t>
-
-                                        <!-- Therapist Explicit Metadata Layout Blocks -->
-                                        <t t-if="doc.expense_category in ['incentive', 'overtime'] and doc.therapist_role">
-                                            <div class="mt-2">
-                                                <strong>Role:</strong>
-                                                <t t-if="doc.therapist_role == 'fixed'">Fixed Therapist</t>
-                                                <t t-if="doc.therapist_role == 'floater'">Floater Therapist</t>
-                                                <t t-if="doc.therapist_role == 'home'">Home Therapist</t>
-                                            </div>
-                                        </t>
-                                        <t t-if="doc.expense_category == 'travel' and doc.travel_type">
-                                            <div class="mt-2">
-                                                <strong>Travel Route:</strong>
-                                                <t t-if="doc.travel_type == 'home'">Home Visit</t>
-                                                <t t-if="doc.travel_type == 'fixed'">Fixed Therapist Travel</t>
-                                                <t t-if="doc.travel_type == 'floater'">Floater Travel</t>
-                                                <t t-if="doc.travel_type == 'c2c'">Clinic to Clinic</t>
-                                            </div>
-                                        </t>
-
-                                        <!-- Clinic Transfer Mapping Layout Panel -->
-                                        <t t-if="doc.travel_type == 'c2c' or doc.category == 'clinic_to_clinic'">
-                                            <div class="mt-2" style="border-left: 3px solid #00a09d; padding-left: 10px; background-color: #f8f9fa;">
-                                                <strong>Transfer Details:</strong><br/>
-                                                <strong>From:</strong> <t t-esc="doc.from_clinic_id.name"/><br/>
-                                                <strong>To:</strong> <t t-esc="doc.to_clinic_id.name"/><br/>
-                                                <strong>Type:</strong>
-                                                <t t-if="doc.therapist_role == 'fixed' or doc.therapist_type == 'fixed'">Fixed Therapist</t>
-                                                <t t-if="doc.therapist_role == 'floater' or doc.therapist_type == 'floater'">Floater</t>
-                                            </div>
-                                        </t>
-
-                                        <!-- Home Visit Core Patients Verification Dataset -->
-                                        <t t-if="doc.show_home_visit or doc.category == 'home_visit_travel'">
-                                            <div class="mt-2" style="border-left: 3px solid #d9534f; padding-left: 10px; background-color: #f8f9fa;">
-                                                <strong>Home Visit Patient Details:</strong><br/>
-                                                <strong>MRN:</strong> <t t-esc="doc.home_visit_mrn_search"/><br/>
-                                                <strong>Patient Name:</strong> <t t-esc="doc.home_visit_patient_name"/><br/>
-                                                <strong>Phone No:</strong> <t t-esc="doc.home_visit_patient_phone"/><br/>
-                                                <strong>Registered At:</strong> <t t-esc="doc.home_visit_patient_clinic"/>
-
-                                                <t t-if="doc.is_cross_cluster_visit">
-                                                    <br/><span style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Visit</span>
-                                                </t>
-                                            </div>
-                                        </t>
+                                    <td style="padding: 10px; border: 1px solid #dee2e6; vertical-align: top;">
+                                        <div style="margin-bottom: 6px;">
+                                            <strong>Purpose: </strong>
+                                            <t t-if="doc.description">
+                                                <t t-esc="doc.description"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span style="color: #6c757d; font-style: italic;">No specific narration entered.</span>
+                                            </t>
+                                        </div>
+                                        <div t-if="doc.other_expense_details" style="font-size: 11px; color: #6c757d; margin-bottom: 4px;">
+                                            <strong>Expense Detail:</strong> <t t-esc="doc.other_expense_details"/>
+                                        </div>
+                                        <div t-if="doc.travel_type == 'c2c' or doc.category == 'clinic_to_clinic'" style="padding: 6px; border: 1px solid #dee2e6; border-radius: 3px; background-color: #f8f9fa; font-size: 11px; margin-bottom: 6px;">
+                                            <strong>Inter-Clinic Transfer:</strong>
+                                            <t t-esc="doc.from_clinic_id.name"/> &amp;rarr; <t t-esc="doc.to_clinic_id.name"/>
+                                            <span style="padding: 2px 6px; background-color: #6c757d; color: white; border-radius: 2px; margin-left: 5px;"><t t-esc="doc.therapist_type or doc.therapist_role"/></span>
+                                        </div>
+                                        <div t-if="doc.show_home_visit or doc.category == 'home_visit_travel'" style="padding: 6px; border: 1px solid #dee2e6; border-radius: 3px; background-color: #f8f9fa; font-size: 11px;">
+                                            <div style="font-weight: bold; color: #6c757d; margin-bottom: 2px;">Home Visit Verification:</div>
+                                            <div><strong>MRN:</strong> <t t-esc="doc.home_visit_mrn_search"/> | <strong>Patient:</strong> <t t-esc="doc.home_visit_patient_name"/></div>
+                                            <div><strong>Phone:</strong> <t t-esc="doc.home_visit_patient_phone"/> | <strong>Clinic:</strong> <t t-esc="doc.home_visit_patient_clinic"/></div>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <strong><t t-esc="doc.payee_display"/></strong><br/>
-
-                                        <!-- Render Auto-Populated Details if present -->
-                                        <t t-if="doc.therapist_ved_number">
-                                            <span style="font-size: 12px; color: #555;">VED: <t t-esc="doc.therapist_ved_number"/></span><br/>
-                                        </t>
-                                        <t t-if="doc.therapist_phone">
-                                            <span style="font-size: 12px; color: #555;">Phone: <t t-esc="doc.therapist_phone"/></span><br/>
-                                        </t>
-                                        <t t-if="doc.bank_account_number">
-                                            <div class="mt-2" style="font-size: 12px; border-top: 1px solid #eee; padding-top: 5px;">
-                                                <strong>Bank:</strong> <t t-esc="doc.bank_account_name"/><br/>
-                                                <strong>A/C:</strong> <t t-esc="doc.bank_account_number"/><br/>
-                                                <strong>IFSC:</strong> <t t-esc="doc.bank_ifsc_code"/>
-                                            </div>
-                                        </t>
-                                    </td>
-
-                                    <td class="text-end fw-bold">₹
-                                        <t t-esc="doc.amount"/>
+                                    <td style="padding: 10px; border: 1px solid #dee2e6; vertical-align: top; text-align: right; font-weight: bold; font-size: 14px;">
+                                        <t t-esc="'%.2f' % doc.amount"/>
                                     </td>
                                 </tr>
                             </tbody>
+                            <tfoot>
+                                <tr style="background-color: #f8f9fa;">
+                                    <td colspan="2" style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; text-transform: uppercase;">Total Payable</td>
+                                    <td style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; font-size: 16px; color: #1a252f;">
+                                        <t t-esc="'%.2f' % doc.amount"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
 
-                        <!-- Verification Signatures Sign-Off Segment -->
-                        <div class="row mt-5" style="page-break-inside: avoid;">
-                            <div class="col-6 text-center">
-                                <br/><br/><br/> <p>___________________________</p>
-                                <p><strong>Payee Signature</strong></p>
-                                <p><t t-esc="doc.payee_display"/></p>
-                            </div>
-
-                            <div class="col-6 text-center">
-                            <br/><br/><br/> <p>___________________________</p>
-                            <p><strong>Authorized By / Generated By</strong></p>
-                            <p><t t-esc="doc.created_by_name"/></p>
-                            </div>
+                        <!-- Narration / Debit Ref Bar -->
+                        <div t-if="doc.debit_narr" style="padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; background-color: #f8f9fa; font-size: 12px; margin-bottom: 25px;">
+                            <strong>Debit Narration:</strong> <span style="font-family: monospace;"><t t-esc="doc.debit_narr"/></span>
                         </div>
+
+                        <!-- 3-Box Authorization Section (Fully crash-proofed) -->
+                        <table style="width: 100%; text-align: center; margin-top: 40px; border-spacing: 15px 0; border-collapse: separate;">
+                            <tr>
+                                <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">
+                                    <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">1. Prepared By</div>
+                                    <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">
+                                        <t t-esc="doc.created_by_name or 'Staff Member'"/>
+                                    </div>
+                                </td>
+                                <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">
+                                    <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">2. Approved By</div>
+                                    <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">
+                                        Fund Manager / Controller
+                                    </div>
+                                </td>
+                                <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">
+                                    <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">3. Payee Acknowledgment</div>
+                                    <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">
+                                        <t t-esc="doc.payee_display"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
                     </div>
                 </t>
             </t>
