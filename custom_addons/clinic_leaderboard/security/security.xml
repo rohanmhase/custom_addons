@@ -1,0 +1,14 @@
+<odoo>
+    <data noupdate="0">
+        <record id="module_category_clinic_leaderboard" model="ir.module.category">
+            <field name="name">Clinic Leaderboard</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <!-- New group for users who should NOT see the leaderboard -->
+        <record id="group_hide_leaderboard" model="res.groups">
+            <field name="name">Cannot View Leaderboards</field>
+            <field name="category_id" ref="module_category_clinic_leaderboard"/>
+        </record>
+    </data>
+</odoo>

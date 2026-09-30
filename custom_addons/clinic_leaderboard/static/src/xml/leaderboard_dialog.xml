@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="clinic_leaderboard.LeaderboardDialog" owl="1">
+        <Dialog title="'🏆 Clinic Performance Leaderboards'" size="'xl'">
+
+            <div class="px-3 py-2" style="max-height: 75vh; overflow-y: auto;">
+
+                <!-- ============================================== -->
+                <!-- LEADERBOARD 1: Daily Recovery                  -->
+                <!-- ============================================== -->
+                <h5 class="fw-bold text-dark mb-3">Top Performer - Recovery</h5>
+
+                <div class="table-responsive rounded-3 shadow-sm border mb-5">
+                    <table class="table table-hover table-borderless mb-0 align-middle">
+                        <thead class="table-light border-bottom">
+                            <tr>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder" style="font-size: 0.8rem;">Doctor</th>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder" style="font-size: 0.8rem;">Clinics</th>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder text-center" style="font-size: 0.8rem;">Recovery %</th>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder text-center" style="font-size: 0.8rem;">VAS %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.records" t-as="record" t-key="'daily_' + record.id"
+                                t-att-class="record.doctor_id and record.doctor_id[0] === user.userId ? 'table-primary border-bottom' : 'border-bottom'">
+                                <td class="py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <!-- Show Trophy for 1st row, generic icon for user row -->
+                                        <span t-if="record_index === 0" class="me-3 fs-3" title="1st Place">🏆</span>
+                                        <span t-else="" class="me-3 ms-2 fs-5 text-muted" title="You">👤</span>
+
+                                        <span class="fw-bold fs-6 text-dark"><t t-esc="record.doctor_name"/></span>
+                                        <span t-if="record.doctor_id and record.doctor_id[0] === user.userId" class="badge rounded-pill text-bg-success ms-2 shadow-sm" style="font-size: 0.7rem;">You</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-dark fw-medium"><t t-esc="record.clinics_handled"/></td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="badge rounded-pill text-bg-info text-white fs-6 px-3 py-2 shadow-sm"><t t-esc="record.recovery_percent"/>%</span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="badge rounded-pill text-bg-secondary fs-6 px-3 py-2 shadow-sm"><t t-esc="record.vas_percent"/>%</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- LEADERBOARD 2: RS Extension (20-40%)           -->
+                <!-- ============================================== -->
+                <h5 class="fw-bold text-dark mb-3">Top Performer - Extension</h5>
+
+                <div class="table-responsive rounded-3 shadow-sm border mb-2">
+                    <table class="table table-hover table-borderless mb-0 align-middle">
+                        <thead class="table-light border-bottom">
+                            <tr>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder" style="font-size: 0.8rem;">Doctor</th>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder" style="font-size: 0.8rem;">Clinics</th>
+                                <th class="py-3 px-4 text-uppercase text-muted fw-bolder text-center" style="font-size: 0.8rem;">20-40% Extension</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.rsRecords" t-as="record" t-key="'rs_' + record.id"
+                                t-att-class="record.doctor_id and record.doctor_id[0] === user.userId ? 'table-primary border-bottom' : 'border-bottom'">
+
+                                <td class="py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <!-- Show Trophy for 1st row, generic icon for user row -->
+                                        <span t-if="record_index === 0" class="me-3 fs-3" title="1st Place">🏆</span>
+                                        <span t-else="" class="me-3 ms-2 fs-5 text-muted" title="You">👤</span>
+
+                                        <span class="fw-bold fs-6 text-dark"><t t-esc="record.doctor_name"/></span>
+                                        <span t-if="record.doctor_id and record.doctor_id[0] === user.userId" class="badge rounded-pill text-bg-success ms-2 shadow-sm" style="font-size: 0.7rem;">You</span>
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4 text-dark fw-medium">
+                                    <t t-esc="record.clinics_handled"/>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="badge rounded-pill text-bg-primary fs-6 px-3 py-2 shadow-sm">
+                                        <t t-esc="record.ext_20_40_percent"/>%
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" t-on-click="props.close">Awesome!</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
