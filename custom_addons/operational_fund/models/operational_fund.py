@@ -6,7 +6,10 @@ import base64
 import xlsxwriter
 import csv
 import os
+import re
+import gc
 import tempfile
+import time
 from markupsafe import escape
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
@@ -21,6 +24,40 @@ except ImportError:
     boto3 = None
 
 _logger = logging.getLogger(__name__)
+
+# The ONLY models whose attachments are ever moved to / streamed from AWS S3.
+# Every S3-related override on ir.attachment / ir.binary must be gated on this
+# so attachments of any other model (X-rays, Aadhaar/PAN, audit exports, ...)
+# always follow Odoo's native behaviour untouched.
+S3_TARGET_MODELS = ('operational.fund.disbursement', 'operational.fund.allocation')
+
+
+def _claimable_attachments(attachments, unowned_models, owned_by=()):
+    """Return only the attachments that may safely be re-parented onto a voucher.
+
+    An attachment is claimable when it is:
+      * still unowned (res_id empty) AND either has no res_model or one of
+        `unowned_models` (i.e. it was uploaded from the form/wizard that is
+        being saved), or
+      * already owned by one of the (res_model, res_id) pairs in `owned_by`
+        (e.g. the wizard record itself, or the target voucher).
+
+    Attachments that already belong to any OTHER record (another model's
+    documents, X-rays, etc.) are never claimed, so a crafted or mistaken ID in
+    the many2many can not hijack them, upload them to S3, or purge them locally.
+    """
+    def _is_claimable(att):
+        if not att.res_id:
+            return not att.res_model or att.res_model in unowned_models
+        return (att.res_model, att.res_id) in owned_by
+
+    claimable = attachments.filtered(_is_claimable)
+    skipped = attachments - claimable
+    if skipped:
+        _logger.warning(
+            "Operational Fund: attachment ids %s belong to other records and were NOT re-assigned.",
+            skipped.ids)
+    return claimable
 
 
 class Clinic(models.Model):
@@ -347,10 +384,12 @@ class OperationalFundDisbursement(models.Model):
         # D. Link proof attachments uploaded during record creation
         for record in records:
             if record.proof_attachment_ids:
-                record.proof_attachment_ids.sudo().write({
-                    'res_model': 'operational.fund.disbursement',
-                    'res_id': record.id,
-                })
+                claimable = _claimable_attachments(record.proof_attachment_ids.sudo(), (record._name,))
+                if claimable:
+                    claimable.write({
+                        'res_model': 'operational.fund.disbursement',
+                        'res_id': record.id,
+                    })
 
         return records
 
@@ -1107,8 +1146,8 @@ class OperationalFundDisbursement(models.Model):
 
         # Generate Dynamic Column Headers
         headers = [
-            'Voucher Number', 'Date', 'Clinic Branch', 'Amount', 'Status',
-            'Payee Name', 'Bank Name', 'Account Number', 'IFSC Code',
+            'Voucher Number', 'Date', 'Clinic Branch', 'Main Category', 'Travel Route', 'Amount', 'Status',
+            'Payee Name', 'VED Number', 'Bank Name', 'Account Number', 'IFSC Code',
             'Signed Voucher Asset', 'Vendor Receipt / Bill', 'Payment Proof'
         ]
 
@@ -1124,80 +1163,97 @@ class OperationalFundDisbursement(models.Model):
             worksheet.write(0, col_idx, header, header_format)
 
         # 6. Populate Data Rows
-        for row_idx, item in enumerate(voucher_rows, start=1):
-            rec = item['rec']
+            # 6. Populate Data Rows
+            for row_idx, item in enumerate(voucher_rows, start=1):
+                rec = item['rec']
+                payee_name = rec.payee_display or 'N/A'
+                bank_name = rec.bank_name or False
+                acc_num = rec.bank_account_number or False
+                ifsc = rec.bank_ifsc_code or False
 
-            payee_name = rec.payee_display or 'N/A'
-            bank_name = rec.bank_name or False
-            acc_num = rec.bank_account_number or False
-            ifsc = rec.bank_ifsc_code or False
+                if not bank_name and rec.vendor_ref_id:
+                    bank_name = rec.vendor_ref_id.bank_account_name or False
+                    acc_num = acc_num or rec.vendor_ref_id.bank_account_number or False
+                    ifsc = ifsc or rec.vendor_ref_id.bank_ifsc_code or False
+                elif not bank_name and rec.therapist_ref_id:
+                    bank_name = getattr(rec.therapist_ref_id, 'bank_name', False) or getattr(rec.therapist_ref_id,
+                                                                                             'bank_account_name', False)
+                    acc_num = acc_num or getattr(rec.therapist_ref_id, 'bank_account_number', False)
+                    ifsc = ifsc or getattr(rec.therapist_ref_id, 'bank_ifsc_code', False)
 
-            if not bank_name and rec.vendor_ref_id:
-                bank_name = rec.vendor_ref_id.bank_account_name or False
-                acc_num = acc_num or rec.vendor_ref_id.bank_account_number or False
-                ifsc = ifsc or rec.vendor_ref_id.bank_ifsc_code or False
-            elif not bank_name and rec.therapist_ref_id:
-                bank_name = getattr(rec.therapist_ref_id, 'bank_name', False) or getattr(rec.therapist_ref_id,
-                                                                                         'bank_account_name', False)
-                acc_num = acc_num or getattr(rec.therapist_ref_id, 'bank_account_number', False)
-                ifsc = ifsc or getattr(rec.therapist_ref_id, 'bank_ifsc_code', False)
+                # Extract Selection Field Labels
+                exp_cat_label = dict(self._fields['expense_category'].selection).get(rec.expense_category,
+                                                                                     'N/A') if rec.expense_category else 'N/A'
+                travel_type_label = dict(self._fields['travel_type'].selection).get(rec.travel_type,
+                                                                                    'N/A') if rec.travel_type else 'N/A'
+                ved_number = rec.therapist_ved_number or 'N/A'
 
-            worksheet.set_row(row_idx, 22)  # Enforce clean, uniform row height
+                worksheet.set_row(row_idx, 22)  # Enforce clean, uniform row height
+                worksheet.write_string(row_idx, 0, str(rec.name or ''), text_format)
+                worksheet.write_string(row_idx, 1, str(rec.date or ''), text_center)
+                worksheet.write_string(row_idx, 2, str(rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'),
+                                       text_format)
 
-            worksheet.write_string(row_idx, 0, str(rec.name or ''), text_format)
-            worksheet.write_string(row_idx, 1, str(rec.date or ''), text_center)
-            worksheet.write_string(row_idx, 2, str(rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'),
-                                   text_format)
-            worksheet.write_number(row_idx, 3, rec.amount, amount_format)
-            worksheet.write_string(row_idx, 4, str(rec.state or 'waiting').upper(), text_center)
-            worksheet.write_string(row_idx, 5, str(payee_name), text_format)
-            worksheet.write_string(row_idx, 6, str(bank_name).strip() if bank_name else 'N/A', text_format)
-            worksheet.write_string(row_idx, 7, str(acc_num).strip() if acc_num else 'N/A', account_format)
-            worksheet.write_string(row_idx, 8, str(ifsc).strip() if ifsc else 'N/A', text_center)
+                # Write New Columns
+                worksheet.write_string(row_idx, 3, str(exp_cat_label), text_format)
+                worksheet.write_string(row_idx, 4, str(travel_type_label), text_format)
 
-            def write_clean_hyperlink(row, col, url, label):
-                """Hides the messy URL behind a neat clickable label"""
-                if url:
-                    worksheet.write_url(row, col, url, link_format, string=label)
-                else:
-                    worksheet.write_string(row, col, 'N/A', na_format)
+                worksheet.write_number(row_idx, 5, rec.amount, amount_format)
+                worksheet.write_string(row_idx, 6, str(rec.state or 'waiting').upper(), text_center)
+                worksheet.write_string(row_idx, 7, str(payee_name), text_format)
 
-            # Assign Primary Documentation Columns
-            write_clean_hyperlink(row_idx, 9, item['voucher_url'], 'View Voucher')
-            write_clean_hyperlink(row_idx, 10, item['receipt_url'], 'View Receipt')
-            write_clean_hyperlink(row_idx, 11, item['payment_url'], 'View Payment')
+                # Write VED Number
+                worksheet.write_string(row_idx, 8, str(ved_number), text_center)
 
-            # Dynamically push additional proofs horizontally across generated columns
-            col_idx = 12
-            for i in range(max_additional_proofs):
-                if i < len(item['supporting_urls']):
-                    write_clean_hyperlink(row_idx, col_idx, item['supporting_urls'][i], f'View Proof {i + 1}')
-                else:
-                    worksheet.write_string(row_idx, col_idx, 'N/A', na_format)
-                col_idx += 1
+                worksheet.write_string(row_idx, 9, str(bank_name).strip() if bank_name else 'N/A', text_format)
+                worksheet.write_string(row_idx, 10, str(acc_num).strip() if acc_num else 'N/A', account_format)
+                worksheet.write_string(row_idx, 11, str(ifsc).strip() if ifsc else 'N/A', text_center)
 
-            # Debit Narr cleanly caps off the row
-            worksheet.write_string(row_idx, col_idx, str(rec.debit_narr or ''), text_format)
+                def write_clean_hyperlink(row, col, url, label):
+                    """Hides the messy URL behind a neat clickable label"""
+                    if url:
+                        worksheet.write_url(row, col, url, link_format, string=label)
+                    else:
+                        worksheet.write_string(row, col, 'N/A', na_format)
+
+                # Assign Primary Documentation Columns (Indices shifted by +3)
+                write_clean_hyperlink(row_idx, 12, item['voucher_url'], 'View Voucher')
+                write_clean_hyperlink(row_idx, 13, item['receipt_url'], 'View Receipt')
+                write_clean_hyperlink(row_idx, 14, item['payment_url'], 'View Payment')
+
+                # Dynamically push additional proofs horizontally across generated columns
+                col_idx = 15
+                for i in range(max_additional_proofs):
+                    if i < len(item['supporting_urls']):
+                        write_clean_hyperlink(row_idx, col_idx, item['supporting_urls'][i], f'View Proof {i + 1}')
+                    else:
+                        worksheet.write_string(row_idx, col_idx, 'N/A', na_format)
+                    col_idx += 1
+
+                # Debit Narr cleanly caps off the row
+                worksheet.write_string(row_idx, col_idx, str(rec.debit_narr or ''), text_format)
 
         # 7. Styling Width Adjustments
-        worksheet.set_column(0, 0, 26)
-        worksheet.set_column(1, 1, 13)
-        worksheet.set_column(2, 2, 34)
-        worksheet.set_column(3, 3, 14)
-        worksheet.set_column(4, 4, 14)
-        worksheet.set_column(5, 5, 20)
-        worksheet.set_column(6, 6, 18)
-        worksheet.set_column(7, 7, 22)
-        worksheet.set_column(8, 8, 15)
+                # 7. Styling Width Adjustments
+                worksheet.set_column(0, 0, 26)
+                worksheet.set_column(1, 1, 13)
+                worksheet.set_column(2, 2, 34)
+                worksheet.set_column(3, 4, 22)  # Main Category & Travel Route
+                worksheet.set_column(5, 5, 14)  # Amount
+                worksheet.set_column(6, 6, 14)  # Status
+                worksheet.set_column(7, 7, 20)  # Payee Name
+                worksheet.set_column(8, 8, 15)  # VED Number
+                worksheet.set_column(9, 9, 18)  # Bank Name
+                worksheet.set_column(10, 10, 22)  # Account Number
+                worksheet.set_column(11, 11, 15)  # IFSC Code
+                worksheet.set_column(12, 14, 22)  # Primary Document URLs
 
-        worksheet.set_column(9, 11, 22)  # Primary Document URLs
+                # Apply strict column widths to the mathematically generated extra columns
+                if max_additional_proofs > 0:
+                    worksheet.set_column(15, 14 + max_additional_proofs, 20)
 
-        # Apply strict column widths to the mathematically generated extra columns
-        if max_additional_proofs > 0:
-            worksheet.set_column(12, 11 + max_additional_proofs, 20)
-
-        # Format Debit Narr column at the very end
-        worksheet.set_column(12 + max_additional_proofs, 12 + max_additional_proofs, 25)
+                # Format Debit Narr column at the very end
+                worksheet.set_column(15 + max_additional_proofs, 15 + max_additional_proofs, 25)
 
         workbook.close()
         output.seek(0)
@@ -1271,7 +1327,7 @@ class ProjectTask(models.Model):
 
     def unlink(self):
         for task in self:
-            if task.is_voucher_task or (task.name and ('Approve Voucher' in task.name or 'Review Refund' in task.name)):
+            if task.is_voucher_task:
                 if not self.env.su: raise ValidationError(
                     _("Auditing Security: You cannot manually delete an automated financial approval task."))
         return super().unlink()
@@ -1279,7 +1335,7 @@ class ProjectTask(models.Model):
     def write(self, vals):
         protected_fields = ['name', 'description', 'user_ids']
         for task in self:
-            if task.is_voucher_task or (task.name and ('Approve Voucher' in task.name or 'Review Refund' in task.name)):
+            if task.is_voucher_task:
                 if any(field in vals for field in protected_fields):
                     if not self.env.su: raise ValidationError(
                         _("Auditing Security: You cannot alter automated financial approval tasks."))
@@ -1350,6 +1406,15 @@ class IrAttachment(models.Model):
     is_s3_stored = fields.Boolean(string="Stored in AWS S3", default=False, index=True)
     s3_object_key = fields.Char(string="AWS S3 Object Key")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Save locally in Odoo filestore with zero network lag
+        return super().create(vals_list)
+
+    def write(self, vals):
+        # Allow native local updates; defer S3 transfer to the nightly cron
+        return super().write(vals)
+
     @api.model
     def _get_s3_credentials(self):
         if boto3 is None:
@@ -1382,18 +1447,29 @@ class IrAttachment(models.Model):
             _logger.error(f"AWS S3 Client Initialization Failed: {str(e)}")
             return None, None
 
+    import re
+
     def _generate_s3_object_key(self):
         """Builds a human-readable, unique S3 key using the voucher/deposit number."""
         self.ensure_one()
-        voucher_folder = 'Unassigned'
+        voucher_folder = None
+
         if self.res_model == 'operational.fund.disbursement' and self.res_id:
             disb = self.env['operational.fund.disbursement'].browse(self.res_id)
-            if disb.exists() and disb.name:
-                voucher_folder = disb.name.replace('/', '_').strip()
+            if disb.exists():
+                clean_name = disb.name.replace('/', '_').strip() if disb.name and disb.name != 'New' else ''
+                voucher_folder = clean_name or f"VOUCHER_LEGACY_{disb.id}"
         elif self.res_model == 'operational.fund.allocation' and self.res_id:
             alloc = self.env['operational.fund.allocation'].browse(self.res_id)
-            if alloc.exists() and alloc.name:
-                voucher_folder = alloc.name.replace('/', '_').strip()
+            if alloc.exists():
+                clean_name = alloc.name.replace('/', '_').strip() if alloc.name and alloc.name != 'New' else ''
+                voucher_folder = clean_name or f"ALLOCATION_LEGACY_{alloc.id}"
+
+        if not voucher_folder:
+            voucher_folder = f"Unassigned_{self.res_model.replace('.', '_')}_{self.res_id or '0'}"
+
+        # Sanitize folder to alphanumeric, underscores, and hyphens only
+        voucher_folder = re.sub(r'[^a-zA-Z0-9_\-]', '_', voucher_folder)
 
         tag_map = {
             'receipt_file': 'Receipt',
@@ -1404,14 +1480,16 @@ class IrAttachment(models.Model):
         }
         doc_type = tag_map.get(self.res_field)
         if not doc_type:
-            doc_type = f"Proof_{self.name.split('.')[0].replace(' ', '_')}" if self.name else 'Attachment'
+            raw_name = self.name.split('.')[0] if self.name else 'Attachment'
+            doc_type = f"Proof_{re.sub(r'[^a-zA-Z0-9_\-]', '_', raw_name)}"
 
         safe_mimetype = self.mimetype or 'application/octet-stream'
-        file_ext = mimetypes.guess_extension(safe_mimetype) or ''
+        file_ext = ''
         if self.name and '.' in self.name:
             file_ext = f".{self.name.split('.')[-1].lower()}"
         if not file_ext:
-            file_ext = '.bin'
+            file_ext = mimetypes.guess_extension(safe_mimetype) or '.bin'
+
         return f"operational_funds/{voucher_folder}/{voucher_folder}_{doc_type}_{self.id}{file_ext}"
 
     def _sync_to_s3(self):
@@ -1419,9 +1497,8 @@ class IrAttachment(models.Model):
         if not boto3:
             return
 
-        target_models = ['operational.fund.disbursement', 'operational.fund.allocation']
         valid_recs = self.filtered(
-            lambda r: r.res_model in target_models and r.res_id and r.type == 'binary' and not r.is_s3_stored)
+            lambda r: r.res_model in S3_TARGET_MODELS and r.res_id and r.type == 'binary' and not r.is_s3_stored)
 
         if not valid_recs:
             return
@@ -1450,14 +1527,11 @@ class IrAttachment(models.Model):
 
                 actual_size = len(payload)
 
-                # 1. Purge the physical file from the local hard drive to save disk space
-                if rec.store_fname:
-                    try:
-                        full_path = rec._full_path(rec.store_fname)
-                        if os.path.exists(full_path):
-                            os.unlink(full_path)
-                    except Exception as e:
-                        _logger.warning(f"Could not delete local file: {e}")
+                # 1. Remember the local filestore name BEFORE the SQL below clears it.
+                #    NOTE: we must NOT os.unlink() it here. Odoo's filestore is content-addressed, so
+                #    identical files (of ANY model) share ONE physical file. It is released safely
+                #    in step 3 through Odoo's own garbage collector instead.
+                old_store_fname = rec.store_fname
 
                 # 2. THE UI ANCHOR: We inject a tiny dummy string into db_datas.
                 # This guarantees Odoo's Form View sees the field as "Not Empty" and successfully loads the Image/PDF widgets.
@@ -1475,8 +1549,197 @@ class IrAttachment(models.Model):
 
                 rec.invalidate_recordset(['db_datas', 'store_fname', 'is_s3_stored', 's3_object_key', 'file_size'])
 
+                # 3. Release the local file the way Odoo itself does on attachment deletion: queue it
+                #    for the filestore garbage collector (daily autovacuum). The GC only deletes the
+                #    file if NO ir_attachment row (of any model) still references it, and it only
+                #    looks at committed data, so a later rollback can never leave a dangling record.
+                if old_store_fname:
+                    try:
+                        rec._file_delete(old_store_fname)
+                    except Exception as e:
+                        _logger.warning(f"Could not queue local file {old_store_fname} for cleanup: {e}")
+
             except Exception as e:
                 _logger.error(f"S3 Upload failed for attachment {rec.id}: {str(e)}")
+
+    # ------------------------------------------------------------------
+    # BACKFILL: back up operational-fund files that still live on the local drive
+    # ------------------------------------------------------------------
+    def _s3_has_local_payload(self):
+        """True if the bytes of this (not yet backed-up) attachment can still be read locally."""
+        self.ensure_one()
+        if self.store_fname:
+            return os.path.exists(self._full_path(self.store_fname))
+        return bool(self.db_datas)
+
+    def _s3_parent_exists(self):
+        """True if the voucher / deposit this attachment belongs to still exists."""
+        self.ensure_one()
+        if self.res_model not in self.env or not self.res_id:
+            return False
+        return bool(self.env[self.res_model].sudo().with_context(active_test=False).browse(self.res_id).exists())
+
+    def _s3_recover_from_twin(self, twin, s3_client, bucket):
+        """The local file is gone (e.g. removed by the old shared-file purge) but a byte-identical
+        attachment (same SHA-1 checksum) is already safe in S3. Copy that S3 object server-side to this
+        attachment's own key and flag it exactly like a normal upload. Returns True on success."""
+        self.ensure_one()
+        try:
+            object_key = self._generate_s3_object_key()
+            s3_client.copy_object(
+                Bucket=bucket,
+                Key=object_key,
+                CopySource={'Bucket': bucket, 'Key': twin.s3_object_key},
+                ContentType=self.mimetype or 'application/octet-stream',
+                ContentDisposition='inline',
+                MetadataDirective='REPLACE',
+            )
+            old_store_fname = self.store_fname
+            dummy_payload = base64.b64encode(b'S3_UI_ANCHOR')
+            # Same flagging as _sync_to_s3, kept identical on purpose.
+            self.env.cr.execute("""
+                UPDATE ir_attachment
+                SET db_datas = %s,
+                    store_fname = NULL,
+                    is_s3_stored = TRUE,
+                    s3_object_key = %s,
+                    file_size = %s
+                WHERE id = %s
+            """, (dummy_payload, object_key, self.file_size, self.id))
+            self.invalidate_recordset(['db_datas', 'store_fname', 'is_s3_stored', 's3_object_key', 'file_size'])
+            if old_store_fname:
+                try:
+                    self._file_delete(old_store_fname)
+                except Exception as e:
+                    _logger.warning(f"Could not queue local file {old_store_fname} for cleanup: {e}")
+            return True
+        except Exception as e:
+            _logger.error(f"S3 recovery-from-twin failed for attachment {self.id}: {e}")
+            return False
+
+
+    @api.model
+    def _rescue_legacy_disbursement_binaries(self):
+        """Ensures older vouchers with database-stored binaries have valid ir.attachment records."""
+        disbursements = self.env['operational.fund.disbursement'].sudo().search([])
+        fields_to_check = [
+            ('signed_voucher_file', 'signed_voucher_filename'),
+            ('receipt_file', 'receipt_filename'),
+            ('payment_screenshot', 'payment_screenshot_filename'),
+        ]
+        for disb in disbursements:
+            for field_name, name_field in fields_to_check:
+                raw_data = getattr(disb, field_name)
+                if raw_data:
+                    existing = self.sudo().search([
+                        ('res_model', '=', disb._name),
+                        ('res_id', '=', disb.id),
+                        ('res_field', '=', field_name),
+                    ], limit=1)
+                    if not existing:
+                        fname = getattr(disb, name_field) or f"{field_name}_{disb.id}.bin"
+                        self.sudo().create({
+                            'name': fname,
+                            'type': 'binary',
+                            'datas': raw_data,
+                            'res_model': disb._name,
+                            'res_id': disb.id,
+                            'res_field': field_name,
+                        })
+
+    @api.model
+    def _s3_backfill_local_files(self, batch_size=30, limit=0, dry_run=False, max_seconds=600):
+        """
+        Backs up all local operational-fund attachments to AWS S3.
+        Enforces per-batch DB commits and ORM cache invalidation to prevent worker memory exhaustion.
+        """
+        stats = {
+            'dry_run': bool(dry_run), 'candidates': 0, 'uploaded': 0,
+            'recovered_from_s3_twin': 0, 'no_local_file_no_twin': 0,
+            'parent_missing': 0, 'failed': 0, 'aborted_early': False,
+        }
+        if not boto3:
+            _logger.error("S3 backfill: 'boto3' library missing.")
+            stats['aborted_early'] = True
+            return stats
+
+        # 1. Rescue legacy unlinked binaries
+        try:
+            self._rescue_legacy_disbursement_binaries()
+        except Exception as e:
+            _logger.warning(f"Legacy binary rescue notice: {e}")
+
+        Att = self.sudo().with_context(active_test=False)
+        s3_client, bucket = Att._get_s3_credentials()
+        if not s3_client or not bucket:
+            _logger.error("S3 backfill: S3 credentials or bucket not configured.")
+            stats['aborted_early'] = True
+            return stats
+
+        domain = [
+            ('res_model', 'in', list(S3_TARGET_MODELS)),
+            ('res_id', '>', 0),
+            ('type', '=', 'binary'),
+            ('is_s3_stored', '=', False),
+            '|', ('res_field', '=', False), ('res_field', '!=', False),
+        ]
+        ids = Att.search(domain, order='id asc', limit=limit or None).ids
+        stats['candidates'] = len(ids)
+        started = time.monotonic()
+        batch_size = max(int(batch_size or 30), 1)
+
+        for start in range(0, len(ids), batch_size):
+            if max_seconds and (time.monotonic() - started) > max_seconds:
+                stats['aborted_early'] = True
+                break
+
+            batch_records = Att.browse(ids[start:start + batch_size]).exists()
+            for rec in batch_records:
+                if not rec._s3_parent_exists():
+                    stats['parent_missing'] += 1
+                    continue
+
+                if rec._s3_has_local_payload():
+                    if dry_run:
+                        stats['uploaded'] += 1
+                        continue
+                    rec._sync_to_s3()
+                    if rec.is_s3_stored:
+                        stats['uploaded'] += 1
+                    else:
+                        stats['failed'] += 1
+                else:
+                    twin = Att.search([
+                        ('checksum', '=', rec.checksum),
+                        ('is_s3_stored', '=', True),
+                        ('s3_object_key', '!=', False),
+                        ('id', '!=', rec.id),
+                        '|', ('res_field', '=', False), ('res_field', '!=', False),
+                    ], limit=1) if rec.checksum else Att.browse()
+
+                    if twin:
+                        if dry_run or rec._s3_recover_from_twin(twin, s3_client, bucket):
+                            stats['recovered_from_s3_twin'] += 1
+                        else:
+                            stats['failed'] += 1
+                    else:
+                        stats['no_local_file_no_twin'] += 1
+
+            if not dry_run:
+                self.env.cr.commit()
+                # CRITICAL MEMORY CONTROLS:
+                # Drop cached binary buffers from ORM RAM and force garbage collection
+                self.env.invalidate_all()
+                gc.collect()
+
+        _logger.info("S3 backfill %s: %s", "DRY RUN" if dry_run else "finished", stats)
+        return stats
+
+    @api.model
+    def _cron_s3_backfill(self, batch_size=50, max_seconds=90):
+        """Entry point for the (disabled-by-default) scheduled action."""
+        self._s3_backfill_local_files(batch_size=batch_size, max_seconds=max_seconds)
+        return True
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -1496,14 +1759,15 @@ class IrAttachment(models.Model):
         if not boto3:
             return
 
-        s3_client, bucket = None, None
         for attach in self:
+            # STRICT ISOLATION GATE: Only execute for your module
+            if attach.res_model not in ['operational.fund.disbursement', 'operational.fund.allocation']:
+                continue
+
             if attach.is_s3_stored and attach.s3_object_key:
                 if self.env.context.get('bin_size'):
                     continue
-                # Failsafe: Only triggered if IrBinary interceptor is somehow completely bypassed
-                if not s3_client:
-                    s3_client, bucket = self._get_s3_credentials()
+                s3_client, bucket = self._get_s3_credentials()
                 if s3_client and bucket:
                     try:
                         s3_object = s3_client.get_object(Bucket=bucket, Key=attach.s3_object_key)
@@ -1540,56 +1804,6 @@ class IrAttachment(models.Model):
 # ===========================================================================
 from odoo.http import request, Stream
 
-
-class IrBinary(models.AbstractModel):
-    _inherit = 'ir.binary'
-
-    @api.model
-    def _get_stream_from(self, record, field_name='raw', *args, **kwargs):
-        """
-        Intercepts ALL native Odoo widgets (pdf_viewer, image, download) safely.
-        """
-        attachment = False
-
-        # Target 1: M2M Additional Proofs requests
-        if record._name == 'ir.attachment':
-            attachment = record
-        # Target 2: Binary field requests on the Disbursement model itself (Vendor Receipt, Voucher)
-        elif field_name and field_name != 'raw':
-            attachment = self.env['ir.attachment'].sudo().search([
-                ('res_model', '=', record._name),
-                ('res_id', '=', record.id),
-                ('res_field', '=', field_name)
-            ], limit=1)
-
-        if attachment and getattr(attachment, 'is_s3_stored', False) and getattr(attachment, 's3_object_key', False):
-            s3_client, bucket = attachment._get_s3_credentials()
-            if s3_client and bucket:
-                try:
-                    # NATIVE STREAMING: Fetch the bytes directly into the server.
-                    # This circumvents all Browser CORS policies and redirect vulnerabilities.
-                    s3_object = s3_client.get_object(Bucket=bucket, Key=attachment.s3_object_key)
-                    raw_data = s3_object['Body'].read()
-
-                    safe_mimetype = attachment.mimetype or 'application/octet-stream'
-
-                    dl_filename = attachment.name or 'document'
-                    if args and args[0]:
-                        dl_filename = args[0]
-                    elif kwargs.get('filename'):
-                        dl_filename = kwargs.get('filename')
-
-                    return Stream(
-                        type='data',
-                        data=raw_data,
-                        mimetype=safe_mimetype,
-                        download_name=str(dl_filename).replace('"', '')
-                    )
-                except Exception as e:
-                    _logger.error(f"S3 Native Stream Error: {e}")
-
-        # If not an S3 attachment, let Odoo load natively
-        return super()._get_stream_from(record, field_name, *args, **kwargs)
 
 
 class OperationalFundApprovalRule(models.Model):
@@ -1872,14 +2086,21 @@ class OperationalFundMarkPaidWizard(models.TransientModel):
 
         # CRITICAL FIX: Transfer ownership of attachments to prevent Odoo auto-deletion
         if self.proof_attachment_ids:
-            self.proof_attachment_ids.write({
-                'res_model': 'operational.fund.disbursement',
-                'res_id': disb.id
-            })
-            # Use command (4, id) to append without deleting existing proofs
-            disb.write({
-                'proof_attachment_ids': [(4, att.id) for att in self.proof_attachment_ids]
-            })
+            # Only claim attachments that were uploaded through this wizard (or already sit on this voucher).
+            claimable = _claimable_attachments(
+                self.proof_attachment_ids,
+                (self._name, disb._name),
+                owned_by=((self._name, self.id), (disb._name, disb.id)),
+            )
+            if claimable:
+                claimable.write({
+                    'res_model': 'operational.fund.disbursement',
+                    'res_id': disb.id
+                })
+                # Use command (4, id) to append without deleting existing proofs
+                disb.write({
+                    'proof_attachment_ids': [(4, att.id) for att in claimable]
+                })
 
         disb.write({
             'state': 'paid',

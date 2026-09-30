@@ -28,14 +28,9 @@
                                         Branch: <strong style="color: #212529;"><t t-esc="doc.clinic_id.name"/></strong>
                                     </div>
                                 </td>
+                                <!-- Restored the cell and voucher number, deleted all status spans -->
                                 <td style="width: 40%; text-align: right; vertical-align: top;">
-                                    <h4 style="font-weight: bold; color: #6c757d; margin: 0 0 6px 0; font-size: 15px;"><t t-esc="doc.name"/></h4>
-                                    <span t-if="doc.state == 'draft'" style="padding: 4px 10px; background-color: #f8f9fa; border: 1px solid #ccc; font-weight: bold; border-radius: 3px;">DRAFT</span>
-                                    <span t-if="doc.state == 'waiting'" style="padding: 4px 10px; background-color: #f0ad4e; color: white; font-weight: bold; border-radius: 3px;">WAITING APPROVAL</span>
-                                    <span t-if="doc.state == 'approved'" style="padding: 4px 10px; background-color: #0275d8; color: white; font-weight: bold; border-radius: 3px;">APPROVED (UNPAID)</span>
-                                    <span t-if="doc.state == 'paid'" style="padding: 4px 10px; background-color: #5cb85c; color: white; font-weight: bold; border-radius: 3px;">PAID</span>
-                                    <span t-if="doc.state == 'rejected'" style="padding: 4px 10px; background-color: #d9534f; color: white; font-weight: bold; border-radius: 3px;">REJECTED</span>
-                                    <span t-if="doc.state == 'refunded'" style="padding: 4px 10px; background-color: #292b2c; color: white; font-weight: bold; border-radius: 3px;">REFUNDED</span>
+                                    <h4 style="font-weight: bold; color: #6c757d; margin: 0; font-size: 15px;"><t t-esc="doc.name"/></h4>
                                 </td>
                             </tr>
                         </table>
@@ -171,12 +166,12 @@
                                         <t t-esc="doc.created_by_name or 'Staff Member'"/>
                                     </div>
                                 </td>
-                                <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">
-                                    <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">2. Approved By</div>
-                                    <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">
-                                        Fund Manager / Controller
-                                    </div>
-                                </td>
+<!--                                <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">-->
+<!--                                    <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">2. Approved By</div>-->
+<!--                                    <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">-->
+<!--                                        Fund Manager / Controller-->
+<!--                                    </div>-->
+<!--                                </td>-->
                                 <td style="width: 33.3%; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; vertical-align: top;">
                                     <div style="color: #6c757d; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 50px;">3. Payee Acknowledgment</div>
                                     <div style="border-top: 1px solid #dee2e6; padding-top: 10px; font-weight: bold;">
