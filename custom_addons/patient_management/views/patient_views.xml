@@ -240,8 +240,8 @@
                         <field name="patient_status"
                                widget="radio"
                                options="{'horizontal': true}"
-                               selection="[('active','Active'),('inactive','Inactive')]"
-                               invisible="patient_status == 'visit'"/>
+                               selection="[('active','Active'),('inactive','Inactive')]"/>
+<!--                               invisible="patient_status == 'visit'"/>-->
                         <field name="base_clinic_id" required="1"/>
                     </group>
                     <field name="pain_types" invisible="1"/>
@@ -269,7 +269,9 @@
         <field name="model">clinic.patient</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name"/>
+                <field name="name"
+                   string="Name"
+                   filter_domain="['|', ('name', 'ilike', self), ('mrn', 'ilike', self)]"/>
                 <field name="mrn"/>
                 <field name="enroll_date"/>
 
