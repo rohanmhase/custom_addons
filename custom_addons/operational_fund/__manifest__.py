@@ -10,6 +10,7 @@
         'views/operational_fund_views.xml',
         'views/operational_fund_menus.xml',
         'report/voucher_report.xml',
+        'data/s3_backfill_cron.xml',
     ],
     'assets': {
         'web.assets_backend': [

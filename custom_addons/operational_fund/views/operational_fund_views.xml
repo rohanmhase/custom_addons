@@ -228,44 +228,59 @@
     <!--        <field name="description" readonly="state in ('approved', 'paid', 'refunded', 'refund_requested')" placeholder="Specify exact context parameters..."/>-->
     <!--    </page>-->
 
-        <!-- Tab 2: Full-Width Signed Voucher Preview -->
-        <page string="Signed Voucher Asset" invisible="not signed_voucher_file">
-            <div class="mt-3 mb-3">
-                <field name="is_signed_voucher_image" invisible="1"/>
-                <field name="is_signed_voucher_pdf" invisible="1"/>
+                            <!-- Tab 2: Signed Voucher Asset -->
+                    <page string="Signed Voucher Asset" invisible="not signed_voucher_file and not s3_voucher_url">
+                        <!-- 1. Cloud Viewer (For AWS S3 Backed Files) -->
+                        <div invisible="not s3_voucher_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="s3_voucher_url" widget="iframe" readonly="1" nolabel="1" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd; border-radius: 8px;"/>
+                        </div>
 
-                <div invisible="not is_signed_voucher_image" class="text-center p-3 bg-light border rounded">
-                    <field name="signed_voucher_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
-                </div>
+                        <!-- 2. Local Viewer (Fallback for older vouchers before S3 sync) -->
+                        <div invisible="s3_voucher_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="is_signed_voucher_image" invisible="1"/>
+                            <field name="is_signed_voucher_pdf" invisible="1"/>
+                            <field name="signed_voucher_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1" invisible="not is_signed_voucher_image" style="width: 100%; max-height: 800px; object-fit: contain;"/>
+                            <field name="signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1" invisible="not is_signed_voucher_pdf" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd;"/>
+                        </div>
+                    </page>
 
-                <div invisible="not is_signed_voucher_pdf" style="width: 100%; height: 750px;" class="border rounded shadow-sm">
-                    <field name="signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
-                </div>
-            </div>
-        </page>
+                    <!-- Tab 3: Vendor Receipt / Bill -->
+                    <page string="Vendor Receipt / Bill" invisible="not receipt_file and not s3_receipt_url">
+                        <!-- 1. Cloud Viewer (For AWS S3 Backed Files) -->
+                        <div invisible="not s3_receipt_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="s3_receipt_url" widget="iframe" readonly="1" nolabel="1" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd; border-radius: 8px;"/>
+                        </div>
 
-        <!-- Tab 3: Full-Width Vendor Bill / Receipt Preview -->
-        <page string="Vendor Receipt / Bill" invisible="not receipt_file">
-            <div class="mt-3 mb-3">
-                <field name="is_receipt_image" invisible="1"/>
-                <field name="is_receipt_pdf" invisible="1"/>
+                        <!-- 2. Local Viewer (Fallback for older vouchers before S3 sync) -->
+                        <div invisible="s3_receipt_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="is_receipt_image" invisible="1"/>
+                            <field name="is_receipt_pdf" invisible="1"/>
+                            <field name="receipt_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1" invisible="not is_receipt_image" style="width: 100%; max-height: 800px; object-fit: contain;"/>
+                            <field name="receipt_file" widget="pdf_viewer" readonly="1" nolabel="1" invisible="not is_receipt_pdf" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd;"/>
+                        </div>
+                    </page>
 
-                <div invisible="not is_receipt_image" class="text-center p-3 bg-light border rounded">
-                    <field name="receipt_file" widget="image" options="{'zoom': true}" readonly="1" nolabel="1"/>
-                </div>
+                    <!-- Tab 4: Payment Proof Preview -->
+                    <page string="Payment Proof" invisible="not payment_screenshot and not s3_payment_url">
+                        <!-- 1. Cloud Viewer (For AWS S3 Backed Files) -->
+                        <div invisible="not s3_payment_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="s3_payment_url" widget="iframe" readonly="1" nolabel="1" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd; border-radius: 8px;"/>
+                        </div>
 
-                <div invisible="not is_receipt_pdf" style="width: 100%; height: 750px;" class="border rounded shadow-sm">
-                    <field name="receipt_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
-                </div>
-            </div>
-        </page>
+                        <!-- 2. Local Viewer (Fallback for older vouchers before S3 sync) -->
+                        <div invisible="s3_payment_url" style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="is_payment_screenshot_image" invisible="1"/>
+                            <field name="payment_screenshot" widget="image" options="{'zoom': true}" readonly="1" nolabel="1" invisible="not is_payment_screenshot_image" style="width: 100%; max-height: 800px; object-fit: contain;"/>
+                            <field name="payment_screenshot" widget="pdf_viewer" readonly="1" nolabel="1" invisible="is_payment_screenshot_image" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd;"/>
+                        </div>
+                    </page>
 
-        <!-- Tab 4: Archived Original Document -->
-        <page string="Archived Original Document" invisible="not old_signed_voucher_file">
-            <div style="width: 100%; height: 750px;" class="mt-3 mb-3 border rounded shadow-sm">
-                <field name="old_signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1"/>
-            </div>
-        </page>
+                    <!-- Tab 5: Archived Original Document (For older vouchers that were rejected/reset) -->
+                    <page string="Archived Original Document" invisible="not old_signed_voucher_file">
+                        <div style="width: 100%; height: 80vh; min-height: 800px; padding-top: 15px;">
+                            <field name="old_signed_voucher_file" widget="pdf_viewer" readonly="1" nolabel="1" style="width: 100%; height: 100%; min-height: 800px; border: 1px solid #ddd;"/>
+                        </div>
+                    </page>
             <page string="Additional Proofs" name="additional_proofs">
             <div class="alert alert-info" role="alert">
                 Upload any extra receipts, chat screenshots, or supporting documents here.
