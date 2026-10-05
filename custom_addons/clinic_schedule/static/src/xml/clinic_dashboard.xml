@@ -53,15 +53,23 @@
                         </button>
                         </t>
                         <div class="d-flex gap-2 ms-2 border-start ps-3">
-                            <!-- When UNLOCKED: Show Lock button (Managers Only) -->
+                            <!-- BATCH OPERATIONS (Managers Only) -->
+                            <t t-if="state.is_manager">
+                                <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm"
+                                        t-on-click="() => this.openBatchModal()"
+                                        title="Multi-Clinic Batch Lock &amp; Dispatch">
+                                    <i class="fa fa-th-large me-1"/> Batch Operations
+                                </button>
+                            </t>
+
+                            <!-- Single Clinic Lock/Unlock when Unlocked -->
                             <t t-if="!state.slotsLocked and state.is_manager">
                                 <button class="btn btn-sm btn-outline-secondary fw-bold"
                                         t-on-click="() => this.toggleLockSlots()">
                                     <i class="fa fa-unlock me-1"/> Lock
                                 </button>
                             </t>
-
-                            <!-- When LOCKED: Show Unlock button (Managers Only) + Mass Send SMS -->
+                            <!-- Single Clinic Lock/Unlock when Locked -->
                             <t t-if="state.slotsLocked">
                                 <t t-if="state.is_manager">
                                     <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm"
@@ -1266,5 +1274,167 @@
                 </div>
             </div>
         </t>
-    </t>
+
+        <!-- MULTI-CLINIC BATCH LOCK & DISPATCH MODAL (MANAGERS ONLY) -->
+        <t t-if="state.isBatchModalOpen">
+            <div class="modal-backdrop fade show" style="z-index: 1060; background-color: rgba(0,0,0,0.6);" t-on-click="() => this.closeBatchModal()"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1070;">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-3 overflow-hidden">
+                        <!-- HEADER -->
+                        <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-th-large text-warning fs-5"/>
+                                <h5 class="modal-title fw-bold m-0">Multi-Clinic Batch Lock &amp; Dispatch</h5>
+                                <span class="badge bg-primary ms-2"><i class="fa fa-calendar me-1"/><t t-esc="state.selectedDate"/></span>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="() => this.closeBatchModal()"></button>
+                        </div>
+                        <!-- BODY & CONTROLS -->
+                        <div class="modal-body p-4 bg-light">
+                            <!-- FILTER CONTROLS ROW -->
+                            <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                <div class="row g-2 align-items-center">
+                                    <!-- Region Filter -->
+                                    <div class="col-md-4">
+                                        <label class="fw-bold small text-muted mb-1"><i class="fa fa-globe me-1 text-primary"/>Filter by Region</label>
+                                        <select class="form-select form-select-sm fw-bold border-secondary"
+                                                t-model="state.batchRegionFilter"
+                                                t-on-change="(ev) => this.onBatchRegionFilterChange(ev.target.value)">
+                                            <option value="all">🌍 All Operating Regions</option>
+                                            <t t-foreach="state.regions" t-as="reg" t-key="reg.id">
+                                                <option t-att-value="reg.id"><t t-esc="reg.name"/></option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <!-- Clinic Search -->
+                                    <div class="col-md-5">
+                                        <label class="fw-bold small text-muted mb-1"><i class="fa fa-search me-1 text-primary"/>Search Branch</label>
+                                        <input type="text" class="form-control form-control-sm"
+                                               placeholder="Search clinic name or region..."
+                                               t-model="state.batchSearchQuery"/>
+                                    </div>
+                                    <!-- Quick Select Buttons -->
+                                    <div class="col-md-3 d-flex align-items-end justify-content-end gap-2 pt-3">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary fw-bold w-100"
+                                                t-on-click="() => this.toggleSelectAllBatchClinics()">
+                                            <i class="fa fa-check-square-o me-1"/> Select / Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CLINICS LIST TABLE -->
+                            <div class="card border-0 shadow-sm bg-white overflow-hidden" style="max-height: 420px; overflow-y: auto;">
+                                <table class="table table-hover align-middle m-0">
+                                    <thead class="table-light position-sticky top-0 shadow-sm" style="z-index: 2;">
+                                        <tr class="small text-uppercase fw-bold text-secondary">
+                                            <th style="width: 45px;" class="text-center">#</th>
+                                            <th>Clinic Branch</th>
+                                            <th>Operating Region</th>
+                                            <th class="text-center">Current Lock State</th>
+                                            <th class="text-center">Scheduled Sessions</th>
+                                            <th class="text-center">Pending Notifications</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="filteredBatchClinics.length === 0">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">
+                                                    <i class="fa fa-info-circle fs-4 d-block mb-1"/>
+                                                    No clinics match the current filter.
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        <t t-foreach="filteredBatchClinics" t-as="c" t-key="c.id">
+                                            <tr t-attf-class="#{state.batchSelectedClinicIds.includes(c.id) ? 'table-primary bg-opacity-25' : ''}"
+                                                style="cursor: pointer;"
+                                                t-on-click="() => this.toggleBatchClinicSelection(c.id)">
+                                                <td class="text-center" t-on-click="(ev) => ev.stopPropagation()">
+                                                    <input type="checkbox" class="form-check-input"
+                                                           t-att-checked="state.batchSelectedClinicIds.includes(c.id)"
+                                                           t-on-change="() => this.toggleBatchClinicSelection(c.id)"/>
+                                                </td>
+                                                <td class="fw-bold text-dark">
+                                                    <i class="fa fa-hospital-o me-2 text-primary"/>
+                                                    <t t-esc="c.name"/>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border border-secondary shadow-sm">
+                                                        <t t-esc="c.region_name"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-if="c.is_locked">
+                                                        <span class="badge bg-danger shadow-sm px-2 py-1">
+                                                            <i class="fa fa-lock me-1"/> LOCKED
+                                                        </span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="badge bg-success bg-opacity-75 text-white shadow-sm px-2 py-1">
+                                                            <i class="fa fa-unlock me-1"/> OPEN
+                                                        </span>
+                                                    </t>
+                                                </td>
+                                                <td class="text-center fw-bold">
+                                                    <span class="badge bg-light text-dark border">
+                                                        <i class="fa fa-users me-1 text-muted"/><t t-esc="c.total_sessions"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-if="c.pending_notifications > 0">
+                                                        <span class="badge bg-warning text-dark border border-warning shadow-sm">
+                                                            <i class="fa fa-paper-plane me-1"/><t t-esc="c.pending_notifications"/> to send
+                                                        </span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="text-muted small">0 pending</span>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- FOOTER ACTIONS -->
+                        <div class="modal-footer bg-white border-top py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary fs-6 px-3 py-2">
+                                    <t t-esc="state.batchSelectedClinicIds.length"/> Clinics Selected
+                                </span>
+                                <small class="text-muted">Targeting <t t-esc="state.selectedDate"/></small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary fw-bold" t-on-click="() => this.closeBatchModal()">
+                                    Cancel
+                                </button>
+                                <button type="button" class="btn btn-outline-danger fw-bold shadow-sm"
+                                        t-att-disabled="state.batchSelectedClinicIds.length === 0"
+                                        t-on-click="() => this.executeBatchLock(false)">
+                                    <i class="fa fa-unlock me-1"/> Unlock Selected
+                                </button>
+                                <button type="button" class="btn btn-danger fw-bold shadow-sm"
+                                        t-att-disabled="state.batchSelectedClinicIds.length === 0"
+                                        t-on-click="() => this.executeBatchLock(true)">
+                                    <i class="fa fa-lock me-1"/> Lock Selected
+                                </button>
+                                <button type="button" class="btn btn-primary fw-bold shadow-sm"
+                                        t-att-disabled="state.batchSelectedClinicIds.length === 0"
+                                        t-on-click="() => this.executeBatchSend()">
+                                    <i class="fa fa-paper-plane me-1"/> Dispatch Messages
+                                </button>
+                                <button type="button" class="btn btn-success fw-bold shadow-sm"
+                                        t-att-disabled="state.batchSelectedClinicIds.length === 0"
+                                        t-on-click="() => this.executeBatchLockAndSend()">
+                                    <i class="fa fa-bolt me-1"/> Lock &amp; Send All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </t> <!-- Close t-name="clinic_schedule.ClinicMatrixDashboardTemplate" here -->
 </templates>

@@ -69,6 +69,43 @@ class ClinicScheduleLock(models.Model):
             return {'status': 'success', 'is_locked': True,
                     'message': _('Schedule for %s has been locked.') % target_date}
 
+    @api.model
+    def action_batch_matrix_lock(self, clinic_ids, target_date, lock=True):
+        """Locks or unlocks matrices for multiple clinics and target date in one transaction."""
+        if not self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager'):
+            raise ValidationError(_("Access Denied: Only Managers can lock or unlock schedule matrices."))
+        if not clinic_ids or not target_date:
+            return {'status': 'warning', 'message': _('Missing Clinic IDs or Target Date.')}
+
+        clinic_ids = [int(cid) for cid in clinic_ids if cid]
+        if not clinic_ids:
+            return {'status': 'warning', 'message': _('No valid clinics selected.')}
+
+        for cid in clinic_ids:
+            lock_rec = self.search([('clinic_id', '=', cid), ('target_date', '=', target_date)], limit=1)
+            if lock_rec:
+                vals = {'is_locked': lock}
+                if lock:
+                    vals.update({
+                        'locked_by_id': self.env.user.id,
+                        'locked_datetime': fields.Datetime.now(),
+                    })
+                lock_rec.write(vals)
+            elif lock:
+                self.create({
+                    'clinic_id': cid,
+                    'target_date': target_date,
+                    'is_locked': True,
+                    'locked_by_id': self.env.user.id,
+                    'locked_datetime': fields.Datetime.now(),
+                })
+
+        status_word = _("locked") if lock else _("unlocked")
+        return {
+            'status': 'success',
+            'message': _("Successfully %s schedule matrix for %s clinic(s).") % (status_word, len(clinic_ids))
+        }
+
 class ClinicManualCompleteWizard(models.TransientModel):
     _name = 'clinic.manual.complete.wizard'
     _description = 'Confirm Manual Completion'
@@ -904,7 +941,7 @@ class ClinicScheduleAppointment(models.Model):
         return super().unlink()
 
     def action_send_test_notification(self):
-        """ Manual trigger: Blocks duplicate sending and dynamically reports success/failure """
+        """ Manual trigger: Stages message and processes outbox immediately for instant feedback """
         self.ensure_one()
         if self.notification_status in ['queued', 'wa_delivered', 'sms_delivered']:
             return {
@@ -918,20 +955,36 @@ class ClinicScheduleAppointment(models.Model):
                 }
             }
 
-        # _send_slot_notification returns True if queued successfully, False if failed
         was_queued = self._send_slot_notification(trigger_type='booking_confirmation', force_queue=True)
 
         if was_queued:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Notification Queued'),
-                    'message': _('WhatsApp notification has been staged in the outbox queue.'),
-                    'sticky': False,
-                    'type': 'success',
+            # Immediately flush queue so test sends without waiting for background cron
+            self.env['whatsapp.message.queue'].sudo().process_message_queue(batch_size=10)
+
+            # Check latest status
+            self.invalidate_recordset(['notification_status'])
+            if self.notification_status == 'wa_delivered':
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Message Delivered'),
+                        'message': _('WhatsApp notification dispatched successfully via SmartChat.'),
+                        'sticky': False,
+                        'type': 'success',
+                    }
                 }
-            }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Notification Queued'),
+                        'message': _('Message queued. Check WhatsApp > Message Queue for delivery log.'),
+                        'sticky': False,
+                        'type': 'info',
+                    }
+                }
         else:
             return {
                 'type': 'ir.actions.client',
@@ -2065,14 +2118,17 @@ class ClinicScheduleAppointment(models.Model):
         if not clinic_id or not target_date:
             return {'status': 'warning', 'message': _('Missing Clinic or Target Date.')}
 
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
         target_date_obj = fields.Date.from_string(target_date)
-        start_day = datetime.combine(target_date_obj, time(0, 0, 0))
-        end_day = datetime.combine(target_date_obj, time(23, 59, 59))
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_local.astimezone(pytz.utc).replace(tzinfo=None)
 
         appointments = self.search([
             ('clinic_id', '=', int(clinic_id)),
-            ('start_datetime', '>=', start_day),
-            ('end_datetime', '<=', end_day),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc),
             ('slot_type', '=', 'patient'),
             ('therapist_id', '!=', False),
             ('notification_status', 'in', ['pending', 'failed'])
@@ -2091,14 +2147,14 @@ class ClinicScheduleAppointment(models.Model):
 
         created_queue = template.send_messages(appointments)
         if created_queue:
-            # Mark appointments that were successfully queued
             queued_app_ids = created_queue.mapped('res_id')
             appointments.filtered(lambda a: a.id in queued_app_ids).write({'notification_status': 'queued'})
+            # Trigger dispatch immediate flush
+            self.env['whatsapp.message.queue'].sudo().process_message_queue(batch_size=len(created_queue))
             return {
                 'status': 'success',
-                'message': _('Successfully added %s notifications to the dispatch queue.') % len(created_queue)
+                'message': _('Successfully dispatched %s notifications.') % len(created_queue)
             }
-
         return {'status': 'warning', 'message': _('Failed to queue messages (verify patient phone numbers).')}
 
     @api.model
@@ -2118,6 +2174,136 @@ class ClinicScheduleAppointment(models.Model):
 
             self.env.cr.commit()
         return True
+
+    @api.model
+    def get_batch_matrix_status(self, target_date):
+        """Fetches status, lock state, and pending message counts for all accessible clinics."""
+        user = self.env.user
+        is_manager = user.has_group('clinic_schedule.group_clinic_schedule_manager')
+
+        clinic_domain = []
+        if not is_manager:
+            allowed_ids = set()
+            if hasattr(user, 'clinic_id') and user.clinic_id: allowed_ids.add(user.clinic_id.id)
+            if hasattr(user, 'clinic_ids') and user.clinic_ids: allowed_ids.update(user.clinic_ids.ids)
+            clinic_domain = [('id', 'in', list(allowed_ids))]
+
+        clinics = self.env['clinic.clinic'].sudo().search_read(clinic_domain, ['id', 'name', 'region_id'])
+        if not clinics:
+            return []
+
+        clinic_ids = [c['id'] for c in clinics]
+        locks = self.env['clinic.schedule.lock'].sudo().search([
+            ('clinic_id', 'in', clinic_ids),
+            ('target_date', '=', target_date)
+        ])
+        lock_map = {l.clinic_id.id: l.is_locked for l in locks}
+
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date_obj = fields.Date.from_string(target_date)
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+        apps = self.search([
+            ('clinic_id', 'in', clinic_ids),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc),
+            ('slot_type', '=', 'patient'),
+            ('attendance_state', '!=', 'no_show')
+        ])
+
+        app_stats = {}
+        for a in apps:
+            cid = a.clinic_id.id
+            if cid not in app_stats:
+                app_stats[cid] = {'total': 0, 'pending_notif': 0}
+            app_stats[cid]['total'] += 1
+            if a.therapist_id and a.notification_status in ['pending', 'failed']:
+                app_stats[cid]['pending_notif'] += 1
+
+        result = []
+        for c in clinics:
+            cid = c['id']
+            stats = app_stats.get(cid, {'total': 0, 'pending_notif': 0})
+            result.append({
+                'id': cid,
+                'name': c['name'],
+                'region_id': c['region_id'][0] if c.get('region_id') else 0,
+                'region_name': c['region_id'][1] if c.get('region_id') else 'Unassigned',
+                'is_locked': lock_map.get(cid, False),
+                'total_sessions': stats['total'],
+                'pending_notifications': stats['pending_notif']
+            })
+        return result
+
+    @api.model
+    def action_batch_mass_send_notifications(self, clinic_ids, target_date):
+        """Batch dispatches WhatsApp notifications across multiple clinics for a given date."""
+        if not self.env.user.has_group('clinic_schedule.group_clinic_schedule_manager'):
+            raise ValidationError(_("Access Denied: Only Managers can batch dispatch notifications."))
+        if not clinic_ids or not target_date:
+            return {'status': 'warning', 'message': _('Missing Clinics or Target Date.')}
+        clinic_ids = [int(cid) for cid in clinic_ids if cid]
+        if not clinic_ids:
+            return {'status': 'warning', 'message': _('No valid clinics selected.')}
+
+        # Guard: Check whether any selected clinic is NOT locked
+        unlocked_clinics = []
+        for cid in clinic_ids:
+            lock_rec = self.env['clinic.schedule.lock'].sudo().search([
+                ('clinic_id', '=', cid),
+                ('target_date', '=', target_date),
+                ('is_locked', '=', True)
+            ], limit=1)
+            if not lock_rec:
+                c_name = self.env['clinic.clinic'].browse(cid).name
+                unlocked_clinics.append(c_name)
+        if unlocked_clinics:
+            return {
+                'status': 'warning',
+                'message': _(
+                    'Cannot send notifications. The following clinic matrices are unlocked: %s. Lock them first.') % (
+                               ", ".join(unlocked_clinics))
+            }
+
+        local_tz = pytz.timezone(self.env.user.tz or 'Asia/Kolkata')
+        target_date_obj = fields.Date.from_string(target_date)
+        start_local = local_tz.localize(datetime.combine(target_date_obj, time.min))
+        end_local = local_tz.localize(datetime.combine(target_date_obj, time.max))
+        start_day_utc = start_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_day_utc = end_local.astimezone(pytz.utc).replace(tzinfo=None)
+
+        appointments = self.search([
+            ('clinic_id', 'in', clinic_ids),
+            ('start_datetime', '>=', start_day_utc),
+            ('end_datetime', '<=', end_day_utc),
+            ('slot_type', '=', 'patient'),
+            ('therapist_id', '!=', False),
+            ('notification_status', 'in', ['pending', 'failed'])
+        ])
+        if not appointments:
+            return {'status': 'info',
+                    'message': _('0 eligible appointments found for notification across selected clinics.')}
+
+        template = self.env['whatsapp.template'].search([
+            ('model_id.model', '=', self._name),
+            ('active', '=', True)
+        ], limit=1)
+        if not template:
+            return {'status': 'warning', 'message': _('No active WhatsApp template configured for Appointments.')}
+
+        created_queue = template.send_messages(appointments)
+        if created_queue:
+            queued_app_ids = created_queue.mapped('res_id')
+            appointments.filtered(lambda a: a.id in queued_app_ids).write({'notification_status': 'queued'})
+            return {
+                'status': 'success',
+                'message': _('Successfully queued %s notifications across %s clinic(s).') % (len(created_queue),
+                                                                                             len(clinic_ids))
+            }
+        return {'status': 'warning', 'message': _('Failed to queue messages (verify patient phone numbers).')}
 
 
 class ClinicTherapistImportLog(models.Model):

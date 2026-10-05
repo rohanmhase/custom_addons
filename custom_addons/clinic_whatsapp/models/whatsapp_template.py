@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import timedelta
 from jinja2.sandbox import SandboxedEnvironment
 from odoo import models, fields, api, _
 
@@ -14,7 +15,8 @@ class WhatsappTemplate(models.Model):
     smartchat_template_name = fields.Char(
         string='SmartChat Template Slug',
         required=True,
-        help="Exact approved template name in Meta/SmartChat (e.g., 'newtemplate')"
+        default='therapy_comm',
+        help="Exact approved template name in Meta/SmartChat (e.g., 'therapy_comm')"
     )
     broadcast_name = fields.Char(
         string='Broadcast Campaign Name',
@@ -27,8 +29,21 @@ class WhatsappTemplate(models.Model):
     phone_field = fields.Char(
         string='Phone Number Field',
         required=True,
-        default='partner_id.mobile,partner_id.phone',
-        help="Comma-separated field paths to evaluate in order (e.g. 'patient_id.phone,partner_id.mobile')"
+        default='patient_id.phone,patient_id.mobile',
+        help="Comma-separated field paths to evaluate in order (e.g. 'patient_id.phone,patient_id.mobile')"
+    )
+
+    # Dispatch Timing Configuration
+    dispatch_mode = fields.Selection([
+        ('immediate', 'Immediate (Real-Time Synchronous)'),
+        ('scheduled', 'Scheduled / Queue (Asynchronous Cron)'),
+    ], string='Dispatch Timing', default='immediate', required=True,
+       help="Immediate sends synchronously upon trigger (ideal for invoices/tests). Scheduled stages the queue for the background worker.")
+
+    scheduled_delay_hours = fields.Float(
+        string='Delay Offset (Hours)',
+        default=0.0,
+        help="Stage the message to send X hours from creation (e.g., 2.0 = 2 hours later). Leave 0.0 to send at next cron run."
     )
 
     # Header Media Configuration
@@ -88,7 +103,6 @@ class WhatsappTemplate(models.Model):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '').rstrip('/')
         queue_vals = []
 
-        # Context helpers for Jinja evaluation
         def format_datetime(dt, fmt='%d %b %Y, %I:%M %p'):
             if not dt:
                 return ''
@@ -103,6 +117,9 @@ class WhatsappTemplate(models.Model):
                 d = fields.Date.from_string(d)
             return d.strftime(fmt)
 
+        now_dt = fields.Datetime.now()
+        target_send_dt = now_dt + timedelta(hours=self.scheduled_delay_hours) if self.scheduled_delay_hours > 0 else now_dt
+
         for rec in records:
             # 1. Resolve Recipient Phone
             raw_phone = self._resolve_field_value(rec, self.phone_field)
@@ -110,7 +127,7 @@ class WhatsappTemplate(models.Model):
                 if hasattr(rec, 'partner_id') and rec.partner_id:
                     raw_phone = rec.partner_id.mobile or rec.partner_id.phone
                 elif hasattr(rec, 'patient_id') and rec.patient_id:
-                    raw_phone = getattr(rec.patient_id, 'mobile', False) or getattr(rec.patient_id, 'phone', False)
+                    raw_phone = getattr(rec.patient_id, 'phone', False) or getattr(rec.patient_id, 'mobile', False)
 
             if not raw_phone:
                 _logger.warning("No recipient phone found for %s (ID %s)", rec._name, rec.id)
@@ -136,8 +153,6 @@ class WhatsappTemplate(models.Model):
 
             # 4. Dynamically Render Parameters
             payload_params = {}
-
-            # Evaluate indexed body variables: parameter_value1, parameter_value2, etc.
             for param in self.param_ids.sorted(key=lambda p: p.index):
                 try:
                     expr_tmpl = env.from_string(param.value_expression or '')
@@ -185,6 +200,7 @@ class WhatsappTemplate(models.Model):
                 'res_model': rec._name,
                 'res_id': rec.id,
                 'state': 'pending',
+                'scheduled_send_datetime': target_send_dt,
             }
 
             if rec._name == 'account.move':
@@ -193,9 +209,16 @@ class WhatsappTemplate(models.Model):
 
             queue_vals.append(queue_entry)
 
-        if queue_vals:
-            return self.env['whatsapp.message.queue'].sudo().create(queue_vals)
-        return self.env['whatsapp.message.queue']
+        if not queue_vals:
+            return self.env['whatsapp.message.queue']
+
+        created_queue = self.env['whatsapp.message.queue'].sudo().create(queue_vals)
+
+        # IMMEDIATE DISPATCH: Send synchronously right away
+        if self.dispatch_mode == 'immediate':
+            created_queue.process_message_queue(records=created_queue)
+
+        return created_queue
 
 
 class WhatsappTemplateParam(models.Model):

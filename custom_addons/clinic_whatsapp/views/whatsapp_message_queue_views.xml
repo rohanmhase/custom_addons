@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Tree View -->
     <record id="view_whatsapp_message_queue_tree" model="ir.ui.view">
         <field name="name">whatsapp.message.queue.tree</field>
         <field name="model">whatsapp.message.queue</field>
@@ -11,6 +10,7 @@
                   decoration-warning="state == 'pending'"
                   create="false">
                 <field name="create_date" string="Created On"/>
+                <field name="scheduled_send_datetime" string="Scheduled Send"/>
                 <field name="smartchat_template_name" string="Template"/>
                 <field name="patient_name"/>
                 <field name="phone"/>
@@ -27,7 +27,6 @@
         </field>
     </record>
 
-    <!-- Form View -->
     <record id="view_whatsapp_message_queue_form" model="ir.ui.view">
         <field name="name">whatsapp.message.queue.form</field>
         <field name="model">whatsapp.message.queue</field>
@@ -43,6 +42,7 @@
                         <group string="Recipient &amp; Delivery">
                             <field name="patient_name" readonly="1"/>
                             <field name="phone" readonly="1"/>
+                            <field name="scheduled_send_datetime" readonly="1"/>
                             <field name="sent_date" readonly="1"/>
                             <field name="wamid" readonly="1"/>
                         </group>
@@ -57,6 +57,9 @@
                         <page string="Evaluated Parameters (JSON)">
                             <field name="params_json" readonly="1"/>
                         </page>
+                        <page string="Gateway Response (Raw JSON)">
+                            <field name="response_json" readonly="1"/>
+                        </page>
                         <page string="Message Preview">
                             <field name="message_body" readonly="1"/>
                         </page>
@@ -69,7 +72,6 @@
         </field>
     </record>
 
-    <!-- Search View -->
     <record id="view_whatsapp_message_queue_search" model="ir.ui.view">
         <field name="name">whatsapp.message.queue.search</field>
         <field name="model">whatsapp.message.queue</field>
@@ -99,7 +101,6 @@
         </field>
     </record>
 
-    <!-- Window Action -->
     <record id="action_whatsapp_message_queue" model="ir.actions.act_window">
         <field name="name">WhatsApp Queue</field>
         <field name="res_model">whatsapp.message.queue</field>
@@ -108,7 +109,6 @@
         <field name="context">{'search_default_filter_pending': 1}</field>
     </record>
 
-    <!-- Menus (Declared before child menus in template views) -->
     <menuitem id="menu_whatsapp_root" name="WhatsApp" sequence="65"/>
     <menuitem id="menu_whatsapp_queue" name="Message Queue" parent="menu_whatsapp_root"
               action="action_whatsapp_message_queue" sequence="10"/>
