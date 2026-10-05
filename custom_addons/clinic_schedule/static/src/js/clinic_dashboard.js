@@ -77,6 +77,12 @@ export class ClinicMatrixDashboard extends Component {
             substituteTargetPlaceholderId: null,
             pendingRequests: [],
             isPendingModalOpen: false,
+            isBatchModalOpen: false,
+            batchRegionFilter: "all",
+            batchSearchQuery: "",
+            batchSelectedClinicIds: [],
+            batchClinicsData: [],
+            batchIsLoading: false,
         });
 
         onWillStart(async () => {
@@ -96,7 +102,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async removeTherapistFromBoard() {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Matrix is locked. Unlock before modifying staff assignments.", { type: "warning" });
+            this.notificationService.add("Matrix is locked. Unlock before modifying staff assignments.", {type: "warning"});
             return;
         }
         if (!this.state.selectedTherapistForAction) return;
@@ -108,8 +114,10 @@ export class ClinicMatrixDashboard extends Component {
                 parseInt(this.state.selectedClinic),
                 this.state.selectedDate
             ]);
-            this.notificationService.add(res.message, { type: res.status });
-        } catch (e) { console.error(e); }
+            this.notificationService.add(res.message, {type: res.status});
+        } catch (e) {
+            console.error(e);
+        }
         this.closeTherapistActionModal();
         await this.refreshGrid();
         await this.loadRosterMetadata();
@@ -120,12 +128,12 @@ export class ClinicMatrixDashboard extends Component {
     }
 
     get filteredMatrixTherapists() {
-    if (this.state.matrixTherapistFilter === "all") {
-        return this.state.therapists;
-    }
-    return this.state.therapists.filter(t =>
-        t.id === 0 || t.designation === this.state.matrixTherapistFilter
-    );
+        if (this.state.matrixTherapistFilter === "all") {
+            return this.state.therapists;
+        }
+        return this.state.therapists.filter(t =>
+            t.id === 0 || t.designation === this.state.matrixTherapistFilter
+        );
     }
 
     async carryForward() {
@@ -137,7 +145,7 @@ export class ClinicMatrixDashboard extends Component {
                 parseInt(this.state.selectedClinic),
                 this.state.selectedDate
             ]);
-            this.notificationService.add(res.message, { type: res.status === 'success' ? 'success' : 'info' });
+            this.notificationService.add(res.message, {type: res.status === 'success' ? 'success' : 'info'});
             await this.refreshGrid();
         } catch (error) {
             console.error(error);
@@ -276,6 +284,7 @@ export class ClinicMatrixDashboard extends Component {
         this.state.isSmartViewOpen = false;
         this.state.smartViewData = null;
     }
+
     async openTodayPreview() {
         const clinicId = parseInt(this.state.selectedClinic);
         if (!clinicId) return;
@@ -308,6 +317,7 @@ export class ClinicMatrixDashboard extends Component {
     openPendingRequestsModal() {
         this.state.isPendingModalOpen = true;
     }
+
     closePendingRequestsModal() {
         this.state.isPendingModalOpen = false;
     }
@@ -366,7 +376,7 @@ export class ClinicMatrixDashboard extends Component {
         if (!confirmed) return;
 
         const res = await this.orm.call("clinic.schedule.appointment", "action_cancel_floater_request", [placeholderId]);
-        this.notificationService.add(res.message, { type: "success" });
+        this.notificationService.add(res.message, {type: "success"});
         this.closeMyRequestsModal();
         await this.refreshGrid();
     }
@@ -430,7 +440,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async rejectFloater(placeholderId) {
         await this.orm.call("clinic.schedule.appointment", "action_reject_floater", [placeholderId]);
-        this.notificationService.add("Floater request rejected and patients unassigned.", { type: "success" });
+        this.notificationService.add("Floater request rejected and patients unassigned.", {type: "success"});
         this.closePendingRequestsModal(); // NEW
         await this.refreshGrid();
     }
@@ -465,7 +475,7 @@ export class ClinicMatrixDashboard extends Component {
         if (!this.state.selectedTherapistObj || !this.state.substituteTargetPlaceholderId) return;
         const realTId = this.state.selectedTherapistObj.id;
         await this.orm.call("clinic.schedule.appointment", "action_substitute_floater", [this.state.substituteTargetPlaceholderId, realTId]);
-        this.notificationService.add("Floater substituted successfully. Patients have been moved.", { type: "success" });
+        this.notificationService.add("Floater substituted successfully. Patients have been moved.", {type: "success"});
         this.closeSubstituteModal();
         await this.refreshGrid();
         await this.loadRosterMetadata();
@@ -492,7 +502,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async applyTherapistAction(actionName) {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", { type: "warning" });
+            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", {type: "warning"});
             return;
         }
         if (!this.state.selectedTherapistForAction) return;
@@ -524,7 +534,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async confirmLateAction() {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", { type: "warning" });
+            this.notificationService.add("Matrix is locked. Unlock before updating attendance.", {type: "warning"});
             return;
         }
         if (!this.state.selectedTherapistForAction) return;
@@ -566,7 +576,7 @@ export class ClinicMatrixDashboard extends Component {
     async quickRemoveSlot(ev, appId, currentTherapistId) {
         ev.stopPropagation();
         if (this.state.slotsLocked) {
-            this.notificationService.add("Cannot delete slots while the matrix is locked.", { type: "warning" });
+            this.notificationService.add("Cannot delete slots while the matrix is locked.", {type: "warning"});
             return;
         }
         if (!appId) return;
@@ -581,7 +591,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async unassignSlot() {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Cannot delete slots while the matrix is locked.", { type: "warning" });
+            this.notificationService.add("Cannot delete slots while the matrix is locked.", {type: "warning"});
             return;
         }
         if (!this.state.selectedAppointment) return;
@@ -593,7 +603,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async reassignSlot(newTherapistIdRaw) {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Cannot reassign slots while the matrix is locked.", { type: "warning" });
+            this.notificationService.add("Cannot reassign slots while the matrix is locked.", {type: "warning"});
             return;
         }
         if (!this.state.selectedAppointment) return;
@@ -630,7 +640,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async onSlotClick(therapistId, slotKey) {
         if (this.state.slotsLocked) {
-            this.notificationService.add("The schedule is locked for this date. Unlock it to book or modify slots.", { type: "warning" });
+            this.notificationService.add("The schedule is locked for this date. Unlock it to book or modify slots.", {type: "warning"});
             return;
         }
         const existing = this.getSlotData(therapistId, slotKey);
@@ -665,7 +675,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async toggleLockSlots() {
         if (!this.state.is_manager) {
-            this.notificationService.add("Only Managers can lock or unlock the schedule matrix.", { type: "danger" });
+            this.notificationService.add("Only Managers can lock or unlock the schedule matrix.", {type: "danger"});
             return;
         }
         try {
@@ -675,7 +685,7 @@ export class ClinicMatrixDashboard extends Component {
                 [parseInt(this.state.selectedClinic), this.state.selectedDate]
             );
             if (res && res.message) {
-                this.notificationService.add(res.message, { type: res.status });
+                this.notificationService.add(res.message, {type: res.status});
                 this.state.slotsLocked = Boolean(res.is_locked);
             }
         } catch (error) {
@@ -686,7 +696,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async triggerMassSend() {
         if (!this.state.slotsLocked) {
-            this.notificationService.add("Matrix must be locked before sending notifications.", { type: "warning" });
+            this.notificationService.add("Matrix must be locked before sending notifications.", {type: "warning"});
             return;
         }
         try {
@@ -762,7 +772,7 @@ export class ClinicMatrixDashboard extends Component {
 
     async triggerMassReassign() {
         if (this.state.slotsLocked) {
-            this.notificationService.add("Matrix is locked. Unlock before reassigning sessions.", { type: "warning" });
+            this.notificationService.add("Matrix is locked. Unlock before reassigning sessions.", {type: "warning"});
             return;
         }
         if (!this.state.selectedTherapistForAction || !this.state.massReassignTarget) return;
@@ -772,7 +782,7 @@ export class ClinicMatrixDashboard extends Component {
             parseInt(this.state.selectedClinic),
             this.state.selectedDate
         ]);
-        this.notificationService.add(res.message, { type: res.status });
+        this.notificationService.add(res.message, {type: res.status});
         this.closeTherapistActionModal();
         await this.refreshGrid();
     }
@@ -791,6 +801,154 @@ export class ClinicMatrixDashboard extends Component {
             }
         } catch (e) {
             console.error("Error loading user schedule defaults:", e);
+        }
+    }
+
+    // --- BATCH MATRIX CONTROLS ---
+    async openBatchModal() {
+        this.state.batchRegionFilter = this.state.selectedRegion && this.state.selectedRegion !== 0
+            ? String(this.state.selectedRegion)
+            : "all";
+        this.state.batchSearchQuery = "";
+        this.state.isBatchModalOpen = true;
+        await this.loadBatchClinicsData();
+        // Auto-select all clinics currently matching the filter
+        this.state.batchSelectedClinicIds = this.filteredBatchClinics.map(c => c.id);
+    }
+
+    closeBatchModal() {
+        this.state.isBatchModalOpen = false;
+        this.state.batchSelectedClinicIds = [];
+    }
+
+    async loadBatchClinicsData() {
+        this.state.batchIsLoading = true;
+        try {
+            this.state.batchClinicsData = await this.orm.call(
+                "clinic.schedule.appointment",
+                "get_batch_matrix_status",
+                [this.state.selectedDate]
+            ) || [];
+        } catch (e) {
+            console.error("Error loading batch clinic status:", e);
+        } finally {
+            this.state.batchIsLoading = false;
+        }
+    }
+
+    get filteredBatchClinics() {
+        let list = this.state.batchClinicsData || [];
+        if (this.state.batchRegionFilter !== "all") {
+            const regId = parseInt(this.state.batchRegionFilter, 10);
+            list = list.filter(c => c.region_id === regId);
+        }
+        const query = this.state.batchSearchQuery.toLowerCase().trim();
+        if (query) {
+            list = list.filter(c =>
+                (c.name && c.name.toLowerCase().includes(query)) ||
+                (c.region_name && c.region_name.toLowerCase().includes(query))
+            );
+        }
+        return list;
+    }
+
+    onBatchRegionFilterChange(regionVal) {
+        this.state.batchRegionFilter = regionVal;
+        // Automatically select all clinics belonging to the newly selected region
+        this.state.batchSelectedClinicIds = this.filteredBatchClinics.map(c => c.id);
+    }
+
+    toggleBatchClinicSelection(clinicId) {
+        const id = parseInt(clinicId, 10);
+        if (this.state.batchSelectedClinicIds.includes(id)) {
+            this.state.batchSelectedClinicIds = this.state.batchSelectedClinicIds.filter(x => x !== id);
+        } else {
+            this.state.batchSelectedClinicIds.push(id);
+        }
+    }
+
+    toggleSelectAllBatchClinics() {
+        const visibleIds = this.filteredBatchClinics.map(c => c.id);
+        const allSelected = visibleIds.length > 0 && visibleIds.every(id => this.state.batchSelectedClinicIds.includes(id));
+        if (allSelected) {
+            this.state.batchSelectedClinicIds = this.state.batchSelectedClinicIds.filter(id => !visibleIds.includes(id));
+        } else {
+            const newSet = new Set([...this.state.batchSelectedClinicIds, ...visibleIds]);
+            this.state.batchSelectedClinicIds = Array.from(newSet);
+        }
+    }
+
+    async executeBatchLock(lock = true) {
+        if (!this.state.batchSelectedClinicIds.length) {
+            this.notificationService.add("Please select at least one clinic.", {type: "warning"});
+            return;
+        }
+        const actionLabel = lock ? "LOCK" : "UNLOCK";
+        const confirmed = window.confirm(`Are you sure you want to ${actionLabel} ${this.state.batchSelectedClinicIds.length} clinic matrix board(s) for ${this.state.selectedDate}?`);
+        if (!confirmed) return;
+
+        try {
+            const res = await this.orm.call(
+                "clinic.schedule.lock",
+                "action_batch_matrix_lock",
+                [this.state.batchSelectedClinicIds, this.state.selectedDate, lock]
+            );
+            this.notificationService.add(res.message, {type: res.status});
+            await this.loadBatchClinicsData();
+            await this.refreshGrid();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async executeBatchSend() {
+        if (!this.state.batchSelectedClinicIds.length) {
+            this.notificationService.add("Please select at least one clinic.", {type: "warning"});
+            return;
+        }
+        const confirmed = window.confirm(`Dispatch notifications to patients across ${this.state.batchSelectedClinicIds.length} clinics for ${this.state.selectedDate}? Note: Only locked clinics will proceed.`);
+        if (!confirmed) return;
+
+        try {
+            const res = await this.orm.call(
+                "clinic.schedule.appointment",
+                "action_batch_mass_send_notifications",
+                [this.state.batchSelectedClinicIds, this.state.selectedDate]
+            );
+            this.notificationService.add(res.message, {type: res.status});
+            await this.loadBatchClinicsData();
+            await this.refreshGrid();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async executeBatchLockAndSend() {
+        if (!this.state.batchSelectedClinicIds.length) {
+            this.notificationService.add("Please select at least one clinic.", {type: "warning"});
+            return;
+        }
+        const confirmed = window.confirm(`Lock ${this.state.batchSelectedClinicIds.length} clinic matrices and dispatch all queued notifications immediately?`);
+        if (!confirmed) return;
+
+        try {
+            // Step 1: Bulk Lock
+            await this.orm.call(
+                "clinic.schedule.lock",
+                "action_batch_matrix_lock",
+                [this.state.batchSelectedClinicIds, this.state.selectedDate, true]
+            );
+            // Step 2: Bulk Dispatch
+            const res = await this.orm.call(
+                "clinic.schedule.appointment",
+                "action_batch_mass_send_notifications",
+                [this.state.batchSelectedClinicIds, this.state.selectedDate]
+            );
+            this.notificationService.add(res.message, {type: res.status});
+            await this.loadBatchClinicsData();
+            await this.refreshGrid();
+        } catch (e) {
+            console.error(e);
         }
     }
 }

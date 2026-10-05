@@ -8,6 +8,9 @@
                 <field name="name"/>
                 <field name="smartchat_template_name"/>
                 <field name="model_id"/>
+                <field name="dispatch_mode" widget="badge"
+                       decoration-success="dispatch_mode == 'immediate'"
+                       decoration-info="dispatch_mode == 'scheduled'"/>
                 <field name="header_type"/>
                 <field name="active" widget="boolean_toggle"/>
             </tree>
@@ -27,14 +30,16 @@
                     </div>
                     <group>
                         <group string="SmartChat API Identifiers">
-                            <field name="smartchat_template_name" placeholder="e.g. newtemplate"/>
+                            <field name="smartchat_template_name" placeholder="e.g. therapy_comm"/>
                             <field name="broadcast_name" placeholder="e.g. Appointment_Reminder"/>
                             <field name="model_id" options="{'no_create': True}"/>
                             <field name="model" invisible="1"/>
                             <field name="phone_field" placeholder="e.g. patient_id.phone"/>
                             <field name="active" invisible="1"/>
                         </group>
-                        <group string="Headers &amp; Interactive Buttons">
+                        <group string="Execution Timing &amp; Media">
+                            <field name="dispatch_mode"/>
+                            <field name="scheduled_delay_hours" invisible="dispatch_mode != 'scheduled'"/>
                             <field name="header_type"/>
                             <field name="header_media_url"
                                    invisible="header_type == 'none'"
@@ -50,7 +55,7 @@
                     <notebook>
                         <page string="Dynamic Parameters ({{1}}, {{2}}...)">
                             <p class="text-muted small">
-                                Map positional variables in order matching your Meta-approved template. Expressions support
+                                Map positional variables matching your Meta-approved template. Expressions support
                                 <code>{{ object.field_name }}</code>, <code>{{ format_datetime(...) }}</code>, and <code>{{ format_date(...) }}</code>.
                             </p>
                             <field name="param_ids">
