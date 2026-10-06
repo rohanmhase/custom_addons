@@ -796,7 +796,12 @@
                                             </div>
                                             <div class="info-text">
                                                 <strong>Case Under Discussion With:</strong>
-                                                <t t-esc="assess['case_under_discussion']"/>
+                                                <t t-if="assess['case_under_discussion_with'] == 'rs'">RS</t>
+                                                <t t-if="assess['case_under_discussion_with'] == 'gm'">GM</t>
+                                                <t t-if="assess['case_under_discussion_with'] == 'rm'">RM</t>
+                                                <t t-if="assess['case_under_discussion_with'] == 'cep'">Clinical Excellence Panel</t>
+                                                <t t-if="assess['case_under_discussion_with'] == 'rc'">Recovery Consultant</t>
+                                                <t t-if="assess['case_under_discussion_with'] == 'src'">Sr. Recovery Consultant</t>
                                             </div>
                                             <div class="info-text">
                                                 <strong>Day of Therapy:</strong>

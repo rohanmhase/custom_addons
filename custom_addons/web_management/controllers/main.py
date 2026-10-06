@@ -140,7 +140,7 @@ class PatientController(http.Controller):
                 "diagnosis": assess.diagnosis,
                 "k_c_o": assess.k_c_o,
                 "investigation_status": assess.investigation_status,
-                "case_under_discussion": assess.case_under_discussion.name,
+                "case_under_discussion_with": assess.case_under_discussion_with,
                 "day_of_therapy": assess.day_of_therapy,
                 "type_of_therapy": assess.type_of_therapy,
                 "symptoms": symptoms,
