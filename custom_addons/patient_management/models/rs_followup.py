@@ -18,6 +18,15 @@ class PatientAssessment(models.Model):
     k_c_o = fields.Char(string="K/C/O", required=True)  # Known case of
     investigation_status = fields.Char(string="Investigation Status", required=True)
     case_under_discussion = fields.Many2one("res.users", string="Case Under Discussion With")
+    case_under_discussion_with = fields.Selection(
+        [
+            ("rs", "RS"),
+            ("gm", "GM"),
+            ("rm", "RM"),
+            ("cep", "Clinical Excellence Panel"),
+            ("rc", "Recovery Consultant"),
+            ("src", "Sr. Recovery Consultant"),
+        ], required=True)
     day_of_therapy = fields.Integer(string="Day Of Therapy", compute="_compute_day_of_therapy", store=True,
                                     readonly=True)
     type_of_therapy = fields.Selection([("detox", "Detox"),
