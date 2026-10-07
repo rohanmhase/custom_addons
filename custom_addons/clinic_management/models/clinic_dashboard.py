@@ -48,6 +48,11 @@ class ClinicDashboard(models.TransientModel):
         compute="_compute_dashboard_counts"
     )
 
+    total_case_taking = fields.Integer(
+        string="Case Taking",
+        compute="_compute_dashboard_counts"
+    )
+
     @api.constrains('from_date', 'to_date')
     def _check_date_range(self):
         for rec in self:
@@ -66,6 +71,7 @@ class ClinicDashboard(models.TransientModel):
                     'total_enrollment': 0,
                     'total_daily_followups': 0,
                     'total_extensions': 0,
+                    'total_case_taking': 0,
                 })
                 continue
 
@@ -104,6 +110,10 @@ class ClinicDashboard(models.TransientModel):
             rec.total_daily_followups = self.env['patient.daily_followup'].search_count([
                 ('patient_id.clinic_id', '=', rec.clinic_id.id), ('followup_date', '>=', rec.from_date),
                 ('followup_date', '<=', rec.to_date), ('active', '=', True)])
+
+            rec.total_case_taking = self.env['patient.case_taking'].search_count([
+                ('patient_id.clinic_id', '=', rec.clinic_id.id), ('case_taking_date', '>=', rec.from_date),
+                ('case_taking_date', '<=', rec.to_date), ('active', '=', True)])
 
     # --------------------------------------------------
     # SMART BUTTON ACTIONS
@@ -217,4 +227,21 @@ class ClinicDashboard(models.TransientModel):
             ],
             'context': { 'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True
             }
+        }
+
+    def action_view_case_taking(self):
+        self.ensure_one()
+        tree_view_id = self.env.ref('patient_management.view_clinic_case_taking_dashboard_tree').id
+        return {
+            'name': 'Case Taking',
+            'type': 'ir.actions.act_window',
+            'res_model': 'patient.case_taking',
+            'view_mode': 'tree',
+            'views': [(tree_view_id, 'tree')],
+            'domain': [
+                ('patient_id.clinic_id', '=', self.clinic_id.id),
+                ('case_taking_date', '>=', self.from_date),
+                ('case_taking_date', '<=', self.to_date)
+            ],
+            'context': {'create': False, 'open': False, 'edit': False, 'delete': False, 'block_archive': True}
         }
