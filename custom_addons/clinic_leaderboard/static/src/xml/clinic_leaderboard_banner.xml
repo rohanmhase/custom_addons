@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- 1. The Banner Component UI -->
+    <t t-name="clinic_leaderboard.Banner" owl="1">
+        <div t-if="state.show"
+             class="w-100 bg-white border-bottom shadow-sm px-3 py-2 d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center">
+                <span class="fs-1 me-3 text-muted">👤</span>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">My Current Performance</span>
+                    <div class="d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                        <span class="badge rounded-pill text-bg-info text-white shadow-sm px-2 py-1">
+                            Recovery: <t t-esc="state.dailyRecovery"/>%
+                        </span>
+                        <span class="badge rounded-pill text-bg-primary shadow-sm px-2 py-1">
+                            20-40% Ext: <t t-esc="state.ext2040"/>%
+                        </span>
+                        <span class="badge rounded-pill text-bg-secondary shadow-sm px-2 py-1">
+                            <t t-esc="state.totalTherapies"/>
+                            Therapies
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- 2. Patching the Native Odoo Kanban Layout -->
+    <t t-inherit="web.KanbanRenderer" t-inherit-mode="extension" owl="1">
+        <!-- We use position="before" to place it precisely between the purple control panel and the cards -->
+        <xpath expr="//div[contains(@class, 'o_kanban_renderer')]" position="before">
+            <!-- We check the active model so this ONLY renders on the Clinics page -->
+            <t t-if="['clinic.clinic', 'clinic.patient'].includes(props.list.resModel)">
+                <ClinicLeaderboardBanner/>
+            </t>
+        </xpath>
+    </t>
+</templates>

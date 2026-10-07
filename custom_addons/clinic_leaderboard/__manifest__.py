@@ -13,6 +13,8 @@
         'web.assets_backend': [
             'clinic_leaderboard/static/src/xml/leaderboard_dialog.xml',
             'clinic_leaderboard/static/src/js/clinic_kanban_leaderboard.js',
+            'clinic_leaderboard/static/src/xml/clinic_leaderboard_banner.xml',
+            'clinic_leaderboard/static/src/js/clinic_leaderboard_banner.js',
         ],
     },
     'installable': True,
