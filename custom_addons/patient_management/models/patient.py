@@ -396,7 +396,7 @@ class Patient(models.Model):
                 rec.first_xray_grade = False
                 rec.first_xray_day = False
 
-    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state", "enrollment_ids.active")
+    @api.depends("enrollment_ids.total_sessions", "enrollment_ids.state", "enrollment_ids.active", "enrollment_ids.payment_state")
     def _compute_total_sessions(self):
         for rec in self:
             # Use active_test=False to include archived enrollments explicitly, then filter manually
@@ -404,16 +404,18 @@ class Patient(models.Model):
                 ('patient_id', '=', rec.id),
                 ('active', '=', True),
                 ('state', 'in', ['active', 'completed']),
+                ('payment_state', '=', 'paid'),
             ])
             rec.total_sessions = sum(all_enrollments.mapped('total_sessions'))
 
-    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state", "enrollment_ids.active")
+    @api.depends("enrollment_ids.remaining_sessions", "enrollment_ids.state", "enrollment_ids.active", "enrollment_ids.payment_state")
     def _compute_remaining_sessions(self):
         for rec in self:
             all_enrollments = self.env['patient.enrollment'].with_context(active_test=False).search([
                 ('patient_id', '=', rec.id),
                 ('active', '=', True),
                 ('state', 'in', ['active', 'completed']),
+                ('payment_state', '=', 'paid'),
             ])
             rec.remaining_sessions = sum(all_enrollments.mapped('remaining_sessions'))
 
