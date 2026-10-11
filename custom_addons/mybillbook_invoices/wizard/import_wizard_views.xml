@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mybillbook_import_wizard" model="ir.ui.view">
+        <field name="name">mybillbook.import.wizard.form</field>
+        <field name="model">mybillbook.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import My Bill Book CSV">
+                <field name="state" invisible="1"/>
+                <field name="can_import" invisible="1"/>
+                <field name="can_override" invisible="1"/>
+                <field name="parsed_data" invisible="1"/>
+
+                <!-- STEP 1: UPLOAD -->
+                <group invisible="state != 'upload'">
+                    <group>
+                        <field name="file" filename="file_name"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <b>Step 1 - Upload &amp; Validate</b>
+                        <br/>
+                        Expected columns:
+                        <br/>
+                        Date, Invoice No, Party Name, Item Name, Quantity, Price/Unit, Amount, MODE, Notes, Clinic
+                        <br/>
+                        Optional: Mobile
+                        <br/>
+                        <b>Every clinic in the file must already exist under Configuration -> Clinics.</b>
+                        <br/>
+                        <b>One invoice number must belong to one party per clinic. Conflicts block the import.</b>
+                    </div>
+                </group>
+
+                <!-- STEP 2: VALIDATION RESULT -->
+                <group invisible="state == 'upload'">
+                    <group>
+                        <field name="total_invoices" readonly="1"/>
+                        <field name="total_lines" readonly="1"/>
+                    </group>
+                    <field name="validation_message" readonly="1" nolabel="1"/>
+                    <field name="missing_clinics" readonly="1"
+                           invisible="not missing_clinics"
+                           string="Missing clinic names (copy-paste if needed)"/>
+                </group>
+
+                <footer>
+                    <button string="Validate CSV" name="action_validate" type="object"
+                            class="btn-primary" invisible="state != 'upload'"
+                            groups="mybillbook_invoices.group_mybillbook_admin"/>
+                    <button string="Import Now" name="action_import" type="object"
+                            class="btn-primary" invisible="not can_import"
+                            groups="mybillbook_invoices.group_mybillbook_admin"/>
+                    <button string="Override Clinic Check &amp; Import (Admin)" name="action_import_override"
+                            type="object"
+                            class="btn-danger" invisible="not can_override"
+                            groups="mybillbook_invoices.group_mybillbook_admin"
+                            confirm="Some clinics are not configured. Invoices will be imported anyway and will print without clinic details until the clinics are created. Continue?"/>
+                    <button string="Upload Another File" name="action_reset" type="object"
+                            class="btn-secondary" invisible="state == 'upload'"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mybillbook_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Invoices (CSV)</field>
+        <field name="res_model">mybillbook.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
