@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mybillbook_clinic_search" model="ir.ui.view">
+        <field name="name">mybillbook.clinic.search</field>
+        <field name="model">mybillbook.clinic</field>
+        <field name="arch" type="xml">
+            <search string="Search Clinics">
+                <field name="name"/>
+                <field name="mobile"/>
+                <field name="gstin"/>
+                <filter string="Archived" name="archived" domain="[('active','=',False), ('ui_deleted','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_mybillbook_clinic_tree" model="ir.ui.view">
+        <field name="name">mybillbook.clinic.tree</field>
+        <field name="model">mybillbook.clinic</field>
+        <field name="arch" type="xml">
+            <tree string="Clinics">
+                <field name="name"/>
+                <field name="mobile"/>
+                <field name="gstin"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_mybillbook_clinic_form" model="ir.ui.view">
+        <field name="name">mybillbook.clinic.form</field>
+        <field name="model">mybillbook.clinic</field>
+        <field name="arch" type="xml">
+            <form string="Clinic">
+                <header>
+                    <button name="action_archive_custom" string="Archive" type="object" invisible="not active"/>
+                    <button name="action_unarchive_custom" string="Unarchive" type="object" invisible="active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <field name="logo" widget="image" class="oe_avatar"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Clinic Name (must match CSV Clinic column exactly)"/></h1>
+                    </div>
+                    <group>
+                        <group string="Contact">
+                            <field name="mobile"/>
+                            <field name="gstin"/>
+                            <field name="address"/>
+                        </group>
+                        <group string="Bank Details (for PDF)">
+                            <field name="bank_holder_name"/>
+                            <field name="bank_name"/>
+                            <field name="bank_account"/>
+                            <field name="bank_ifsc"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mybillbook_clinic" model="ir.actions.act_window">
+        <field name="name">Clinics</field>
+        <field name="res_model">mybillbook.clinic</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('ui_deleted', '=', False)]</field>
+        <field name="search_view_id" ref="view_mybillbook_clinic_search"/>
+    </record>
+
+    <menuitem id="menu_mybillbook_clinic"
+              name="Clinics"
+              parent="menu_mybillbook_config"
+              action="action_mybillbook_clinic"
+              sequence="1"/>
+</odoo>
