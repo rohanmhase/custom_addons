@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Default Meta Sender Line -->
+        <record id="sender_phone_primary" model="whatsapp.sender.phone">
+            <field name="name">Primary Central Line</field>
+            <field name="phone_number">+91 87794 06969</field>
+            <field name="phone_number_id">1395062320356609</field>
+            <field name="waba_id">1456832022990876</field>
+            <field name="is_default">True</field>
+        </record>
+
+        <!-- 1. Patient Invoice Receipt Template -->
+        <record id="whatsapp_template_patient_invoice" model="whatsapp.template">
+            <field name="name">Patient Invoice / Bill Receipt</field>
+            <field name="meta_template_name">patient_invoice_receipt</field>
+            <field name="language_code">en</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="phone_field">partner_id.mobile,partner_id.phone</field>
+            <field name="sender_routing">template</field>
+            <field name="sender_phone_id" ref="sender_phone_primary"/>
+            <field name="dispatch_timing">immediate</field>
+            <field name="auto_send_on_post">True</field>
+            <field name="header_type">none</field>
+            <field name="body_preview">Dear {{ object.partner_id.name }},
+This is to confirm your invoice {{ object.name }}.</field>
+        </record>
+
+        <record id="param_invoice_1" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">1</field>
+            <field name="name">Patient Name</field>
+            <field name="value_expression">{{ object.partner_id.name or 'Valued Patient' }}</field>
+        </record>
+        <record id="param_invoice_2" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">2</field>
+            <field name="name">Invoice Number</field>
+            <field name="value_expression">{{ object.name }}</field>
+        </record>
+        <record id="param_invoice_3" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">3</field>
+            <field name="name">Total Amount</field>
+            <field name="value_expression">₹{{ "%.2f"|format(object.amount_total) }}</field>
+        </record>
+        <record id="param_invoice_4" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">4</field>
+            <field name="name">Invoice Date</field>
+            <field name="value_expression">{{ format_date(object.invoice_date) }}</field>
+        </record>
+        <record id="param_invoice_5" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">5</field>
+            <field name="name">Clinic Branch Name</field>
+            <field name="value_expression">{{ clinic.name if clinic else (object.company_id.name or 'ResearchAyu Knee Clinics') }}</field>
+        </record>
+        <record id="param_invoice_6" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_patient_invoice"/>
+            <field name="index">6</field>
+            <field name="name">View Bill Link</field>
+            <field name="value_expression">{{ base_url }}/mail/view?model=account.move&amp;res_id={{ object.id }}&amp;access_token={{ object.access_token }}</field>
+        </record>
+
+        <!-- 2. Therapy Appointment Confirmation Template -->
+        <record id="whatsapp_template_therapy_comm" model="whatsapp.template">
+            <field name="name">Therapy Appointment Confirmation</field>
+            <field name="meta_template_name">therapy_comm</field>
+            <field name="language_code">en</field>
+            <field name="model_id" ref="clinic_schedule.model_clinic_schedule_appointment"/>
+            <field name="phone_field">patient_id.mobile,patient_id.phone,partner_id.mobile,partner_id.phone</field>
+            <field name="sender_routing">template</field>
+            <field name="sender_phone_id" ref="sender_phone_primary"/>
+            <field name="dispatch_timing">immediate</field>
+            <field name="auto_send_on_post">True</field>
+            <field name="header_type">none</field>
+        </record>
+
+        <record id="param_therapy_1" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_therapy_comm"/>
+            <field name="index">1</field>
+            <field name="name">Patient Name</field>
+            <field name="value_expression">{{ object.patient_id.name or 'Valued Patient' }}</field>
+        </record>
+        <record id="param_therapy_2" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_therapy_comm"/>
+            <field name="index">2</field>
+            <field name="name">Appointment Date</field>
+            <field name="value_expression">{{ format_date(object.appointment_date or object.start_datetime) }}</field>
+        </record>
+        <record id="param_therapy_3" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_therapy_comm"/>
+            <field name="index">3</field>
+            <field name="name">Clinic Branch Name</field>
+            <field name="value_expression">{{ clinic.name if clinic else (object.clinic_id.name or 'ResearchAyu Knee Clinics') }}</field>
+        </record>
+        <record id="param_therapy_4" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_therapy_comm"/>
+            <field name="index">4</field>
+            <field name="name">Therapy Time Slot</field>
+            <field name="value_expression">{{ object.slot_id.name or format_datetime(object.start_datetime, '%I:%M %p') }}</field>
+        </record>
+        <record id="param_therapy_5" model="whatsapp.template.param">
+            <field name="template_id" ref="whatsapp_template_therapy_comm"/>
+            <field name="index">5</field>
+            <field name="name">Clinic Admin Helpline Phone</field>
+            <field name="value_expression">{{ clinic.phone if (clinic and clinic.phone) else '9082777624' }}</field>
+        </record>
+    </data>
+</odoo>

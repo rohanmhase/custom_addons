@@ -1,7 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_whatsapp_sender_phone_user,whatsapp.sender.phone.user,model_whatsapp_sender_phone,base.group_user,1,0,0,0
+access_whatsapp_sender_phone_manager,whatsapp.sender.phone.manager,model_whatsapp_sender_phone,base.group_system,1,1,1,1
 access_whatsapp_message_queue_user,whatsapp.message.queue.user,model_whatsapp_message_queue,base.group_user,1,0,0,0
 access_whatsapp_message_queue_manager,whatsapp.message.queue.manager,model_whatsapp_message_queue,base.group_system,1,1,1,1
 access_whatsapp_template_user,whatsapp.template.user,model_whatsapp_template,base.group_user,1,0,0,0
 access_whatsapp_template_manager,whatsapp.template.manager,model_whatsapp_template,base.group_system,1,1,1,1
 access_whatsapp_template_param_user,whatsapp.template.param.user,model_whatsapp_template_param,base.group_user,1,0,0,0
 access_whatsapp_template_param_manager,whatsapp.template.param.manager,model_whatsapp_template_param,base.group_system,1,1,1,1
+access_whatsapp_message_reply_user,whatsapp.message.reply.user,model_whatsapp_message_reply,base.group_user,1,0,0,0
+access_whatsapp_message_reply_manager,whatsapp.message.reply.manager,model_whatsapp_message_reply,base.group_system,1,1,1,1

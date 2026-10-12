@@ -9,9 +9,9 @@
                   decoration-danger="state == 'error'"
                   decoration-warning="state == 'pending'"
                   create="false">
-                <field name="create_date" string="Created On"/>
-                <field name="scheduled_send_datetime" string="Scheduled Send"/>
-                <field name="smartchat_template_name" string="Template"/>
+                <field name="create_date" string="Created"/>
+                <field name="clinic_id" string="Branch"/>
+                <field name="meta_template_name" string="Template"/>
                 <field name="patient_name"/>
                 <field name="phone"/>
                 <field name="wamid" string="Meta Message ID" optional="show"/>
@@ -42,22 +42,24 @@
                         <group string="Recipient &amp; Delivery">
                             <field name="patient_name" readonly="1"/>
                             <field name="phone" readonly="1"/>
-                            <field name="scheduled_send_datetime" readonly="1"/>
+                            <field name="clinic_id" readonly="1"/>
+                            <field name="phone_number_id" readonly="1"/>
                             <field name="sent_date" readonly="1"/>
                             <field name="wamid" readonly="1"/>
                         </group>
-                        <group string="Routing &amp; Template">
-                            <field name="smartchat_template_name" readonly="1"/>
-                            <field name="broadcast_name" readonly="1"/>
+                        <group string="Template &amp; Source Document">
+                            <field name="meta_template_name" readonly="1"/>
+                            <field name="language_code" readonly="1"/>
                             <field name="res_model" readonly="1"/>
                             <field name="res_id" readonly="1"/>
+                            <field name="invoice_number" readonly="1" invisible="not invoice_number"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Evaluated Parameters (JSON)">
+                        <page string="Meta Evaluated Components (JSON)">
                             <field name="params_json" readonly="1"/>
                         </page>
-                        <page string="Gateway Response (Raw JSON)">
+                        <page string="Gateway Response (Raw Meta JSON)">
                             <field name="response_json" readonly="1"/>
                         </page>
                         <page string="Message Preview">
@@ -79,23 +81,21 @@
             <search string="Search Messages">
                 <field name="patient_name"/>
                 <field name="phone"/>
-                <field name="smartchat_template_name"/>
+                <field name="clinic_id"/>
+                <field name="meta_template_name"/>
                 <field name="wamid"/>
                 <field name="invoice_number"/>
                 <separator/>
-                <filter string="Bills &amp; Invoices" name="filter_invoices"
-                        domain="[('res_model', '=', 'account.move')]"/>
-                <filter string="Clinic Appointments" name="filter_appointments"
-                        domain="[('res_model', '=', 'clinic.schedule.appointment')]"/>
+                <filter string="Invoices &amp; Bills" name="filter_invoices" domain="[('res_model', '=', 'account.move')]"/>
+                <filter string="Appointments" name="filter_appointments" domain="[('res_model', '=', 'clinic.schedule.appointment')]"/>
                 <separator/>
                 <filter string="Pending" name="filter_pending" domain="[('state', '=', 'pending')]"/>
                 <filter string="Sent" name="filter_sent" domain="[('state', '=', 'sent')]"/>
                 <filter string="Failed" name="filter_error" domain="[('state', '=', 'error')]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Template" name="group_by_template" context="{'group_by': 'smartchat_template_name'}"/>
-                    <filter string="Source Document" name="group_by_model" context="{'group_by': 'res_model'}"/>
+                    <filter string="Clinic Branch" name="group_by_clinic" context="{'group_by': 'clinic_id'}"/>
+                    <filter string="Template" name="group_by_template" context="{'group_by': 'meta_template_name'}"/>
                     <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
-                    <filter string="Sent Date" name="group_by_sent_date" context="{'group_by': 'sent_date:day'}"/>
                 </group>
             </search>
         </field>
@@ -106,10 +106,8 @@
         <field name="res_model">whatsapp.message.queue</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_whatsapp_message_queue_search"/>
-        <field name="context">{'search_default_filter_pending': 1}</field>
     </record>
 
-    <menuitem id="menu_whatsapp_root" name="WhatsApp" sequence="65"/>
     <menuitem id="menu_whatsapp_queue" name="Message Queue" parent="menu_whatsapp_root"
               action="action_whatsapp_message_queue" sequence="10"/>
 </odoo>
