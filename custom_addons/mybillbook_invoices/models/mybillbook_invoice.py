@@ -46,6 +46,7 @@ class MybillbookClinic(models.Model):
     address = fields.Text('Address')
     mobile = fields.Char('Mobile')
     gstin = fields.Char('GSTIN')
+    place_of_supply = fields.Char('Place of Supply')
     bank_name = fields.Char('Bank Name')
     bank_account = fields.Char('Account No')
     bank_ifsc = fields.Char('IFSC Code')

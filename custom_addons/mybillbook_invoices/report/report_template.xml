@@ -55,7 +55,7 @@
                                 <div style="font-weight:bold; margin-bottom: 8px;">BILL TO</div>
                                 <div style="font-weight:bold; margin-bottom: 6px;"><span t-esc="doc.party_name"/></div>
                                 <div t-if="doc.party_mobile" style="font-size: 16px; margin-bottom: 4px;">Mobile: <span t-esc="doc.party_mobile"/></div>
-                                <div style="font-size: 16px;">Place of Supply: Maharashtra</div>
+                                <div style="font-size: 16px;">Place of Supply: <span t-esc="doc.clinic_id.place_of_supply"/></div>
                             </td>
                             <td style="width:50%; vertical-align:top; padding: 0 1px;">
                                 <div style="font-weight:bold; margin-bottom: 8px;">SHIP TO</div>
