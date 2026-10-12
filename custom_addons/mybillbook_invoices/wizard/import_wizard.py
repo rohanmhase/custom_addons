@@ -210,17 +210,6 @@ class MybillbookImportWizard(models.TransientModel):
         elif clinics_in_csv:
             html.append("<p style='color:green;'><b>All clinics match.</b></p>")
 
-        if conflicts:
-            html.append(
-                "<p style='color:#b00;'><b>IMPORT BLOCKED - same invoice number with a different party name (" + str(
-                    len(conflicts)) + "). "
-                                      "This cannot be overridden, fix the CSV:</b></p><ul>")
-            for c in conflicts[:30]:
-                html.append(f"<li>{html_escape(c)}</li>")
-            if len(conflicts) > 30:
-                html.append(f"<li>... and {len(conflicts) - 30} more</li>")
-            html.append("</ul>")
-
         if errors:
             html.append("<p style='color:#b00;'><b>Row errors (fix the CSV, import is blocked):</b></p><ul>")
             for e in errors[:30]:
