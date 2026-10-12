@@ -126,6 +126,70 @@ class Patient(models.Model):
     other_reason = fields.Char(string="Specify Other Reason", tracking=True)
     treatment_updated_by = fields.Many2one('res.users', string="Updated by", readonly=True)
 
+    reference_ids = fields.One2many(
+        "patient.reference",
+        "patient_id",
+        string="Referrals Given",
+    )
+    referred_by_patient_id = fields.Many2one(
+        "clinic.patient",
+        string="Referred By",
+        ondelete="set null",
+        index=True,
+        tracking=True,
+        help="Existing registered patient confirmed by this patient as the person who referred them.",
+    )
+
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        if not self.env.context.get('global_referral_search'):
+            return super().name_search(
+                name=name,
+                args=args,
+                operator=operator,
+                limit=limit,
+            )
+
+        search_term = (name or '').strip()
+
+        # Keep only digits
+        phone = re.sub(r'\D', '', search_term)
+
+        # Do not search until complete 10-digit mobile number is entered
+        if len(phone) != 10:
+            return []
+
+        domain = list(args or [])
+
+        current_patient_id = self.env.context.get(
+            'current_referral_patient_id'
+        )
+
+        if current_patient_id:
+            domain.append(
+                ('id', '!=', current_patient_id)
+            )
+
+        domain.append(
+            ('phone', '=', phone)
+        )
+
+        patients = self.sudo().with_context(
+            active_test=False
+        ).search(
+            domain,
+            limit=10,
+            order='name asc, id asc',
+        )
+
+        return [
+            (
+                patient.id,
+                f"{patient.name or ''} - {patient.phone or ''}"
+            )
+            for patient in patients
+        ]
+
     @api.onchange('treatment_status')
     def _onchange_treatment_status(self):
         for record in self:
@@ -475,7 +539,14 @@ class Patient(models.Model):
             seq = self.env["ir.sequence"].next_by_code("clinic.patient.mrn") or "000001"
             vals["mrn"] = f"{prefix}-{seq.zfill(6)}"
 
-        return super(Patient, self).create(vals)
+        patient = super(Patient, self).create(vals)
+
+        # NEW:
+        # If this patient's number was present in patient.reference,
+        # mark those referral records as joined.
+        patient._mark_matching_referrals_joined()
+
+        return patient
 
     # -------------------------------
     # Write Override
@@ -483,6 +554,20 @@ class Patient(models.Model):
     def write(self, vals):
         if "mrn" in vals:
             raise ValidationError("⚠️ MRN cannot be modified!")
+
+        if "referred_by_patient_id" in vals:
+            new_referrer_id = vals.get("referred_by_patient_id")
+
+            for rec in self:
+                if (
+                        rec.referred_by_patient_id
+                        and new_referrer_id
+                        and new_referrer_id != rec.referred_by_patient_id.id
+                ):
+                    raise ValidationError(_(
+                        "This patient is already linked to a referrer. "
+                        "The referrer cannot be changed."
+                    ))
 
         # if 'patient_status' in vals:
         #     for rec in self:
@@ -792,6 +877,19 @@ class Patient(models.Model):
             },
         }
 
+    def action_open_reference(self):
+        """Open References related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Reference",
+            "res_model": "patient.reference",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
+        }
+
     def _ist_date(self):
 
         utc = (datetime.now())
@@ -814,6 +912,8 @@ class Patient(models.Model):
                 record.manual_event_name = False
             if record.patient_source != 'doctor':
                 record.referred_doctor_name = False
+            if record.patient_source != 'referral':
+                record.referred_by_patient_id = False
 
     @api.onchange('source_event')
     def _onchange_source_event_clear_manual(self):
@@ -829,3 +929,34 @@ class Patient(models.Model):
 
         # 2. Otherwise, allow normal archiving behavior
         return super().action_archive()
+
+    @staticmethod
+    def _normalize_referral_mobile(value):
+        digits = re.sub(r"\D", "", value or "")
+
+        if len(digits) == 12 and digits.startswith("91"):
+            digits = digits[2:]
+        elif len(digits) == 11 and digits.startswith("0"):
+            digits = digits[1:]
+
+        return digits
+
+    def _mark_matching_referrals_joined(self):
+        Reference = self.env["patient.reference"].sudo()
+
+        for patient in self:
+            normalized_phone = (
+                self._normalize_referral_mobile(patient.phone)
+            )
+
+            if len(normalized_phone) != 10:
+                continue
+
+            referrals = Reference.search([
+                ("phone", "=", normalized_phone),
+                ("is_joined", "=", False),
+            ])
+
+            referrals.write({
+                "is_joined": True
+            })
