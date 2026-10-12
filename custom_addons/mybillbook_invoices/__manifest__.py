@@ -1,0 +1,19 @@
+{
+    'name': 'My Bill Book Invoices',
+    'version': '1.1',
+    'category': 'Accounting',
+    'summary': 'Archive, Search and Print Legacy My Bill Book Invoices',
+    'depends': ['base', 'web'],
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'report/report_action.xml',
+        'report/report_template.xml',
+        'wizard/import_wizard_views.xml',
+        'views/mybillbook_invoice_views.xml',
+        'views/mybillbook_clinic_views.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}

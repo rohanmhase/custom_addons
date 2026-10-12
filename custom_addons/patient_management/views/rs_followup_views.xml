@@ -45,6 +45,10 @@
                         <field name="k_c_o"/>
                         <field name="investigation_status"/>
                         <field name="case_under_discussion_with" widget="radio" options="{'horizontal': true}"/>
+                        <field name="blood_test_pres"/>
+                        <field name="date_btp" invisible="not blood_test_pres" required="1"/>
+                        <field name="xray_pres"/>
+                        <field name="date_xray" invisible="not xray_pres" required="1"/>
                         <field name="type_of_therapy"/>
                         <field name="day_of_therapy"/>
                     </group>

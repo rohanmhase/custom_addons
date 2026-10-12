@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_clinic_user,clinic.user,model_mybillbook_clinic,group_mybillbook_user,1,0,0,0
+access_clinic_admin,clinic.admin,model_mybillbook_clinic,group_mybillbook_admin,1,1,1,1
+access_inv_user,inv.user,model_mybillbook_invoice,group_mybillbook_user,1,0,0,0
+access_inv_mod,inv.mod,model_mybillbook_invoice,group_mybillbook_moderator,1,0,1,0
+access_inv_admin,inv.admin,model_mybillbook_invoice,group_mybillbook_admin,1,1,1,1
+access_line_user,line.user,model_mybillbook_invoice_line,group_mybillbook_user,1,0,0,0
+access_line_mod,line.mod,model_mybillbook_invoice_line,group_mybillbook_moderator,1,0,1,0
+access_line_admin,line.admin,model_mybillbook_invoice_line,group_mybillbook_admin,1,1,1,1
+access_wizard_mod,wizard.mod,model_mybillbook_import_wizard,group_mybillbook_admin,1,1,1,1

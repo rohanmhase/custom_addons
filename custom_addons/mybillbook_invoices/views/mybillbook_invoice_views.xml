@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mybillbook_invoice_search" model="ir.ui.view">
+        <field name="name">mybillbook.invoice.search</field>
+        <field name="model">mybillbook.invoice</field>
+        <field name="arch" type="xml">
+            <search string="Search Legacy Invoices">
+                <field name="invoice_no" string="Invoice No"/>
+                <field name="party_name" string="Customer Name"/>
+                <field name="clinic_name" string="Clinic"/>
+                <field name="payment_mode"/>
+                <filter string="Archived" name="archived" domain="[('active','=',False), ('ui_deleted','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Clinic" name="group_clinic" context="{'group_by':'clinic_name'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by':'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_mybillbook_invoice_tree" model="ir.ui.view">
+        <field name="name">mybillbook.invoice.tree</field>
+        <field name="model">mybillbook.invoice</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" string="Legacy Invoices">
+                <header>
+                    <button name="%(action_report_mybillbook_invoice)d" string="Download All in 1 PDF" type="action"/>
+                    <button name="action_download_separate" string="Download Each as Separate PDF (ZIP)" type="object"/>
+                </header>
+                <field name="date"/>
+                <field name="invoice_no"/>
+                <field name="party_name"/>
+                <field name="clinic_name"/>
+                <field name="total_amount" sum="Total"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_mybillbook_invoice_form" model="ir.ui.view">
+        <field name="name">mybillbook.invoice.form</field>
+        <field name="model">mybillbook.invoice</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" string="Legacy Invoice">
+                <header>
+                    <button name="%(action_report_mybillbook_invoice)d" string="Print PDF" type="action" class="btn-primary"/>
+                    <button name="action_archive_custom" string="Archive" type="object" groups="mybillbook_invoices.group_mybillbook_admin" invisible="not active"/>
+                    <button name="action_unarchive_custom" string="Unarchive" type="object" groups="mybillbook_invoices.group_mybillbook_admin" invisible="active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+
+                    <!-- Warning if Clinic configuration is missing -->
+                    <div class="alert alert-warning" role="alert" invisible="clinic_id">
+                        <strong>Warning!</strong> Clinic details will not print. Please go to Configuration -> Clinics and create a clinic named exactly: <b><field name="clinic_name" readonly="1"/></b>
+                    </div>
+
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title">
+                        <h1>Invoice <field name="invoice_no" readonly="1" class="d-inline"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="party_name"/>
+                            <field name="party_mobile"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="clinic_name"/>
+                            <field name="payment_mode"/>
+                            <field name="clinic_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Items">
+                            <field name="line_ids">
+                                <tree create="0" edit="0" delete="0">
+                                    <field name="item_name"/>
+                                    <field name="quantity_str" string="Qty"/>
+                                    <field name="rate"/>
+                                    <field name="amount" sum="Total"/>
+                                </tree>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_amount"/>
+                                <field name="amount_in_words"/>
+                            </group>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mybillbook_invoice" model="ir.actions.act_window">
+        <field name="name">My Bill Book Invoices</field>
+        <field name="res_model">mybillbook.invoice</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('ui_deleted', '=', False)]</field>
+        <field name="search_view_id" ref="view_mybillbook_invoice_search"/>
+    </record>
+
+    <menuitem id="menu_mybillbook_root" name="My Bill Book" sequence="10"/>
+    <menuitem id="menu_mybillbook_invoices" name="Invoices" parent="menu_mybillbook_root" action="action_mybillbook_invoice" sequence="1"/>
+    <menuitem id="menu_mybillbook_import" name="Import Invoices (CSV)" parent="menu_mybillbook_root" action="action_mybillbook_import_wizard" sequence="2" groups="mybillbook_invoices.group_mybillbook_admin"/>
+    <menuitem id="menu_mybillbook_config" name="Configuration" parent="menu_mybillbook_root" sequence="10" groups="mybillbook_invoices.group_mybillbook_admin"/>
+</odoo>

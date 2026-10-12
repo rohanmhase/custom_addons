@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_clinic_pitching_dashboard_tree" model="ir.ui.view">
+        <field name="name">clinic.pitching.dashboard.tree</field>
+        <field name="model">patient.pitching</field>
+
+        <!-- ADD THIS LINE: High priority hides it from standard menus -->
+        <field name="priority" eval="999"/>
+
+        <field name="arch" type="xml">
+            <tree create="false" edit="false" delete="false">
+                <field name="patient_id" string="Patient Name"/>
+                <field name="pitching_type" string="Pitching Type"/>
+                <field name="create_uid" string="Created By"/>
+            </tree>
+        </field>
+    </record>
     <record id="view_patient_pitching_form" model="ir.ui.view">
         <field name="name">patient.pitching.form</field>
         <field name="model">patient.pitching</field>

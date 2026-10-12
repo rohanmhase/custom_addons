@@ -40,6 +40,10 @@ class PatientAssessment(models.Model):
     )
 
     vas_score = fields.Integer(string="VAS Score", required=True)
+    blood_test_pres = fields.Boolean(string="Blood-Test Prescribed")
+    date_btp = fields.Date(string="Expected Date")
+    xray_pres = fields.Boolean(string="X-Ray Prescribed")
+    date_xray = fields.Date(string="Expected Date")
 
     # 1. Define the default method
     def _default_assessment_lines(self):
