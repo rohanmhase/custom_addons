@@ -126,7 +126,6 @@ class MybillbookImportWizard(models.TransientModel):
         rows = self._read_csv()
 
         invoices_dict = {}
-        party_variants = {}  # key -> {normalized party: original party}
         clinics_in_csv = set()
         line_count = 0
         errors = []
@@ -160,8 +159,7 @@ class MybillbookImportWizard(models.TransientModel):
                 errors.append(f"Row {i}: Mobile '{mobile}' must be digits only, max 10 digits (Invoice {inv_no})")
 
             clinics_in_csv.add(clinic)
-            key = f"{clinic}||{inv_no}"
-            party_variants.setdefault(key, {}).setdefault(self._norm_name(party), party)
+            key = f"{clinic}||{inv_no}||{self._norm_name(party)}"
 
             if key not in invoices_dict:
                 invoices_dict[key] = {
@@ -184,15 +182,6 @@ class MybillbookImportWizard(models.TransientModel):
             })
             line_count += 1
 
-        # Same clinic + same invoice no but different party name (inside the file)
-        conflicts = []
-        for key, variants in party_variants.items():
-            if len(variants) > 1:
-                clinic, inv_no = key.split('||', 1)
-                conflicts.append("%s / Invoice %s: used for different parties -> %s" % (
-                    clinic, inv_no, ' | '.join("'%s'" % v for v in variants.values())))
-        # ... and against invoices already in the system
-        conflicts += self._db_party_conflicts(invoices_dict)
 
         existing = self._active_clinic_names(clinics_in_csv)
         missing = sorted(clinics_in_csv - existing)
@@ -240,7 +229,7 @@ class MybillbookImportWizard(models.TransientModel):
                 html.append(f"<li>... and {len(errors) - 30} more</li>")
             html.append("</ul>")
 
-        structurally_ok = bool(invoices_dict) and not errors and not conflicts
+        structurally_ok = bool(invoices_dict) and not errors
         can_import = structurally_ok and not missing
         can_override = structurally_ok and bool(missing)
 
@@ -274,11 +263,6 @@ class MybillbookImportWizard(models.TransientModel):
 
         invoices_dict = json.loads(self.parsed_data)
 
-        # Re-check party conflicts at import time (data may have changed since validation)
-        conflicts = self._db_party_conflicts(invoices_dict)
-        if conflicts:
-            raise ValidationError("Import blocked. Same invoice number with a different party name:\n"
-                                  + "\n".join(conflicts[:10]))
 
         # Re-check clinics at import time (they may have changed since validation)
         names = {inv['clinic_name'] for inv in invoices_dict.values()}
@@ -293,6 +277,7 @@ class MybillbookImportWizard(models.TransientModel):
             exists = Invoice.search([
                 ('invoice_no', '=', inv['invoice_no']),
                 ('clinic_name', '=', inv['clinic_name']),
+                ('party_name', '=', inv['party_name']),
                 ('active', '=', True),
             ], limit=1)
             if exists:
