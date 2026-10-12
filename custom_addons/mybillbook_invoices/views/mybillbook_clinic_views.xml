@@ -21,6 +21,7 @@
                 <field name="name"/>
                 <field name="mobile"/>
                 <field name="gstin"/>
+                <field name="place_of_supply"/> <!-- Added here -->
             </tree>
         </field>
     </record>
@@ -45,6 +46,7 @@
                         <group string="Contact">
                             <field name="mobile"/>
                             <field name="gstin"/>
+                            <field name="place_of_supply"/> <!-- Added here -->
                             <field name="address"/>
                         </group>
                         <group string="Bank Details (for PDF)">
