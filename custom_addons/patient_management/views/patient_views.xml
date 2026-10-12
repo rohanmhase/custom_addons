@@ -224,7 +224,6 @@
                         <field name="referred_doctor_name" invisible="patient_source != 'doctor'" required="1"/>
                         <field name="referred_by_patient_id"
                                invisible="patient_source != 'referral'"
-                               required="patient_source == 'referral'"
                                context="{'global_referral_search': True, 'current_referral_patient_id': id}"
                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
 
