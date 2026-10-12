@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_reference_tree" model="ir.ui.view">
+        <field name="name">patient.reference.tree</field>
+        <field name="model">patient.reference</field>
+        <field name="arch" type="xml">
+            <tree string="Patient References" editable="bottom">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="is_joined"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_patient_reference_form" model="ir.ui.view">
+        <field name="name">patient.reference.form</field>
+        <field name="model">patient.reference</field>
+        <field name="arch" type="xml">
+            <form string="Patient Reference">
+                <sheet>
+                    <group>
+                        <field name="patient_id" readonly="1"/>
+                        <field name="name"/>
+                        <field name="phone" maxlength="10"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

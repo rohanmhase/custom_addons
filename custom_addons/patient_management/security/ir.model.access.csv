@@ -62,3 +62,6 @@ access_patient_pitching_user,access.patient.pitching_user,model_patient_pitching
 
 access_enrollment_service_config_admin,access.enrollment.service.config.admin,model_patient_enrollment_service_config,clinic_management.group_clinic_administrator,1,1,1,1
 access_enrollment_service_config_user,access.enrollment.service.config.user,model_patient_enrollment_service_config,clinic_management.group_clinic_user,1,0,0,0
+
+access_patient_reference_administrator,access.patient.reference.administrator,model_patient_reference,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_reference_user,access.patient.reference.user,model_patient_reference,clinic_management.group_clinic_user,1,1,1,1
