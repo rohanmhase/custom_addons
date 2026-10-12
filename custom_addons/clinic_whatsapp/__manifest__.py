@@ -1,17 +1,21 @@
 {
     'name': 'Clinic WhatsApp Integration',
-    'version': '1.0',
+    'version': '17.0.4.0.0',
     'category': 'Healthcare',
-    'summary': 'Send WhatsApp notifications for bills and therapy appointments',
-    'depends': ['base', 'account', 'clinic_schedule'],
+    'summary': 'Meta WhatsApp Cloud API with multi-sender routing, versatile timing, and two-way replies',
+    'depends': ['base', 'account', 'clinic_schedule', 'clinic_management'],
     'data': [
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
+        'data/whatsapp_template_data.xml',
         'views/res_config_settings_views.xml',
-        'views/whatsapp_message_queue_views.xml',
+        'views/whatsapp_sender_phone_views.xml',
         'views/whatsapp_template_views.xml',
-
+        'views/whatsapp_message_queue_views.xml',
+        'views/whatsapp_message_reply_views.xml',
+        'views/clinic_views.xml',
     ],
     'installable': True,
+    'application': False,
     'license': 'LGPL-3',
 }

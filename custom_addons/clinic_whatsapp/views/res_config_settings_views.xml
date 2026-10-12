@@ -8,20 +8,49 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app data-string="WhatsApp" string="WhatsApp" name="clinic_whatsapp">
-                    <block title="WhatsAPP API Configuration" name="whatsapp_api_settings">
-                        <setting string="Gateway Credentials" help="Configure API server">
-                            <div class="content-group">
-                                <div class="row mt16">
-                                    <label for="whatsapp_api_url" class="col-lg-3 o_light_label"/>
-                                    <field name="whatsapp_api_url" placeholder="API"/>
-                                </div>
-                                <div class="row mt16">
-                                    <label for="whatsapp_api_key" class="col-lg-3 o_light_label"/>
-                                    <field name="whatsapp_api_key" placeholder="API KEY"/>
-                                </div>
-                            </div>
+
+                    <block title="Official Meta Cloud API Credentials" name="whatsapp_api_credentials">
+                        <setting id="meta_api_url_setting"
+                                 string="Meta Graph API Base URL"
+                                 help="Base endpoint for Graph API calls (Default: https://graph.facebook.com/v25.0)">
+                            <field name="whatsapp_api_url" placeholder="https://graph.facebook.com/v25.0"/>
+                        </setting>
+
+                        <setting id="meta_token_setting"
+                                 string="Permanent System User Token"
+                                 help="System User token with whatsapp_business_messaging and whatsapp_business_management permissions">
+                            <field name="whatsapp_api_key" password="True" placeholder="EAAP..."/>
+                        </setting>
+
+                        <setting id="meta_webhook_token_setting"
+                                 string="Webhook Verification Token"
+                                 help="Verification secret matching Meta Developer Console > WhatsApp > Configuration">
+                            <field name="whatsapp_verify_token" placeholder="clinic_wa_verify_2026"/>
                         </setting>
                     </block>
+
+                    <block title="Sender &amp; Account Identifiers" name="whatsapp_identifiers">
+                        <setting id="meta_phone_setting"
+                                 string="Default Sender Phone Number ID"
+                                 help="Phone Number ID for +91 87794 06969">
+                            <field name="whatsapp_default_phone_number_id" placeholder="1395062320356609"/>
+                        </setting>
+
+                        <setting id="meta_waba_setting"
+                                 string="WhatsApp Business Account (WABA) ID"
+                                 help="Account ID where templates and sender numbers are registered">
+                            <field name="whatsapp_waba_id" placeholder="1456832022990876"/>
+                        </setting>
+                    </block>
+
+                    <block title="Public Portal &amp; Invoice Link Settings" name="whatsapp_public_urls">
+                        <setting id="meta_public_url_setting"
+                                 string="Public Web Base URL"
+                                 help="Public domain used to construct invoice links. Replaces 127.0.0.1 so patients can open bills on mobile.">
+                            <field name="whatsapp_public_base_url" placeholder="https://erp.researchayu.com"/>
+                        </setting>
+                    </block>
+
                 </app>
             </xpath>
         </field>

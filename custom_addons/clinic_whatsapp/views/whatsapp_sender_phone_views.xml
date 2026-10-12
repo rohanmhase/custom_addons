@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_whatsapp_sender_phone_tree" model="ir.ui.view">
+        <field name="name">whatsapp.sender.phone.tree</field>
+        <field name="model">whatsapp.sender.phone</field>
+        <field name="arch" type="xml">
+            <tree string="Meta WhatsApp Sender Lines">
+                <field name="name"/>
+                <field name="phone_number"/>
+                <field name="phone_number_id"/>
+                <field name="is_default" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_whatsapp_sender_phone_form" model="ir.ui.view">
+        <field name="name">whatsapp.sender.phone.form</field>
+        <field name="model">whatsapp.sender.phone</field>
+        <field name="arch" type="xml">
+            <form string="Meta WhatsApp Sender Line">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Sender Line Name"/>
+                        <h1><field name="name" placeholder="e.g. Invoicing &amp; Billing Line"/></h1>
+                    </div>
+                    <group>
+                        <group string="Meta Numbers">
+                            <field name="phone_number" placeholder="e.g. +91 87794 06969"/>
+                            <field name="phone_number_id" placeholder="e.g. 1395062320356609"/>
+                            <field name="waba_id" placeholder="e.g. 1456832022990876"/>
+                        </group>
+                        <group string="Defaults &amp; Status">
+                            <field name="is_default"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" placeholder="Notes about SIM card, registration, or purpose..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_sender_phone" model="ir.actions.act_window">
+        <field name="name">Sender Numbers</field>
+        <field name="res_model">whatsapp.sender.phone</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_whatsapp_sender_phone"
+              name="Sender Numbers"
+              parent="menu_whatsapp_root"
+              action="action_whatsapp_sender_phone"
+              sequence="25"/>
+</odoo>

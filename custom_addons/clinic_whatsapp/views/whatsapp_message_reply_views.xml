@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_whatsapp_message_reply_tree" model="ir.ui.view">
+        <field name="name">whatsapp.message.reply.tree</field>
+        <field name="model">whatsapp.message.reply</field>
+        <field name="arch" type="xml">
+            <tree string="Inbound Patient Replies" create="false" decoration-info="reply_type == 'quick_reply'">
+                <field name="create_date" string="Received At"/>
+                <field name="patient_name"/>
+                <field name="phone"/>
+                <field name="clinic_id" string="Branch"/>
+                <field name="reply_type"/>
+                <field name="selected_option" string="Selected Option / Action" widget="badge"
+                       decoration-success="'confirm' in (selected_option or '').lower()"
+                       decoration-warning="'reschedule' in (selected_option or '').lower()"/>
+                <field name="message_body" optional="show"/>
+                <field name="res_model" string="Source Document" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_whatsapp_message_reply_search" model="ir.ui.view">
+        <field name="name">whatsapp.message.reply.search</field>
+        <field name="model">whatsapp.message.reply</field>
+        <field name="arch" type="xml">
+            <search string="Search Replies">
+                <field name="patient_name"/>
+                <field name="phone"/>
+                <field name="selected_option"/>
+                <filter string="Quick Reply Button" name="filter_quick_reply" domain="[('reply_type', '=', 'quick_reply')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Clinic Branch" name="group_by_clinic" context="{'group_by': 'clinic_id'}"/>
+                    <filter string="Selected Choice" name="group_by_option" context="{'group_by': 'selected_option'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_message_reply" model="ir.actions.act_window">
+        <field name="name">Inbound Replies &amp; Choices</field>
+        <field name="res_model">whatsapp.message.reply</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_whatsapp_message_reply_search"/>
+    </record>
+
+    <menuitem id="menu_whatsapp_reply"
+              name="Inbound Responses"
+              parent="menu_whatsapp_root"
+              action="action_whatsapp_message_reply"
+              sequence="15"/>
+</odoo>

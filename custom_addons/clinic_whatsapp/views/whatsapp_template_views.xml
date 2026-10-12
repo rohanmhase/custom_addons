@@ -4,14 +4,14 @@
         <field name="name">whatsapp.template.tree</field>
         <field name="model">whatsapp.template</field>
         <field name="arch" type="xml">
-            <tree string="WhatsApp Templates">
+            <tree string="Meta WhatsApp Templates">
                 <field name="name"/>
-                <field name="smartchat_template_name"/>
+                <field name="meta_template_name"/>
                 <field name="model_id"/>
-                <field name="dispatch_mode" widget="badge"
-                       decoration-success="dispatch_mode == 'immediate'"
-                       decoration-info="dispatch_mode == 'scheduled'"/>
-                <field name="header_type"/>
+                <field name="sender_phone_id" string="Sender Line"/>
+                <field name="dispatch_timing" widget="badge"/>
+                <field name="auto_send_on_post" widget="boolean_toggle" string="Auto-Send"/>
+                <field name="action_server_id" widget="boolean" string="Action Menu Active"/>
                 <field name="active" widget="boolean_toggle"/>
             </tree>
         </field>
@@ -21,53 +21,105 @@
         <field name="name">whatsapp.template.form</field>
         <field name="model">whatsapp.template</field>
         <field name="arch" type="xml">
-            <form string="WhatsApp Template">
+            <form string="Meta WhatsApp Template">
+                <header>
+                    <button name="action_create_action"
+                            string="Add to Action Menu"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="action_server_id"/>
+                    <button name="action_remove_action"
+                            string="Remove from Action Menu"
+                            type="object"
+                            invisible="not action_server_id"/>
+                </header>
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
                     <div class="oe_title">
                         <label for="name" string="Internal Name"/>
-                        <h1><field name="name" placeholder="e.g. Appointment Confirmation"/></h1>
+                        <h1><field name="name" placeholder="e.g. Patient Invoice Receipt"/></h1>
                     </div>
                     <group>
-                        <group string="SmartChat API Identifiers">
-                            <field name="smartchat_template_name" placeholder="e.g. therapy_comm"/>
-                            <field name="broadcast_name" placeholder="e.g. Appointment_Reminder"/>
+                        <group string="Meta Template &amp; Model">
+                            <field name="meta_template_name" placeholder="e.g. patient_invoice_receipt"/>
+                            <field name="language_code" placeholder="e.g. en"/>
                             <field name="model_id" options="{'no_create': True}"/>
                             <field name="model" invisible="1"/>
-                            <field name="phone_field" placeholder="e.g. patient_id.phone"/>
+                            <field name="phone_field" placeholder="partner_id.mobile,partner_id.phone"/>
+                            <field name="action_server_id" invisible="1"/>
                             <field name="active" invisible="1"/>
                         </group>
-                        <group string="Execution Timing &amp; Media">
-                            <field name="dispatch_mode"/>
-                            <field name="scheduled_delay_hours" invisible="dispatch_mode != 'scheduled'"/>
-                            <field name="header_type"/>
-                            <field name="header_media_url"
-                                   invisible="header_type == 'none'"
-                                   required="header_type != 'none'"
-                                   placeholder="e.g. https://domain.com/banner.png"/>
-                            <field name="has_button_url"/>
-                            <field name="button_url_suffix"
-                                   invisible="not has_button_url"
-                                   required="has_button_url"
-                                   placeholder="e.g. portal/invoice/{{ object.id }}"/>
+                        <group string="Sender Line Routing">
+                            <field name="sender_routing"/>
+                            <field name="sender_phone_id"
+                                   invisible="sender_routing != 'template'"
+                                   required="sender_routing == 'template'"/>
                         </group>
                     </group>
+
+                    <group string="Time &amp; Dispatch Scheduling">
+                        <group>
+                            <field name="dispatch_timing"/>
+                            <field name="auto_send_on_post"/>
+                        </group>
+                        <group>
+                            <!-- 1. Relative Delay -->
+                            <div invisible="dispatch_timing != 'relative_delay'" class="o_row">
+                                <span class="me-2">Send</span>
+                                <field name="delay_value" class="oe_inline" style="width: 70px;"/>
+                                <field name="delay_unit" class="oe_inline ms-2" style="width: 100px;"/>
+                                <span class="ms-2">after trigger</span>
+                            </div>
+
+                            <!-- 2. Fixed Time of Day -->
+                            <div invisible="dispatch_timing != 'time_of_day'" class="o_row">
+                                <span class="me-2">Send at</span>
+                                <field name="time_of_day_hour" widget="float_time" class="oe_inline"/>
+                                <span class="mx-2">(Day offset:</span>
+                                <field name="time_of_day_offset_days" class="oe_inline" style="width: 50px;"/>
+                                <span>days)</span>
+                            </div>
+
+                            <!-- 3. Record Datetime Offset -->
+                            <div invisible="dispatch_timing != 'field_offset'">
+                                <field name="record_date_field" placeholder="e.g. start_datetime or appointment_date"/>
+                                <div class="o_row mt-2">
+                                    <field name="record_offset_value" class="oe_inline" style="width: 60px;"/>
+                                    <field name="record_offset_unit" class="oe_inline ms-2" style="width: 90px;"/>
+                                    <field name="record_offset_direction" class="oe_inline ms-2"/>
+                                    <span class="ms-2">the scheduled field</span>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+
+                    <group string="Media &amp; Document Header">
+                        <group>
+                            <field name="header_type"/>
+                            <field name="header_document_url"
+                                   invisible="header_type != 'document'"
+                                   placeholder="{{ base_url }}/report/pdf/..."/>
+                            <field name="header_document_filename"
+                                   invisible="header_type != 'document'"/>
+                        </group>
+                    </group>
+
                     <notebook>
                         <page string="Dynamic Parameters ({{1}}, {{2}}...)">
                             <p class="text-muted small">
-                                Map positional variables matching your Meta-approved template. Expressions support
-                                <code>{{ object.field_name }}</code>, <code>{{ format_datetime(...) }}</code>, and <code>{{ format_date(...) }}</code>.
+                                Positional parameter expressions. Variables:
+                                <code>{{ object.field }}</code>, <code>{{ clinic.name }}</code>, <code>{{ clinic.phone }}</code>, <code>{{ format_date(...) }}</code>, <code>{{ format_datetime(...) }}</code>, and <code>{{ base_url }}</code>.
                             </p>
                             <field name="param_ids">
                                 <tree editable="bottom">
-                                    <field name="index" style="width: 100px;"/>
-                                    <field name="name" placeholder="e.g. Patient Name"/>
-                                    <field name="value_expression" placeholder="{{ object.patient_id.name }}"/>
+                                    <field name="index" style="width: 80px;"/>
+                                    <field name="name" placeholder="e.g. Patient Name, Amount"/>
+                                    <field name="value_expression" placeholder="{{ clinic.phone }}"/>
                                 </tree>
                             </field>
                         </page>
                         <page string="Message Preview / Fallback">
-                            <field name="body" placeholder="Informative text preview of what the message looks like..."/>
+                            <field name="body_preview" placeholder="Preview description..."/>
                         </page>
                     </notebook>
                 </sheet>
@@ -81,6 +133,7 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <menuitem id="menu_whatsapp_root" name="WhatsApp" sequence="65"/>
     <menuitem id="menu_whatsapp_template"
               name="Templates"
               parent="menu_whatsapp_root"

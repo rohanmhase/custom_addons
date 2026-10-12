@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_clinic_form_inherit_whatsapp" model="ir.ui.view">
+        <field name="name">clinic.clinic.form.inherit.whatsapp</field>
+        <field name="model">clinic.clinic</field>
+        <field name="inherit_id" ref="clinic_management.view_clinic_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="sender_phone_id" placeholder="Optional: Select Branch Sender WhatsApp Number"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
