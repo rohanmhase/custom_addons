@@ -27,7 +27,6 @@
                         <br/>
                         <b>Every clinic in the file must already exist under Configuration -> Clinics.</b>
                         <br/>
-                        <b>One invoice number must belong to one party per clinic. Conflicts block the import.</b>
                     </div>
                 </group>
 
