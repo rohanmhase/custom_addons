@@ -8,15 +8,17 @@ class AccountMove(models.Model):
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)
+
+        # Only target customer invoices (out_invoice), ignoring credit notes (out_refund)
         customer_invoices = posted.filtered(
-            lambda m: m.is_sale_document() and m.state == 'posted'
+            lambda m: m.move_type == 'out_invoice' and m.state == 'posted'
         )
         if not customer_invoices:
             return posted
 
-        # Dynamically trigger any template configured for account.move with auto_send_on_post enabled
-        auto_templates = self.env['whatsapp.template'].search([
-            ('model_id.model', '=', 'account.move'),
+        # Query using .sudo() and the stored 'model' field to bypass ir.model access checks
+        auto_templates = self.env['whatsapp.template'].sudo().search([
+            ('model', '=', 'account.move'),
             ('auto_send_on_post', '=', True),
             ('active', '=', True),
         ])
@@ -24,8 +26,12 @@ class AccountMove(models.Model):
         for template in auto_templates:
             for move in customer_invoices:
                 try:
-                    template.send_messages(move)
+                    template.sudo().send_messages(move)
                 except Exception as e:
-                    _logger.exception("Auto WhatsApp dispatch failed for invoice %s: %s", move.name, str(e))
+                    _logger.exception(
+                        "Auto WhatsApp dispatch failed for invoice %s: %s",
+                        move.name,
+                        str(e),
+                    )
 
         return posted

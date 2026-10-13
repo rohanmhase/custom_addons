@@ -212,7 +212,7 @@ if template.exists():
             return self.sender_phone_id.phone_number_id.strip()
 
         # 3. Default Sender Phone Record
-        default_sender = self.env['whatsapp.sender.phone'].search([('is_default', '=', True)], limit=1)
+        default_sender = self.env['whatsapp.sender.phone'].sudo().search([('is_default', '=', True)], limit=1)
         if default_sender and default_sender.phone_number_id:
             return default_sender.phone_number_id.strip()
 
