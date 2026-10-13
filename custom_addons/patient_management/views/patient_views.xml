@@ -193,7 +193,7 @@
                     <button name="action_open_patient_xray" type="object" string="View X-Rays"/>
                     <button name="action_open_consent" type="object" string="Consent Form" class="btn-secondary"/>
                     <button name="action_open_pitching" type="object" string="Pitching"/>
-                    <button name="action_open_reference" type="object" string="Reference"/>
+                    <button name="action_open_reference" type="object" string="Referral"/>
                 </header>
                 <sheet>
                     <group>
