@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+<<<<<<< Updated upstream
     <!-- 1. The Banner Component UI -->
     <t t-name="clinic_leaderboard.Banner" owl="1">
         <div t-if="state.show"
@@ -10,6 +11,17 @@
                 <div class="d-flex flex-column">
                     <span class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">My Current Performance</span>
                     <div class="d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+=======
+    <t t-name="clinic_leaderboard.Banner" owl="1">
+        <div t-if="state.show" class="w-100 bg-white border-bottom shadow-sm px-3 py-2 d-flex flex-column mb-2 gap-2">
+
+            <!-- TOP ROW: Logged-in User Stats -->
+            <div class="d-flex align-items-center">
+                <span class="fs-1 me-3 text-muted">👤</span>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">My Performance</span>
+                    <div class="d-flex flex-wrap gap-2" style="font-size: 0.9rem;">
+>>>>>>> Stashed changes
                         <span class="badge rounded-pill text-bg-info text-white shadow-sm px-2 py-1">
                             Recovery: <t t-esc="state.dailyRecovery"/>%
                         </span>
@@ -17,12 +29,17 @@
                             20-40% Ext: <t t-esc="state.ext2040"/>%
                         </span>
                         <span class="badge rounded-pill text-bg-secondary shadow-sm px-2 py-1">
+<<<<<<< Updated upstream
                             <t t-esc="state.totalTherapies"/>
                             Therapies
+=======
+                            <t t-esc="state.totalTherapies"/> Therapies
+>>>>>>> Stashed changes
                         </span>
                     </div>
                 </div>
             </div>
+<<<<<<< Updated upstream
         </div>
     </t>
 
@@ -37,3 +54,28 @@
         </xpath>
     </t>
 </templates>
+=======
+
+            <!-- BOTTOM ROW: Department Top Performers Marquee -->
+            <div class="w-100 overflow-hidden d-flex align-items-center border-top pt-2">
+                <span class="fs-4 me-2" t-att-title="'Top Performers in ' + state.departmentName">🏆</span>
+
+                <marquee behavior="scroll" direction="left" class="fw-bold mb-0 d-flex align-items-center mt-1" style="color: #714B67; font-size: 0.95rem; line-height: 1.5;">
+                    <!-- Dynamically shows their department name so they know it is filtered -->
+                    <span class="me-4 text-dark border-end pe-3 border-secondary">Top Performers (<t t-esc="state.departmentName"/>)</span>
+
+                    <span class="me-5">🥇 Daily Recovery: <t t-esc="state.topDailyText"/></span>
+                    <span>🥇 20-40% Extension: <t t-esc="state.topRSText"/></span>
+                </marquee>
+            </div>
+
+        </div>
+    </t>
+
+    <t t-inherit="web.Layout" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[contains(@class, 'o_content')]" position="before">
+            <ClinicLeaderboardBanner />
+        </xpath>
+    </t>
+</templates>
+>>>>>>> Stashed changes
