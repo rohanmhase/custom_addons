@@ -103,19 +103,29 @@ class MybillbookImportWizard(models.TransientModel):
         except (ValueError, TypeError):
             return False
 
-    def _db_party_conflicts(self, invoices_dict):
-        """Same clinic + same invoice no already in DB (active) but with a different party."""
+    def _existing_invoices(self, invoices_dict):
+        """One query per clinic: {(clinic, invoice_no): record} for ACTIVE invoices already in DB."""
+        by_clinic = {}
+        for inv in invoices_dict.values():
+            by_clinic.setdefault(inv['clinic_name'], set()).add(inv['invoice_no'])
         Invoice = self.env['mybillbook.invoice']
+        found = {}
+        for clinic, nos in by_clinic.items():
+            for ex in Invoice.search_read(
+                    [('clinic_name', '=', clinic), ('invoice_no', 'in', list(nos)), ('active', '=', True)],
+                    ['invoice_no', 'party_name', 'party_mobile', 'notes']):
+                found.setdefault((clinic, ex['invoice_no']), ex)
+        return found
+
+    def _db_party_conflicts(self, invoices_dict, existing=None):
+        if existing is None:
+            existing = self._existing_invoices(invoices_dict)
         out = []
         for inv in invoices_dict.values():
-            ex = Invoice.search([
-                ('invoice_no', '=', inv['invoice_no']),
-                ('clinic_name', '=', inv['clinic_name']),
-                ('active', '=', True),
-            ], limit=1)
-            if ex and self._norm_name(ex.party_name) != self._norm_name(inv['party_name']):
+            ex = existing.get((inv['clinic_name'], inv['invoice_no']))
+            if ex and self._norm_name(ex['party_name']) != self._norm_name(inv['party_name']):
                 out.append("%s / Invoice %s: file has '%s' but system already has '%s'" % (
-                    inv['clinic_name'], inv['invoice_no'], inv['party_name'], ex.party_name))
+                    inv['clinic_name'], inv['invoice_no'], inv['party_name'], ex['party_name']))
         return out
 
     # ------------------------------------------------------------------ validate
@@ -183,14 +193,14 @@ class MybillbookImportWizard(models.TransientModel):
                 'amount': self._to_float(row.get('Amount')),
             })
             line_count += 1
-            conflicts = []
-            for key, variants in party_variants.items():
-                if len(variants) > 1:
-                    clinic, inv_no = key.split('||', 1)
-                    conflicts.append("%s / Invoice %s: used for different parties -> %s" % (
-                        clinic, inv_no, ' | '.join("'%s'" % v for v in variants.values())))
-            conflicts += self._db_party_conflicts(invoices_dict)
 
+        conflicts = []
+        for key, variants in party_variants.items():
+            if len(variants) > 1:
+                clinic, inv_no = key.split('||', 1)
+                conflicts.append("%s / Invoice %s: used for different parties -> %s" % (
+                    clinic, inv_no, ' | '.join("'%s'" % v for v in variants.values())))
+        conflicts += self._db_party_conflicts(invoices_dict)
 
         existing = self._active_clinic_names(clinics_in_csv)
         missing = sorted(clinics_in_csv - existing)
@@ -270,11 +280,11 @@ class MybillbookImportWizard(models.TransientModel):
             raise ValidationError("Please Validate the CSV first. Import is blocked until validation succeeds.")
 
         invoices_dict = json.loads(self.parsed_data)
-        conflicts = self._db_party_conflicts(invoices_dict)
+        existing = self._existing_invoices(invoices_dict)
+        conflicts = self._db_party_conflicts(invoices_dict, existing)
         if conflicts:
             raise ValidationError("Import blocked. Same invoice number with a different party name:\n"
                                   + "\n".join(conflicts[:10]))
-
 
         # Re-check clinics at import time (they may have changed since validation)
         names = {inv['clinic_name'] for inv in invoices_dict.values()}
@@ -283,34 +293,21 @@ class MybillbookImportWizard(models.TransientModel):
             raise UserError("Import blocked. These clinics are not configured: " + ", ".join(missing))
 
         Invoice = self.env['mybillbook.invoice']
-        created, skipped = 0, 0
+        skipped = 0
+        to_create = []
         for inv in invoices_dict.values():
-            # Only ACTIVE invoices count as duplicates. Archived / deleted ones are ignored.
-            exists = Invoice.search([
-                ('invoice_no', '=', inv['invoice_no']),
-                ('clinic_name', '=', inv['clinic_name']),
-                ('active', '=', True),
-            ], limit=1)
-            if exists:
+            ex = existing.get((inv['clinic_name'], inv['invoice_no']))
+            if ex:
                 upd = {}
-                if inv.get('party_mobile') and not exists.party_mobile:
+                if inv.get('party_mobile') and not ex['party_mobile']:
                     upd['party_mobile'] = inv['party_mobile']
-                if inv.get('notes') and not exists.notes:
+                if inv.get('notes') and not ex['notes']:
                     upd['notes'] = inv['notes']
                 if upd:
-                    exists.sudo().write(upd)
+                    Invoice.browse(ex['id']).sudo().write(upd)
                 skipped += 1
                 continue
-
-            lines = [(0, 0, {
-                'item_name': l['item_name'],
-                'quantity_str': l['quantity_str'],
-                'quantity_num': l['quantity_num'],
-                'rate': l['rate'],
-                'amount': l['amount'],
-            }) for l in inv['lines']]
-
-            Invoice.create({
+            to_create.append({
                 'invoice_no': inv['invoice_no'],
                 'date': inv['date'] or False,
                 'party_name': inv['party_name'],
@@ -318,9 +315,17 @@ class MybillbookImportWizard(models.TransientModel):
                 'payment_mode': inv['payment_mode'],
                 'clinic_name': inv['clinic_name'],
                 'notes': inv['notes'],
-                'line_ids': lines,
+                'line_ids': [(0, 0, {
+                    'item_name': l['item_name'],
+                    'quantity_str': l['quantity_str'],
+                    'quantity_num': l['quantity_num'],
+                    'rate': l['rate'],
+                    'amount': l['amount'],
+                }) for l in inv['lines']],
             })
-            created += 1
+        for k in range(0, len(to_create), 500):
+            Invoice.create(to_create[k:k + 500])
+        created = len(to_create)
 
         msg = f"Created: {created} invoices | Skipped duplicates: {skipped} | Lines: {self.total_lines}"
         if override and missing:

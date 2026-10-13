@@ -168,12 +168,13 @@ class MybillbookInvoice(models.Model):
     @api.depends('clinic_name')
     def _compute_clinic(self):
         Clinic = self.env['mybillbook.clinic'].sudo().with_context(active_test=False)
+        names = {r.clinic_name for r in self if r.clinic_name}
+        best = {}
+        for c in Clinic.search([('name', 'in', list(names))]).sorted(
+                key=lambda c: (c.ui_deleted, not c.active, -c.id)):
+            best.setdefault(c.name, c)
         for rec in self:
-            clinic = Clinic.browse()
-            if rec.clinic_name:
-                cands = Clinic.search([('name', '=', rec.clinic_name)])
-                clinic = cands.sorted(key=lambda c: (c.ui_deleted, not c.active, -c.id))[:1]
-            rec.clinic_id = clinic.id if clinic else False
+            rec.clinic_id = best[rec.clinic_name].id if rec.clinic_name in best else False
 
     @api.depends('total_amount')
     def _compute_words(self):
