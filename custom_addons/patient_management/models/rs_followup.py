@@ -315,7 +315,7 @@ class Patient(models.Model):
         show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
-            "name": "Assessment",
+            "name": "RS Followup",
             "res_model": "patient.assessment",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],

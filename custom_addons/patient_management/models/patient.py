@@ -728,12 +728,12 @@ class Patient(models.Model):
         }
 
     def action_open_daily_followup(self):
-        """Open Daily Followup related to this patient"""
+        """Open CS Followup related to this patient"""
         user = self.env.user
         show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
-            "name": "Daily Followup",
+            "name": "CS Followup",
             "res_model": "patient.daily_followup",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
@@ -883,7 +883,7 @@ class Patient(models.Model):
         show_all = user.has_group('clinic_management.group_show_inactive_reports')
         return {
             "type": "ir.actions.act_window",
-            "name": "Reference",
+            "name": "Referral",
             "res_model": "patient.reference",
             "view_mode": "tree,form",
             "domain": [("patient_id", "=", self.id)],
