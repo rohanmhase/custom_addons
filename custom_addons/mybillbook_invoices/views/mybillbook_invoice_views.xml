@@ -76,7 +76,9 @@
                                 <tree create="0" edit="0" delete="0">
                                     <field name="item_name"/>
                                     <field name="quantity_str" string="Qty"/>
-                                    <field name="rate"/>
+                                                                        <field name="rate"/>
+                                    <field name="discount"/>
+                                    <field name="discount_pct"/>
                                     <field name="amount" sum="Total"/>
                                 </tree>
                             </field>

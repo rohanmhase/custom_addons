@@ -201,6 +201,71 @@ class MybillbookInvoiceLine(models.Model):
     amount = fields.Float('Amount')
     quantity_display = fields.Char('Qty (Print)', compute='_compute_quantity_display')
 
+
+    # Discount is NEVER uploaded. It is derived: (Price/Unit x Qty) - Amount, when > 0.
+    discount = fields.Float('Discount', default=0.0)
+    discount_pct = fields.Float('Discount %', default=0.0)
+    discount_pct_display = fields.Char('Discount % (Print)', compute='_compute_discount_pct_display')
+
+    @api.depends('discount_pct')
+    def _compute_discount_pct_display(self):
+        for line in self:
+            line.discount_pct_display = ('%.2f' % line.discount_pct).rstrip('0').rstrip('.') \
+                if line.discount_pct else ''
+
+    _DISCOUNT_RECALC_SQL = """
+        WITH calc AS (
+            SELECT id,
+                   (rate * quantity_num)::numeric AS gross,
+                   ROUND((rate * quantity_num)::numeric - amount::numeric, 2) AS d
+              FROM mybillbook_invoice_line
+             WHERE quantity_num > 0 AND rate > 0
+        ), calc2 AS (
+            SELECT id,
+                   CASE WHEN d >= 0.01 THEN d ELSE 0 END AS disc,
+                   CASE WHEN d >= 0.01 THEN ROUND(d / gross * 100, 2) ELSE 0 END AS pct
+              FROM calc
+        )
+        UPDATE mybillbook_invoice_line l
+           SET discount = c.disc, discount_pct = c.pct
+          FROM calc2 c
+         WHERE l.id = c.id
+           AND (COALESCE(l.discount, 0) <> c.disc OR COALESCE(l.discount_pct, 0) <> c.pct)
+    """
+    _DISCOUNT_CLEAR_SQL = """
+        UPDATE mybillbook_invoice_line
+           SET discount = 0, discount_pct = 0
+         WHERE (COALESCE(discount, 0) <> 0 OR COALESCE(discount_pct, 0) <> 0)
+           AND NOT (quantity_num > 0 AND rate > 0)
+    """
+
+    @api.model
+    def recalculate_all_discounts(self):
+        self.env['mybillbook.invoice.line'].check_access_rights('write')
+        cr = self.env.cr
+        cr.execute(self._DISCOUNT_RECALC_SQL)
+        changed = cr.rowcount
+        cr.execute(self._DISCOUNT_CLEAR_SQL)
+        changed += cr.rowcount
+        self.invalidate_model(['discount', 'discount_pct'])
+        return changed
+
+    @api.model
+    def discount_stats(self):
+        cr = self.env.cr
+        cr.execute("SELECT COUNT(*) FROM mybillbook_invoice_line")
+        total = cr.fetchone()[0]
+        cr.execute("""
+            SELECT COUNT(*) FROM mybillbook_invoice_line
+             WHERE quantity_num > 0 AND rate > 0
+               AND ROUND((rate * quantity_num)::numeric - amount::numeric, 2) >= 0.01""")
+        qualify = cr.fetchone()[0]
+        cr.execute("""
+            SELECT COUNT(*) FROM mybillbook_invoice_line
+             WHERE COALESCE(discount, 0) > 0""")
+        stored = cr.fetchone()[0]
+        return total, qualify, stored
+
     @api.depends('quantity_str', 'quantity_num')
     def _compute_quantity_display(self):
         for line in self:

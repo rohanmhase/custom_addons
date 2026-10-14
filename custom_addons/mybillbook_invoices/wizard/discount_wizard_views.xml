@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mybillbook_discount_wizard" model="ir.ui.view">
+        <field name="name">mybillbook.discount.wizard.form</field>
+        <field name="model">mybillbook.discount.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Calculate Discounts">
+                <div class="alert alert-info" role="alert">
+                    <b>Discount = (Price/Unit x Qty) - Amount</b>, only when the result is more than 0.
+                    <br/>
+                    Quantity text like "1 PC" or "1 NONE" is read as the number 1. Amounts and totals are never changed.
+                    <br/>
+                    Safe to run again at any time. New CSV imports calculate discounts automatically.
+                </div>
+                <group>
+                    <field name="total_lines"/>
+                    <field name="qualify_lines"/>
+                    <field name="stored_lines"/>
+                </group>
+                <footer>
+                    <button string="Calculate Discounts Now" name="action_calculate" type="object"
+                            class="btn-primary"
+                            groups="mybillbook_invoices.group_mybillbook_admin"
+                            confirm="This recalculates the discount for every invoice line in the database. Continue?"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mybillbook_discount_wizard" model="ir.actions.act_window">
+        <field name="name">Calculate Discounts</field>
+        <field name="res_model">mybillbook.discount.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_mybillbook_discount"
+              name="Calculate Discounts (Existing Invoices)"
+              parent="menu_mybillbook_config"
+              action="action_mybillbook_discount_wizard"
+              sequence="5"
+              groups="mybillbook_invoices.group_mybillbook_admin"/>
+</odoo>
