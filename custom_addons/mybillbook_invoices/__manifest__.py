@@ -12,6 +12,7 @@
         'wizard/import_wizard_views.xml',
         'views/mybillbook_invoice_views.xml',
         'views/mybillbook_clinic_views.xml',
+        'wizard/discount_wizard_views.xml',
     ],
     'installable': True,
     'application': True,

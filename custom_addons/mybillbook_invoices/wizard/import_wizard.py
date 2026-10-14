@@ -49,8 +49,25 @@ class MybillbookImportWizard(models.TransientModel):
     def _parse_qty(self, qty_str):
         if not qty_str:
             return 0.0
-        match = re.search(r'[\d.]+', str(qty_str))
-        return float(match.group()) if match else 0.0
+        # Works for '1', '1 PC', '1 NONE', '2.5 KG', '1,000 PCS' -> only the leading number is used.
+        match = re.search(r'\d[\d,]*(?:\.\d+)?|\.\d+', str(qty_str))
+        if not match:
+            return 0.0
+        try:
+            return float(match.group().replace(',', ''))
+        except ValueError:
+            return 0.0
+
+    @staticmethod
+    def _calc_discount(rate, qty, amount):
+        """Auto discount = (rate x qty) - amount, only when positive. Returns (discount, discount_pct)."""
+        if qty <= 0 or rate <= 0:
+            return 0.0, 0.0
+        gross = rate * qty
+        disc = round(gross - amount, 2)
+        if disc < 0.01:
+            return 0.0, 0.0
+        return disc, round(disc / gross * 100, 2)
 
     def _to_float(self, value):
         try:
@@ -185,12 +202,18 @@ class MybillbookImportWizard(models.TransientModel):
                     'lines': [],
                 }
 
+            qty_num = self._parse_qty(row.get('Quantity'))
+            rate_val = self._to_float(row.get('Price/Unit'))
+            amount_val = self._to_float(row.get('Amount'))
+            disc, disc_pct = self._calc_discount(rate_val, qty_num, amount_val)
             invoices_dict[key]['lines'].append({
                 'item_name': (row.get('Item Name') or '').strip(),
                 'quantity_str': (row.get('Quantity') or '').strip(),
-                'quantity_num': self._parse_qty(row.get('Quantity')),
-                'rate': self._to_float(row.get('Price/Unit')),
-                'amount': self._to_float(row.get('Amount')),
+                'quantity_num': qty_num,
+                'rate': rate_val,
+                'amount': amount_val,
+                'discount': disc,
+                'discount_pct': disc_pct,
             })
             line_count += 1
 
@@ -321,6 +344,8 @@ class MybillbookImportWizard(models.TransientModel):
                     'quantity_num': l['quantity_num'],
                     'rate': l['rate'],
                     'amount': l['amount'],
+                    'discount': l.get('discount', 0.0),
+                    'discount_pct': l.get('discount_pct', 0.0),
                 }) for l in inv['lines']],
             })
         for k in range(0, len(to_create), 500):

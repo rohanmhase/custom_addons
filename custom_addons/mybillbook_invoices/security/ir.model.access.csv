@@ -8,3 +8,4 @@ access_line_user,line.user,model_mybillbook_invoice_line,group_mybillbook_user,1
 access_line_mod,line.mod,model_mybillbook_invoice_line,group_mybillbook_moderator,1,0,1,0
 access_line_admin,line.admin,model_mybillbook_invoice_line,group_mybillbook_admin,1,1,1,1
 access_wizard_mod,wizard.mod,model_mybillbook_import_wizard,group_mybillbook_admin,1,1,1,1
+access_discount_wizard,discount.wizard,model_mybillbook_discount_wizard,group_mybillbook_admin,1,1,1,1
