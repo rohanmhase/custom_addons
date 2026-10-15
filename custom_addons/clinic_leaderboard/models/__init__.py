@@ -1,1 +1,1 @@
-from . import clinic_daily_leaderboard, clinic_rs_leaderboard
+from . import clinic_daily_leaderboard

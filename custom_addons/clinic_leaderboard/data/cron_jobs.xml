@@ -1,27 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        <record id="ir_cron_update_clinic_leaderboard" model="ir.cron">
-            <field name="name">Clinic Leaderboard: Daily Update</field>
-            <field name="model_id" ref="model_clinic_daily_leaderboard"/>
+
+        <record id="cron_update_metrics_topper" model="ir.cron">
+            <field name="name">Leaderboard: Update Metrics Toppers</field>
+            <field name="model_id" ref="model_clinic_leaderboard_metrics_topper"/>
             <field name="state">code</field>
-            <field name="code">model._cron_update_leaderboard()</field>
+            <field name="code">model._cron_update_metrics_toppers()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
-            <field name="doall" eval="False"/>
-            <field name="nextcall" eval="(DateTime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active" eval="True"/>
         </record>
 
-        <record id="ir_cron_update_rs_leaderboard" model="ir.cron">
-            <field name="name">RS Metrics Leaderboard: Daily Update</field>
-            <field name="model_id" ref="model_clinic_rs_leaderboard"/>
+        <record id="cron_update_metrics_user" model="ir.cron">
+            <field name="name">Leaderboard: Update Metrics Users</field>
+            <field name="model_id" ref="model_clinic_leaderboard_metrics_user"/>
             <field name="state">code</field>
-            <field name="code">model._cron_update_rs_leaderboard()</field>
+            <field name="code">model._cron_update_metrics_users()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
-            <field name="doall" eval="False"/>
-            <field name="nextcall" eval="(DateTime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active" eval="True"/>
         </record>
+
+        <record id="cron_update_extension_topper" model="ir.cron">
+            <field name="name">Leaderboard: Update Extension Topper</field>
+            <field name="model_id" ref="model_clinic_leaderboard_extension_topper"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_extension_topper()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_update_extension_user" model="ir.cron">
+            <field name="name">Leaderboard: Update Extension Users</field>
+            <field name="model_id" ref="model_clinic_leaderboard_extension_user"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_extension_users()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>

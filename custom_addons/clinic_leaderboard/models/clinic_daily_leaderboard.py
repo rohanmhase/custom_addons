@@ -5,57 +5,158 @@ from odoo import models, fields, api
 _logger = logging.getLogger(__name__)
 
 
-class ClinicDailyLeaderboard(models.Model):
-    _name = 'clinic.daily.leaderboard'
-    _description = 'Daily Clinic Leaderboard Cache'
+# =========================================================================
+# TABLE 1: Top 3 Performers (VAS, Therapies, Recovery)
+# =========================================================================
+class ClinicLeaderboardMetricsTopper(models.Model):
+    _name = 'clinic.leaderboard.metrics.topper'
+    _description = 'Metrics Toppers'
 
-    doctor_id = fields.Many2one('res.users', string="Doctor User")
-    doctor_name = fields.Char(string="Therapy Doctor")
-    clinics_handled = fields.Char(string="Clinics Handled")
-    total_pt = fields.Integer(string="Total PT")
-    eligible_pt = fields.Integer(string="Eligible PT")
+    doctor_id = fields.Integer(string="Doctor ID")
+    doctor_name = fields.Char(string="Doctor Name")
+    score = fields.Float(string="Score")
+    category = fields.Char(string="Category")
+
+    @api.model
+    def _cron_update_metrics_toppers(self):
+        url = "https://reports.researchayu.com/public/question/188cb47b-d1a4-48fe-bc47-d9c3e3eb8194.json"
+        try:
+            results = requests.get(url, timeout=30).json()
+            self.search([]).unlink()
+
+            vals = [{
+                'doctor_id': r.get('doctor_id'),
+                'doctor_name': r.get('RS Name') or 'Unknown',
+                'score': r.get('Score') or 0.0,
+                'category': r.get('Category') or 'Unknown'
+            } for r in results if r.get('doctor_id')]
+
+            if vals: self.create(vals)
+        except Exception as e:
+            _logger.error(f"Metrics Toppers failed: {e}")
+
+
+# =========================================================================
+# TABLE 2: All Users (VAS, Therapies, Recovery)
+# =========================================================================
+class ClinicLeaderboardMetricsUser(models.Model):
+    _name = 'clinic.leaderboard.metrics.user'
+    _description = 'All Users Metrics'
+
+    doctor_id = fields.Integer(string="Doctor ID")
+    doctor_name = fields.Char(string="Doctor Name")
+    total_therapies = fields.Integer(string="Total Therapies")
     recovery_percent = fields.Float(string="Recovery %")
+    prev_recovery_percent = fields.Float(string="Prev Recovery %")
     vas_percent = fields.Float(string="VAS %")
 
     @api.model
-    def _cron_update_leaderboard(self):
-        """ Fetch data from Metabase public JSON link and rebuild the leaderboard """
-        metabase_json_url = "https://reports.researchayu.com/public/question/f9f5b6a5-9757-405c-84f5-114c3ae5e30b.json"
-
+    def _cron_update_metrics_users(self):
+        url = "https://reports.researchayu.com/public/question/f9f5b6a5-9757-405c-84f5-114c3ae5e30b.json"
         try:
-            response = requests.get(metabase_json_url, timeout=30)
-            response.raise_for_status()
-            metabase_results = response.json()
-
-            # Clear existing data only if the fetch was successful
-            self.search([]).unlink()
-
-            # 1. Extract all raw doctor IDs from the Metabase payload
-            raw_doctor_ids = [row.get('doctor_id') for row in metabase_results if row.get('doctor_id')]
-
-            # 2. Query Odoo to find which of these IDs actually exist in res_users
-            existing_users = self.env['res.users'].search([('id', 'in', raw_doctor_ids)])
-            valid_user_ids = set(existing_users.mapped('id'))
+            results = requests.get(url, timeout=30).json()
+            existing = {rec.doctor_id: rec for rec in self.search([])}
 
             vals_list = []
-            for index, row in enumerate(metabase_results):
-                raw_id = row.get('doctor_id')
+            for r in results:
+                d_id = r.get('doctor_id')
+                if not d_id: continue
 
-                # 3. If the ID is not in Odoo, assign False to avoid the Foreign Key Violation
-                safe_doctor_id = raw_id if raw_id in valid_user_ids else False
+                new_rec = r.get('Total Recovery %') or 0.0
+                if d_id in existing:
+                    rec = existing.pop(d_id)
+                    rec.write({
+                        'prev_recovery_percent': rec.recovery_percent,
+                        'recovery_percent': new_rec,
+                        'vas_percent': r.get('VAS %') or 0.0,
+                        'total_therapies': r.get('Total Therapies') or 0
+                    })
+                else:
+                    vals_list.append({
+                        'doctor_id': d_id,
+                        'doctor_name': r.get('RS Name') or 'Unknown',
+                        'recovery_percent': new_rec,
+                        'prev_recovery_percent': new_rec,
+                        'vas_percent': r.get('VAS %') or 0.0,
+                        'total_therapies': r.get('Total Therapies') or 0
+                    })
 
-                vals_list.append({
-                    'doctor_id': safe_doctor_id,
-                    'doctor_name': row.get('Therapy Doctor') or 'Unknown',
-                    'clinics_handled': row.get('Clinics Handled') or '',
-                    'total_pt': row.get('Total PT Handled') or 0,
-                    'eligible_pt': row.get('Eligible PT') or 0,
-                    'recovery_percent': row.get('Overall Recovery %') or 0.0,
-                    'vas_percent': row.get('VAS %') or 0.0,
-                })
+            if vals_list: self.create(vals_list)
+            if existing: self.browse([rec.id for rec in existing.values()]).unlink()
+        except Exception as e:
+            _logger.error(f"Metrics Users failed: {e}")
 
-            if vals_list:
-                self.create(vals_list)
 
-        except requests.exceptions.RequestException as e:
-            _logger.error(f"Failed to fetch leaderboard data from Metabase: {e}")
+# =========================================================================
+# TABLE 3: Top Performer (20-40% Extension)
+# =========================================================================
+class ClinicLeaderboardExtensionTopper(models.Model):
+    _name = 'clinic.leaderboard.extension.topper'
+    _description = 'Extension Topper'
+
+    doctor_id = fields.Integer(string="Doctor ID")
+    doctor_name = fields.Char(string="Doctor Name")
+    score = fields.Float(string="Score")
+    category = fields.Char(string="Category", default="20-40%")
+
+    @api.model
+    def _cron_update_extension_topper(self):
+        url = "https://reports.researchayu.com/public/question/ccd4d2d0-f140-46e7-b340-de6aa5124b85.json"
+        try:
+            results = requests.get(url, timeout=30).json()
+            self.search([]).unlink()
+
+            vals = [{
+                'doctor_id': r.get('doctor_id'),
+                'doctor_name': r.get('RS Name') or 'Unknown',
+                'score': r.get('Score') or r.get('20-40%') or 0.0,
+            } for r in results if r.get('doctor_id')]
+
+            if vals: self.create(vals)
+        except Exception as e:
+            _logger.error(f"Extension Topper failed: {e}")
+
+
+# =========================================================================
+# TABLE 4: All Users (20-40% Extension)
+# =========================================================================
+class ClinicLeaderboardExtensionUser(models.Model):
+    _name = 'clinic.leaderboard.extension.user'
+    _description = 'All Users Extension'
+
+    doctor_id = fields.Integer(string="Doctor ID")
+    doctor_name = fields.Char(string="Doctor Name")
+    extension_percent = fields.Float(string="20-40% Extension")
+    prev_extension_percent = fields.Float(string="Prev 20-40% Extension")
+
+    @api.model
+    def _cron_update_extension_users(self):
+        url = "https://reports.researchayu.com/public/question/b57115d8-1b47-42e9-b4c9-2c7ab96b486d.json"
+        try:
+            results = requests.get(url, timeout=30).json()
+            existing = {rec.doctor_id: rec for rec in self.search([])}
+
+            vals_list = []
+            for r in results:
+                d_id = r.get('doctor_id')
+                if not d_id: continue
+
+                new_ext = r.get('20-40%') or 0.0
+                if d_id in existing:
+                    rec = existing.pop(d_id)
+                    rec.write({
+                        'prev_extension_percent': rec.extension_percent,
+                        'extension_percent': new_ext,
+                    })
+                else:
+                    vals_list.append({
+                        'doctor_id': d_id,
+                        'doctor_name': r.get('RS Name') or 'Unknown',
+                        'extension_percent': new_ext,
+                        'prev_extension_percent': new_ext,
+                    })
+
+            if vals_list: self.create(vals_list)
+            if existing: self.browse([rec.id for rec in existing.values()]).unlink()
+        except Exception as e:
+            _logger.error(f"Extension Users failed: {e}")
