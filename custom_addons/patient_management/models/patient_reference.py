@@ -47,6 +47,14 @@ class PatientReference(models.Model):
 
     active = fields.Boolean(default=True)
 
+    _sql_constraints = [
+        (
+            "unique_referrer_phone",
+            "unique(patient_id, phone)",
+            "This mobile number has already been referred by this patient."
+        ),
+    ]
+
     @api.model
     def _registered_patient_exists(self, phone):
         normalized_phone = _normalize_mobile(phone)
