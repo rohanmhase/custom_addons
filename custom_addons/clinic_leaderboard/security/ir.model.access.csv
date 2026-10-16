@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_metrics_topper,clinic.leaderboard.metrics.topper,model_clinic_leaderboard_metrics_topper,base.group_user,1,0,0,0
+access_metrics_user,clinic.leaderboard.metrics.user,model_clinic_leaderboard_metrics_user,base.group_user,1,0,0,0
+access_extension_topper,clinic.leaderboard.extension.topper,model_clinic_leaderboard_extension_topper,base.group_user,1,0,0,0
+access_extension_user,clinic.leaderboard.extension.user,model_clinic_leaderboard_extension_user,base.group_user,1,0,0,0
+access_metrics_topper_admin,clinic.leaderboard.metrics.topper (admin),model_clinic_leaderboard_metrics_topper,base.group_system,1,1,1,1
+access_metrics_user_admin,clinic.leaderboard.metrics.user (admin),model_clinic_leaderboard_metrics_user,base.group_system,1,1,1,1
+access_extension_topper_admin,clinic.leaderboard.extension.topper (admin),model_clinic_leaderboard_extension_topper,base.group_system,1,1,1,1
+access_extension_user_admin,clinic.leaderboard.extension.user (admin),model_clinic_leaderboard_extension_user,base.group_system,1,1,1,1

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="clinic_leaderboard.Banner" owl="1">
+        <div t-if="state.show" class="w-100 bg-white border-bottom shadow-sm px-3 py-2 d-flex flex-column mb-2 gap-2">
+
+            <div class="d-flex align-items-center">
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">My Performance</span>
+
+                    <div class="d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                        <t t-foreach="state.myMetrics" t-as="metric" t-key="metric.label">
+                            <span t-attf-class="badge rounded-pill shadow-sm px-2 py-1 {{ metric.color }}">
+                                <t t-esc="metric.label"/>: <t t-esc="metric.value"/>
+                                <span class="ms-1 fw-bolder"><t t-esc="metric.icon"/></span>
+                            </span>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-100 overflow-hidden d-flex align-items-center border-top pt-2">
+                <span class="fs-4 me-2" t-att-title="'Top Performers in ' + state.departmentName"/>
+
+                <marquee behavior="scroll" direction="left" class="fw-bold mb-0 d-flex align-items-center mt-1" style="color: #714B67; font-size: 0.95rem; line-height: 1.5;">
+                    <span class="me-4 text-dark border-end pe-3 border-secondary">
+                        Top Performers (<t t-esc="state.departmentName"/>)
+                    </span>
+
+                    <t t-foreach="state.topPerformers" t-as="performer" t-key="performer_index">
+                        <span class="me-5"><t t-esc="performer"/></span>
+                    </t>
+                </marquee>
+            </div>
+
+        </div>
+    </t>
+
+    <t t-inherit="web.Layout" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[contains(@class, 'o_content')]" position="before">
+            <ClinicLeaderboardBanner />
+        </xpath>
+    </t>
+
+</templates>
