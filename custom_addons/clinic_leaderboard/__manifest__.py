@@ -1,6 +1,6 @@
 {
     'name': 'Clinic Leaderboard',
-    'version': '1.0',
+    'version': '17.0.1.1.0',
     'category': 'Healthcare',
     'summary': 'Dynamic department-wise performance leaderboard integrated with Metabase',
     'depends': ['base', 'web', 'hr'],
