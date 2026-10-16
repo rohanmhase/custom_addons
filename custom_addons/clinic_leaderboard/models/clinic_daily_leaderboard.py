@@ -231,7 +231,8 @@ class ClinicLeaderboardExtensionTopper(models.Model):
             vals = [{
                 'doctor_id': row.get('doctor_id'),
                 'doctor_name': row.get('RS Name') or 'Unknown',
-                'score': row.get('Score') or row.get('20-40%') or 0.0,
+                'score': row.get('Score') or 0.0,
+                'category': row.get('Category') or 'Ext. 20-40%',
             } for row in rows]
 
             if not vals:
