@@ -2,6 +2,36 @@
 <templates xml:space="preserve">
 
     <t t-name="clinic_leaderboard.Banner" owl="1">
+
+        <!-- CSS for 60fps GPU-Accelerated Scrolling on iOS -->
+        <style>
+            .ios-smooth-marquee-container {
+                width: 100%;
+                overflow: hidden;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+            }
+            .ios-smooth-marquee-content {
+                display: inline-block;
+                padding-left: 100%; /* Start completely off-screen to the right */
+                animation: ios-marquee 25s linear infinite;
+
+                /* Force GPU Hardware Acceleration on iPhones */
+                transform: translate3d(0, 0, 0);
+                -webkit-transform: translate3d(0, 0, 0);
+                will-change: transform;
+            }
+            /* Pause scrolling when the user hovers over it with a mouse */
+            .ios-smooth-marquee-container:hover .ios-smooth-marquee-content {
+                animation-play-state: paused;
+            }
+            @keyframes ios-marquee {
+                0% { transform: translate3d(0, 0, 0); -webkit-transform: translate3d(0, 0, 0); }
+                100% { transform: translate3d(-100%, 0, 0); -webkit-transform: translate3d(-100%, 0, 0); }
+            }
+        </style>
+
         <div t-if="state.show" class="w-100 bg-white border-bottom shadow-sm px-3 py-2 d-flex flex-column mb-2 gap-2">
 
             <div class="d-flex align-items-center">
@@ -9,6 +39,7 @@
                     <span class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">My Performance</span>
 
                     <div class="d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                        <!-- UPDATED: Support for rgb(255,255,0) inline styles via bgClass and bgStyle -->
                         <t t-foreach="state.myMetrics" t-as="metric" t-key="metric.label">
                             <span t-attf-class="badge rounded-pill shadow-sm px-2 py-1 {{ metric.color }}">
                                 <t t-esc="metric.label"/>: <t t-esc="metric.value"/>
@@ -22,15 +53,18 @@
             <div class="w-100 overflow-hidden d-flex align-items-center border-top pt-2">
                 <span class="fs-4 me-2" t-att-title="'Top Performers in ' + state.departmentName"/>
 
-                <marquee behavior="scroll" direction="left" class="fw-bold mb-0 d-flex align-items-center mt-1" style="color: #714B67; font-size: 0.95rem; line-height: 1.5;">
-                    <span class="me-4 text-dark border-end pe-3 border-secondary">
-                        Top Performers (<t t-esc="state.departmentName"/>)
-                    </span>
+                <!-- UPDATED: Replaced <marquee> with GPU-Accelerated DIVs -->
+                <div class="ios-smooth-marquee-container mt-1" style="color: #714B67; font-size: 0.95rem; line-height: 1.5;">
+                    <div class="ios-smooth-marquee-content fw-bold mb-0">
+                        <span class="me-4 text-dark border-end pe-3 border-secondary">
+                            Top Performers (<t t-esc="state.departmentName"/>)
+                        </span>
 
-                    <t t-foreach="state.topPerformers" t-as="performer" t-key="performer_index">
-                        <span class="me-5"><t t-esc="performer"/></span>
-                    </t>
-                </marquee>
+                        <t t-foreach="state.topPerformers" t-as="performer" t-key="performer_index">
+                            <span class="me-5"><t t-esc="performer"/></span>
+                        </t>
+                    </div>
+                </div>
             </div>
 
         </div>
