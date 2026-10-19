@@ -64,6 +64,13 @@ function getTrend(current, previous) {
     return { icon: "", color: "text-bg-warning" };
 }
 
+// Added for metrics where a lower score is better (e.g., Only Consultation)
+function getReverseTrend(current, previous) {
+    if (current < previous) return { icon: "▼", color: "text-bg-success" };
+    if (current > previous) return { icon: "▲", color: "text-bg-danger" };
+    return { icon: "", color: "text-bg-warning" };
+}
+
 export class ClinicLeaderboardBanner extends Component {
     static template = "clinic_leaderboard.Banner";
 
@@ -99,23 +106,86 @@ export class ClinicLeaderboardBanner extends Component {
         const extUser = data.extUser;
 
         if (userMetrics) {
-            const recTrend = getTrend(userMetrics.recovery_percent, userMetrics.prev_recovery_percent);
-            myMetrics.push({
-                label: "Recovery", value: `${userMetrics.recovery_percent}%`,
-                color: recTrend.color, icon: recTrend.icon,
-            });
+            // Logic for RS Department Metrics (Checks for RS-specific field)
+            if (userMetrics.recovery_percent !== undefined) {
+                const recTrend = getTrend(userMetrics.recovery_percent, userMetrics.prev_recovery_percent);
+                myMetrics.push({
+                    label: "Recovery", value: `${userMetrics.recovery_percent}%`,
+                    color: recTrend.color, icon: recTrend.icon,
+                });
 
-            const vasTrend = getTrend(userMetrics.vas_percent, userMetrics.prev_total_vas);
-            myMetrics.push({
-                label: "VAS", value: `${userMetrics.vas_percent}%`,
-                color: vasTrend.color, icon: vasTrend.icon,
-            });
+                const vasTrend = getTrend(userMetrics.vas_percent, userMetrics.prev_total_vas);
+                myMetrics.push({
+                    label: "VAS", value: `${userMetrics.vas_percent}%`,
+                    color: vasTrend.color, icon: vasTrend.icon,
+                });
 
-            const therapiesTrend = getTrend(userMetrics.total_therapies, userMetrics.prev_total_therapies);
-            myMetrics.push({
-                label: "Therapies", value: `${userMetrics.total_therapies}`,
-                color: therapiesTrend.color, icon: therapiesTrend.icon,
-            });
+                const therapiesTrend = getTrend(userMetrics.total_therapies, userMetrics.prev_total_therapies);
+                myMetrics.push({
+                    label: "Therapies", value: `${userMetrics.total_therapies}`,
+                    color: therapiesTrend.color, icon: therapiesTrend.icon,
+                });
+            }
+
+            // Logic for CS Department Metrics
+            if (data.departmentName === "CS" && userMetrics.ppc_amount !== undefined) {
+                const ppcTrend = getTrend(userMetrics.ppc_amount, userMetrics.prev_ppc_amount);
+                myMetrics.push({
+                    label: "PPC", value: `${userMetrics.ppc_amount}`,
+                    color: ppcTrend.color, icon: ppcTrend.icon,
+                });
+
+                const convTrend = getTrend(userMetrics.conversion_percent, userMetrics.prev_conversion_percent);
+                myMetrics.push({
+                    label: "Conversion", value: `${userMetrics.conversion_percent}%`,
+                    color: convTrend.color, icon: convTrend.icon,
+                });
+
+                const sameDayTrend = getTrend(userMetrics.same_day_conversion, userMetrics.prev_same_day_conversion);
+                myMetrics.push({
+                    label: "Same Day Conversion", value: `${userMetrics.same_day_conversion}`,
+                    color: sameDayTrend.color, icon: sameDayTrend.icon,
+                });
+
+                const consultTrend = getReverseTrend(userMetrics.only_consultation, userMetrics.prev_only_consultation);
+                myMetrics.push({
+                    label: "Only Consultation", value: `${userMetrics.only_consultation}`,
+                    color: consultTrend.color, icon: consultTrend.icon,
+                });
+            }
+
+            // Logic for BM Department Metrics
+            if (data.departmentName === "BM" && userMetrics.npc !== undefined) {
+                const ppcTrend = getTrend(userMetrics.ppc_amount, userMetrics.prev_ppc_amount);
+                myMetrics.push({
+                    label: "PPC", value: `${userMetrics.ppc_amount}`,
+                    color: ppcTrend.color, icon: ppcTrend.icon,
+                });
+
+                const convTrend = getTrend(userMetrics.conversion_percent, userMetrics.prev_conversion_percent);
+                myMetrics.push({
+                    label: "Conversion", value: `${userMetrics.conversion_percent}%`,
+                    color: convTrend.color, icon: convTrend.icon,
+                });
+
+                const npcTrend = getTrend(userMetrics.npc, userMetrics.prev_npc);
+                myMetrics.push({
+                    label: "NPC", value: `${userMetrics.npc}`,
+                    color: npcTrend.color, icon: npcTrend.icon,
+                });
+
+                const refTrend = getTrend(userMetrics.referral_visits, userMetrics.prev_referral_visits);
+                myMetrics.push({
+                    label: "Referrals", value: `${userMetrics.referral_visits}`,
+                    color: refTrend.color, icon: refTrend.icon,
+                });
+
+                const pcTrend = getTrend(userMetrics.pc_p_joined, userMetrics.prev_pc_p_joined);
+                myMetrics.push({
+                    label: "PC+P1", value: `${userMetrics.pc_p_joined}`,
+                    color: pcTrend.color, icon: pcTrend.icon,
+                });
+            }
         }
 
         if (extUser) {

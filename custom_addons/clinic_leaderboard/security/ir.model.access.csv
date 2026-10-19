@@ -7,3 +7,11 @@ access_metrics_topper_admin,clinic.leaderboard.metrics.topper (admin),model_clin
 access_metrics_user_admin,clinic.leaderboard.metrics.user (admin),model_clinic_leaderboard_metrics_user,base.group_system,1,1,1,1
 access_extension_topper_admin,clinic.leaderboard.extension.topper (admin),model_clinic_leaderboard_extension_topper,base.group_system,1,1,1,1
 access_extension_user_admin,clinic.leaderboard.extension.user (admin),model_clinic_leaderboard_extension_user,base.group_system,1,1,1,1
+access_clinic_leaderboard_cs_topper_user,clinic.leaderboard.cs.topper.user,model_clinic_leaderboard_cs_topper,base.group_user,1,0,0,0
+access_clinic_leaderboard_cs_topper_system,clinic.leaderboard.cs.topper.system,model_clinic_leaderboard_cs_topper,base.group_system,1,1,1,1
+access_clinic_leaderboard_cs_user_user,clinic.leaderboard.cs.user.user,model_clinic_leaderboard_cs_user,base.group_user,1,0,0,0
+access_clinic_leaderboard_cs_user_system,clinic.leaderboard.cs.user.system,model_clinic_leaderboard_cs_user,base.group_system,1,1,1,1
+access_clinic_leaderboard_bm_topper_user,clinic.leaderboard.bm.topper.user,model_clinic_leaderboard_bm_topper,base.group_user,1,0,0,0
+access_clinic_leaderboard_bm_topper_system,clinic.leaderboard.bm.topper.system,model_clinic_leaderboard_bm_topper,base.group_system,1,1,1,1
+access_clinic_leaderboard_bm_user_user,clinic.leaderboard.bm.user.user,model_clinic_leaderboard_bm_user,base.group_user,1,0,0,0
+access_clinic_leaderboard_bm_user_system,clinic.leaderboard.bm.user.system,model_clinic_leaderboard_bm_user,base.group_system,1,1,1,1
