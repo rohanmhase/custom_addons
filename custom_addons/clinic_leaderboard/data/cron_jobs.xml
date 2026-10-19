@@ -46,5 +46,49 @@
             <field name="active" eval="True"/>
         </record>
 
+        <record id="cron_update_cs_toppers" model="ir.cron">
+            <field name="name">Leaderboard: Update CS Toppers</field>
+            <field name="model_id" ref="model_clinic_leaderboard_cs_topper"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_cs_toppers()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_update_cs_users" model="ir.cron">
+            <field name="name">Leaderboard: Update CS Users</field>
+            <field name="model_id" ref="model_clinic_leaderboard_cs_user"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_cs_metrics_users()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_update_bm_toppers" model="ir.cron">
+            <field name="name">Leaderboard: Update BM Toppers</field>
+            <field name="model_id" ref="model_clinic_leaderboard_bm_topper"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_bm_toppers()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_update_bm_users" model="ir.cron">
+            <field name="name">Leaderboard: Update BM Users</field>
+            <field name="model_id" ref="model_clinic_leaderboard_bm_user"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_bm_metrics_users()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>
