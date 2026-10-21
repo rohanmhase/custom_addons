@@ -287,8 +287,8 @@ class Enrollment(models.Model):
             raise UserError(_("This enrollment is already marked as paid."))
 
         self.write({
-            'payment_state': 'paid',
-            'payment_date': fields.Date.today(),
+            'payment_state': 'paid'
+            # 'payment_date': fields.Date.today(),
         })
 
         self.message_post(
