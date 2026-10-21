@@ -2,6 +2,7 @@
 
 import logging
 from math import isfinite
+from datetime import date
 
 import requests
 
@@ -216,6 +217,10 @@ class ClinicLeaderboardMetricsUser(models.Model):
 
     @api.model
     def _cron_update_metrics_users(self):
+
+        if date.today().day not in (1, 16):
+            return
+
         url = "https://reports.researchayu.com/public/question/f9f5b6a5-9757-405c-84f5-114c3ae5e30b.json"
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
@@ -324,6 +329,10 @@ class ClinicLeaderboardExtensionUser(models.Model):
 
     @api.model
     def _cron_update_extension_users(self):
+
+        if date.today().day not in (1, 16):
+            return
+
         url = "https://reports.researchayu.com/public/question/b57115d8-1b47-42e9-b4c9-2c7ab96b486d.json"
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
