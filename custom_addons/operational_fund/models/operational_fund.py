@@ -470,50 +470,56 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("System Error: No financial routing rule matches this voucher's criteria. Please contact an Administrator to configure an Approval Rule."))
 
-            # Add CC Followers silently for auditing
-            if matched_rule.cc_user_ids:
-                rec.message_subscribe(partner_ids=matched_rule.cc_user_ids.mapped('partner_id').ids)
+                # Add CC Followers silently for auditing (active users only)
+                if matched_rule.cc_user_ids:
+                    active_cc = matched_rule.cc_user_ids.filtered(lambda u: u.active)
+                    if active_cc:
+                        rec.message_subscribe(partner_ids=active_cc.mapped('partner_id').ids)
 
-            # --- EXECUTE THE RULE OUTCOME ---
-            if matched_rule.action_type == 'block':
-                raise ValidationError(matched_rule.block_message or _(
-                    "This voucher violates operational policies and has been blocked by a system rule."))
-            elif matched_rule.action_type == 'auto_approve':
-                rec.action_approve()
-                rec.message_post(
-                    body=Markup(
-                        f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{escape(matched_rule.name)}'</em>."),
-                    subtype_xmlid='mail.mt_note',
-                    author_id=self.env.ref('base.partner_root').id
-                )
-            elif matched_rule.action_type == 'require_approval':
-                # SMART FALLBACK: Use rule approvers if set, otherwise route to the clinic's standard managers
-                final_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
-                if not final_approvers:
-                    raise ValidationError(
-                        _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but there are no Assigned Approvers on the rule, and '{active_clinic.name}' has no Standard Managers set up."))
-                rec.state = 'waiting'
-                base_url = self.get_base_url()
-                deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
-                deadline = fields.Date.context_today(self) + timedelta(days=1)
-                cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">⚠️ Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
-                task_vals_list = []
-                mail_vals_list = []
-                for manager in final_approvers:
-                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
-                                          note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
-                    if 'project.task' in self.env:
-                        task_vals_list.append({
-                            'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                            'date_deadline': deadline, 'is_voucher_task': True,
-                            'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
-                        })
-                    if manager.email:
+                # --- EXECUTE THE RULE OUTCOME ---
+                if matched_rule.action_type == 'block':
+                    raise ValidationError(matched_rule.block_message or _(
+                        "This voucher violates operational policies and has been blocked by a system rule."))
+                elif matched_rule.action_type == 'auto_approve':
+                    rec.action_approve()
+                    rec.message_post(
+                        body=Markup(
+                            f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{escape(matched_rule.name)}'</em>."),
+                        subtype_xmlid='mail.mt_note',
+                        author_id=self.env.ref('base.partner_root').id
+                    )
+                elif matched_rule.action_type == 'require_approval':
+                    # SMART FALLBACK: Filter candidates to active accounts with valid emails
+                    raw_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
+                    final_approvers = raw_approvers.filtered(lambda u: u.active and u.email)
+                    if not final_approvers:
+                        raise ValidationError(
+                            _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but no active approvers with registered email addresses exist for '{active_clinic.name}'."))
+
+                    rec.state = 'waiting'
+                    base_url = self.get_base_url()
+                    deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+                    deadline = fields.Date.context_today(self) + timedelta(days=1)
+                    cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">  Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
+                    task_vals_list = []
+                    mail_vals_list = []
+                    for manager in final_approvers:
+                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
+                                              note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
+                        if 'project.task' in self.env:
+                            task_vals_list.append({
+                                'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
+                                'date_deadline': deadline, 'is_voucher_task': True,
+                                'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
+                            })
                         mail_vals_list.append({
                             'subject': f'Action Required: Approve Voucher {rec.name}',
                             'email_from': '<noreply@researchayu.com>',
                             'email_to': manager.email,
-                            'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">₹ {rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
+                            'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">  {rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
+                            'model': rec._name,
+                            'res_id': rec.id,
+                            'state': 'outgoing',
                         })
                 if task_vals_list:
                     self.env['project.task'].sudo().create(task_vals_list)
@@ -810,45 +816,55 @@ class OperationalFundDisbursement(models.Model):
                     matched_rule = rule
                     break
 
-            # 3. Process the outcome of the matched rule
-            if matched_rule:
-                if matched_rule.action_type == 'block':
-                    raise ValidationError(
-                        _(matched_rule.block_message or "Submission rejected by system routing rules."))
-                elif matched_rule.action_type == 'auto_approve':
-                    rec.action_approve()
-                    continue
-                else:
-                    approvers = matched_rule.approver_ids
-            else:
-                # Fallback if NO rules match
-                approvers = self.env.ref('operational_fund.group_op_fund_manager').users
-                if not approvers:
-                    raise ValidationError(
-                        _("System Architecture Error: No routing rule matched and no default managers were found in the system."))
+                    # 3. Process the outcome of the matched rule
+                    if matched_rule:
+                        if matched_rule.action_type == 'block':
+                            raise ValidationError(
+                                _(matched_rule.block_message or "Submission rejected by system routing rules."))
+                        elif matched_rule.action_type == 'auto_approve':
+                            rec.action_approve()
+                            continue
+                        else:
+                            approvers = matched_rule.approver_ids
+                    else:
+                        # Fallback if NO rules match
+                        approvers = self.env.ref('operational_fund.group_op_fund_manager').users
 
-            # 4. Generate Tasks and Emails for the assigned approvers
-            base_url = rec.get_base_url()
-            deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
-            deadline = fields.Date.context_today(rec) + timedelta(days=1)
-            task_vals_list, mail_vals_list = [], []
+                    # Filter to active approvers with emails
+                    active_approvers = approvers.filtered(lambda u: u.active and u.email)
+                    if not active_approvers:
+                        raise ValidationError(
+                            _("System Architecture Error: No active managers with valid email addresses were found to approve this voucher."))
 
-            for manager in approvers:
-                rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
-                                      note=f'Voucher Requires Approval. <a href="{deep_link}">Click here to view</a>')
-                if 'project.task' in self.env:
-                    task_vals_list.append({'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                                           'date_deadline': deadline, 'is_voucher_task': True,
-                                           'description': f'<p>Automated Routing: Requires your approval.</p><div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>'})
-                if manager.email:
-                    mail_vals_list.append({'subject': f'Action Required: Approve Voucher {rec.name}',
-                                           'email_from': '<noreply@researchayu.com>', 'email_to': manager.email,
-                                           'body_html': f'<div style="padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p>Hello {escape(manager.name)}, a new operational fund disbursement ({rec.amount}) requires your review.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">Review &amp; Action Voucher</a></div>'})
-
-            if task_vals_list:
-                self.env['project.task'].sudo().create(task_vals_list)
-            if mail_vals_list:
-                self.env['mail.mail'].sudo().create(mail_vals_list).send()
+                    # 4. Generate Tasks and Emails for the assigned active approvers
+                    base_url = rec.get_base_url()
+                    deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+                    deadline = fields.Date.context_today(rec) + timedelta(days=1)
+                    task_vals_list, mail_vals_list = [], []
+                    for manager in active_approvers:
+                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
+                                              note=f'Voucher Requires Approval. <a href="{deep_link}">Click here to view</a>')
+                        if 'project.task' in self.env:
+                            task_vals_list.append({
+                                'name': f'Approve Voucher {rec.name}',
+                                'user_ids': [(4, manager.id)],
+                                'date_deadline': deadline,
+                                'is_voucher_task': True,
+                                'description': f'<p>Automated Routing: Requires your approval.</p><div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>'
+                            })
+                        mail_vals_list.append({
+                            'subject': f'Action Required: Approve Voucher {rec.name}',
+                            'email_from': '<noreply@researchayu.com>',
+                            'email_to': manager.email,
+                            'body_html': f'<div style="padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p>Hello {escape(manager.name)}, a new operational fund disbursement ({rec.amount}) requires your review.</p><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">Review &amp; Action Voucher</a></div>',
+                            'model': rec._name,
+                            'res_id': rec.id,
+                            'state': 'outgoing',
+                        })
+                    if task_vals_list:
+                        self.env['project.task'].sudo().create(task_vals_list)
+                    if mail_vals_list:
+                        self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_print_voucher(self):
         report = self.env.ref('operational_fund.action_report_op_fund_voucher', raise_if_not_found=False) or self.env[
@@ -864,28 +880,33 @@ class OperationalFundDisbursement(models.Model):
     def action_approve(self):
         mail_vals_list = []
         for rec in self:
-            # 1. ADD VALIDATION HERE: Check for documents before allowing approval
             if rec.therapist_ref_id and not rec.signed_voucher_file:
-                raise ValidationError(_("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
+                raise ValidationError(
+                    _("A Signed Voucher Asset is mandatory when a therapist is selected. Please upload it before approving."))
             if rec.vendor_ref_id and not rec.receipt_file:
-                raise ValidationError(_("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
+                raise ValidationError(
+                    _("A Bill / Vendor Receipt is mandatory when a vendor is selected. Please upload it before approving."))
 
-            # (Balance constraint removed. Funding is now strictly a visual ledger.)
             rec.state = 'approved'
-
             rec.approval_date = fields.Date.context_today(self)
-
             rec.activity_unlink(['mail.activity_data_todo'])
             self._cleanup_todo_tasks('Approve Voucher')
 
-            if rec.create_uid and rec.create_uid.email:
-                mail_vals_list.append(
-                    {'subject': f'Approved: Voucher {rec.name}', 'email_from': '<noreply@researchayu.com>',
-                     'email_to': rec.create_uid.email,
-                     'body_html': f'<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Voucher Approved</h2><p>Hello,</p><p>Your voucher <strong>{escape(rec.name)}</strong> for {rec.amount} has been approved.</p></div>',
-                     'state': 'outgoing'})
+            # Strictly check that the creator's account is still active
+            creator = rec.create_uid
+            if creator and creator.active and creator.email:
+                mail_vals_list.append({
+                    'subject': f'Approved: Voucher {rec.name}',
+                    'email_from': '<noreply@researchayu.com>',
+                    'email_to': creator.email,
+                    'body_html': f'<div style="font-family: Arial, sans-serif; padding: 20px;"><h2 style="color: #28a745;">Voucher Approved</h2><p>Hello,</p><p>Your voucher <strong>{escape(rec.name)}</strong> for {rec.amount} has been approved.</p></div>',
+                    'model': rec._name,
+                    'res_id': rec.id,
+                    'state': 'outgoing',
+                })
 
-        if mail_vals_list: self.env['mail.mail'].sudo().create(mail_vals_list).send()
+        if mail_vals_list:
+            self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_reject(self):
         self.ensure_one()
@@ -1933,16 +1954,20 @@ class OperationalFundUtrWizard(models.TransientModel):
                 success_count += 1
 
                 # Batch email notification generation
-                if voucher.create_uid and voucher.create_uid.email:
+                # Batch email notification generation
+                creator = voucher.create_uid
+                if creator and creator.active and creator.email:
                     mail_vals_list.append({
                         'subject': f'Paid: Voucher {voucher.name}',
                         'email_from': '<noreply@researchayu.com>',
-                        'email_to': voucher.create_uid.email,
+                        'email_to': creator.email,
                         'body_html': f"""<div style="font-family: Arial, sans-serif; padding: 20px;">
                                          <h2 style="color: #17a2b8;">Voucher Paid & Processed</h2>
                                          <p>Your voucher <strong>{escape(voucher.name)}</strong> has been finalized by the Accounts team.</p>
                                          <p><strong>Bank UTR Reference:</strong> {escape(utr_number)}</p>
                                          </div>""",
+                        'model': voucher._name,
+                        'res_id': voucher.id,
                         'state': 'outgoing',
                     })
             else:
@@ -2112,3 +2137,56 @@ class OperationalFundMarkPaidWizard(models.TransientModel):
             body=Markup(
                 f"<div style='color: #28a745;'><i class='fa fa-check-circle'></i> <strong>MARKED AS PAID</strong><br/><b>Paid By:</b> {escape(self.who_paid or 'Not Specified')}</div>")
         )
+
+class MailMail(models.Model):
+    _inherit = 'mail.mail'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        filtered_vals = []
+        User = self.env['res.users'].sudo().with_context(active_test=False)
+
+        for vals in vals_list:
+            res_model = vals.get('model') or self.env.context.get('default_res_model') or ''
+            is_op_fund = (
+                res_model.startswith('operational.fund')
+                or res_model.startswith('clinic.')
+                or self.env.context.get('operational_fund_mail')
+            )
+
+            if is_op_fund:
+                # 1. Sanitize direct email strings (email_to)
+                email_to = vals.get('email_to')
+                if email_to:
+                    valid_emails = []
+                    for email in [e.strip() for e in email_to.split(',') if e.strip()]:
+                        # Match user by email
+                        matched_user = User.search([
+                            '|',
+                            ('email_normalized', '=', email.lower()),
+                            ('email', '=ilike', email)
+                        ], limit=1)
+
+                        # If recipient belongs to an internal user, require active == True
+                        if matched_user and not matched_user.active:
+                            continue
+                        valid_emails.append(email)
+
+                    if not valid_emails:
+                        # Drop email creation entirely if all recipients are inactive users
+                        continue
+                    vals['email_to'] = ','.join(valid_emails)
+
+                # 2. Sanitize relational recipients (recipient_ids)
+                if vals.get('recipient_ids'):
+                    partner_ids = [cmd[1] for cmd in vals['recipient_ids'] if cmd[0] == 4] or \
+                                  [p for cmd in vals['recipient_ids'] if cmd[0] == 6 for p in cmd[2]]
+                    if partner_ids:
+                        active_partners = self.env['res.partner'].sudo().browse(partner_ids).filtered(
+                            lambda p: not p.user_ids or any(u.active for u in p.user_ids)
+                        )
+                        vals['recipient_ids'] = [(6, 0, active_partners.ids)]
+
+            filtered_vals.append(vals)
+
+        return super().create(filtered_vals)
