@@ -3,8 +3,24 @@
     <div class="modal-dialog" style="max-width: 95%; width: 95%;">
         <div class="modal-content" style="height: 85vh;">
 
-            <div class="modal-header">
-                <h3>📋 Patient Billing Queue</h3>
+            <div class="modal-header d-flex align-items-center justify-content-between">
+                <h3 class="mb-0">📋 Patient Billing Queue</h3>
+
+                <button
+                        type="button"
+                        class="btn btn-primary"
+                        t-on-click="refreshRecords"
+                        t-att-disabled="state.isRefreshing"
+                >
+                    <t t-if="state.isRefreshing">
+                        <i class="fa fa-spinner fa-spin me-1"/>
+                        Refreshing...
+                    </t>
+                    <t t-else="">
+                        <i class="fa fa-refresh me-1"/>
+                        Refresh
+                    </t>
+                </button>
             </div>
 
             <div class="mb-3">
