@@ -1,37 +1,60 @@
 /** @odoo-module **/
-console.log("Billing Queue Popup")
+
 import { AbstractAwaitablePopup } from "@point_of_sale/app/popup/abstract_awaitable_popup";
 import { useService } from "@web/core/utils/hooks";
 import { useState, onWillStart } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/store/pos_hook";
-console.log("Import Successful")
+
 export class BillingQueuePopup extends AbstractAwaitablePopup {
 
     setup() {
-
         super.setup();
 
         this.orm = useService("orm");
         this.pos = usePos();
 
-        this.state = useState({records: [], searchTerm: "", });
+        this.state = useState({
+            records: [],
+            searchTerm: "",
+            isRefreshing: false,
+        });
 
         onWillStart(async () => {
-            const clinicId = this.pos.config.clinic_id?.[0];
-            console.log(clinicId)
-
-            this.state.records =
-                await this.orm.call(
-                    "patient.billing.queue",
-                    "get_pending_billing_queue",
-                    [clinicId]
-                );
-            console.log(this.state.records)
+            await this.refreshRecords();
         });
     }
 
-    loadRecord(rec) {
+    async refreshRecords() {
+        // Prevent multiple refresh RPCs if the button is clicked repeatedly.
+        if (this.state.isRefreshing) {
+            return;
+        }
 
+        this.state.isRefreshing = true;
+
+        try {
+            const clinicId = this.pos.config.clinic_id?.[0];
+
+            if (!clinicId) {
+                this.state.records = [];
+                return;
+            }
+
+            const records = await this.orm.call(
+                "patient.billing.queue",
+                "get_pending_billing_queue",
+                [clinicId]
+            );
+
+            // Replace the reactive array with the latest queue from the server.
+            // Existing search text remains untouched.
+            this.state.records = records || [];
+        } finally {
+            this.state.isRefreshing = false;
+        }
+    }
+
+    loadRecord(rec) {
         this.props.close({
             confirmed: true,
             record: rec,
@@ -39,18 +62,14 @@ export class BillingQueuePopup extends AbstractAwaitablePopup {
     }
 
     get filteredRecords() {
-
-        const term = (
-            this.state.searchTerm || ""
-        ).toLowerCase();
+        const term = (this.state.searchTerm || "").toLowerCase();
 
         let records = this.state.records;
 
         // SEARCH
         if (term) {
-
-            records = records.filter(rec =>
-                rec.patient_name
+            records = records.filter((rec) =>
+                (rec.patient_name || "")
                     .toLowerCase()
                     .includes(term)
             );
@@ -59,24 +78,19 @@ export class BillingQueuePopup extends AbstractAwaitablePopup {
         // REMOVE DUPLICATES
         const uniqueMap = new Map();
 
-        records.forEach(rec => {
-
-            const key =
-                `${rec.queue_type}_${rec.id}`;
+        records.forEach((rec) => {
+            const key = `${rec.queue_type}_${rec.id}`;
 
             if (!uniqueMap.has(key)) {
                 uniqueMap.set(key, rec);
             }
         });
 
-        return Array.from(
-            uniqueMap.values()
-        );
+        return Array.from(uniqueMap.values());
     }
 }
 
-BillingQueuePopup.template =
-    "BillingQueuePopupTemplate";
+BillingQueuePopup.template = "BillingQueuePopupTemplate";
 
 BillingQueuePopup.props = {
     close: Function,
