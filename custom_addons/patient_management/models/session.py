@@ -110,20 +110,94 @@ class Session(models.Model):
         ])
         return enrollment
 
-    def _resolve_legacy_enrollment(self):
+    def _find_current_active_enrollment(self, patient, include_completed=False):
         """
-        Resolve the most likely enrollment for sessions created before
-        enrollment_id was added. New sessions always store enrollment_id.
+        Find the latest valid paid enrollment directly from the database.
 
-        session_day is used against cumulative paid enrollment capacity, which
-        avoids incorrectly decrementing a newer extension when an old session
-        is archived.
+        Do not rely only on patient.active_enrollment_id because administrative
+        corrections may temporarily leave that stored computed pointer stale.
+        """
+        domain = [
+            ('patient_id', '=', patient.id),
+            ('active', '=', True),
+            ('payment_state', '=', 'paid'),
+            ('total_sessions', '>', 0),
+        ]
+        if not include_completed:
+            domain.append(('state', '=', 'active'))
+
+        enrollments = self.env['patient.enrollment'].sudo().with_context(
+            active_test=False
+        ).search(domain, order='enrollment_date desc, id desc')
+
+        for enrollment in enrollments:
+            enrollment.invalidate_recordset([
+                'used_sessions', 'total_sessions', 'remaining_sessions',
+                'state', 'active', 'payment_state'
+            ])
+            if include_completed:
+                return enrollment
+            if enrollment.remaining_sessions > 0:
+                return enrollment
+
+        return self.env['patient.enrollment']
+
+    def _resolve_accounting_enrollment(self):
+        """
+        Return the enrollment whose used-session count currently owns this
+        therapy session.
+
+        Normal case:
+            Use session.enrollment_id.
+
+        Correction/cancellation case:
+            If the original enrollment was moved to Draft and archived, it is
+            no longer a valid accounting target. Operationally the used session
+            is transferred to the patient's replacement active paid enrollment.
+            Resolve that replacement enrollment and persist the new link so
+            future archive/restore operations remain symmetrical.
+
+        Legacy case:
+            Sessions created before enrollment_id existed are resolved by
+            session_day against cumulative active paid enrollment capacity.
         """
         self.ensure_one()
 
-        if self.enrollment_id:
-            return self.enrollment_id
+        linked = self.enrollment_id.sudo().with_context(active_test=False)
+        if linked and linked.exists():
+            linked.invalidate_recordset([
+                'active', 'payment_state', 'state', 'used_sessions',
+                'total_sessions', 'remaining_sessions'
+            ])
 
+            # A live paid enrollment remains the authoritative owner, even if
+            # it is currently completed. Deleting one of its sessions should
+            # reopen one remaining session.
+            if linked.active and linked.payment_state == 'paid':
+                return linked
+
+            # The original enrollment was cancelled/archived. If an admin has
+            # transferred its consumed session to the replacement enrollment,
+            # use that replacement instead of touching the cancelled record.
+            replacement = self._find_current_active_enrollment(
+                self.patient_id, include_completed=True
+            )
+            if replacement and replacement.id != linked.id and replacement.used_sessions > 0:
+                # Persist the reassignment without triggering another usage
+                # adjustment. This makes a later Restore increment the same
+                # replacement enrollment that this archive/deletion decrements.
+                self.with_context(skip_session_usage_adjust=True).sudo().write({
+                    'enrollment_id': replacement.id
+                })
+                return replacement
+
+            # No valid replacement/accounted usage exists. Never resurrect or
+            # modify a cancelled enrollment just because an old session is
+            # archived later.
+            return self.env['patient.enrollment']
+
+        # Legacy sessions without enrollment_id: resolve against active paid
+        # enrollments using the historical session_day sequence.
         enrollments = self.env['patient.enrollment'].sudo().with_context(
             active_test=False
         ).search([
@@ -143,8 +217,6 @@ class Session(models.Model):
                 if self.session_day <= cumulative:
                     return enrollment
 
-        # Fallback for legacy/inconsistent session_day values: decrement the
-        # latest enrollment that currently has a consumed session.
         candidates = enrollments.filtered(lambda e: e.used_sessions > 0)
         return candidates[-1:] if candidates else enrollments[-1:]
 
@@ -184,14 +256,11 @@ class Session(models.Model):
         if not vals.get('therapy_clinic_id'):
             vals['therapy_clinic_id'] = patient.clinic_id.id
 
-        # Re-fetch and lock the active enrollment so two users cannot consume
-        # the same final remaining session at the same time.
-        enrollment = self.env["patient.enrollment"].sudo().search([
-            ("id", "=", patient.active_enrollment_id.id),
-            ("state", "=", "active"),
-            ("active", "=", True),
-            ("payment_state", "=", "paid"),
-        ], limit=1, order="id asc")
+        # Resolve the latest usable enrollment directly from the database.
+        # This remains correct even when an administrator has corrected an old
+        # enrollment from the backend and active_enrollment_id is temporarily
+        # stale.
+        enrollment = self._find_current_active_enrollment(patient)
 
         if not enrollment:
             raise UserError(
@@ -223,9 +292,12 @@ class Session(models.Model):
         return session
 
     def write(self, vals):
-        # Capture the enrollment before active is changed. For historical
-        # sessions without enrollment_id, resolve the original enrollment as
-        # accurately as possible from session_day and enrollment capacity.
+        # Internal enrollment-link reassignment must not itself consume or
+        # reverse a therapy session.
+        if self.env.context.get('skip_session_usage_adjust'):
+            return super().write(vals)
+
+        # Capture the accounting enrollment before active is changed.
         active_change = 'active' in vals
         transitions = []
 
@@ -233,7 +305,7 @@ class Session(models.Model):
             target_active = bool(vals.get('active'))
             for record in self:
                 if record.active != target_active:
-                    enrollment = record._resolve_legacy_enrollment()
+                    enrollment = record._resolve_accounting_enrollment()
                     transitions.append((record.id, record.active, target_active, enrollment.id if enrollment else False))
 
         res = super().write(vals)
@@ -254,6 +326,12 @@ class Session(models.Model):
                 elif not old_active and new_active:
                     # Session restored -> consume it again.
                     self.browse(record_id)._adjust_enrollment_used_sessions(enrollment, 1)
+
+            # Administrative enrollment corrections can make the stored pointer
+            # stale. Refresh it after any archive/restore transition.
+            patients = self.mapped('patient_id')
+            if patients:
+                patients.sudo()._compute_active_enrollment_id()
 
         return res
 
