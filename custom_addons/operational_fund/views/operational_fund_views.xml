@@ -649,13 +649,19 @@
                                     <field name="action_type" widget="radio"/>
                                 </group>
                                 <group invisible="action_type != 'require_approval'">
-                                    <field name="approver_ids" widget="many2many_tags_avatar" placeholder="Select mandatory approvers..."/>
+                                    <field name="approver_ids"
+                                       widget="many2many_tags_avatar"
+                                       domain="[('active', '=', True), ('share', '=', False)]"
+                                       placeholder="Select mandatory approvers..."/>
                                 </group>
                                 <group invisible="action_type != 'block'">
                                     <field name="block_message" placeholder="Provide a reason to the user as to why this voucher is structurally blocked..."/>
                                 </group>
                                 <group string="Auditing &amp; Notifications">
-                                    <field name="cc_user_ids" widget="many2many_tags_avatar" placeholder="These users will be silently added as followers..."/>
+                                    <field name="cc_user_ids"
+                                       widget="many2many_tags_avatar"
+                                       domain="[('active', '=', True), ('share', '=', False)]"
+                                       placeholder="These users will be silently added as followers..."/>
                                 </group>
                             </page>
                         </notebook>
