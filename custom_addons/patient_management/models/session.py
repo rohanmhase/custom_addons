@@ -86,7 +86,8 @@ class Session(models.Model):
             # Fetch all enrollments of the patient
             enrollments = self.env["patient.enrollment"].sudo().search([
                 ("patient_id", "=", patient_id),
-                ("active", "=", True)  # or remove this to include old deleted ones too
+                ("active", "=", True),
+                ("payment_state", "=", "paid"),
             ])
 
             # Sum used sessions from all enrollments
@@ -112,7 +113,16 @@ class Session(models.Model):
 
     def _find_current_active_enrollment(self, patient, include_completed=False):
         """
-        Find the latest valid paid enrollment directly from the database.
+        Resolve the enrollment that should own a therapy-session adjustment.
+
+        Normal session creation uses FIFO: consume the oldest paid, active
+        enrollment that still has remaining sessions. This preserves the
+        original business flow where an earlier package is exhausted before
+        a newer extension starts consuming sessions.
+
+        include_completed=True is used only for administrative replacement
+        resolution. In that case the newest active paid enrollment is the
+        intended replacement target.
 
         Do not rely only on patient.active_enrollment_id because administrative
         corrections may temporarily leave that stored computed pointer stale.
@@ -126,9 +136,16 @@ class Session(models.Model):
         if not include_completed:
             domain.append(('state', '=', 'active'))
 
+        # FIFO for normal therapy consumption; newest for replacement lookup.
+        order = (
+            'enrollment_date desc, id desc'
+            if include_completed
+            else 'enrollment_date asc, id asc'
+        )
+
         enrollments = self.env['patient.enrollment'].sudo().with_context(
             active_test=False
-        ).search(domain, order='enrollment_date desc, id desc')
+        ).search(domain, order=order)
 
         for enrollment in enrollments:
             enrollment.invalidate_recordset([
@@ -138,6 +155,45 @@ class Session(models.Model):
             if include_completed:
                 return enrollment
             if enrollment.remaining_sessions > 0:
+                return enrollment
+
+        return self.env['patient.enrollment']
+
+    def _find_latest_used_enrollment(self, patient):
+        """
+        Resolve the enrollment that should give a session back on delete/archive.
+
+        Deletion uses LIFO accounting: start from the newest active paid therapy
+        enrollment. If it has no used sessions, move backwards until an
+        enrollment with used_sessions > 0 is found.
+
+        This is intentionally different from session creation, which uses FIFO.
+        """
+        enrollments = self.env['patient.enrollment'].sudo().with_context(
+            active_test=False
+        ).search([
+            ('patient_id', '=', patient.id),
+            ('active', '=', True),
+            ('payment_state', '=', 'paid'),
+            ('total_sessions', '>', 0),
+            ('used_sessions', '>', 0),
+        ], order='enrollment_date desc, id desc')
+
+        for enrollment in enrollments:
+            enrollment = self._lock_enrollment(enrollment)
+            enrollment.invalidate_recordset([
+                'active', 'payment_state', 'used_sessions', 'total_sessions',
+                'remaining_sessions', 'state'
+            ])
+
+            # Re-check after FOR UPDATE in case another user archived/restored
+            # a session while this transaction was waiting for the row lock.
+            if (
+                enrollment.active
+                and enrollment.payment_state == 'paid'
+                and enrollment.total_sessions > 0
+                and enrollment.used_sessions > 0
+            ):
                 return enrollment
 
         return self.env['patient.enrollment']
@@ -256,10 +312,9 @@ class Session(models.Model):
         if not vals.get('therapy_clinic_id'):
             vals['therapy_clinic_id'] = patient.clinic_id.id
 
-        # Resolve the latest usable enrollment directly from the database.
-        # This remains correct even when an administrator has corrected an old
-        # enrollment from the backend and active_enrollment_id is temporarily
-        # stale.
+        # Resolve the oldest usable paid enrollment (FIFO) directly from the
+        # database. This ensures an earlier package is consumed before a newer
+        # extension, while still avoiding a stale active_enrollment_id pointer.
         enrollment = self._find_current_active_enrollment(patient)
 
         if not enrollment:
@@ -305,8 +360,25 @@ class Session(models.Model):
             target_active = bool(vals.get('active'))
             for record in self:
                 if record.active != target_active:
-                    enrollment = record._resolve_accounting_enrollment()
-                    transitions.append((record.id, record.active, target_active, enrollment.id if enrollment else False))
+                    if record.active and not target_active:
+                        # DELETE / ARCHIVE = LIFO. Give the session back to the
+                        # newest paid enrollment that currently has a used
+                        # session. If newest has 0 used, automatically fall
+                        # back to the previous enrollment.
+                        enrollment = record._find_latest_used_enrollment(
+                            record.patient_id
+                        )
+                    else:
+                        # RESTORE = put the session back into the same
+                        # enrollment from which the archive/delete removed it.
+                        enrollment = record._resolve_accounting_enrollment()
+
+                    transitions.append((
+                        record.id,
+                        record.active,
+                        target_active,
+                        enrollment.id if enrollment else False,
+                    ))
 
         res = super().write(vals)
 
@@ -320,12 +392,26 @@ class Session(models.Model):
                 if not enrollment:
                     continue
 
+                session = self.browse(record_id)
+
                 if old_active and not new_active:
-                    # Session archived/deleted -> give the session back.
-                    self.browse(record_id)._adjust_enrollment_used_sessions(enrollment, -1)
+                    # Session archived/deleted -> LIFO give-back.
+                    session._adjust_enrollment_used_sessions(enrollment, -1)
+
+                    # Remember where the session was returned. A future Restore
+                    # must consume from this same enrollment, not from the
+                    # session's original historical enrollment.
+                    if session.enrollment_id.id != enrollment.id:
+                        session.with_context(
+                            skip_session_usage_adjust=True
+                        ).sudo().write({
+                            'enrollment_id': enrollment.id
+                        })
+
                 elif not old_active and new_active:
-                    # Session restored -> consume it again.
-                    self.browse(record_id)._adjust_enrollment_used_sessions(enrollment, 1)
+                    # Session restored -> consume it again from the enrollment
+                    # selected when the session was archived/deleted.
+                    session._adjust_enrollment_used_sessions(enrollment, 1)
 
             # Administrative enrollment corrections can make the stored pointer
             # stale. Refresh it after any archive/restore transition.
