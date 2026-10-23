@@ -470,61 +470,61 @@ class OperationalFundDisbursement(models.Model):
                 raise ValidationError(
                     _("System Error: No financial routing rule matches this voucher's criteria. Please contact an Administrator to configure an Approval Rule."))
 
-                # Add CC Followers silently for auditing (active users only)
-                if matched_rule.cc_user_ids:
-                    active_cc = matched_rule.cc_user_ids.filtered(lambda u: u.active)
-                    if active_cc:
-                        rec.message_subscribe(partner_ids=active_cc.mapped('partner_id').ids)
+            # Add CC Followers silently for auditing (active users only)
+            if matched_rule.cc_user_ids:
+                active_cc = matched_rule.cc_user_ids.filtered(lambda u: u.active)
+                if active_cc:
+                    rec.message_subscribe(partner_ids=active_cc.mapped('partner_id').ids)
 
-                # --- EXECUTE THE RULE OUTCOME ---
-                if matched_rule.action_type == 'block':
-                    raise ValidationError(matched_rule.block_message or _(
-                        "This voucher violates operational policies and has been blocked by a system rule."))
-                elif matched_rule.action_type == 'auto_approve':
-                    rec.action_approve()
-                    rec.message_post(
-                        body=Markup(
-                            f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{escape(matched_rule.name)}'</em>."),
-                        subtype_xmlid='mail.mt_note',
-                        author_id=self.env.ref('base.partner_root').id
-                    )
-                elif matched_rule.action_type == 'require_approval':
-                    # SMART FALLBACK: Filter candidates to active accounts with valid emails
-                    raw_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
-                    final_approvers = raw_approvers.filtered(lambda u: u.active and u.email)
-                    if not final_approvers:
-                        raise ValidationError(
-                            _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but no active approvers with registered email addresses exist for '{active_clinic.name}'."))
+            # --- EXECUTE THE RULE OUTCOME ---
+            if matched_rule.action_type == 'block':
+                raise ValidationError(matched_rule.block_message or _(
+                    "This voucher violates operational policies and has been blocked by a system rule."))
+            elif matched_rule.action_type == 'auto_approve':
+                rec.action_approve()
+                rec.message_post(
+                    body=Markup(
+                        f"<strong>System Auto-Approved:</strong> Passed via automated rule <em>'{escape(matched_rule.name)}'</em>."),
+                    subtype_xmlid='mail.mt_note',
+                    author_id=self.env.ref('base.partner_root').id
+                )
+            elif matched_rule.action_type == 'require_approval':
+                # SMART FALLBACK: Filter candidates to active accounts with valid emails
+                raw_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
+                final_approvers = raw_approvers.filtered(lambda u: u.active and u.email)
+                if not final_approvers:
+                    raise ValidationError(
+                        _(f"Configuration Error: Rule '{matched_rule.name}' triggered, but no active approvers with registered email addresses exist for '{active_clinic.name}'."))
 
-                    rec.state = 'waiting'
-                    base_url = self.get_base_url()
-                    deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
-                    deadline = fields.Date.context_today(self) + timedelta(days=1)
-                    cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">  Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
-                    task_vals_list = []
-                    mail_vals_list = []
-                    for manager in final_approvers:
-                        rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
-                                              note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
-                        if 'project.task' in self.env:
-                            task_vals_list.append({
-                                'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                                'date_deadline': deadline, 'is_voucher_task': True,
-                                'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
-                            })
-                        mail_vals_list.append({
-                            'subject': f'Action Required: Approve Voucher {rec.name}',
-                            'email_from': '<noreply@researchayu.com>',
-                            'email_to': manager.email,
-                            'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">  {rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
-                            'model': rec._name,
-                            'res_id': rec.id,
-                            'state': 'outgoing',
+                rec.state = 'waiting'
+                base_url = self.get_base_url()
+                deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
+                deadline = fields.Date.context_today(self) + timedelta(days=1)
+                cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">  Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
+                task_vals_list = []
+                mail_vals_list = []
+                for manager in final_approvers:
+                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
+                                          note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
+                    if 'project.task' in self.env:
+                        task_vals_list.append({
+                            'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
+                            'date_deadline': deadline, 'is_voucher_task': True,
+                            'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
                         })
-                if task_vals_list:
-                    self.env['project.task'].sudo().create(task_vals_list)
-                if mail_vals_list:
-                    self.env['mail.mail'].sudo().create(mail_vals_list).send()
+                    mail_vals_list.append({
+                        'subject': f'Action Required: Approve Voucher {rec.name}',
+                        'email_from': '<noreply@researchayu.com>',
+                        'email_to': manager.email,
+                        'body_html': f"""<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"><h2 style="color: #333;">Voucher Approval Required</h2><p style="color: #555; font-size: 16px;">Hello {escape(manager.name)},</p><p style="color: #555; font-size: 16px;">A new operational fund disbursement requires your immediate review based on rule: <strong>{escape(matched_rule.name)}</strong>.</p>{cross_cluster_warning}<table style="width: 100%; margin-top: 20px; margin-bottom: 20px; border-collapse: collapse;"><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Voucher:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Clinic:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(active_clinic.name)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Category:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">{escape(rec.display_category)}</td></tr><tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #d9534f; font-weight: bold;">  {rec.amount}</td></tr></table><div style="text-align: center; margin-top: 30px;"><a href="{deep_link}" style="background-color: #00a09d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">Review &amp; Action Voucher</a></div></div>""",
+                        'model': rec._name,
+                        'res_id': rec.id,
+                        'state': 'outgoing',
+                    })
+            if task_vals_list:
+                self.env['project.task'].sudo().create(task_vals_list)
+            if mail_vals_list:
+                self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_approve_system_voucher(self):
         """Tier 1 Custodian authorization strictly limited to system-verified matrix payouts."""
