@@ -437,38 +437,35 @@ class OperationalFundDisbursement(models.Model):
         # Optimization: Fetch rules once
         rules = self.env['operational.fund.approval.rule'].sudo().search([('active', '=', True)], order='sequence, id')
         for rec in self:
-            if rec.amount <= 0: raise ValidationError(_("Disbursement amount must be strictly positive."))
-            if rec.show_employee_payee and not rec.payee_id: raise ValidationError(
-                _("Missing Parameter: Please select an Employee Profile."))
+            if rec.amount <= 0:
+                raise ValidationError(_("Disbursement amount must be strictly positive."))
+            if rec.show_employee_payee and not rec.payee_id:
+                raise ValidationError(_("Missing Parameter: Please select an Employee Profile."))
             if rec.show_therapist_name_input and not (rec.therapist_name or rec.therapist_ref_id):
                 raise ValidationError(_("Missing Parameter: Please select or type the Therapist Name."))
             if rec.show_vendor_payee and not (rec.vendor_name or rec.vendor_ref_id):
                 raise ValidationError(_("Missing Parameter: Please select or specify the Vendor Name."))
-            if rec.show_home_visit and not rec.home_visit_mrn_search: raise ValidationError(
-                _("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
-            if not rec.signed_voucher_file: raise ValidationError(
-                _("Hold on! You must download, sign, and upload the physical Disbursement Voucher before you can submit it."))
-            if rec.is_receipt_mandatory and not rec.receipt_file: raise ValidationError(
-                _("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
+            if rec.show_home_visit and not rec.home_visit_mrn_search:
+                raise ValidationError(_("Missing Compliance Parameter: You must enter the patient MRN code for home visits."))
+            if not rec.signed_voucher_file:
+                raise ValidationError(_("Hold on! You must download, sign, and upload the physical Disbursement Voucher before you can submit it."))
+            if rec.is_receipt_mandatory and not rec.receipt_file:
+                raise ValidationError(_("Strict Auditing Rule: You must upload the original vendor receipt/bill for this expense category before submitting!"))
+
             active_clinic = rec.clinic_id
 
-            # Validate live balance BEFORE rules
-            # if rec.amount > active_clinic.op_fund_balance:
-            #     raise ValidationError(
-            #         _("Insufficient funds in the clinic's operational fund! Available balance is ₹ %s") % active_clinic.op_fund_balance)
-
-            #   THE RULES ENGINE EVALUATOR
+            # THE RULES ENGINE EVALUATOR
             matched_rule = False
             for rule in rules:
-                # Safely evaluate the dynamic domain string against the current voucher record
                 rule_domain = safe_eval(rule.domain or '[]')
                 if rec.filtered_domain(rule_domain):
                     matched_rule = rule
-                    break  # Stop at the highest priority matching rule
+                    break
 
             if not matched_rule:
                 raise ValidationError(
-                    _("System Error: No financial routing rule matches this voucher's criteria. Please contact an Administrator to configure an Approval Rule."))
+                    _("System Error: No financial routing rule matches this voucher's criteria. Please contact an Administrator to configure an Approval Rule.")
+                )
 
             # Add CC Followers silently for auditing (active users only)
             if matched_rule.cc_user_ids:
@@ -480,6 +477,7 @@ class OperationalFundDisbursement(models.Model):
             if matched_rule.action_type == 'block':
                 raise ValidationError(matched_rule.block_message or _(
                     "This voucher violates operational policies and has been blocked by a system rule."))
+
             elif matched_rule.action_type == 'auto_approve':
                 rec.action_approve()
                 rec.message_post(
@@ -488,8 +486,8 @@ class OperationalFundDisbursement(models.Model):
                     subtype_xmlid='mail.mt_note',
                     author_id=self.env.ref('base.partner_root').id
                 )
+
             elif matched_rule.action_type == 'require_approval':
-                # SMART FALLBACK: Filter candidates to active accounts with valid emails
                 raw_approvers = matched_rule.approver_ids or active_clinic.op_fund_manager_ids
                 final_approvers = raw_approvers.filtered(lambda u: u.active and u.email)
                 if not final_approvers:
@@ -501,15 +499,23 @@ class OperationalFundDisbursement(models.Model):
                 deep_link = f"{base_url}/web#id={rec.id}&model=operational.fund.disbursement&view_type=form"
                 deadline = fields.Date.context_today(self) + timedelta(days=1)
                 cross_cluster_warning = f'<p style="color: #d9534f; font-weight: bold;">  Cross-Cluster Alert: Patient is registered at {rec.home_visit_patient_clinic}.</p>' if rec.is_cross_cluster_visit else ''
+
                 task_vals_list = []
                 mail_vals_list = []
+
                 for manager in final_approvers:
-                    rec.activity_schedule('mail.activity_data_todo', user_id=manager.id, summary='Review Voucher',
-                                          note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>')
+                    rec.activity_schedule(
+                        'mail.activity_data_todo',
+                        user_id=manager.id,
+                        summary='Review Voucher',
+                        note=f'Rule Triggered: {matched_rule.name}. <a href="{deep_link}">Click here to view</a>'
+                    )
                     if 'project.task' in self.env:
                         task_vals_list.append({
-                            'name': f'Approve Voucher {rec.name}', 'user_ids': [(4, manager.id)],
-                            'date_deadline': deadline, 'is_voucher_task': True,
+                            'name': f'Approve Voucher {rec.name}',
+                            'user_ids': [(4, manager.id)],
+                            'date_deadline': deadline,
+                            'is_voucher_task': True,
                             'description': f'<p>Automated Route via Rule: <strong>{matched_rule.name}</strong></p>{cross_cluster_warning}<div contenteditable="false"><a href="{deep_link}" target="_blank" class="btn btn-primary" style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review &amp; Action</a></div>',
                         })
                     mail_vals_list.append({
@@ -521,10 +527,12 @@ class OperationalFundDisbursement(models.Model):
                         'res_id': rec.id,
                         'state': 'outgoing',
                     })
-            if task_vals_list:
-                self.env['project.task'].sudo().create(task_vals_list)
-            if mail_vals_list:
-                self.env['mail.mail'].sudo().create(mail_vals_list).send()
+
+                # Scoped inside require_approval so they only run when require_approval triggers
+                if task_vals_list:
+                    self.env['project.task'].sudo().create(task_vals_list)
+                if mail_vals_list:
+                    self.env['mail.mail'].sudo().create(mail_vals_list).send()
 
     def action_approve_system_voucher(self):
         """Tier 1 Custodian authorization strictly limited to system-verified matrix payouts."""
