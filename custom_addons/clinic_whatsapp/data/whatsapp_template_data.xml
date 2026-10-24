@@ -7,7 +7,15 @@
             <field name="phone_number">+91 87794 06969</field>
             <field name="phone_number_id">1395062320356609</field>
             <field name="waba_id">1456832022990876</field>
+            <field name="state">active</field>
             <field name="is_default">True</field>
+        </record>
+
+        <!-- Staged Scheduling Number (Draft / Pending Meta Verification) -->
+        <record id="sender_phone_scheduling" model="whatsapp.sender.phone">
+            <field name="name">Clinic Scheduling &amp; Appointments Line</field>
+            <field name="state">draft</field>
+            <field name="notes">Pending registration on Meta. Template automatically falls back to Primary Central Line until activated.</field>
         </record>
 
         <!-- 1. Patient Invoice Receipt Template -->
@@ -22,8 +30,7 @@
             <field name="dispatch_timing">immediate</field>
             <field name="auto_send_on_post">True</field>
             <field name="header_type">none</field>
-            <field name="body_preview">Dear {{ object.partner_id.name }},
-This is to confirm your invoice {{ object.name }}.</field>
+            <field name="body_preview">Dear {{ object.partner_id.name }}, This is to confirm your invoice {{ object.name }}.</field>
         </record>
 
         <record id="param_invoice_1" model="whatsapp.template.param">
@@ -71,7 +78,7 @@ This is to confirm your invoice {{ object.name }}.</field>
             <field name="model_id" ref="clinic_schedule.model_clinic_schedule_appointment"/>
             <field name="phone_field">patient_id.mobile,patient_id.phone,partner_id.mobile,partner_id.phone</field>
             <field name="sender_routing">template</field>
-            <field name="sender_phone_id" ref="sender_phone_primary"/>
+            <field name="sender_phone_id" ref="sender_phone_scheduling"/>
             <field name="dispatch_timing">immediate</field>
             <field name="auto_send_on_post">True</field>
             <field name="header_type">none</field>
@@ -101,11 +108,12 @@ This is to confirm your invoice {{ object.name }}.</field>
             <field name="name">Therapy Time Slot</field>
             <field name="value_expression">{{ object.slot_id.name or format_datetime(object.start_datetime, '%I:%M %p') }}</field>
         </record>
+        <!-- Parameter 5: Dynamically pulls the specific Clinic Admin's contact number -->
         <record id="param_therapy_5" model="whatsapp.template.param">
             <field name="template_id" ref="whatsapp_template_therapy_comm"/>
             <field name="index">5</field>
-            <field name="name">Clinic Admin Helpline Phone</field>
-            <field name="value_expression">{{ clinic.phone if (clinic and clinic.phone) else '9082777624' }}</field>
+            <field name="name">Clinic Admin Contact</field>
+            <field name="value_expression">{{ admin_phone }}</field>
         </record>
     </data>
 </odoo>

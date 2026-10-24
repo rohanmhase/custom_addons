@@ -4,4 +4,6 @@ from . import whatsapp_message_queue
 from . import whatsapp_message_reply
 from . import account_move
 from . import clinic
+from . import clinic_schedule_appointment
 from . import res_config_settings
+from . import whatsapp_compose_wizard
