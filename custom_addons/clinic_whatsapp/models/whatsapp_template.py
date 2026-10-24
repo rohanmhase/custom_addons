@@ -1,12 +1,12 @@
 import json
 import logging
+import re
 from datetime import datetime, timedelta, time
 from jinja2.sandbox import SandboxedEnvironment
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
-
 
 class WhatsappTemplate(models.Model):
     _name = 'whatsapp.template'
@@ -38,10 +38,10 @@ class WhatsappTemplate(models.Model):
     sender_phone_id = fields.Many2one(
         'whatsapp.sender.phone',
         string='Designated Sender Line',
-        help="Select the exact WhatsApp number used to dispatch this message (e.g. Invoicing number vs Scheduling number)"
+        help="Select the exact WhatsApp line for this template. If in draft/unregistered on Meta, falls back safely to default line."
     )
 
-    # Advanced Time & Timing Configuration
+    # Advanced Timing
     dispatch_timing = fields.Selection([
         ('immediate', 'Immediate (Real-Time Synchronous)'),
         ('relative_delay', 'Relative Delay from Trigger'),
@@ -49,7 +49,6 @@ class WhatsappTemplate(models.Model):
         ('field_offset', 'Relative to Record Datetime Field (e.g., Appointment Time)'),
     ], string='Timing Mode', default='immediate', required=True)
 
-    # 1. Relative Delay
     delay_value = fields.Float(string='Delay Amount', default=1.0)
     delay_unit = fields.Selection([
         ('minutes', 'Minutes'),
@@ -57,23 +56,10 @@ class WhatsappTemplate(models.Model):
         ('days', 'Days'),
     ], string='Delay Unit', default='hours')
 
-    # 2. Fixed Time of Day
-    time_of_day_hour = fields.Float(
-        string='Send At Hour',
-        default=9.0,
-        help="24h format: e.g. 9.0 = 09:00 AM, 18.5 = 06:30 PM"
-    )
-    time_of_day_offset_days = fields.Integer(
-        string='Day Offset',
-        default=0,
-        help="0 = Today, 1 = Tomorrow / Next Day, 2 = Day After Tomorrow"
-    )
+    time_of_day_hour = fields.Float(string='Send At Hour', default=9.0)
+    time_of_day_offset_days = fields.Integer(string='Day Offset', default=0)
 
-    # 3. Record Datetime Field Offset
-    record_date_field = fields.Char(
-        string='Record Date/Datetime Field',
-        help="Field path on the record, e.g. 'start_datetime', 'appointment_date', 'invoice_date'"
-    )
+    record_date_field = fields.Char(string='Record Date/Datetime Field')
     record_offset_direction = fields.Selection([
         ('before', 'Before Scheduled Date/Time'),
         ('after', 'After Scheduled Date/Time'),
@@ -85,28 +71,19 @@ class WhatsappTemplate(models.Model):
         ('days', 'Days'),
     ], string='Offset Unit', default='hours')
 
-    # Automation Trigger
     auto_send_on_post = fields.Boolean(
         string='Auto-Send on Confirmation/Posting',
         default=False,
         help="Automatically stage or dispatch whenever a record of this model is posted/confirmed."
     )
 
-    # Header Document Configuration
     header_type = fields.Selection([
         ('none', 'None / Static Text Header'),
         ('document', 'Dynamic Document (PDF) Link'),
         ('image', 'Dynamic Image Link'),
     ], string='Header Type', default='none', required=True)
-    header_document_url = fields.Char(
-        string='Header Document URL Expression',
-        help="Jinja expression for document link (e.g. {{ base_url }}/report/pdf/...)"
-    )
-    header_document_filename = fields.Char(
-        string='Header Document Filename',
-        default='Document.pdf',
-        help="e.g. Receipt_{{ object.name }}.pdf"
-    )
+    header_document_url = fields.Char(string='Header Document URL Expression')
+    header_document_filename = fields.Char(string='Header Document Filename', default='Document.pdf')
 
     param_ids = fields.One2many(
         'whatsapp.template.param',
@@ -177,10 +154,20 @@ if template.exists():
         return False
 
     def _detect_clinic(self, record):
+        """Deeply resolves the clinic where the patient is registered/treated."""
+        # 1. Direct record branch
         for attr in ['clinic_id', 'clinic', 'branch_id']:
             val = getattr(record, attr, False)
             if val and getattr(val, '_name', '') == 'clinic.clinic':
                 return val
+
+        # 2. Patient registration branch
+        if hasattr(record, 'patient_id') and record.patient_id:
+            pat_clinic = getattr(record.patient_id, 'clinic_id', False)
+            if pat_clinic and getattr(pat_clinic, '_name', '') == 'clinic.clinic':
+                return pat_clinic
+
+        # 3. POS Order branch
         if hasattr(record, 'pos_order_ids') and record.pos_order_ids:
             pos = record.pos_order_ids[0]
             for attr in ['clinic_id', 'branch_id']:
@@ -189,43 +176,47 @@ if template.exists():
                     return val
             if hasattr(pos, 'config_id') and getattr(pos.config_id, 'clinic_id', False):
                 return pos.config_id.clinic_id
-        for rel in ['patient_id', 'partner_id']:
+
+        # 4. Partner linked home branch or patient profile
+        for rel in ['partner_id']:
             partner = getattr(record, rel, False)
-            if partner and getattr(partner, 'clinic_id', False):
-                return partner.clinic_id
+            if partner:
+                if getattr(partner, 'clinic_id', False) and getattr(partner.clinic_id, '_name', '') == 'clinic.clinic':
+                    return partner.clinic_id
+                # Trace linked clinic.patient
+                pat = self.env['clinic.patient'].sudo().search([('partner_id', '=', partner.id)], limit=1)
+                if pat and pat.clinic_id:
+                    return pat.clinic_id
+
         return self.env['clinic.clinic'].browse()
 
     def _resolve_sender_phone_id(self, clinic):
-        """Resolves the exact Meta Phone Number ID according to routing rules."""
+        """Resolves the Meta Phone Number ID. Falls back gracefully if designated sender is unregistered/draft."""
         ICP = self.env['ir.config_parameter'].sudo()
         global_fallback = (ICP.get_param('clinic_whatsapp.phone_number_id') or '1395062320356609').strip()
 
-        # 1. Clinic Branch Override
+        # 1. Clinic Branch Override (if active)
         if self.sender_routing == 'clinic' and clinic:
-            if getattr(clinic, 'sender_phone_id', False) and clinic.sender_phone_id.phone_number_id:
+            if getattr(clinic, 'sender_phone_id', False) and clinic.sender_phone_id.state == 'active' and clinic.sender_phone_id.phone_number_id:
                 return clinic.sender_phone_id.phone_number_id.strip()
-            if getattr(clinic, 'wa_phone_number_id', False):
-                return clinic.wa_phone_number_id.strip()
 
-        # 2. Template Designated Sender
-        if self.sender_phone_id and self.sender_phone_id.phone_number_id:
+        # 2. Template Designated Sender (if active)
+        if self.sender_phone_id and self.sender_phone_id.state == 'active' and self.sender_phone_id.phone_number_id:
             return self.sender_phone_id.phone_number_id.strip()
 
         # 3. Default Sender Phone Record
         default_sender = self.env['whatsapp.sender.phone'].sudo().search([('is_default', '=', True)], limit=1)
-        if default_sender and default_sender.phone_number_id:
+        if default_sender and default_sender.state == 'active' and default_sender.phone_number_id:
             return default_sender.phone_number_id.strip()
 
+        # Safe Fallback to Global Settings ID (Primary Central Line)
+        _logger.info("Designated WhatsApp sender is in draft or unverified on Meta. Gracefully routing via verified primary line.")
         return global_fallback
 
     def _calculate_target_send_datetime(self, record):
-        """Computes the exact UTC timestamp when this message should be sent."""
         now_dt = fields.Datetime.now()
-
         if self.dispatch_timing == 'immediate':
             return now_dt
-
-        # 1. Relative Delay
         if self.dispatch_timing == 'relative_delay':
             val = self.delay_value or 0.0
             if self.delay_unit == 'minutes':
@@ -234,40 +225,28 @@ if template.exists():
                 return now_dt + timedelta(hours=val)
             elif self.delay_unit == 'days':
                 return now_dt + timedelta(days=val)
-
-        # 2. Fixed Time of Day
         if self.dispatch_timing == 'time_of_day':
             hours = int(self.time_of_day_hour)
             minutes = int((self.time_of_day_hour - hours) * 60)
             target_date = (fields.Date.today() + timedelta(days=self.time_of_day_offset_days or 0))
             naive_dt = datetime.combine(target_date, time(hour=hours, minute=minutes))
             return fields.Datetime.to_string(naive_dt)
-
-        # 3. Record Datetime Field Offset
         if self.dispatch_timing == 'field_offset' and self.record_date_field:
             raw_field_val = False
             for part in self.record_date_field.split('.'):
-                raw_field_val = getattr(record, part, False) if not raw_field_val else getattr(raw_field_val, part,
-                                                                                               False)
+                raw_field_val = getattr(record, part, False) if not raw_field_val else getattr(raw_field_val, part, False)
                 if not raw_field_val:
                     break
-
             if raw_field_val:
                 if isinstance(raw_field_val, str):
                     raw_field_val = fields.Datetime.from_string(raw_field_val)
                 elif isinstance(raw_field_val, fields.Date):
                     raw_field_val = datetime.combine(raw_field_val, time(hour=9, minute=0))
-
                 val = self.record_offset_value or 0.0
                 delta = timedelta(minutes=val) if self.record_offset_unit == 'minutes' else \
-                    timedelta(hours=val) if self.record_offset_unit == 'hours' else \
+                        timedelta(hours=val) if self.record_offset_unit == 'hours' else \
                         timedelta(days=val)
-
-                if self.record_offset_direction == 'before':
-                    return raw_field_val - delta
-                else:
-                    return raw_field_val + delta
-
+                return raw_field_val - delta if self.record_offset_direction == 'before' else raw_field_val + delta
         return now_dt
 
     def send_messages(self, records):
@@ -277,8 +256,7 @@ if template.exists():
 
         env = SandboxedEnvironment()
         ICP = self.env['ir.config_parameter'].sudo()
-        public_base = (ICP.get_param('clinic_whatsapp.public_base_url') or ICP.get_param('web.base.url', '')).rstrip(
-            '/')
+        public_base = (ICP.get_param('clinic_whatsapp.public_base_url') or ICP.get_param('web.base.url', '')).rstrip('/')
 
         def format_datetime(dt, fmt='%d %b %Y, %I:%M %p'):
             if not dt:
@@ -312,12 +290,23 @@ if template.exists():
             if hasattr(rec, '_portal_ensure_token'):
                 rec._portal_ensure_token()
 
+            # Dynamic Clinic Admin Resolution for Jinja
+            adm_name = clinic.admin_name if (clinic and clinic.admin_name) else 'Clinic Manager'
+            adm_phone = clinic.admin_phone or clinic.helpline_phone or (clinic.phone if clinic else '9082777624')
+            adm_wa = clinic.admin_whatsapp or clinic.admin_phone or (clinic.phone if clinic else '9082777624')
+            clean_wa = re.sub(r'\D', '', adm_wa or '')[-10:]
+            adm_chat_link = f"https://wa.me/91{clean_wa}" if clean_wa else ""
+
             render_context = {
                 'object': rec,
                 'clinic': clinic,
                 'format_date': format_date,
                 'format_datetime': format_datetime,
                 'base_url': public_base,
+                'admin_name': adm_name,
+                'admin_phone': adm_phone,
+                'admin_whatsapp': adm_wa,
+                'admin_chat_link': adm_chat_link,
             }
 
             body_parameters = []
@@ -377,12 +366,10 @@ if template.exists():
 
         created_queue = self.env['whatsapp.message.queue'].sudo().create(queue_vals)
 
-        # Immediate dispatch only if timing is set to immediate
         if self.dispatch_timing == 'immediate':
             created_queue.process_message_queue(records=created_queue)
 
         return created_queue
-
 
 class WhatsappTemplateParam(models.Model):
     _name = 'whatsapp.template.param'
@@ -395,5 +382,5 @@ class WhatsappTemplateParam(models.Model):
     value_expression = fields.Char(
         string='Jinja Expression',
         required=True,
-        help="e.g. {{ object.partner_id.name }}, {{ clinic.name }}, or {{ clinic.phone }}"
+        help="e.g. {{ object.partner_id.name }}, {{ clinic.name }}, {{ admin_name }}, {{ admin_phone }}"
     )

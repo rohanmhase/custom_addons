@@ -8,7 +8,7 @@ class WhatsappSenderPhone(models.Model):
     name = fields.Char(
         string='Sender Profile Name',
         required=True,
-        help="e.g. 'Invoicing & Bills', 'Clinic Scheduling', 'Vashi Clinic Line'"
+        help="e.g. 'Invoicing & Bills', 'Clinic Scheduling Line'"
     )
     phone_number = fields.Char(
         string='Display Phone Number',
@@ -16,13 +16,16 @@ class WhatsappSenderPhone(models.Model):
     )
     phone_number_id = fields.Char(
         string='Meta Phone Number ID',
-        required=True,
-        help="15-16 digit Meta Phone Number ID (e.g. 1395062320356609)"
+        help="15-16 digit Meta Phone Number ID. Leave empty if awaiting Meta registration."
     )
     waba_id = fields.Char(
         string='WABA ID (Optional)',
         help="Specify if this number belongs to a separate WhatsApp Business Account"
     )
+    state = fields.Selection([
+        ('draft', 'Pending Meta Registration (Fallback to Default)'),
+        ('active', 'Active on Meta'),
+    ], string='Status', default='draft', required=True)
     is_default = fields.Boolean(
         string='Default System Sender',
         default=False,
@@ -46,8 +49,10 @@ class WhatsappSenderPhone(models.Model):
     def name_get(self):
         res = []
         for rec in self:
-            label = f"{rec.name} ({rec.phone_number or rec.phone_number_id})"
-            if rec.is_default:
+            label = f"{rec.name} ({rec.phone_number or 'Unregistered'})"
+            if rec.state == 'draft':
+                label += " [Draft/Fallback]"
+            elif rec.is_default:
                 label += " [Default]"
             res.append((rec.id, label))
         return res

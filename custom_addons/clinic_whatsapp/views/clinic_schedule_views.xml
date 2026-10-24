@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_schedule_reschedule_tree" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.reschedule.tree</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <tree string="Pending Reschedule Requests" create="false" delete="false" decoration-danger="notification_status == 'reschedule_requested'">
+                <field name="name" string="Appt ID"/>
+                <field name="start_datetime" string="Original Slot"/>
+                <field name="patient_id" string="Patient"/>
+                <field name="clinic_id" string="Clinic Branch"/>
+                <field name="therapist_id" string="Therapist"/>
+                <field name="notification_status" widget="badge" decoration-danger="notification_status == 'reschedule_requested'"/>
+                <button name="action_resend_appointment_whatsapp"
+                        type="object"
+                        string="Re-send Confirmation"
+                        icon="fa-whatsapp"
+                        class="btn-primary"
+                        help="Re-dispatches updated slot details to patient"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_clinic_schedule_reschedule_requests" model="ir.actions.act_window">
+        <field name="name">Reschedule Requests</field>
+        <field name="res_model">clinic.schedule.appointment</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('notification_status', '=', 'reschedule_requested')]</field>
+        <field name="view_id" ref="view_clinic_schedule_reschedule_tree"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No patients waiting for rescheduling!
+            </p>
+            <p>
+                When patients tap "Reschedule" on their WhatsApp reminder, their record appears here so clinic staff can follow up.
+            </p>
+        </field>
+    </record>
+
+    <!-- Injects smoothly into Clinic Schedule top navigation -->
+    <menuitem id="menu_clinic_schedule_reschedule_requests"
+              name="Reschedule Requests"
+              parent="clinic_schedule.menu_clinic_schedule_root"
+              action="action_clinic_schedule_reschedule_requests"
+              sequence="11"/>
+</odoo>

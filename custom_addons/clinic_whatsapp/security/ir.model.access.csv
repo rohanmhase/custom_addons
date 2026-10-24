@@ -9,3 +9,5 @@ access_whatsapp_template_param_user,whatsapp.template.param.user,model_whatsapp_
 access_whatsapp_template_param_manager,whatsapp.template.param.manager,model_whatsapp_template_param,base.group_system,1,1,1,1
 access_whatsapp_message_reply_user,whatsapp.message.reply.user,model_whatsapp_message_reply,base.group_user,1,0,0,0
 access_whatsapp_message_reply_manager,whatsapp.message.reply.manager,model_whatsapp_message_reply,base.group_system,1,1,1,1
+access_whatsapp_compose_wizard_user,whatsapp.compose.wizard.user,model_whatsapp_compose_wizard,base.group_user,1,1,1,1
+access_whatsapp_compose_wizard_manager,whatsapp.compose.wizard.manager,model_whatsapp_compose_wizard,base.group_system,1,1,1,1

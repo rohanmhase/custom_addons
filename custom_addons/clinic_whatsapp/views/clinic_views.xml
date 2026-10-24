@@ -6,7 +6,10 @@
         <field name="inherit_id" ref="clinic_management.view_clinic_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='phone']" position="after">
-                <field name="sender_phone_id" placeholder="Optional: Select Branch Sender WhatsApp Number"/>
+                <field name="admin_name" placeholder="Clinic Admin Name"/>
+                <field name="admin_phone" placeholder="e.g. 98201XXXXX"/>
+                <field name="admin_name_2" placeholder="Clinic Admin 2 Name"/>
+                <field name="admin_phone_2" placeholder="e.g. 98202XXXXX"/>
             </xpath>
         </field>
     </record>
