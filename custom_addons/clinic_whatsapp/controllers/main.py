@@ -153,7 +153,7 @@ class WhatsAppWebhookController(http.Controller):
                     clinic_title = clinic_obj.name if clinic_obj else 'ResearchAyu Knee Clinics'
 
                     # -------------------------------------------------------------
-                    # ANTI-FLIP-FLOP GUARD: Check for Prior Button Selection
+                    # 1. ANTI-FLIP-FLOP GUARD: Check for Prior Button Selection
                     # -------------------------------------------------------------
                     if reply_type == 'quick_reply' and context_wamid:
                         prior_choice = env['whatsapp.message.reply'].sudo().search([
@@ -171,20 +171,20 @@ class WhatsAppWebhookController(http.Controller):
                             if appointment_obj and appointment_obj.exists():
                                 appointment_obj.message_post(body=(
                                     f"<b><i class='fa fa-ban text-warning'></i> WhatsApp Selection Blocked:</b> "
-                                    f"Patient attempted to select <code>{chosen_option}</code>, but their previous response "
+                                    f"Patient attempted to select <code>{chosen_option}</code>, but initial choice "
                                     f"<code>{locked_answer}</code> is locked."
                                 ))
 
-                            # Send locked warning back to handset
+                            # Locked warning without any helpline number
                             lock_msg = (
                                 f"Dear {patient_name}, you have already selected \"{locked_answer}\" for this session. "
-                                f"To modify your appointment, please contact {clinic_title} directly at {helpline_str}."
+                                f"Our clinic team will reach out to you directly if any further assistance is required."
                             )
                             _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, lock_msg)
                             continue
 
                     # -------------------------------------------------------------
-                    # Record Inbound Message
+                    # 2. Record Inbound Message
                     # -------------------------------------------------------------
                     env['whatsapp.message.reply'].sudo().create({
                         'patient_name': patient_name,
@@ -203,7 +203,7 @@ class WhatsAppWebhookController(http.Controller):
                     })
 
                     # -------------------------------------------------------------
-                    # Action Logic & Automated Session Replies
+                    # 3. Action Logic & Automated Session Replies (No Helpline)
                     # -------------------------------------------------------------
                     lower_choice = chosen_option.lower()
 
@@ -217,41 +217,42 @@ class WhatsAppWebhookController(http.Controller):
                                 f"<b><i class='fa fa-check-circle text-success'></i> Confirmed via WhatsApp</b> by {patient_name}."
                             ))
 
-                        reply = (
+                        confirm_reply = (
                             f"Thank you for confirming, {patient_name}! "
-                            f"Please arrive at {clinic_title} 15 minutes prior to your slot. "
-                            f"Helpline: {helpline_str}."
+                            f"Please arrive at {clinic_title} 15 minutes prior to your scheduled slot."
                         )
-                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, reply)
+                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, confirm_reply)
 
                     elif reply_type == 'quick_reply' and 'reschedule' in lower_choice:
                         if appointment_obj and appointment_obj.exists():
+                            # Keep slot locked and intact on the matrix grid; only flag the notification state
                             appointment_obj.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write(
                                 {
                                     'notification_status': 'reschedule_requested'
                                 })
                             appointment_obj.message_post(body=(
-                                f"<b><i class='fa fa-calendar-times-o text-danger'></i> Reschedule Requested via WhatsApp</b> by {patient_name}."
+                                f"<b><i class='fa fa-calendar-times-o text-danger'></i> Reschedule Requested via WhatsApp</b> by {patient_name}. "
+                                f"Existing slot remains held until reassigned."
                             ))
 
-                        reply = (
-                            f"Dear {patient_name}, we have noted your request to reschedule. "
-                            f"Our clinic coordinator at {clinic_title} will call you shortly to assist.\n"
-                            f"Clinic Contact: {helpline_str}."
+                        reschedule_reply = (
+                            f"Dear {patient_name}, we have received your request to reschedule your appointment at {clinic_title}.\n\n"
+                            f"Someone from the clinic will contact you shortly to coordinate a convenient time. "
+                            f"Please note that until a new slot is confirmed, your current appointment slot remains confirmed and reserved for you."
                         )
-                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, reply)
+                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, reschedule_reply)
 
                     else:
-                        # Free-form customer text (e.g. asking for scanner / marathi translation)
+                        # Free-form patient text
                         if appointment_obj and appointment_obj.exists():
                             appointment_obj.message_post(
                                 body=f"<b>WhatsApp Message from {patient_name}:</b> {chosen_option}")
 
-                        reply = (
+                        default_reply = (
                             f"Hello {patient_name}, thank you for contacting {clinic_title}. "
                             f"We have received your message: \"{chosen_option}\". "
-                            f"For immediate assistance, please call {helpline_str}."
+                            f"Our clinic team will follow up with you shortly."
                         )
-                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, reply)
+                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, default_reply)
 
         return {'status': 'success'}
