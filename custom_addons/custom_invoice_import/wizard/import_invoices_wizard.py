@@ -275,8 +275,9 @@ class ImportInvoicesWizard(models.TransientModel):
                     if pos_val and CountryIN:
                         st = State.search([
                             ('country_id', '=', CountryIN.id),
-                            '|',
+                            '|', '|',
                             ('code', '=ilike', pos_val),
+                            ('code', '=ilike', f"IN-{pos_val}"),  # Handles 'HR' -> 'IN-HR', 'MH' -> 'IN-MH'
                             ('name', '=ilike', pos_val),
                         ], limit=1)
                         state_id = st.id if st else False
