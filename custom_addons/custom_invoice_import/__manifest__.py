@@ -7,6 +7,7 @@
     'data': [
         'security/security_groups.xml',
         'security/ir.model.access.csv',
+        'views/config_views.xml',
         'wizard/wizard_views.xml',
     ],
     'installable': True,

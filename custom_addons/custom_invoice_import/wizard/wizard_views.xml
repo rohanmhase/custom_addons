@@ -20,24 +20,89 @@
                     <!-- Header Guide -->
                     <group string="Accepted CSV Column Headers" invisible="state == 'done'">
                         <div colspan="2" class="alert alert-info" role="alert">
-                            <p><b>Required columns</b> (case-insensitive, any order):</p>
+                            <p>
+                                <b>Required columns</b>
+                                (case-insensitive, any order):
+                            </p>
                             <ul>
-                                <li><b>Order Number</b> — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>, <code>Ref</code></li>
-                                <li><b>Customer Name</b> — aliases: <code>Name</code>, <code>Receiver Name</code></li>
-                                <li><b>Receiver_phone</b> — aliases: <code>Receiver Phone</code>,  shower: <code>Phone</code>, <code>Mobile</code>, <code>Mobile Number</code></li>
-                                <li><b>Item Name</b> — aliases: <code>Product Name</code>, <code>Product</code>, <code>Item</code></li>
-                                <li><b>Quantity</b> — aliases: <code>Qty</code>, <code>Item Quantity</code></li>
-                                <li><b>Item Price</b> — aliases: <code>Price</code>, <code>Unit Price</code>, <code>Rate</code></li>
-                                <li><b>Payment Method</b> — aliases: <code>Payment Mode</code>, <code>Payment Type</code> (values: <code>prepaid</code> / <code>pay on delivery</code>)</li>
+                                <li>
+                                    <b>Order Number</b>
+                                    — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>,
+                                    <code>Ref</code>
+                                </li>
+                                <li>
+                                    <b>Customer Name</b>
+                                    — aliases: <code>Name</code>,
+                                    <code>Receiver Name</code>
+                                </li>
+                                <li>
+                                    <b>Receiver_phone</b>
+                                    — aliases: <code>Receiver Phone</code>, shower: <code>Phone</code>, <code>
+                                    Mobile</code>,
+                                    <code>Mobile Number</code>
+                                </li>
+                                <li>
+                                    <b>Item Name</b>
+                                    — aliases: <code>Product Name</code>, <code>Product</code>,
+                                    <code>Item</code>
+                                </li>
+                                <li>
+                                    <b>Quantity</b>
+                                    — aliases: <code>Qty</code>,
+                                    <code>Item Quantity</code>
+                                </li>
+                                <li>
+                                    <b>Item Price</b>
+                                    — aliases: <code>Price</code>, <code>Unit Price</code>,
+                                    <code>Rate</code>
+                                </li>
+                                <li>
+                                    <b>Payment Method</b>
+                                    — aliases: <code>Payment Mode</code>, <code>Payment Type</code> (values: <code>
+                                    prepaid
+                                </code> / <code>pay on delivery</code>)
+                                </li>
                             </ul>
 
-                            <p><b>Optional columns:</b></p>
+                            <p>
+                                <b>Optional columns:</b>
+                            </p>
                             <ul>
-                                <li><b>Customer Address</b> — aliases: <code>Address</code>, <code>Street</code>, <code>Billing Address</code></li>
-                                <li><b>PIN CODE</b> — aliases: <code>Pincode</code>, <code>Zip</code>, <code>Postal Code</code></li>
-                                <li><b>Place of Supply</b> — aliases: <code>State</code>, <code>State Name</code> (e.g. <code>MH</code>, <code>HR</code>)</li>
-                                <li><b>Item Tax %</b> — aliases: <code>Tax %</code>, <code>Tax</code>, <code>Tax Percent</code></li>
-                                <li><b>Entity Discount Percent</b> — aliases: <code>Discount %</code>, <code>Disc %</code>, <code>Item Discount %</code></li>
+                                <li>
+                                    <b>Customer Address</b>
+                                    — aliases: <code>Address</code>, <code>Street</code>,
+                                    <code>Billing Address</code>
+                                </li>
+                                <li>
+                                    <b>PIN CODE</b>
+                                    — aliases: <code>Pincode</code>, <code>Zip</code>,
+                                    <code>Postal Code</code>
+                                </li>
+                                <li>
+                                    <b>Place of Supply</b>
+                                    — aliases: <code>State</code>, <code>State Name</code> (e.g. <code>MH</code>, <code>
+                                    HR</code>)
+                                </li>
+                                <li>
+                                    <b>Item Tax %</b>
+                                    — aliases: <code>Tax %</code>, <code>Tax</code>,
+                                    <code>Tax Percent</code>
+                                </li>
+                                <li>
+                                    <b>Entity Discount Percent</b>
+                                    — aliases: <code>Discount %</code>, <code>Disc %</code>,
+                                    <code>Item Discount %</code>
+                                </li>
+                                <li>
+                                    <b>UTR</b>
+                                    — aliases: <code>UTR Number</code>,
+                                    <code>Transaction ID</code>
+                                </li>
+                                <li>
+                                    <b>Delivery Date</b>
+                                    — aliases:
+                                    <code>Delivered Date</code>
+                                </li>
                             </ul>
                         </div>
                     </group>
@@ -73,9 +138,12 @@
                 </sheet>
 
                 <footer>
-                    <button name="action_validate" string="Test / Validate" type="object" class="btn-secondary" invisible="state == 'done'"/>
-                    <button name="action_import" string="Import &amp; Process" type="object" class="btn-primary" invisible="state != 'done'"/>
-                    <button name="action_reset" string="Reset" type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                    <button name="action_validate" string="Test / Validate" type="object" class="btn-secondary"
+                            invisible="state == 'done'"/>
+                    <button name="action_import" string="Import &amp; Process" type="object" class="btn-primary"
+                            invisible="state != 'done'"/>
+                    <button name="action_reset" string="Reset" type="object" class="btn-secondary"
+                            invisible="state == 'draft'"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
@@ -97,10 +165,36 @@
 
                     <group string="Accepted CSV Column Headers">
                         <div colspan="2" class="alert alert-info" role="alert">
-                            <p><b>Required columns</b> (case-insensitive, any order):</p>
+                            <p>
+                                <b>Required columns</b>
+                                (case-insensitive, any order):
+                            </p>
                             <ul>
-                                <li><b>Order Number</b> — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>, <code>Ref</code>, <code>Source Document</code></li>
-                                <li><b>Payment Date</b> — aliases: <code>Date</code>, <code>Paid Date</code> (format: <code>YYYY-MM-DD</code>)</li>
+                                <li>
+                                    <b>Order Number</b>
+                                    — aliases: <code>SalesOrder Number</code>, <code>SO Number</code>, <code>Ref</code>,
+                                    <code>Source Document</code>
+                                </li>
+                            </ul>
+                            <p>
+                                <b>Optional columns:</b>
+                            </p>
+                            <ul>
+                                <li>
+                                    <b>Payment Date</b>
+                                    — aliases: <code>Date</code>, <code>Paid Date</code> (required only to mark unpaid
+                                    invoices as paid)
+                                </li>
+                                <li>
+                                    <b>UTR</b>
+                                    — aliases: <code>UTR Number</code>,
+                                    <code>Transaction ID</code>
+                                </li>
+                                <li>
+                                    <b>Delivery Date</b>
+                                    — aliases:
+                                    <code>Delivered Date</code>
+                                </li>
                             </ul>
                         </div>
                     </group>

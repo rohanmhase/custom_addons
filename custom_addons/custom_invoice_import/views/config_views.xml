@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Configuration Form View -->
+    <record id="view_online_import_config_form" model="ir.ui.view">
+        <field name="name">online.import.config.form</field>
+        <field name="model">online.import.config</field>
+        <field name="arch" type="xml">
+            <form string="Online Import Configuration">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Default Bank Journals">
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="prepaid_journal_id" required="1" options="{'no_create': True}"
+                                   domain="[('type', '=', 'bank'), ('company_id', '=', company_id)]"/>
+                            <field name="pod_journal_id" required="1" options="{'no_create': True}"
+                                   domain="[('type', '=', 'bank'), ('company_id', '=', company_id)]"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Configuration Tree View -->
+    <record id="view_online_import_config_tree" model="ir.ui.view">
+        <field name="name">online.import.config.tree</field>
+        <field name="model">online.import.config</field>
+        <field name="arch" type="xml">
+            <tree string="Online Import Configuration">
+                <field name="name"/>
+                <field name="prepaid_journal_id"/>
+                <field name="pod_journal_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Configuration Action -->
+    <record id="action_online_import_config" model="ir.actions.act_window">
+        <field name="name">Online Imports Configuration</field>
+        <field name="res_model">online.import.config</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Configuration Menu Item in Invoicing -> Configuration -->
+    <menuitem id="menu_online_import_config"
+              name="Online Imports"
+              parent="account.menu_finance_configuration"
+              action="action_online_import_config"
+              sequence="100"
+              groups="group_custom_import_admin"/>
+
+</odoo>

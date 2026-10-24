@@ -2,6 +2,7 @@ import base64
 import csv
 import io
 import re
+from datetime import datetime
 from odoo import models, fields, Command, _
 from odoo.exceptions import UserError
 
@@ -45,7 +46,19 @@ class ImportInvoicesWizard(models.TransientModel):
             'discount %', 'discount%', 'discount percent',
             'item discount %', 'disc %', 'disc%'
         ],
+        'utr': ['utr', 'utr number', 'transaction id', 'reference number'],
+        'delivery_date': ['delivery date', 'delivered date', 'delivered on'],
     }
+
+    def _parse_date(self, raw_value):
+        if not raw_value: return False
+        value = str(raw_value).strip()
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%m/%d/%Y', '%d.%m.%Y', '%Y/%m/%d'):
+            try:
+                return datetime.strptime(value, fmt).date().isoformat()
+            except ValueError:
+                continue
+        return False
 
     # ------------------------------------------------------------------
     # Helper Methods
@@ -104,7 +117,9 @@ class ImportInvoicesWizard(models.TransientModel):
                 continue
 
             if is_intra:
-                if 'IGST' not in name_upper and ('GST' in name_upper or 'CGST' in name_upper or 'SGST' in name_upper or abs(tax.amount - tax_pct) < 0.01):
+                if 'IGST' not in name_upper and (
+                        'GST' in name_upper or 'CGST' in name_upper or 'SGST' in name_upper or abs(
+                    tax.amount - tax_pct) < 0.01):
                     matched_tax = tax
                     break
             else:
@@ -189,8 +204,10 @@ class ImportInvoicesWizard(models.TransientModel):
                 'qty': get('qty'),
                 'price': get('price'),
                 'tax': get('tax'),
-                'discount': get('discount'),  # NEW
+                'discount': get('discount'),
                 'payment_method': get('payment_method'),
+                'utr': get('utr'),
+                'delivery_date': self._parse_date(get('delivery_date')),
             })
         return data_rows
 
@@ -348,6 +365,8 @@ class ImportInvoicesWizard(models.TransientModel):
                 grouped_orders[order_no] = {
                     'customer_phone': phone_clean,
                     'payment_method': payment_method,
+                    'utr': row.get('utr'),
+                    'delivery_date': row.get('delivery_date'),
                     'lines': [],
                 }
             else:
@@ -430,6 +449,13 @@ class ImportInvoicesWizard(models.TransientModel):
         if self.state != 'done':
             raise UserError(_("Please run Test/Validate successfully before importing."))
 
+        config = self.env['online.import.config'].search([
+            ('company_id', '=', self.env.company.id)
+        ], limit=1) or self.env['online.import.config'].search([], limit=1)
+
+        if not config or not config.prepaid_journal_id:
+            raise UserError(_("Please set the Prepaid Bank Journal in Invoicing -> Configuration -> Online Imports."))
+
         data_rows = self._decode_csv()
         errors, grouped, new_map, existing_map = self._validate_rows(data_rows)
         if errors:
@@ -449,7 +475,11 @@ class ImportInvoicesWizard(models.TransientModel):
                 partner = Partner.create(vals)
                 phone_to_partner_id[phone] = partner.id
 
-        journal = self.env['account.journal'].search([('type', '=', 'sale')], limit=1)
+        journal = self.env['account.journal'].search([
+            ('type', '=', 'sale'),
+            ('company_id', '=', self.env.company.id)
+        ], limit=1) or self.env['account.journal'].search([('type', '=', 'sale')], limit=1)
+
         if not journal:
             raise UserError(_("No Sales Journal found."))
 
@@ -486,17 +516,32 @@ class ImportInvoicesWizard(models.TransientModel):
         moves = self.env['account.move'].create(move_vals_list)
         moves.action_post()
 
-        prepaid_moves = moves.filtered(lambda m: m.ref in prepaid_refs)
+        prepaid_moves = self.env['account.move']
+        for move in moves:
+            data = grouped.get(move.ref)
+            if not data: continue
+
+            # 1. Store tracking data in YOUR new table
+            self.env['online.order'].create({
+                'name': move.ref,
+                'move_id': move.id,
+                'payment_method': data['payment_method'],
+                'utr': data.get('utr'),
+                'delivery_date': data.get('delivery_date'),
+            })
+
+            # 2. Collect prepaid moves
+            if data['payment_method'] == 'prepaid':
+                prepaid_moves |= move
+
         if prepaid_moves:
-            bank_journal = self.env['account.journal'].search([('type', '=', 'bank')], limit=1)
-            if not bank_journal:
-                raise UserError(_("No Bank Journal found for prepaid payment."))
             for move in prepaid_moves:
-                pay = self.env['account.payment.register'].with_context(
+                pay = self.env['account.payment.register'].with_company(move.company_id).with_context(
                     active_model='account.move',
                     active_ids=move.ids,
+                    default_company_id=move.company_id.id,
                 ).create({
-                    'journal_id': bank_journal.id,
+                    'journal_id': config.prepaid_journal_id.id,
                     'payment_date': move.invoice_date or fields.Date.context_today(self),
                 })
                 pay.action_create_payments()

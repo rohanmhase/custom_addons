@@ -22,6 +22,12 @@ class ImportPaymentsWizard(models.TransientModel):
         'payment_date': [
             'payment date', 'payment_date', 'date', 'paid date'
         ],
+        'utr': [
+            'utr', 'utr number', 'transaction id', 'reference number'
+        ],
+        'delivery_date': [
+            'delivery date', 'delivered date', 'delivered on'
+        ],
     }
 
     def _parse_date(self, raw_value):
@@ -33,15 +39,15 @@ class ImportPaymentsWizard(models.TransientModel):
 
         # already correct
         known_formats = (
-            '%Y-%m-%d',   # 2026-08-15
-            '%d-%m-%Y',   # 15-08-2026
-            '%d/%m/%Y',   # 15/08/2026
-            '%m/%d/%Y',   # 8/15/2026  (your current CSV)
-            '%d.%m.%Y',   # 15.08.2026
-            '%Y/%m/%d',   # 2026/08/15
-            '%d-%m-%y',   # 15-08-26
-            '%m/%d/%y',   # 8/15/26
-            '%d/%m/%y',   # 15/08/26
+            '%Y-%m-%d',  # 2026-08-15
+            '%d-%m-%Y',  # 15-08-2026
+            '%d/%m/%Y',  # 15/08/2026
+            '%m/%d/%Y',  # 8/15/2026  (your current CSV)
+            '%d.%m.%Y',  # 15.08.2026
+            '%Y/%m/%d',  # 2026/08/15
+            '%d-%m-%y',  # 15-08-26
+            '%m/%d/%y',  # 8/15/26
+            '%d/%m/%y',  # 15/08/26
         )
 
         for fmt in known_formats:
@@ -67,6 +73,13 @@ class ImportPaymentsWizard(models.TransientModel):
         if not self.file:
             raise UserError(_("Please upload a Payment CSV file."))
 
+        config = self.env['online.import.config'].search([
+            ('company_id', '=', self.env.company.id)
+        ], limit=1) or self.env['online.import.config'].search([], limit=1)
+
+        if not config or not config.pod_journal_id:
+            raise UserError(_("Please set the POD Bank Journal in Invoicing -> Configuration -> Online Imports."))
+
         try:
             raw = base64.b64decode(self.file)
             text = raw.decode('utf-8-sig')
@@ -87,11 +100,8 @@ class ImportPaymentsWizard(models.TransientModel):
                     col_index[key] = lower_headers.index(alias)
                     break
 
-        missing = [k for k in ('order_number', 'payment_date') if k not in col_index]
-        if missing:
-            raise UserError(_(
-                "Missing required column(s): %s\nFound headers: %s"
-            ) % (', '.join(missing), ', '.join([h for h in raw_headers if h])))
+        if 'order_number' not in col_index:
+            raise UserError(_("Missing required column: Order Number"))
 
         # order_number -> payment_date(YYYY-MM-DD)
         payment_data = {}
@@ -102,22 +112,30 @@ class ImportPaymentsWizard(models.TransientModel):
                 continue
 
             order_no = str(row[col_index['order_number']] or '').strip()
-            pay_raw = str(row[col_index['payment_date']] or '').strip()
-
             if not order_no:
                 errors.append("Line %s: Order Number is empty" % line_no)
                 continue
-            if not pay_raw:
-                errors.append("Line %s: Payment Date is empty" % line_no)
-                continue
+
+            def get_val(key):
+                idx = col_index.get(key)
+                return str(row[idx]).strip() if idx is not None and idx < len(row) else ''
+
+            pay_raw = get_val('payment_date')
+            del_raw = get_val('delivery_date')
+            utr_val = get_val('utr')
 
             try:
-                pay_date = self._parse_date(pay_raw)
+                pay_date = self._parse_date(pay_raw) if pay_raw else False
+                del_date = self._parse_date(del_raw) if del_raw else False
             except UserError as e:
                 errors.append("Line %s: %s" % (line_no, e.args[0]))
                 continue
 
-            payment_data[order_no] = pay_date
+            payment_data[order_no] = {
+                'payment_date': pay_date,
+                'delivery_date': del_date,
+                'utr': utr_val
+            }
 
         if errors:
             raise UserError(_("Payment CSV validation failed:\n") + "\n".join(errors[:30]))
@@ -125,44 +143,55 @@ class ImportPaymentsWizard(models.TransientModel):
         if not payment_data:
             raise UserError(_("No valid order/date rows found in CSV."))
 
+        # Removed payment_state filter so we can update already-paid orders with UTR
         moves = self.env['account.move'].search([
             '|',
             ('ref', 'in', list(payment_data.keys())),
             ('invoice_origin', 'in', list(payment_data.keys())),
             ('move_type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
-            ('payment_state', 'in', ['not_paid', 'partial']),
         ])
-
-        if not moves:
-            raise UserError(_(
-                "No unpaid posted invoices found matching the Order Numbers in the CSV."
-            ))
-
-        bank_journal = self.env['account.journal'].search([('type', '=', 'bank')], limit=1)
-        if not bank_journal:
-            raise UserError(_("No Bank Journal found to register payments."))
 
         processed_move_ids = []
         skipped = []
 
         for move in moves:
-            pay_date = payment_data.get(move.ref) or payment_data.get(move.invoice_origin)
-            if not pay_date:
-                continue
+            order_no = move.ref if move.ref in payment_data else move.invoice_origin
+            p_data = payment_data.get(order_no)
+            if not p_data: continue
 
-            try:
-                pay_wizard = self.env['account.payment.register'].with_context(
-                    active_model='account.move',
-                    active_ids=move.ids,
-                ).create({
-                    'journal_id': bank_journal.id,
-                    'payment_date': pay_date,
-                })
-                pay_wizard.action_create_payments()
+            # 1. Update Tracking Table
+            online_order = self.env['online.order'].search([('name', '=', order_no)], limit=1)
+            tracker_vals = {}
+            if p_data['utr']: tracker_vals['utr'] = p_data['utr']
+            if p_data['delivery_date']: tracker_vals['delivery_date'] = p_data['delivery_date']
+
+            if online_order:
+                if tracker_vals: online_order.write(tracker_vals)
+            else:
+                tracker_vals.update({'name': order_no, 'move_id': move.id, 'payment_method': 'pod'})
+                self.env['online.order'].create(tracker_vals)
+
+            # 2. Register Payment ONLY if invoice is unpaid
+            if move.payment_state in ['not_paid', 'partial']:
+                if not p_data['payment_date']:
+                    skipped.append("%s: Unpaid but missing Payment Date in CSV." % order_no)
+                    continue
+                try:
+                    pay_wizard = self.env['account.payment.register'].with_company(move.company_id).with_context(
+                        active_model='account.move',
+                        active_ids=move.ids,
+                        default_company_id=move.company_id.id,
+                    ).create({
+                        'journal_id': config.pod_journal_id.id,
+                        'payment_date': p_data['payment_date'],
+                    })
+                    pay_wizard.action_create_payments()
+                    processed_move_ids.append(move.id)
+                except Exception as e:
+                    skipped.append("%s: %s" % (order_no, str(e)))
+            else:
                 processed_move_ids.append(move.id)
-            except Exception as e:
-                skipped.append("%s: %s" % (move.ref or move.invoice_origin or move.name, str(e)))
 
         if not processed_move_ids:
             msg = _("No payments were created.")
