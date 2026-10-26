@@ -1,6 +1,7 @@
 from odoo import models, fields, api, tools
 from odoo.exceptions import ValidationError
 from datetime import date, timedelta
+from markupsafe import Markup
 
 
 class PETPatientStatus(models.Model):
@@ -947,11 +948,52 @@ class PETRecord(models.Model):
             self.env['mail.activity'].create(activities_to_create)
 
 
+class BMFollowupLine(models.Model):
+    _name = 'bm.followup.line'
+    _description = 'BM Follow-up Line'
+    _order = 'timestamp desc, id desc'
+
+    bm_log_id = fields.Many2one('bm.followup.log', string="BM Log", required=True, ondelete='cascade')
+    user_id = fields.Many2one('res.users', string="Advisor", default=lambda self: self.env.user, readonly=True)
+    timestamp = fields.Datetime(string="Date & Time", default=fields.Datetime.now, required=True)
+    action_taken = fields.Text(string="Action Taken", required=True)
+    remarks = fields.Text(string="Remarks")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        for line in lines:
+            if line.bm_log_id:
+                # Wrap the HTML in Markup and use %s to safely inject the user text
+                msg = Markup(
+                    "<ul><li><b>New Follow-up Details Added:</b></li>"
+                    "<li><b>Action:</b> %s</li>"
+                    "<li><b>Remarks:</b> %s</li></ul>"
+                ) % (line.action_taken, line.remarks or 'None')
+
+                line.bm_log_id.message_post(body=msg)
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        for line in self:
+            if 'action_taken' in vals or 'remarks' in vals:
+                # Wrap the HTML in Markup and use %s to safely inject the user text
+                msg = Markup(
+                    "<ul><li><b>Follow-up Details Updated:</b></li>"
+                    "<li><b>Action:</b> %s</li>"
+                    "<li><b>Remarks:</b> %s</li></ul>"
+                ) % (line.action_taken, line.remarks or 'None')
+
+                line.bm_log_id.message_post(body=msg)
+        return res
+
 class BMFollowupLog(models.Model):
     _name = 'bm.followup.log'
     _description = 'BM Follow-up Log'
     _order = 'create_date desc'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+
 
     patient_id = fields.Many2one('clinic.patient', string="Patient", required=True, ondelete='cascade', tracking=True)
     user_id = fields.Many2one('res.users', string="Advisor/BM", default=lambda self: self.env.user, readonly=True,
@@ -966,11 +1008,28 @@ class BMFollowupLog(models.Model):
 
     ticket_ids = fields.One2many('pet.escalation.ticket', 'bm_log_id', string="Escalation Tickets")
 
-    remarks = fields.Text(string="Remarks", tracking=True)
-    action_taken = fields.Text(string="Action History", required=True, tracking=True)
-    timestamp = fields.Datetime(string="Timestamp", default=fields.Datetime.now, readonly=True, tracking=True)
+    # NEW MULTI-LOGGING ENGINE
+    followup_line_ids = fields.One2many('bm.followup.line', 'bm_log_id', string="Follow-up Details")
 
+    # DISABLED REQUIRED CONSTRAINTS ON LEGACY FIELDS
+    remarks = fields.Text(string="Initial Remarks", tracking=True)
+    action_taken = fields.Text(string="Initial Action History", required=False, tracking=True)
+
+    timestamp = fields.Datetime(string="Timestamp", default=fields.Datetime.now, readonly=True, tracking=True)
     is_locked = fields.Boolean(string="Locked", compute="_compute_is_locked")
+
+    timestamp = fields.Datetime(string="Timestamp", default=fields.Datetime.now, readonly=True, tracking=True)
+    is_locked = fields.Boolean(string="Locked", compute="_compute_is_locked")
+
+    # 1. ADD THIS NEW FIELD
+    has_active_tickets = fields.Boolean(compute="_compute_has_active_tickets")
+
+    # 2. ADD THIS NEW COMPUTE FUNCTION
+    @api.depends('ticket_ids.status')
+    def _compute_has_active_tickets(self):
+        for rec in self:
+            # Checks if any linked ticket is in a pending or overdue state
+            rec.has_active_tickets = any(t.status in ['pending', 'overdue'] for t in rec.ticket_ids)
 
     @api.depends('offered_price', 'pet_discount_offered')
     def _compute_final_price(self):
