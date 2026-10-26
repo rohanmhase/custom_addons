@@ -44,6 +44,7 @@
             'patient_management/static/src/css/prescription_styles.css',
             'patient_management/static/src/xml/range_slider.xml',
             'patient_management/static/src/js/range_slider.js',
+            'patient_management/static/src/js/desktop_m2o_field.js',
 
         ],
         'point_of_sale._assets_pos': [

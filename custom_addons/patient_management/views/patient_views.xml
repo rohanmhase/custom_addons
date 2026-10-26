@@ -224,8 +224,10 @@
                         <field name="referred_doctor_name" invisible="patient_source != 'doctor'" required="1"/>
                         <field name="referred_by_patient_id"
                                invisible="patient_source != 'referral'"
+                               widget="referral_desktop_m2o"
                                context="{'global_referral_search': True, 'current_referral_patient_id': id}"
-                               options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                               options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                               placeholder="Enter 10-digit mobile number..."/>
 
                         <field name="source_event"
                                options="{'no_create': True, 'no_open': True}"
