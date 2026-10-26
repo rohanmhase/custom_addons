@@ -5,11 +5,21 @@
         <field name="model">clinic.clinic</field>
         <field name="inherit_id" ref="clinic_management.view_clinic_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='phone']" position="after">
-                <field name="admin_name" placeholder="Clinic Admin Name"/>
-                <field name="admin_phone" placeholder="e.g. 98201XXXXX"/>
-                <field name="admin_name_2" placeholder="Clinic Admin 2 Name"/>
-                <field name="admin_phone_2" placeholder="e.g. 98202XXXXX"/>
+            <xpath expr="//sheet" position="inside">
+                <group string="Dynamic WhatsApp Admin Helplines" name="whatsapp_helplines">
+                    <group string="Primary &amp; Secondary Contacts">
+                        <field name="admin_name" placeholder="Admin 1 Name"/>
+                        <field name="admin_phone" placeholder="10-digit mobile number"/>
+                        <field name="admin_name_2" placeholder="Admin 2 Name"/>
+                        <field name="admin_phone_2" placeholder="10-digit mobile number"/>
+                    </group>
+                    <group string="Tertiary &amp; Landline Fallback">
+                        <field name="admin_name_3" placeholder="Admin 3 Name"/>
+                        <field name="admin_phone_3" placeholder="10-digit mobile number"/>
+                        <field name="helpline_phone" placeholder="Reception / Landline"/>
+                        <field name="sender_phone_id" options="{'no_create': True}"/>
+                    </group>
+                </group>
             </xpath>
         </field>
     </record>

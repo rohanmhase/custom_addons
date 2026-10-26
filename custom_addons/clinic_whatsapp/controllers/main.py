@@ -203,15 +203,18 @@ class WhatsAppWebhookController(http.Controller):
                     })
 
                     # -------------------------------------------------------------
-                    # 3. Action Logic & Automated Session Replies (No Helpline)
+                    # Action Logic & Automated Session Replies
                     # -------------------------------------------------------------
                     lower_choice = chosen_option.lower()
 
                     if reply_type == 'quick_reply' and 'confirm' in lower_choice:
                         if appointment_obj and appointment_obj.exists():
+                            # If previously rescheduled, preserve the resolution metric
+                            new_status = 'rescheduled_done' if appointment_obj.wa_response_status == 'rescheduled_done' else 'confirmed'
                             appointment_obj.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write(
                                 {
-                                    'notification_status': 'wa_delivered'
+                                    'notification_status': 'wa_delivered',
+                                    'wa_response_status': new_status,
                                 })
                             appointment_obj.message_post(body=(
                                 f"<b><i class='fa fa-check-circle text-success'></i> Confirmed via WhatsApp</b> by {patient_name}."
@@ -225,10 +228,11 @@ class WhatsAppWebhookController(http.Controller):
 
                     elif reply_type == 'quick_reply' and 'reschedule' in lower_choice:
                         if appointment_obj and appointment_obj.exists():
-                            # Keep slot locked and intact on the matrix grid; only flag the notification state
                             appointment_obj.with_context(bypass_matrix_lock=True, bypass_notification_reset=True).write(
                                 {
-                                    'notification_status': 'reschedule_requested'
+                                    'notification_status': 'reschedule_requested',
+                                    'wa_response_status': 'reschedule_requested',
+                                    'reschedule_requested_at': fields.Datetime.now(),
                                 })
                             appointment_obj.message_post(body=(
                                 f"<b><i class='fa fa-calendar-times-o text-danger'></i> Reschedule Requested via WhatsApp</b> by {patient_name}. "
@@ -241,18 +245,5 @@ class WhatsAppWebhookController(http.Controller):
                             f"Please note that until a new slot is confirmed, your current appointment slot remains confirmed and reserved for you."
                         )
                         _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, reschedule_reply)
-
-                    else:
-                        # Free-form patient text
-                        if appointment_obj and appointment_obj.exists():
-                            appointment_obj.message_post(
-                                body=f"<b>WhatsApp Message from {patient_name}:</b> {chosen_option}")
-
-                        default_reply = (
-                            f"Hello {patient_name}, thank you for contacting {clinic_title}. "
-                            f"We have received your message: \"{chosen_option}\". "
-                            f"Our clinic team will follow up with you shortly."
-                        )
-                        _send_whatsapp_session_text(env, dispatch_phone_id, from_phone, default_reply)
 
         return {'status': 'success'}

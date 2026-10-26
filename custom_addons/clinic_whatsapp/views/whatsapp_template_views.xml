@@ -58,37 +58,38 @@
                     </group>
 
                     <group string="Time &amp; Dispatch Scheduling">
-                        <group>
+                        <group string="Dispatch Trigger">
                             <field name="dispatch_timing"/>
                             <field name="auto_send_on_post"/>
                         </group>
-                        <group>
+                        <group string="Timing Parameters">
                             <!-- 1. Relative Delay -->
-                            <div invisible="dispatch_timing != 'relative_delay'" class="o_row">
-                                <span class="me-2">Send</span>
-                                <field name="delay_value" class="oe_inline" style="width: 70px;"/>
-                                <field name="delay_unit" class="oe_inline ms-2" style="width: 100px;"/>
-                                <span class="ms-2">after trigger</span>
+                            <label for="delay_value" string="Delay Duration" invisible="dispatch_timing != 'relative_delay'"/>
+                            <div class="d-flex align-items-center gap-2" invisible="dispatch_timing != 'relative_delay'">
+                                <span>Send</span>
+                                <field name="delay_value" class="oe_inline" style="max-width: 80px;"/>
+                                <field name="delay_unit" class="oe_inline" style="max-width: 110px;"/>
+                                <span>after trigger</span>
                             </div>
 
                             <!-- 2. Fixed Time of Day -->
-                            <div invisible="dispatch_timing != 'time_of_day'" class="o_row">
-                                <span class="me-2">Send at</span>
-                                <field name="time_of_day_hour" widget="float_time" class="oe_inline"/>
-                                <span class="mx-2">(Day offset:</span>
-                                <field name="time_of_day_offset_days" class="oe_inline" style="width: 50px;"/>
+                            <label for="time_of_day_hour" string="Target Time" invisible="dispatch_timing != 'time_of_day'"/>
+                            <div class="d-flex align-items-center gap-2" invisible="dispatch_timing != 'time_of_day'">
+                                <span>Send at</span>
+                                <field name="time_of_day_hour" widget="float_time" class="oe_inline" style="max-width: 90px;"/>
+                                <span class="ms-2">(Day offset:</span>
+                                <field name="time_of_day_offset_days" class="oe_inline" style="max-width: 60px;"/>
                                 <span>days)</span>
                             </div>
 
                             <!-- 3. Record Datetime Offset -->
-                            <div invisible="dispatch_timing != 'field_offset'">
-                                <field name="record_date_field" placeholder="e.g. start_datetime or appointment_date"/>
-                                <div class="o_row mt-2">
-                                    <field name="record_offset_value" class="oe_inline" style="width: 60px;"/>
-                                    <field name="record_offset_unit" class="oe_inline ms-2" style="width: 90px;"/>
-                                    <field name="record_offset_direction" class="oe_inline ms-2"/>
-                                    <span class="ms-2">the scheduled field</span>
-                                </div>
+                            <field name="record_date_field" placeholder="e.g. start_datetime" invisible="dispatch_timing != 'field_offset'"/>
+                            <label for="record_offset_value" string="Offset Rule" invisible="dispatch_timing != 'field_offset'"/>
+                            <div class="d-flex align-items-center gap-2" invisible="dispatch_timing != 'field_offset'">
+                                <field name="record_offset_value" class="oe_inline" style="max-width: 60px;"/>
+                                <field name="record_offset_unit" class="oe_inline" style="max-width: 100px;"/>
+                                <field name="record_offset_direction" class="oe_inline" style="max-width: 100px;"/>
+                                <span>scheduled slot</span>
                             </div>
                         </group>
                     </group>
