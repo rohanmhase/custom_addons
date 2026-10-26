@@ -8,3 +8,4 @@ access_pet_followup_line,pet.followup.line,model_pet_followup_line,base.group_us
 access_pet_escalation_ticket,pet.escalation.ticket,model_pet_escalation_ticket,base.group_user,1,1,1,1
 access_pet_reason_category,pet.reason.category,model_pet_reason_category,base.group_user,1,1,1,1
 access_pet_reason,pet.reason,model_pet_reason,base.group_user,1,1,1,1
+access_bm_followup_line,bm.followup.line,model_bm_followup_line,base.group_user,1,1,1,1
