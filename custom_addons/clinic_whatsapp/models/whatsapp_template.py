@@ -291,9 +291,11 @@ if template.exists():
                 rec._portal_ensure_token()
 
             # Dynamic Clinic Admin Resolution for Jinja
-            adm_name = clinic.admin_name if (clinic and clinic.admin_name) else 'Clinic Manager'
-            adm_phone = clinic.admin_phone or clinic.helpline_phone or (clinic.phone if clinic else '9082777624')
-            adm_wa = clinic.admin_whatsapp or clinic.admin_phone or (clinic.phone if clinic else '9082777624')
+            # Dynamic Clinic Admin Resolution for Jinja (Safe Attribute Access)
+            adm_name = getattr(clinic, 'admin_name', False) or 'Clinic Manager'
+            adm_phone = getattr(clinic, 'admin_phone', False) or getattr(clinic, 'helpline_phone', False) or (
+                        getattr(clinic, 'phone', False) or '9082777624')
+            adm_wa = getattr(clinic, 'admin_whatsapp', False) or adm_phone
             clean_wa = re.sub(r'\D', '', adm_wa or '')[-10:]
             adm_chat_link = f"https://wa.me/91{clean_wa}" if clean_wa else ""
 

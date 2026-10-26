@@ -1,43 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- 1. Enhanced Tree View with Status Badges and Direct Action Buttons -->
     <record id="view_clinic_schedule_reschedule_tree" model="ir.ui.view">
         <field name="name">clinic.schedule.appointment.reschedule.tree</field>
         <field name="model">clinic.schedule.appointment</field>
         <field name="arch" type="xml">
-            <tree string="Pending Reschedule Requests" create="false" delete="false" decoration-danger="notification_status == 'reschedule_requested'">
+            <tree string="Appointment Confirmations &amp; Rescheduling" create="false" delete="false"
+                  decoration-danger="wa_response_status == 'reschedule_requested'"
+                  decoration-info="wa_response_status == 'rescheduled_done'"
+                  decoration-success="wa_response_status == 'confirmed'">
                 <field name="name" string="Appt ID"/>
-                <field name="start_datetime" string="Original Slot"/>
+                <field name="start_datetime" string="Scheduled Slot"/>
                 <field name="patient_id" string="Patient"/>
                 <field name="clinic_id" string="Clinic Branch"/>
                 <field name="therapist_id" string="Therapist"/>
-                <field name="notification_status" widget="badge" decoration-danger="notification_status == 'reschedule_requested'"/>
+                <field name="wa_response_status" widget="badge"
+                       decoration-danger="wa_response_status == 'reschedule_requested'"
+                       decoration-info="wa_response_status == 'rescheduled_done'"
+                       decoration-success="wa_response_status == 'confirmed'"/>
+                <field name="reschedule_requested_at" string="Requested At" optional="show"/>
+                <field name="rescheduled_at" string="Resolved At" optional="hide"/>
                 <button name="action_resend_appointment_whatsapp"
                         type="object"
                         string="Re-send Confirmation"
                         icon="fa-whatsapp"
-                        class="btn-primary"
-                        help="Re-dispatches updated slot details to patient"/>
+                        class="btn-primary btn-sm"
+                        invisible="wa_response_status != 'reschedule_requested'"
+                        help="Re-dispatches updated slot details to patient and resolves reschedule"/>
+                <button name="action_mark_rescheduled"
+                        type="object"
+                        string="Mark Resolved"
+                        icon="fa-check"
+                        class="btn-secondary btn-sm"
+                        invisible="wa_response_status != 'reschedule_requested'"
+                        help="Mark as resolved without re-sending WhatsApp"/>
             </tree>
         </field>
     </record>
 
+    <!-- 2. Kanban Board Grouped by Response Status -->
+    <record id="view_clinic_schedule_reschedule_kanban" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.reschedule.kanban</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="wa_response_status" create="false" quick_create="false">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="clinic_id"/>
+                <field name="therapist_id"/>
+                <field name="start_datetime"/>
+                <field name="wa_response_status"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-3 shadow-sm rounded border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong class="text-primary"><field name="patient_id"/></strong>
+                                <span class="badge rounded-pill bg-light text-dark"><field name="name"/></span>
+                            </div>
+                            <div class="text-muted small mb-1">
+                                <i class="fa fa-calendar me-1"/> <field name="start_datetime"/>
+                            </div>
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-hospital-o me-1"/> <field name="clinic_id"/>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                <span class="small"><i class="fa fa-user-md me-1"/> <field name="therapist_id"/></span>
+                                <button name="action_resend_appointment_whatsapp"
+                                        type="object"
+                                        string="Re-send"
+                                        class="btn btn-sm btn-outline-success"
+                                        invisible="wa_response_status != 'reschedule_requested'">
+                                    <i class="fa fa-whatsapp"/> Re-send
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- 3. Search View with Left Counter Sidebar (<searchpanel>) -->
+    <record id="view_clinic_schedule_reschedule_search" model="ir.ui.view">
+        <field name="name">clinic.schedule.appointment.reschedule.search</field>
+        <field name="model">clinic.schedule.appointment</field>
+        <field name="arch" type="xml">
+            <search string="Search Confirmations &amp; Reschedules">
+                <field name="patient_id"/>
+                <field name="clinic_id"/>
+                <field name="therapist_id"/>
+                <field name="name"/>
+
+                <!-- Quick Section Filters -->
+                <filter string="Pending Reschedule" name="filter_pending_reschedule"
+                        domain="[('wa_response_status', '=', 'reschedule_requested')]"/>
+                <filter string="Successfully Rescheduled" name="filter_rescheduled_done"
+                        domain="[('wa_response_status', '=', 'rescheduled_done')]"/>
+                <filter string="Confirmed" name="filter_confirmed"
+                        domain="[('wa_response_status', '=', 'confirmed')]"/>
+                <separator/>
+                <filter string="Today" name="filter_today"
+                        domain="[('start_datetime', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                 ('start_datetime', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'wa_response_status'}"/>
+                    <filter string="Clinic Branch" name="group_by_clinic" context="{'group_by': 'clinic_id'}"/>
+                    <filter string="Therapist" name="group_by_therapist" context="{'group_by': 'therapist_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'start_datetime:day'}"/>
+                </group>
+
+                <!-- Left-hand Sidebar Sections with Exact Counters -->
+                <searchpanel>
+                    <field name="clinic_id" icon="fa-hospital-o" enable_counters="1"/>
+                    <field name="wa_response_status" icon="fa-retweet" enable_counters="1" select="multi"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <!-- 4. Window Action Open to All Reschedule & Confirmation States -->
     <record id="action_clinic_schedule_reschedule_requests" model="ir.actions.act_window">
-        <field name="name">Reschedule Requests</field>
+        <field name="name">Appointment Reschedule &amp; Confirmation</field>
         <field name="res_model">clinic.schedule.appointment</field>
-        <field name="view_mode">tree,form</field>
-        <field name="domain">[('notification_status', '=', 'reschedule_requested')]</field>
-        <field name="view_id" ref="view_clinic_schedule_reschedule_tree"/>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('wa_response_status', '!=', False)]</field>
+        <field name="context">{
+            'search_default_filter_pending_reschedule': 1,
+        }</field>
+        <field name="search_view_id" ref="view_clinic_schedule_reschedule_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                No patients waiting for rescheduling!
+                No appointment responses found!
             </p>
             <p>
-                When patients tap "Reschedule" on their WhatsApp reminder, their record appears here so clinic staff can follow up.
+                Patient selections from WhatsApp (Confirmed, Reschedule Requested, or Successfully Rescheduled) appear here with live counters.
             </p>
         </field>
     </record>
 
-    <!-- Injects smoothly into Clinic Schedule top navigation -->
     <menuitem id="menu_clinic_schedule_reschedule_requests"
               name="Reschedule Requests"
               parent="clinic_schedule.menu_clinic_schedule_root"
