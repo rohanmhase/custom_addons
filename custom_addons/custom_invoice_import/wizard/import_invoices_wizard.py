@@ -499,9 +499,7 @@ class ImportInvoicesWizard(models.TransientModel):
             if not partner_id:
                 raise UserError(_("No customer resolved for order %s") % order_no)
 
-            inv_date = data.get('delivery_date') or today_date
-            if isinstance(inv_date, str):
-                inv_date = fields.Date.from_string(inv_date)
+            inv_date = today_date
 
             # Calculate totals (untaxed + tax-inclusive) and collect medicine list
             total_untaxed = 0.0
