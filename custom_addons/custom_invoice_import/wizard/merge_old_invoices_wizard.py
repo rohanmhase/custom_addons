@@ -1,8 +1,7 @@
+import logging
 from odoo import models, fields, Command, _
 from odoo.exceptions import UserError
-import logging
 _logger = logging.getLogger(__name__)
-
 
 class MergeOldInvoicesWizard(models.TransientModel):
     _name = 'merge.old.invoices.wizard'
@@ -49,26 +48,26 @@ class MergeOldInvoicesWizard(models.TransientModel):
         if not moves:
             raise UserError(_("No candidate invoices found."))
 
-        TeleLine = self.env['teleconsult.invoice.line']
-        ok, errors = 0, []
         cr = self.env.cr
-
+        ok, errors = 0, []
+        config_id = config.id
         labels = {m.id: (m.name or m.ref or str(m.id)) for m in moves}
+        move_ids = moves.ids[:50]  # batch cap to avoid worker timeout
+        cr.commit()
 
-        for move_id in moves.ids:
-            self.env.flush_all()  # clean state before savepoint
-            cr.execute('SAVEPOINT merge_one_inv')
+        for move_id in move_ids:
             try:
-                move = self.env['account.move'].browse(move_id)
-                self._merge_one(move, config, TeleLine)
-                self.env.flush_all()  # surface any SQL error HERE
-                cr.execute('RELEASE SAVEPOINT merge_one_inv')
+                self._merge_one(
+                    self.env['account.move'].browse(move_id),
+                    self.env['online.import.config'].browse(config_id),
+                    self.env['teleconsult.invoice.line'],
+                )
+                self.env.flush_all()
+                cr.commit()
                 ok += 1
             except Exception as e:
-                cr.execute('ROLLBACK TO SAVEPOINT merge_one_inv')  # works even if txn aborted
-                self.env.invalidate_all()
-                except Exception as e:
                 cr.rollback()
+                self.env.invalidate_all()
                 _logger.exception("Merge failed for %s", labels.get(move_id))
                 errors.append("%s: %s: %s" % (labels.get(move_id), type(e).__name__, e))
 
