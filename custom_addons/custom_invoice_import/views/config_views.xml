@@ -21,6 +21,16 @@
                             <field name="pod_journal_id" required="1" options="{'no_create': True}"
                                    domain="[('type', '=', 'bank'), ('company_id', '=', company_id)]"/>
                         </group>
+                        <group string="Merged Line Settings">
+                            <field name="merged_product_id" required="1" options="{'no_create': True}"/>
+                            <field name="consultation_product_id" options="{'no_create': True}"/>
+                            <field name="medicine_product_id" options="{'no_create': True}"/>
+                            <field name="consultation_amount"/>
+                            <field name="min_medicine_amount"/>
+                            <field name="split_start_date"/>
+                            <field name="show_items_in_notes"/>
+                             <field name="show_company_logo"/>
+                        </group>
                     </group>
                 </sheet>
             </form>
@@ -36,6 +46,10 @@
                 <field name="name"/>
                 <field name="prepaid_journal_id"/>
                 <field name="pod_journal_id"/>
+                <field name="merged_product_id"/>
+                <field name="consultation_product_id"/>
+                <field name="medicine_product_id"/>
+                <field name="split_start_date"/>
             </tree>
         </field>
     </record>

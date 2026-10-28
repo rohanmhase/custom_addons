@@ -37,9 +37,8 @@
                                 </li>
                                 <li>
                                     <b>Receiver_phone</b>
-                                    — aliases: <code>Receiver Phone</code>, shower: <code>Phone</code>, <code>
-                                    Mobile</code>,
-                                    <code>Mobile Number</code>
+                                    — aliases: <code>Receiver Phone</code>, <code>Phone</code>, <code>
+                                    Mobile</code>, <code>Mobile Number</code>
                                 </li>
                                 <li>
                                     <b>Item Name</b>
@@ -100,8 +99,7 @@
                                 </li>
                                 <li>
                                     <b>Delivery Date</b>
-                                    — aliases:
-                                    <code>Delivered Date</code>
+                                    — aliases: <code>Delivered Date</code>
                                 </li>
                             </ul>
                         </div>
@@ -187,13 +185,11 @@
                                 </li>
                                 <li>
                                     <b>UTR</b>
-                                    — aliases: <code>UTR Number</code>,
-                                    <code>Transaction ID</code>
+                                    — aliases: <code>UTR Number</code>, <code>Transaction ID</code>
                                 </li>
                                 <li>
                                     <b>Delivery Date</b>
-                                    — aliases:
-                                    <code>Delivered Date</code>
+                                    — aliases: <code>Delivered Date</code>
                                 </li>
                             </ul>
                         </div>
@@ -209,7 +205,37 @@
     </record>
 
     <!-- ============================================== -->
-    <!-- 3. Window Actions                             -->
+    <!-- 3. Wizard View: Merge Old Invoices            -->
+    <!-- ============================================== -->
+    <record id="view_merge_old_invoices_wizard" model="ir.ui.view">
+        <field name="name">merge.old.invoices.wizard.form</field>
+        <field name="model">merge.old.invoices.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Merge Old Tele-consultation Invoices">
+                <sheet>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="state" invisible="1"/>
+                    </group>
+                    <group invisible="not summary">
+                        <field name="summary" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_preview" string="Preview" type="object"
+                            class="btn-secondary" invisible="state == 'done'"/>
+                    <button name="action_merge" string="Merge Now" type="object"
+                            class="btn-primary" invisible="state == 'done'"
+                            confirm="This will draft/repost invoices and re-reconcile payments. Continue?"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================== -->
+    <!-- 4. Window Actions                             -->
     <!-- ============================================== -->
     <record id="action_import_invoices" model="ir.actions.act_window">
         <field name="name">Import Invoices from CSV</field>
@@ -225,8 +251,15 @@
         <field name="target">new</field>
     </record>
 
+    <record id="action_merge_old_invoices" model="ir.actions.act_window">
+        <field name="name">Merge Old Tele-consultation Invoices</field>
+        <field name="res_model">merge.old.invoices.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <!-- ============================================== -->
-    <!-- 4. Navigation Menus                           -->
+    <!-- 5. Navigation Menus                           -->
     <!-- ============================================== -->
     <menuitem id="menu_import_invoices"
               name="Import CSV Invoices"
@@ -241,5 +274,12 @@
               action="action_import_payments"
               sequence="101"
               groups="group_custom_import_moderator,group_custom_import_admin"/>
+
+    <menuitem id="menu_merge_old_invoices"
+              name="Merge Old Invoices"
+              parent="account.menu_finance_receivables"
+              action="action_merge_old_invoices"
+              sequence="102"
+              groups="group_custom_import_admin"/>
 
 </odoo>

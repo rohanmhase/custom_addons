@@ -16,3 +16,8 @@ access_online_order_admin,online.order.admin,model_online_order,group_custom_imp
 
 access_online_import_config_viewer,online.import.config.viewer,model_online_import_config,group_custom_import_viewer,1,0,0,0
 access_online_import_config_admin,online.import.config.admin,model_online_import_config,group_custom_import_admin,1,1,1,1
+
+access_teleconsult_invoice_line_viewer,teleconsult.invoice.line.viewer,model_teleconsult_invoice_line,group_custom_import_viewer,1,0,0,0
+access_teleconsult_invoice_line_moderator,teleconsult.invoice.line.moderator,model_teleconsult_invoice_line,group_custom_import_moderator,1,1,1,0
+access_teleconsult_invoice_line_admin,teleconsult.invoice.line.admin,model_teleconsult_invoice_line,group_custom_import_admin,1,1,1,1
+access_merge_old_invoices_wizard_admin,merge.old.invoices.wizard.admin,model_merge_old_invoices_wizard,group_custom_import_admin,1,1,1,1
