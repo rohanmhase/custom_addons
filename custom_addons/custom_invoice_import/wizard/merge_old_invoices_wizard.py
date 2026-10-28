@@ -49,24 +49,23 @@ class MergeOldInvoicesWizard(models.TransientModel):
 
         TeleLine = self.env['teleconsult.invoice.line']
         ok, errors = 0, []
+        cr = self.env.cr
 
-        # Pre-read labels for ALL moves up front (no lazy fetch inside the loop)
         labels = {m.id: (m.name or m.ref or str(m.id)) for m in moves}
-        move_ids = moves.ids
 
-        for move_id in move_ids:
-            move_label = labels.get(move_id)
+        for move_id in moves.ids:
+            self.env.flush_all()  # clean state before savepoint
+            cr.execute('SAVEPOINT merge_one_inv')
             try:
-                with self.env.cr.savepoint():
-                    move = self.env['account.move'].browse(move_id)
-                    self._merge_one(move, config, TeleLine)
-                    # force pending SQL to run INSIDE the savepoint so any DB error
-                    # is raised here and rolled back here
-                    self.env['account.move'].flush_model()
-                    self.env['account.move.line'].flush_model()
+                move = self.env['account.move'].browse(move_id)
+                self._merge_one(move, config, TeleLine)
+                self.env.flush_all()  # surface any SQL error HERE
+                cr.execute('RELEASE SAVEPOINT merge_one_inv')
                 ok += 1
             except Exception as e:
-                errors.append("%s: %s" % (move_label, str(e)))
+                cr.execute('ROLLBACK TO SAVEPOINT merge_one_inv')  # works even if txn aborted
+                self.env.invalidate_all()
+                errors.append("%s: %s" % (labels.get(move_id), str(e)))
 
         self.state = 'done'
         self.summary = _("Merged: %s\nFailed: %s\n%s") % (
