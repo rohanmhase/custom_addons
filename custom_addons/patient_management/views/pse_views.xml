@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add PSE button to the existing Patient form. -->
+    <record id="view_patient_form_pse_inherit" model="ir.ui.view">
+        <field name="name">clinic.patient.form.pse.inherit</field>
+        <field name="model">clinic.patient</field>
+        <field name="inherit_id" ref="patient_management.view_patient_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_open_pse"
+                        type="object"
+                        string="PSE"
+                        class="btn-primary"
+                        groups="patient_management.group_pse_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- PSE landing page: two actions + both patient-specific history tables. -->
+    <record id="view_patient_pse_form" model="ir.ui.view">
+        <field name="name">patient.pse.form</field>
+        <field name="model">patient.pse</field>
+        <field name="arch" type="xml">
+            <form string="PSE Screen" create="false" delete="false" duplicate="false">
+                <header>
+                    <button name="action_log_interaction"
+                            type="object"
+                            string="Log Interaction"
+                            class="oe_highlight"/>
+                    <button name="action_log_feedback"
+                            type="object"
+                            string="Log Feedback"
+                            class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="patient_id" options="{'no_open': True}"/>
+                            <field name="mrn"/>
+                        </group>
+                        <group>
+                            <field name="clinic_id" options="{'no_open': True}"/>
+                        </group>
+                    </group>
+
+                    <separator string="Interaction History"/>
+                    <field name="interaction_ids" nolabel="1" readonly="1">
+                        <tree create="false" edit="false" delete="false" default_order="log_date desc,id desc">
+                            <field name="log_date"/>
+                            <field name="interaction_with" string="Type"/>
+                            <field name="patient_id" string="Patient Name"/>
+                            <field name="relief_percent" string="Relief %"/>
+                            <field name="experience_rating" string="Exp. Rating"/>
+                            <field name="mood"/>
+                            <field name="patient_potential"/>
+                            <field name="referral"/>
+                            <field name="comments"/>
+                        </tree>
+                    </field>
+
+                    <separator string="Feedback"/>
+                    <field name="feedback_ids" nolabel="1" readonly="1">
+                        <tree create="false" edit="false" delete="false" default_order="log_date desc,id desc">
+                            <field name="log_date"/>
+                            <field name="log_type"/>
+                            <field name="patient_id" string="Patient Name"/>
+                            <field name="feedback_type"/>
+                            <field name="feedback_category" string="Category"/>
+                            <field name="feedback_verbatim"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_patient_pse_interaction_tree" model="ir.ui.view">
+        <field name="name">patient.pse.interaction.tree</field>
+        <field name="model">patient.pse.interaction</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false">
+                <field name="log_date"/>
+                <field name="interaction_with"/>
+                <field name="patient_id"/>
+                <field name="relief_percent"/>
+                <field name="experience_rating"/>
+                <field name="mood"/>
+                <field name="patient_potential"/>
+                <field name="referral"/>
+                <field name="comments"/>
+                <field name="logged_by" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_patient_pse_interaction_form" model="ir.ui.view">
+        <field name="name">patient.pse.interaction.form</field>
+        <field name="model">patient.pse.interaction</field>
+        <field name="arch" type="xml">
+            <form string="Log Interaction" duplicate="false">
+                <header>
+                    <button name="action_open_pse"
+                            type="object"
+                            string="Back to PSE"
+                            class="btn-secondary"
+                            invisible="not id"/>
+                </header>
+                <sheet>
+                    <field name="id" invisible="1"/>
+                    <field name="pse_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="patient_id" options="{'no_open': True}"/>
+                            <field name="log_date"/>
+                            <field name="interaction_with" required="1"/>
+                            <field name="relation_to_patient"
+                                   invisible="interaction_with != 'companion'"
+                                   required="interaction_with == 'companion'"/>
+                            <field name="referral" required="1" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                        <group>
+                            <field name="relief_percent"/>
+                            <field name="experience_rating"/>
+                            <field name="mood"/>
+                            <field name="patient_potential" required="1"/>
+                            <field name="logged_by"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="comments" required="1" placeholder="Enter interaction comments..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_patient_pse_feedback_tree" model="ir.ui.view">
+        <field name="name">patient.pse.feedback.tree</field>
+        <field name="model">patient.pse.feedback</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false">
+                <field name="log_date"/>
+                <field name="log_type"/>
+                <field name="patient_id"/>
+                <field name="feedback_type"/>
+                <field name="feedback_category"/>
+                <field name="feedback_verbatim"/>
+                <field name="pse_comments" optional="hide"/>
+                <field name="logged_by" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_patient_pse_feedback_form" model="ir.ui.view">
+        <field name="name">patient.pse.feedback.form</field>
+        <field name="model">patient.pse.feedback</field>
+        <field name="arch" type="xml">
+            <form string="Log Feedback" duplicate="false">
+                <header>
+                    <button name="action_open_pse"
+                            type="object"
+                            string="Back to PSE"
+                            class="btn-secondary"
+                            invisible="not id"/>
+                </header>
+                <sheet>
+                    <field name="id" invisible="1"/>
+                    <field name="pse_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="patient_id" options="{'no_open': True}"/>
+                            <field name="log_date"/>
+                            <field name="feedback_type" required="1"/>
+                            <field name="feedback_category" required="1"/>
+                        </group>
+                        <group>
+                            <field name="logged_by"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="feedback_verbatim"
+                               required="1"
+                               placeholder="Enter patient feedback verbatim..."/>
+                        <field name="pse_comments"
+                               required="1"
+                               placeholder="Enter PSE comments..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_pse" model="ir.module.category">
+        <field name="name">Patient Experience - PSE</field>
+        <field name="description">Access rights for the Patient Support / Experience screen.</field>
+        <field name="sequence">25</field>
+    </record>
+
+    <record id="group_pse_user" model="res.groups">
+        <field name="name">PSE User</field>
+        <field name="category_id" ref="patient_management.module_category_pse"/>
+        <field name="implied_ids" eval="[(4, ref('clinic_management.group_clinic_user'))]"/>
+    </record>
+
+<!--    <record id="rule_patient_pse_user_clinic" model="ir.rule">-->
+<!--        <field name="name">PSE - Restrict by User Clinics</field>-->
+<!--        <field name="model_id" ref="model_patient_pse"/>-->
+<!--        <field name="groups" eval="[(4, ref('patient_management.group_pse_user'))]"/>-->
+<!--        <field name="domain_force">[('patient_id.clinic_id', 'in', user.clinic_ids.ids)]</field>-->
+<!--    </record>-->
+
+<!--    <record id="rule_patient_pse_interaction_user_clinic" model="ir.rule">-->
+<!--        <field name="name">PSE Interaction - Restrict by User Clinics</field>-->
+<!--        <field name="model_id" ref="model_patient_pse_interaction"/>-->
+<!--        <field name="groups" eval="[(4, ref('patient_management.group_pse_user'))]"/>-->
+<!--        <field name="domain_force">[('patient_id.clinic_id', 'in', user.clinic_ids.ids)]</field>-->
+<!--    </record>-->
+
+<!--    <record id="rule_patient_pse_feedback_user_clinic" model="ir.rule">-->
+<!--        <field name="name">PSE Feedback - Restrict by User Clinics</field>-->
+<!--        <field name="model_id" ref="model_patient_pse_feedback"/>-->
+<!--        <field name="groups" eval="[(4, ref('patient_management.group_pse_user'))]"/>-->
+<!--        <field name="domain_force">[('patient_id.clinic_id', 'in', user.clinic_ids.ids)]</field>-->
+<!--    </record>-->
+</odoo>
