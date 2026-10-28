@@ -1,5 +1,7 @@
 from odoo import models, fields, Command, _
 from odoo.exceptions import UserError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class MergeOldInvoicesWizard(models.TransientModel):
@@ -65,7 +67,10 @@ class MergeOldInvoicesWizard(models.TransientModel):
             except Exception as e:
                 cr.execute('ROLLBACK TO SAVEPOINT merge_one_inv')  # works even if txn aborted
                 self.env.invalidate_all()
-                errors.append("%s: %s" % (labels.get(move_id), str(e)))
+                except Exception as e:
+                cr.rollback()
+                _logger.exception("Merge failed for %s", labels.get(move_id))
+                errors.append("%s: %s: %s" % (labels.get(move_id), type(e).__name__, e))
 
         self.state = 'done'
         self.summary = _("Merged: %s\nFailed: %s\n%s") % (
