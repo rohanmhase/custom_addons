@@ -2,3 +2,4 @@ from . import patient, clinic_extension, blood_report, case_taking, daily_follow
 from . import patient_pitching
 from . import enrollment_service_config
 from . import patient_reference
+from . import walking_test

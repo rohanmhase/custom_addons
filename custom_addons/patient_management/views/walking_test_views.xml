@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_walking_test" model="ir.ui.view">
+        <field name="name">clinic.patient.walking_test.tree</field>
+        <field name="model">patient.walking_test</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="walking_test_date"/>
+                <field name="distance"/>
+                <field name="time_min"/>
+                <field name="time_sec"/>
+                <field name="doctor_id" optional="hide"/>
+                <field name="write_uid" string="Modified By" optional="hide"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_walking_test_form" model="ir.ui.view">
+        <field name="name">clinic.patient.walking_test.from</field>
+        <field name="model">patient.walking_test</field>
+        <field name="arch" type="xml">
+            <form string="Walking Test">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="walking_test_date"/>
+                            <field name="doctor_id"/>
+                        </group>
+                    </sheet>
+                    <sheet>
+                        <group string="Gait Assessment">
+                            <field name="distance"/>
+                            <field name="time_min"/>
+                            <field name="time_sec"/>
+                            <field name="right_knee_pain"/>
+                            <field name="left_knee_pain"/>
+                            <field name="spine_pain"/>
+                            <field name="limping" widget="radio" options="{'horizontal': true}"/>
+                            <field name="step_symmetry" widget="radio" options="{'horizontal': true}"/>
+                            <field name="foot_dragging" widget="radio" options="{'horizontal': true}"/>
+                            <field name="walking_aid_used" widget="radio" options="{'horizontal': true}"/>
+                            <field name="other_wau" invisible="walking_aid_used != 'other'" required="1"/>
+                            <field name="add_observation"/>
+                        </group>
+                    </sheet>
+                    <!-- Added Video Upload and Preview Section -->
+                    <sheet>
+                        <group string="Walking Test Video">
+                            <field name="video_data" widget="binary" filename="video_name"/>
+                            <field name="video_name" invisible="1"/>
+                            <button name="action_upload_video_to_s3"
+                                    string="Upload"
+                                    type="object"
+                                    class="oe_highlight"
+                                    invisible="not video_data"/>
+                            <field name="s3_video_url" widget="url" invisible="1"/>
+                        </group>
+
+                        <!-- REMOVED <group> tag here to fix the narrow layout -->
+                        <div invisible="not s3_video_url" style="margin-top: 20px;">
+                            <field name="preview_html" widget="html" nolabel="1"/>
+                        </div>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_walking_test" model="ir.actions.act_window">
+        <field name="name">Walking Test</field>
+        <field name="res_model">patient.walking_test</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

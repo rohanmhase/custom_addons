@@ -33,6 +33,7 @@
         'views/exempt_product_views.xml',
         'views/patient_pitching_views.xml',
         'views/patient_reference_views.xml',
+        'views/walking_test_views.xml',
         'reports/consent_report.xml',
         'reports/consent_report_template.xml',
         'views/enrollment_bill_popup.xml'
