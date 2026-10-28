@@ -53,7 +53,7 @@ class MergeOldInvoicesWizard(models.TransientModel):
             raise UserError(_("No candidate invoices found."))
 
         cr = self.env.cr
-        ok, errors = 0, []
+        ok, errors, merged_ids = 0, [], []
         config_id = config.id
         labels = {m.id: (m.name or m.ref or str(m.id)) for m in moves}
         move_ids = moves.ids[:50]  # batch cap to avoid worker timeout
@@ -69,6 +69,7 @@ class MergeOldInvoicesWizard(models.TransientModel):
                 self.env.flush_all()
                 cr.commit()
                 ok += 1
+                merged_ids.append(move_id)
             except Exception as e:
                 cr.rollback()
                 self.env.invalidate_all()
