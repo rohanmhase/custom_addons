@@ -1,7 +1,9 @@
 import logging
 from odoo import models, fields, Command, _
 from odoo.exceptions import UserError
+
 _logger = logging.getLogger(__name__)
+
 
 class MergeOldInvoicesWizard(models.TransientModel):
     _name = 'merge.old.invoices.wizard'
@@ -128,7 +130,11 @@ class MergeOldInvoicesWizard(models.TransientModel):
             line_tax_pct = 0.0
             if pl.tax_ids:
                 tax_ids = pl.tax_ids.ids
-                line_tax_pct = sum(t.amount for t in pl.tax_ids if t.amount_type == 'percent')
+                line_tax_pct = sum(
+                    t.amount if t.amount_type == 'percent'
+                    else sum(c.amount for c in t.children_tax_ids if c.amount_type == 'percent')
+                    for t in pl.tax_ids
+                )
                 tax_pct = line_tax_pct
 
             sub_incl = sub_base * (1.0 + line_tax_pct / 100.0)
@@ -157,21 +163,27 @@ class MergeOldInvoicesWizard(models.TransientModel):
 
             if total_incl >= (consult_std + min_med_incl):
                 consult_price = consult_std
-                consult_disc = 0.0
                 med_target_incl = total_incl - consult_std
             else:
                 med_target_incl = min_med_incl
-                consult_target_net = max(total_incl - min_med_incl, 0.0)
-                consult_price = consult_std
-                consult_disc = ((consult_std - consult_target_net) / consult_std) * 100.0 if consult_std else 0.0
+                consult_price = max(total_incl - min_med_incl, 0.0)
 
-            med_base_price = med_target_incl / (1.0 + tax_pct / 100.0) if tax_pct else med_target_incl
+            tax_recs = self.env['account.tax'].browse(tax_ids) if tax_ids else self.env['account.tax']
+            price_incl_tax = any(
+                t.price_include or any(c.price_include for c in t.children_tax_ids)
+                for t in tax_recs
+            )
+
+            med_base_price = (
+                med_target_incl if price_incl_tax or not tax_pct
+                else med_target_incl / (1.0 + tax_pct / 100.0)
+            )
 
             lines_cmd.append(Command.create({
                 'product_id': consult_product.id,
                 'quantity': 1.0,
                 'price_unit': round(consult_price, 2),
-                'discount': round(consult_disc, 2),
+                'discount': 0.0,
                 'tax_ids': [],
             }))
             if not config.medicine_product_id:
