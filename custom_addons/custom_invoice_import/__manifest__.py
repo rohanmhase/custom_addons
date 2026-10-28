@@ -8,6 +8,7 @@
         'security/security_groups.xml',
         'security/ir.model.access.csv',
         'views/config_views.xml',
+        'views/report_invoice_inherit.xml',
         'wizard/wizard_views.xml',
     ],
     'installable': True,

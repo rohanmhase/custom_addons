@@ -484,29 +484,117 @@ class ImportInvoicesWizard(models.TransientModel):
         if not journal:
             raise UserError(_("No Sales Journal found."))
 
+        if not config.merged_product_id:
+            raise UserError(_("Set Medicine Merged Product in Online Imports Configuration first."))
+
+        split_date = config.split_start_date or fields.Date.from_string('2026-11-01')
+        today_date = fields.Date.context_today(self)
+
         move_vals_list = []
         prepaid_refs = []
+        teleconsult_map = {}
 
         for order_no, data in grouped.items():
             partner_id = phone_to_partner_id.get(data['customer_phone'])
             if not partner_id:
                 raise UserError(_("No customer resolved for order %s") % order_no)
 
-            # Use native Odoo 17 Command tuples so Tax Engine calculates properly
-            lines_cmd = []
+            inv_date = data.get('delivery_date') or today_date
+            if isinstance(inv_date, str):
+                inv_date = fields.Date.from_string(inv_date)
+
+            # Calculate totals (untaxed + tax-inclusive) and collect medicine list
+            total_untaxed = 0.0
+            total_incl = 0.0
+            tax_ids = []
+            tax_pct = 0.0
+            tele_lines = []
+
+            Tax = self.env['account.tax']
             for line in data['lines']:
-                lines_cmd.append(Command.create({
-                    'product_id': line['product_id'],
+                sub_base = line['quantity'] * line['price_unit']
+                if line.get('discount'):
+                    sub_base *= (1.0 - line['discount'] / 100.0)
+
+                line_tax_pct = 0.0
+                if line['tax_ids']:
+                    tax_ids = line['tax_ids']
+                    line_taxes = Tax.browse(line['tax_ids'])
+                    line_tax_pct = sum(t.amount for t in line_taxes if t.amount_type == 'percent')
+                    tax_pct = line_tax_pct
+
+                sub_incl = sub_base * (1.0 + line_tax_pct / 100.0)
+                total_untaxed += sub_base
+                total_incl += sub_incl
+
+                tele_lines.append({
+                    'product_name': line['product_name'],
                     'quantity': line['quantity'],
-                    'price_unit': line['price_unit'],
-                    'discount': line.get('discount') or 0.0,  # NEW - native Disc.%
-                    'tax_ids': [Command.set(line['tax_ids'])] if line['tax_ids'] else [],
+                })
+
+            teleconsult_map[order_no] = tele_lines
+            lines_cmd = []
+
+            # DECISION: 1 Line (before split date) vs 2 Lines (on/after split date)
+            if inv_date >= split_date and config.consultation_product_id:
+                consult_product = config.consultation_product_id
+                consult_std = config.consultation_amount or 600.0
+                min_med_incl = config.min_medicine_amount or 50.0
+
+                if total_incl >= (consult_std + min_med_incl):
+                    # Normal case
+                    consult_price = consult_std
+                    consult_disc = 0.0
+                    med_target_incl = total_incl - consult_std
+                else:
+                    # Edge case: total < 600 + min medicine
+                    med_target_incl = min_med_incl
+                    consult_target_net = max(total_incl - min_med_incl, 0.0)
+                    consult_price = consult_std
+                    consult_disc = (
+                        ((consult_std - consult_target_net) / consult_std) * 100.0
+                        if consult_std else 0.0
+                    )
+
+                med_base_price = (
+                    med_target_incl / (1.0 + tax_pct / 100.0)
+                    if (1.0 + tax_pct / 100.0) else med_target_incl
+                )
+
+                # Line 1: Doctor Consultation (0% tax)
+                lines_cmd.append(Command.create({
+                    'product_id': consult_product.id,
+                    'quantity': 1.0,
+                    'price_unit': round(consult_price, 2),
+                    'discount': round(consult_disc, 2),
+                    'tax_ids': [],
+                }))
+                # Line 2: Medicine (remaining, with tax)
+                # Line 2: Medicine (remaining, with tax)
+                if not config.medicine_product_id:
+                    raise UserError(_("Set Medicine Product in Online Imports Configuration first."))
+                lines_cmd.append(Command.create({
+                    'product_id': config.medicine_product_id.id,
+                    'quantity': 1.0,
+                    'price_unit': round(med_base_price, 2),
+                    'discount': 0.0,
+                    'tax_ids': [Command.set(tax_ids)] if tax_ids else [],
+                }))
+            else:
+                # Pre-split date: single merged medicine line
+                lines_cmd.append(Command.create({
+                    'product_id': config.merged_product_id.id,
+                    'quantity': 1.0,
+                    'price_unit': round(total_untaxed, 2),
+                    'discount': 0.0,
+                    'tax_ids': [Command.set(tax_ids)] if tax_ids else [],
                 }))
 
             move_vals_list.append({
                 'move_type': 'out_invoice',
                 'journal_id': journal.id,
                 'partner_id': partner_id,
+                'invoice_date': inv_date,
                 'invoice_origin': order_no,
                 'ref': order_no,
                 'invoice_line_ids': lines_cmd,
@@ -517,12 +605,13 @@ class ImportInvoicesWizard(models.TransientModel):
         moves = self.env['account.move'].create(move_vals_list)
         moves.action_post()
 
+        TeleLine = self.env['teleconsult.invoice.line']
         prepaid_moves = self.env['account.move']
         for move in moves:
             data = grouped.get(move.ref)
-            if not data: continue
+            if not data:
+                continue
 
-            # 1. Store tracking data in YOUR new table
             self.env['online.order'].create({
                 'name': move.ref,
                 'move_id': move.id,
@@ -531,7 +620,13 @@ class ImportInvoicesWizard(models.TransientModel):
                 'delivery_date': data.get('delivery_date'),
             })
 
-            # 2. Collect prepaid moves
+            for tl in teleconsult_map.get(move.ref, []):
+                TeleLine.create({
+                    'move_id': move.id,
+                    'product_name': tl['product_name'],
+                    'quantity': tl['quantity'],
+                })
+
             if data['payment_method'] == 'prepaid':
                 prepaid_moves |= move
 
