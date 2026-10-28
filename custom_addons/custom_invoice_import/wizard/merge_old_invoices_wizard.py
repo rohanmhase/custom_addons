@@ -92,6 +92,7 @@ class MergeOldInvoicesWizard(models.TransientModel):
         return self._reload()
 
     def _merge_one(self, move, config, TeleLine):
+        orig_total = move.amount_total
         was_posted = move.state == 'posted'
         pay_moves = self.env['account.move']
 
@@ -140,6 +141,15 @@ class MergeOldInvoicesWizard(models.TransientModel):
                 'product_name': label,
                 'quantity': pl.quantity,
             })
+            # Use the invoice's real total as the source of truth
+            total_incl = orig_total
+            price_incl_tax = bool(tax_ids) and any(
+                t.price_include for t in self.env['account.tax'].browse(tax_ids)
+            )
+            if tax_pct and not price_incl_tax:
+                total_untaxed = total_incl / (1.0 + tax_pct / 100.0)
+            else:
+                total_untaxed = total_incl
 
         split_date = config.split_start_date or fields.Date.from_string('2026-11-01')
         inv_date = move.invoice_date or fields.Date.context_today(self)
@@ -160,7 +170,10 @@ class MergeOldInvoicesWizard(models.TransientModel):
                 consult_price = consult_std
                 consult_disc = ((consult_std - consult_target_net) / consult_std) * 100.0 if consult_std else 0.0
 
-            med_base_price = med_target_incl / (1.0 + tax_pct / 100.0) if (1.0 + tax_pct / 100.0) else med_target_incl
+            med_base_price = (
+                med_target_incl if price_incl_tax or not tax_pct
+                else med_target_incl / (1.0 + tax_pct / 100.0)
+            )
 
             lines_cmd.append(Command.create({
                 'product_id': consult_product.id,
