@@ -51,13 +51,15 @@ class MergeOldInvoicesWizard(models.TransientModel):
         ok, errors = 0, []
 
         for move in moves:
+            # Pre-fetch label into Python memory before entering savepoint
+            move_label = move.name or move.ref or str(move.id)
             try:
                 with self.env.cr.savepoint():
-                    self._merge_one(move, config, TeleLine)  # Fixed: pass config
+                    self._merge_one(move, config, TeleLine)
                 ok += 1
             except Exception as e:
                 self.env.invalidate_all()
-                errors.append("%s: %s" % (move.name or move.ref or move.id, str(e)))
+                errors.append("%s: %s" % (move_label, str(e)))
 
         self.state = 'done'
         self.summary = _("Merged: %s\nFailed: %s\n%s") % (
