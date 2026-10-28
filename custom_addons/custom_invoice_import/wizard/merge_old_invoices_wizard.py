@@ -50,15 +50,22 @@ class MergeOldInvoicesWizard(models.TransientModel):
         TeleLine = self.env['teleconsult.invoice.line']
         ok, errors = 0, []
 
-        for move in moves:
-            # Pre-fetch label into Python memory before entering savepoint
-            move_label = move.name or move.ref or str(move.id)
+        # Pre-read labels for ALL moves up front (no lazy fetch inside the loop)
+        labels = {m.id: (m.name or m.ref or str(m.id)) for m in moves}
+        move_ids = moves.ids
+
+        for move_id in move_ids:
+            move_label = labels.get(move_id)
             try:
                 with self.env.cr.savepoint():
+                    move = self.env['account.move'].browse(move_id)
                     self._merge_one(move, config, TeleLine)
+                    # force pending SQL to run INSIDE the savepoint so any DB error
+                    # is raised here and rolled back here
+                    self.env['account.move'].flush_model()
+                    self.env['account.move.line'].flush_model()
                 ok += 1
             except Exception as e:
-                self.env.invalidate_all()
                 errors.append("%s: %s" % (move_label, str(e)))
 
         self.state = 'done'
