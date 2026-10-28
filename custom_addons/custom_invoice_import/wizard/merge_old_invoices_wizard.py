@@ -29,10 +29,14 @@ class MergeOldInvoicesWizard(models.TransientModel):
     def action_preview(self):
         self.ensure_one()
         moves = self._get_candidates()
-        self.summary = _(
-            "Candidates: %s invoices\n"
-            "(partner nature = online_sales, not yet migrated, in date range)"
-        ) % len(moves)
+        lines = ["%s | %s | %s | %.2f | %s" % (
+            m.name or m.ref or m.id, m.invoice_date,
+            m.partner_id.name or '', m.amount_total, m.payment_state,
+        ) for m in moves[:300]]
+        extra = "\n... +%s more" % (len(moves) - 300) if len(moves) > 300 else ''
+        self.summary = _("Candidates: %s invoices") % len(moves) \
+                       + "\n\nNumber | Date | Customer | Total | Payment\n" \
+                       + '\n'.join(lines) + extra
         return self._reload()
 
     def action_merge(self):
@@ -71,6 +75,15 @@ class MergeOldInvoicesWizard(models.TransientModel):
                 _logger.exception("Merge failed for %s", labels.get(move_id))
                 errors.append("%s: %s: %s" % (labels.get(move_id), type(e).__name__, e))
 
+        if merged_ids:
+            return {
+                'name': _('Merged Invoices (%s merged, %s failed)') % (ok, len(errors)),
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.move',
+                'view_mode': 'tree,form',
+                'domain': [('id', 'in', merged_ids)],
+                'target': 'current',
+            }
         self.state = 'done'
         self.summary = _("Merged: %s\nFailed: %s\n%s") % (
             ok, len(errors), '\n'.join(errors[:30])
