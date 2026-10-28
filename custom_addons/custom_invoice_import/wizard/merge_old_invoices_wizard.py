@@ -56,6 +56,7 @@ class MergeOldInvoicesWizard(models.TransientModel):
                     self._merge_one(move, config, TeleLine)  # Fixed: pass config
                 ok += 1
             except Exception as e:
+                self.env.invalidate_all()
                 errors.append("%s: %s" % (move.name or move.ref or move.id, str(e)))
 
         self.state = 'done'
@@ -77,8 +78,9 @@ class MergeOldInvoicesWizard(models.TransientModel):
                     pay_moves |= m.debit_move_id.move_id
                 for m in aml.matched_credit_ids:
                     pay_moves |= m.credit_move_id.move_id
-            if recv.filtered('reconciled'):
-                move.line_ids.remove_move_reconcile()
+            partials = recv.matched_debit_ids | recv.matched_credit_ids
+            if partials:
+                partials.unlink()
             move.button_draft()
 
         product_lines = move.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
