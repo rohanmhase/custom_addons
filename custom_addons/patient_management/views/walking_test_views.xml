@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_patient_walking_test" model="ir.ui.view">
+        <field name="name">clinic.patient.walking_test.tree</field>
+        <field name="model">patient.walking_test</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="patient_id"/>
+                <field name="walking_test_date"/>
+                <field name="distance"/>
+                <field name="time_min"/>
+                <field name="time_sec"/>
+                <field name="doctor_id" optional="hide"/>
+                <field name="write_uid" string="Modified By" optional="hide"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="patient_walking_test_form" model="ir.ui.view">
+        <field name="name">clinic.patient.walking_test.from</field>
+        <field name="model">patient.walking_test</field>
+        <field name="arch" type="xml">
+            <form string="Walking Test">
+                <sheet>
+                    <sheet>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="walking_test_date"/>
+                            <field name="doctor_id"/>
+                        </group>
+                    </sheet>
+                    <sheet>
+                        <group string="Walking Assessment">
+                            <label for="distance"/>
+                            <div class="o_row">
+                                <field name="distance" class="oe_inline"/>
+                                <span>(In Feet)</span>
+                            </div>
+                            <label for="time_min" string="Time"/>
+                            <div class="d-flex align-items-center justify-content-start">
+                                <field name="time_min"
+                                       nolabel="1"
+                                       placeholder="Min"
+                                       class="oe_inline"
+                                       style="width: 70px !important; margin-bottom: 0px;"/>
+
+                                <span class="mx-2" style="font-size: 18px; font-weight: 600;">:</span>
+
+                                <field name="time_sec"
+                                       nolabel="1"
+                                       placeholder="Sec"
+                                       class="oe_inline"
+                                       style="width: 70px !important; margin-bottom: 0px;"/>
+                            </div>
+                            <field name="video_data" widget="binary" filename="video_name"/>
+                            <field name="video_name" invisible="1"/>
+                            <button name="action_upload_video_to_s3"
+                                    string="Upload"
+                                    type="object"
+                                    class="oe_highlight"
+                                    invisible="not video_data"/>
+                            <field name="s3_video_url" widget="url" invisible="1"/>
+                        </group>
+                        <group string="Pain Assessment">
+                            <field name="right_knee_pain"/>
+                            <field name="left_knee_pain"/>
+                            <field name="spine_pain"/>
+                        </group>
+                        <group string="Gait Assessment">
+                            <field name="limping" widget="radio" options="{'horizontal': true}"/>
+                            <field name="step_symmetry" widget="radio" options="{'horizontal': true}"/>
+                            <field name="foot_dragging" widget="radio" options="{'horizontal': true}"/>
+                            <field name="walking_aid_used" widget="radio" options="{'horizontal': true}"/>
+                            <field name="other_wau" invisible="walking_aid_used != 'other'" required="1"/>
+                            <field name="add_observation"/>
+                        </group>
+                    </sheet>
+                    <!-- Added Video Upload and Preview Section -->
+                    <sheet invisible="not s3_video_url">
+                        <!-- Use a separator or standard HTML for the title instead of a <group> -->
+                        <separator string="Walking Test Video"/>
+
+                        <!-- The div is now directly inside the sheet, allowing full width -->
+                        <div style="margin-top: 15px; width: 100%;">
+                            <field name="preview_html" widget="html" nolabel="1"/>
+                        </div>
+                    </sheet>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_walking_test" model="ir.actions.act_window">
+        <field name="name">Walking Test</field>
+        <field name="res_model">patient.walking_test</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

@@ -65,3 +65,7 @@ access_enrollment_service_config_user,access.enrollment.service.config.user,mode
 
 access_patient_reference_administrator,access.patient.reference.administrator,model_patient_reference,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_reference_user,access.patient.reference.user,model_patient_reference,clinic_management.group_clinic_user,1,1,1,1
+
+access_patient_walking_test_administrator,access.patient.walking_test.administrator,model_patient_walking_test,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_walking_test_user,access.patient.walking_test.user,model_patient_walking_test,clinic_management.group_clinic_user,1,1,1,1
+

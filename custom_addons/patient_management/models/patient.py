@@ -890,6 +890,19 @@ class Patient(models.Model):
             "context": {"default_patient_id": self.id, "active_test": not show_all, },
         }
 
+    def action_open_walking_test(self):
+        """Open Walking Tests related to this patient"""
+        user = self.env.user
+        show_all = user.has_group('clinic_management.group_show_inactive_reports')
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Walking Test",
+            "res_model": "patient.walking_test",
+            "view_mode": "tree,form",
+            "domain": [("patient_id", "=", self.id)],
+            "context": {"default_patient_id": self.id, "active_test": not show_all, },
+        }
+
     def _ist_date(self):
 
         utc = (datetime.now())
