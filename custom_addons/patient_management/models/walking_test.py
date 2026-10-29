@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import boto3
 import base64
 import uuid
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from urllib.parse import unquote_plus
 
 
@@ -16,11 +16,17 @@ class WalkingTest(models.Model):
     doctor_id = fields.Many2one("res.users", string="Doctor", required=True, readonly=True,
                                 default=lambda self: self.env.user)
     distance = fields.Integer(string="Distance", required=True)
-    time_min = fields.Integer(string="Minutes", required=True)
-    time_sec = fields.Integer(string="Seconds", required=True)
-    right_knee_pain = fields.Float(string="Right Knee Pain", required=True)
-    left_knee_pain = fields.Float(string="Left Knee Pain", required=True)
-    spine_pain = fields.Float(string="Spine Pain", required=True)
+    time_min = fields.Selection(
+        [(str(i), str(i)) for i in range(0, 60)],
+        string="Minutes", required=True,
+    )
+    time_sec = fields.Selection(
+        [(str(i), str(i)) for i in range(0, 60)],
+        string="Seconds", required=True,
+    )
+    right_knee_pain = fields.Integer(string="Right Knee Pain %", required=True, default=False)
+    left_knee_pain = fields.Integer(string="Left Knee Pain %", required=True, default=False)
+    spine_pain = fields.Integer(string="Spine Pain %", required=True, default=False)
     limping = fields.Selection([('observed', 'Observed'),
                                 ('not_observed', 'Not Observed')],
                                string="Limping", required=True)
@@ -159,3 +165,13 @@ class WalkingTest(models.Model):
                         </video>
                     </div>
                 """
+
+    @api.constrains('right_knee_pain', 'left_knee_pain', 'spine_pain')
+    def _check_pain_percentages(self):
+        for rec in self:
+            if rec.right_knee_pain < 0 or rec.right_knee_pain > 100:
+                raise ValidationError("Right Knee Pain must be between 0 and 100.")
+            if rec.left_knee_pain < 0 or rec.left_knee_pain > 100:
+                raise ValidationError("Left Knee Pain must be between 0 and 100.")
+            if rec.spine_pain < 0 or rec.spine_pain > 100:
+                raise ValidationError("Spine Pain must be between 0 and 100.")
