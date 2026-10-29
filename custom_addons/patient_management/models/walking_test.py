@@ -175,3 +175,18 @@ class WalkingTest(models.Model):
                 raise ValidationError("Left Knee Pain must be between 0 and 100.")
             if rec.spine_pain < 0 or rec.spine_pain > 100:
                 raise ValidationError("Spine Pain must be between 0 and 100.")
+
+    @api.constrains('video_data', 's3_video_url')
+    def _check_video_uploaded(self):
+        for rec in self:
+            if not rec.video_data and not rec.s3_video_url:
+                raise ValidationError("Uploading a Walking Test Video is compulsory.")
+
+    @api.constrains('video_name')
+    def _check_video_format(self):
+        for rec in self:
+            if rec.video_name:
+                lower_name = rec.video_name.lower()
+                allowed_extensions = ('.mp4', '.mov', '.avi', '.webm', '.mkv')
+                if not lower_name.endswith(allowed_extensions):
+                    raise ValidationError(f"Invalid file format! Only video files {allowed_extensions} are allowed.")
