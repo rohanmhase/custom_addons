@@ -10,10 +10,10 @@
         <!-- Flag for header layouts: hide logo only when teleconsult + toggle OFF -->
         <xpath expr="//t[@t-call='web.external_layout']" position="before">
             <t t-set="tc_config"
-               t-value="o.env['online.import.config'].search([('company_id', '=', o.company_id.id)], limit=1)
-                        or o.env['online.import.config'].search([], limit=1)"/>
+               t-value="o.env['online.import.config'].sudo().search([('company_id', '=', o.company_id.id)], limit=1)
+                        or o.env['online.import.config'].sudo().search([], limit=1)"/>
             <t t-set="is_teleconsult"
-               t-value="o.env['teleconsult.invoice.line'].search_count([('move_id', '=', o.id)]) &gt; 0"/>
+               t-value="o.env['teleconsult.invoice.line'].sudo().search_count([('move_id', '=', o.id)]) &gt; 0"/>
             <t t-set="hide_company_logo"
                t-value="is_teleconsult and tc_config and not tc_config.show_company_logo"/>
         </xpath>
@@ -32,7 +32,7 @@
         <xpath expr="//p[@name='payment_communication']" position="after">
             <t t-if="tc_config and tc_config.show_items_in_notes">
                 <t t-set="tc_lines"
-                   t-value="o.env['teleconsult.invoice.line'].search([('move_id', '=', o.id)])"/>
+                   t-value="o.env['teleconsult.invoice.line'].sudo().search([('move_id', '=', o.id)])"/>
                 <div t-if="tc_lines" class="mt-3" style="page-break-inside: avoid;">
                     <strong>Medicines / Items:</strong>
                     <ul class="list-unstyled mb-0 ms-2">
