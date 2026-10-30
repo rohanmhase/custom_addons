@@ -333,7 +333,55 @@ class Enrollment(models.Model):
         ], order="enrollment_date desc")
         today = date.today()
         result = []
+
         for rec in records:
+            billing_lines = []
+
+            for line in rec.line_ids:
+                mrp = line._get_fixed_medicine_package_mrp()
+
+                if mrp:
+                    # Both the configured MRP and the amount entered on the
+                    # enrollment line are GROSS values (GST included).
+                    #
+                    # If the product tax is configured as price-excluded, POS
+                    # expects a tax-exclusive unit price.  Convert the inclusive
+                    # MRP to the correct POS base before applying the discount.
+                    # If the tax is already price-included, this helper simply
+                    # returns the MRP unchanged.
+                    discounted_amount = float(line.total_amount or 0.0)
+                    pos_unit_price = line._get_pos_unit_price_from_gross(mrp)
+                    discount_pct = 0.0
+
+                    if mrp > 0 and discounted_amount < mrp:
+                        discount_pct = round(
+                            ((mrp - discounted_amount) / mrp) * 100.0,
+                            5,
+                        )
+
+                    billing_lines.append({
+                        "product_id": line.service_product_id.id,
+                        "name": line.service_product_id.display_name,
+                        "qty": 1,
+                        "amount": discounted_amount,
+                        "unit_price": pos_unit_price,
+                        "discount": discount_pct,
+                        "mrp": mrp,
+                        "gross_target": discounted_amount,
+                        "is_fixed_medicine_package": True,
+                    })
+                else:
+                    billing_lines.append({
+                        "product_id": line.service_product_id.id,
+                        "name": line.service_product_id.display_name,
+                        "qty": line.pos_qty,
+                        "amount": line.total_amount,
+                        "unit_price": line.therapy_amount,
+                        "discount": 0.0,
+                        "mrp": 0.0,
+                        "is_fixed_medicine_package": False,
+                    })
+
             result.append({
                 "id": rec.id,
                 "patient_id": rec.patient_id.partner_id.id if rec.patient_id.partner_id else False,
@@ -342,17 +390,9 @@ class Enrollment(models.Model):
                 "is_today": rec.enrollment_date == today,
                 "bm_name": rec.doctor_id.name,
                 "total_amount": rec.total_amount,
-                "lines": [
-                    {
-                        "product_id": line.service_product_id.id,
-                        "name": line.service_product_id.display_name,
-                        "qty": line.pos_qty,
-                        "amount": line.total_amount,
-                        "unit_price": line.therapy_amount,
-                    }
-                    for line in rec.line_ids
-                ],
+                "lines": billing_lines,
             })
+
         return result
 
     def copy(self, default=None):
@@ -390,6 +430,116 @@ class Enrollment(models.Model):
 class EnrollmentLine(models.Model):
     _name = 'patient.enrollment.line'
     _description = 'Patient Enrollment Line'
+
+    # These products use their Odoo Sales Price as the GST-inclusive MRP.
+    # The MRP itself is NOT hard-coded: change the product Sales Price in Odoo
+    # and new enrollment/POS calculations will automatically use the new value.
+    MEDICINE_PACKAGE_PRODUCT_NAMES = {
+        '90 Days Medicine Package',
+        '180 Days Medicine Package',
+        '365 Days Medicine Package',
+    }
+
+    def _is_fixed_medicine_package(self):
+        self.ensure_one()
+        return bool(
+            self.service_product_id
+            and self.service_product_id.name in self.MEDICINE_PACKAGE_PRODUCT_NAMES
+        )
+
+    def _get_fixed_medicine_package_mrp(self):
+        """Return the medicine-package MRP INCLUDING customer taxes.
+
+        The product Sales Price (``list_price``) is maintained from the Odoo
+        product screen.  For these medicine packages, enrollment must use the
+        customer-facing MRP including GST.  We therefore let Odoo's tax engine
+        compute the tax-inclusive value from the product's Customer Taxes.
+
+        This works for both tax configurations:
+        * price-excluded tax: Sales Price 16,190.48 + 5% GST -> ~17,000 MRP
+        * price-included tax: ``total_included`` stays equal to the entered price
+        """
+        self.ensure_one()
+        if not self._is_fixed_medicine_package():
+            return 0.0
+
+        product = self.service_product_id
+        base_price = float(product.list_price or 0.0)
+        if base_price <= 0:
+            raise ValidationError(_(
+                'Please configure a Sales Price greater than 0 for %s before using it in enrollment.'
+            ) % product.display_name)
+
+        company = self.env.company
+        taxes = product.taxes_id.filtered(lambda tax: tax.company_id == company)
+        if not taxes:
+            return base_price
+
+        partner = self.enrollment_id.patient_id.partner_id
+        tax_result = taxes.compute_all(
+            base_price,
+            currency=company.currency_id,
+            quantity=1.0,
+            product=product,
+            partner=partner,
+        )
+
+        return float(tax_result.get('total_included', base_price) or base_price)
+
+    def _get_pos_unit_price_from_gross(self, gross_amount):
+        """Return the POS unit price that produces ``gross_amount`` after tax.
+
+        Medicine package MRPs are business-defined GST-inclusive amounts.
+        Odoo POS, however, expects ``price`` according to the product tax's
+        ``price_include`` setup.  This method supports both configurations:
+
+        * price-included tax  -> return the gross MRP unchanged
+        * price-excluded tax  -> back GST out of the MRP first
+
+        For the current 5% GST setup this turns Rs. 4,999 gross into about
+        Rs. 4,760.95238 before tax.  Applying the enrollment discount to that
+        base and then GST yields the exact discounted gross total.
+        """
+        self.ensure_one()
+
+        gross_amount = float(gross_amount or 0.0)
+        if gross_amount <= 0 or not self.service_product_id:
+            return gross_amount
+
+        product = self.service_product_id
+        company = self.env.company
+        taxes = product.taxes_id.filtered(
+            lambda tax: tax.company_id == company
+        )
+
+        if not taxes:
+            return gross_amount
+
+        currency = company.currency_id
+        partner = self.enrollment_id.patient_id.partner_id
+
+        tax_result = taxes.compute_all(
+            gross_amount,
+            currency=currency,
+            quantity=1.0,
+            product=product,
+            partner=partner,
+        )
+
+        computed_total = float(
+            tax_result.get('total_included', gross_amount) or gross_amount
+        )
+
+        # If compute_all() adds tax on top of the supplied value, the tax is
+        # price-excluded.  Scale the gross MRP down to the tax-exclusive base.
+        tolerance = max(currency.rounding or 0.01, 0.000001)
+        if computed_total > gross_amount + tolerance:
+            factor = computed_total / gross_amount
+            if factor > 0:
+                return gross_amount / factor
+
+        # Tax is already included in the product price.
+        return gross_amount
 
     enrollment_id = fields.Many2one(
         'patient.enrollment',
@@ -506,6 +656,13 @@ class EnrollmentLine(models.Model):
 
         self.pos_qty = config.default_quantity
 
+        # Fixed medicine packages always start at their MRP and quantity 1.
+        # The user can then reduce Total Amount to give a discount.
+        medicine_mrp = self._get_fixed_medicine_package_mrp()
+        if medicine_mrp:
+            self.pos_qty = 1
+            self.total_amount = int(medicine_mrp)
+
     @api.depends('total_amount', 'pos_qty')
     def _compute_therapy_amount(self):
         for rec in self:
@@ -553,6 +710,29 @@ class EnrollmentLine(models.Model):
                     _("The quantity (Days) for %s must be greater than 0.")
                     % rec.service_product_id.display_name
                 )
+
+    @api.constrains('service_product_id', 'pos_qty', 'total_amount')
+    def _check_fixed_medicine_package(self):
+        for rec in self:
+            mrp = rec._get_fixed_medicine_package_mrp()
+            if not mrp:
+                continue
+
+            if rec.pos_qty != 1:
+                raise ValidationError(_(
+                    '%s must always have quantity 1.'
+                ) % rec.service_product_id.display_name)
+
+            if rec.total_amount <= 0:
+                raise ValidationError(_(
+                    'The discounted amount for %s must be greater than 0.'
+                ) % rec.service_product_id.display_name)
+
+            if rec.total_amount > mrp:
+                raise ValidationError(_(
+                    '%s has a maximum MRP of Rs. %s. You may discount it, '
+                    'but the amount cannot be higher than MRP.'
+                ) % (rec.service_product_id.display_name, int(mrp)))
 
     # @api.constrains('therapy_amount')
     # def _check_therapy_amount_decimals(self):

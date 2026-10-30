@@ -210,8 +210,16 @@ export class BillingQueueButton extends Component {
                     order.get_selected_orderline();
 
                 if (addedLine) {
-
                     addedLine.from_enrollment = true;
+
+                    // Medicine package lines arrive with MRP as unit price and
+                    // a calculated enrollment discount.  Store that discount on
+                    // the POS order line so it propagates to account.move.line
+                    // and appears as Discount % on the invoice.
+                    const discountPct = Number(line.discount || 0);
+                    if (typeof addedLine.set_discount === "function") {
+                        addedLine.set_discount(discountPct);
+                    }
                 }
             }
         }
