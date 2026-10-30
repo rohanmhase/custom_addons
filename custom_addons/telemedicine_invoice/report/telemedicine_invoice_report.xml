@@ -27,6 +27,12 @@
         <t t-set="company" t-value="o.company_id.sudo() if o and o.company_id else env.company"/>
 
         <div t-attf-class="header o_company_#{company.id}_layout">
+            <!-- divider moved ABOVE the company details -->
+            <div class="row zero_min_height">
+                <div class="col-12">
+                    <div style="border-bottom: 1px solid black;"/>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-12" name="company_address">
                     <ul class="list-unstyled" name="company_address_list">
@@ -35,11 +41,6 @@
                                   t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
                         </li>
                     </ul>
-                </div>
-            </div>
-            <div class="row zero_min_height">
-                <div class="col-12">
-                    <div style="border-bottom: 1px solid black;"/>
                 </div>
             </div>
         </div>
@@ -112,15 +113,11 @@
                         <br/>
                         <span t-field="o.invoice_date"/>
                     </div>
-                    <div class="col-auto col-3 mw-100 mb-2" t-if="o.purchase_order" name="origin">
-                        <strong>Source:</strong>
-                        <br/>
-                        <span t-field="o.purchase_order"/>
-                    </div>
+                    <!-- Reference = order number (CSV "Purchase Order" column) -->
                     <div class="col-auto col-3 mw-100 mb-2" t-if="o.name" name="reference">
                         <strong>Reference:</strong>
                         <br/>
-                        <span t-field="o.name"/>
+                        <span t-field="o.purchase_order"/>
                     </div>
                 </div>
 
