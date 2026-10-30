@@ -1,6 +1,6 @@
 {
     'name': 'Telemedicine Invoice',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0.1',
     'category': 'Accounting',
     'summary': 'Standalone migration of historical telemedicine invoices (no account.move).',
     'depends': ['base', 'web', 'account'],
@@ -12,7 +12,6 @@
         'views/telemedicine_config_views.xml',
         'wizard/import_csv_wizard_views.xml',
         'views/menu.xml',
-        'report/report_actions.xml',
         'report/telemedicine_invoice_report.xml',
     ],
     'installable': True,
