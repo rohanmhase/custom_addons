@@ -118,18 +118,29 @@ class TelemedicineInvoice(models.Model):
         }]
 
     def _get_hsn_summary(self):
+        """Return list of HSN summary rows for the PDF."""
         self.ensure_one()
         config = self.env['telemedicine.import.config']._get_config()
-        hsn = config.get_hsn_code()
-        if not hsn:
-            return False
-        return {
-            'hsn': hsn,
+        hsn_code = config.get_hsn_code()
+        if not hsn_code:
+            return []
+        half_tax = self.amount_tax / 2.0
+        return [{
+            'hsn_code': hsn_code,
             'quantity': 1.0,
             'uom': 'Sessions',
-            'rate': f'{self.tax_percent:g}' if self.tax_percent else '0',
-            'amount_untaxed': self.amount_untaxed,
-        }
+            'rate': self.tax_percent,
+            'taxable_value': self.amount_untaxed,
+            'sgst_amount': half_tax,
+            'cgst_amount': half_tax,
+            'igst_amount': 0.0,
+            'total_tax': self.amount_tax,
+        }]
+
+    def get_half_tax(self):
+        """Returns half of amount_tax (for SGST/CGST split)."""
+        self.ensure_one()
+        return self.amount_tax / 2.0
 
     def action_post(self):
         self.write({'state': 'posted'})
