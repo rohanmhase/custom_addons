@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tm_customer_viewer,telemedicine.customer.viewer,model_telemedicine_customer,group_tm_viewer,1,0,0,0
+access_tm_customer_moderator,telemedicine.customer.moderator,model_telemedicine_customer,group_tm_moderator,1,1,1,0
+access_tm_customer_admin,telemedicine.customer.admin,model_telemedicine_customer,group_tm_admin,1,1,1,1
+access_tm_invoice_viewer,telemedicine.invoice.viewer,model_telemedicine_invoice,group_tm_viewer,1,0,0,0
+access_tm_invoice_moderator,telemedicine.invoice.moderator,model_telemedicine_invoice,group_tm_moderator,1,1,1,0
+access_tm_invoice_admin,telemedicine.invoice.admin,model_telemedicine_invoice,group_tm_admin,1,1,1,1
+access_tm_config_viewer,telemedicine.import.config.viewer,model_telemedicine_import_config,group_tm_viewer,1,0,0,0
+access_tm_config_moderator,telemedicine.import.config.moderator,model_telemedicine_import_config,group_tm_moderator,1,1,1,0
+access_tm_config_admin,telemedicine.import.config.admin,model_telemedicine_import_config,group_tm_admin,1,1,1,1
+access_tm_wizard_admin,telemedicine.import.csv.wizard.admin,model_telemedicine_import_csv_wizard,group_tm_admin,1,1,1,1

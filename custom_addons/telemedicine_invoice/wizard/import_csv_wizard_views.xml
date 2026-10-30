@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tm_import_csv_wizard_form" model="ir.ui.view">
+        <field name="name">telemedicine.import.csv.wizard.form</field>
+        <field name="model">telemedicine.import.csv.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import CSV">
+                <group invisible="state != 'choose'">
+                    <field name="file" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+                    <field name="overwrite_existing"/>
+                </group>
+                <group invisible="state != 'done'">
+                    <field name="summary" nolabel="1"
+                           readonly="1" widget="text"/>
+                </group>
+                <field name="state" invisible="1"/>
+                <footer>
+                    <button name="action_import" string="Import"
+                            type="object" class="oe_highlight"
+                            invisible="state != 'choose'"/>
+                    <button string="Close" class="oe_link"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_tm_import_csv_wizard" model="ir.actions.act_window">
+        <field name="name">Import CSV</field>
+        <field name="res_model">telemedicine.import.csv.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
