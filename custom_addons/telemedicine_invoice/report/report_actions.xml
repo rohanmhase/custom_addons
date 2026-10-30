@@ -1,67 +1,257 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="action_report_tm_invoice" model="ir.actions.report">
-        <field name="name">Invoice / Bill of Supply</field>
-        <field name="model">telemedicine.invoice</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">telemedicine_invoice.report_tm_invoice</field>
-        <field name="report_file">telemedicine_invoice.report_tm_invoice</field>
-        <field name="print_report_name">(object.name)</field>
-        <field name="binding_model_id" ref="model_telemedicine_invoice"/>
-        <field name="binding_type">report</field>
-    </record>
+    <template id="report_tm_invoice_document">
+        <t t-call="telemedicine_invoice.tm_layout_no_logo">
+            <t t-set="o" t-value="o.with_context(lang=lang)"/>
+            <t t-set="config" t-value="env['telemedicine.import.config']._get_config()"/>
+            <t t-set="line_data" t-value="o._get_report_line()"/>
+            <t t-set="hsn_code" t-value="config.get_hsn_code()"/>
 
-    <!--
-        Own header/footer layout for this report only. No <img> exists here, so
-        no logo can ever be printed — no xpath, no CSS, no inherited view, and
-        nothing global is touched (other reports keep their logo).
+            <!-- SGST / CGST split (rounded so the two halves add up exactly) -->
+            <t t-set="half_tax" t-value="round(o.amount_tax / 2.0, 2)"/>
+            <t t-set="other_tax" t-value="round(o.amount_tax - half_tax, 2)"/>
 
-        The "header" and "footer" class names are mandatory: they are what
-        ir.actions.report._prepare_html() extracts to build the repeating
-        wkhtmltopdf header/footer. The "article" div must keep its
-        data-oe-model / data-oe-id / data-oe-lang attributes or PDF-per-record
-        splitting breaks.
-    -->
-    <template id="tm_layout_no_logo">
-        <t t-set="company" t-value="o.company_id.sudo() if o and o.company_id else env.company"/>
+            <!-- Address Slot -->
+            <t t-set="address">
+                <div style="line-height: 1.25;">
+                    <div><t t-out="o.customer_id.name"/></div>
+                    <div t-if="o.customer_id.gstin">
+                        GSTIN:
+                        <span t-field="o.customer_id.gstin"/>
+                    </div>
+                    <div t-if="o.place_of_supply">
+                        Place of supply:
+                        <span t-field="o.place_of_supply"/>
+                    </div>
+                </div>
+            </t>
 
-        <div t-attf-class="header o_company_#{company.id}_layout">
-            <div class="row">
-                <div class="col-12" name="company_address">
-                    <ul class="list-unstyled" name="company_address_list">
-                        <li>
-                            <span t-field="company.partner_id"
-                                  t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
-                        </li>
-                    </ul>
+            <!-- padding-top on .page cannot collapse => deterministic gap
+                 between the address block and "Tax Invoice INV-..."
+                 Tune: 32px (tight) / 48px (matches legacy) / 56px (airy) -->
+            <div class="page" style="padding-top: 48px;">
+                <h2 class="mt-0 mb-3">
+                    <span t-out="o.get_document_title()"/>
+                    <span t-field="o.name"/>
+                </h2>
+
+                <div id="informations" class="row mt-3 mb-1">
+                    <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date" name="invoice_date">
+                        <strong>Invoice Date:</strong>
+                        <br/>
+                        <span t-field="o.invoice_date"/>
+                    </div>
+                    <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date" name="due_date">
+                        <strong>Due Date:</strong>
+                        <br/>
+                        <span t-field="o.invoice_date"/>
+                    </div>
+                    <div class="col-auto col-3 mw-100 mb-2" t-if="o.purchase_order" name="origin">
+                        <strong>Source:</strong>
+                        <br/>
+                        <span t-field="o.purchase_order"/>
+                    </div>
+                    <div class="col-auto col-3 mw-100 mb-2" t-if="o.name" name="reference">
+                        <strong>Reference:</strong>
+                        <br/>
+                        <span t-field="o.name"/>
+                    </div>
+                </div>
+
+                <table class="table table-sm o_main_table table-borderless mt-4" name="invoice_line_table">
+                    <thead>
+                        <tr>
+                            <th name="th_description" class="text-start">
+                                <span>Description</span>
+                            </th>
+                            <th name="th_hsn" class="text-start" t-if="hsn_code">
+                                <span>HSN/SAC</span>
+                            </th>
+                            <th name="th_quantity" class="text-end">
+                                <span>Quantity</span>
+                            </th>
+                            <th name="th_priceunit" class="text-end">
+                                <span>Unit Price</span>
+                            </th>
+                            <th name="th_taxes" class="text-end">
+                                <span>Taxes</span>
+                            </th>
+                            <th name="th_subtotal" class="text-end">
+                                <span>Amount</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="invoice_tbody">
+                        <tr>
+                            <td name="td_name">
+                                <span t-out="line_data['name']"/>
+                            </td>
+                            <td name="td_hsn" t-if="hsn_code">
+                                <span t-out="hsn_code"/>
+                            </td>
+                            <td name="td_quantity" class="text-end">
+                                <span>1.00</span>
+                            </td>
+                            <td name="td_priceunit" class="text-end">
+                                <span class="text-nowrap"
+                                      t-out="line_data['price_unit']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td name="td_taxes" class="text-end">
+                                <span t-if="o.tax_percent" t-out="f'{o.tax_percent:g}% GST'"/>
+                                <span t-else="">Exempt</span>
+                            </td>
+                            <td name="td_subtotal" class="text-end o_price_total">
+                                <span class="text-nowrap"
+                                      t-out="line_data['price_subtotal']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="clearfix mb-4">
+                    <!-- RIGHT SIDE: Totals (SGST/CGST bifurcated) + Amount in Words -->
+                    <div id="right-elements" class="col-5 ms-5 d-inline-block float-end">
+                        <div id="total" class="clearfix row">
+                            <div class="ms-auto">
+                                <table class="table table-sm table-borderless avoid-page-break-inside">
+                                    <tr class="border-black o_subtotal">
+                                        <td>
+                                            <strong>Before Tax Amt.</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-out="o.amount_untaxed"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
+                                    <!-- SGST / CGST bifurcation (intra-state) -->
+                                    <tr t-if="o.amount_tax &gt; 0">
+                                        <td>
+                                            SGST on
+                                            <span t-out="o.amount_untaxed"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                        <td class="text-end o_price_total">
+                                            <span class="text-nowrap" t-out="half_tax"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.amount_tax &gt; 0">
+                                        <td>
+                                            CGST on
+                                            <span t-out="o.amount_untaxed"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                        <td class="text-end o_price_total">
+                                            <span class="text-nowrap" t-out="other_tax"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Zero-rated / exempt invoices: no bogus 0.00 tax rows -->
+                                    <tr t-if="not o.amount_tax">
+                                        <td>Exempt</td>
+                                        <td class="text-end o_price_total">
+                                            <span class="text-nowrap" t-out="0.0"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
+                                    <tr t-if="o.rounding_adj != 0">
+                                        <td>Rounding</td>
+                                        <td class="text-end">
+                                            <span t-out="o.rounding_adj"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-black o_total">
+                                        <td>
+                                            <strong>Total</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-out="o.amount_total"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mb-2" t-if="o.amount_total_words">
+                            <p class="text-end lh-sm">
+                                Total amount in words:
+                                <br/>
+                                <small class="text-muted lh-sm">
+                                    <span t-out="o.amount_total_words"/>
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- HSN Summary (restored) + SGST/CGST per HSN -->
+                <div t-if="hsn_code" class="mt-4 mb-3"
+                     style="page-break-inside: avoid; clear: both;">
+                    <h3 class="text-center mb-2">HSN Summary</h3>
+                    <table class="table table-sm table-borderless">
+                        <thead>
+                            <tr>
+                                <th>HSN/SAC</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Rate %</th>
+                                <th class="text-end">Taxable Value</th>
+                                <th class="text-end">SGST</th>
+                                <th class="text-end">CGST</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span t-out="hsn_code"/></td>
+                                <td class="text-end">1.0 (Sessions)</td>
+                                <td class="text-end"><span t-out="f'{o.tax_percent:g}'"/></td>
+                                <td class="text-end">
+                                    <span t-out="o.amount_untaxed"
+                                          t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="half_tax"
+                                          t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="other_tax"
+                                          t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Payment Communication + Notes, moved below the HSN Summary -->
+                <div class="mt-3" style="clear: both;">
+                    <p name="payment_communication" class="mb-1" t-if="o.name">
+                        Payment Communication:
+                        <strong t-field="o.name"/>
+                    </p>
+
+                    <div class="text-muted mb-3" name="comment"
+                         t-if="o.narration and config.show_narration_on_pdf"
+                         style="page-break-inside: avoid;">
+                        <span t-field="o.narration"/>
+                    </div>
                 </div>
             </div>
-            <div class="row zero_min_height">
-                <div class="col-12">
-                    <div style="border-bottom: 1px solid black;"/>
-                </div>
-            </div>
-        </div>
+        </t>
+    </template>
 
-        <div t-attf-class="article o_report_layout_standard o_company_#{company.id}_layout"
-             t-att-data-oe-model="o and o._name"
-             t-att-data-oe-id="o and o.id"
-             t-att-data-oe-lang="o and o.env.context.get('lang')">
-            <div class="pt-5">
-                <t t-call="web.address_layout"/>
-            </div>
-            <t t-out="0"/>
-        </div>
-
-        <div t-attf-class="footer o_standard_footer o_company_#{company.id}_layout">
-            <div class="text-center" style="border-top: 1px solid black;">
-                <ul class="list-inline mb4">
-                    <div t-field="company.report_footer"/>
-                </ul>
-                <div t-if="report_type == 'pdf'" class="text-muted">
-                    Page: <span class="page"/> / <span class="topage"/>
-                </div>
-            </div>
-        </div>
+    <template id="report_tm_invoice">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="lang" t-value="env.user.lang"/>
+                <t t-call="telemedicine_invoice.report_tm_invoice_document" t-lang="lang"/>
+            </t>
+        </t>
     </template>
 </odoo>
