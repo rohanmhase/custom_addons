@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_tm_invoice" model="ir.actions.report">
+        <field name="name">Invoice / Bill of Supply</field>
+        <field name="model">telemedicine.invoice</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">telemedicine_invoice.report_tm_invoice</field>
+        <field name="report_file">telemedicine_invoice.report_tm_invoice</field>
+        <field name="print_report_name">(object.name)</field>
+        <field name="binding_model_id" ref="model_telemedicine_invoice"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

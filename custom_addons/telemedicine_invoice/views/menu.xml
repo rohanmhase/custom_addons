@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_telemedicine_root"
+              name="Telemedicine"
+              sequence="100"/>
+
+    <menuitem id="menu_tm_invoices"
+              name="Invoices"
+              parent="menu_telemedicine_root"
+              action="action_telemedicine_invoice"
+              sequence="10"/>
+
+    <menuitem id="menu_tm_customers"
+              name="Customers"
+              parent="menu_telemedicine_root"
+              action="action_telemedicine_customer"
+              sequence="20"/>
+
+    <menuitem id="menu_tm_import"
+              name="Import"
+              parent="menu_telemedicine_root"
+              sequence="30"/>
+
+    <menuitem id="menu_tm_import_csv"
+              name="Import CSV"
+              parent="menu_tm_import"
+              action="action_tm_import_csv_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_tm_config"
+              name="Configuration"
+              parent="menu_telemedicine_root"
+              sequence="90"/>
+
+    <menuitem id="menu_tm_settings"
+              name="Settings"
+              parent="menu_tm_config"
+              action="action_telemedicine_config"
+              sequence="10"/>
+</odoo>

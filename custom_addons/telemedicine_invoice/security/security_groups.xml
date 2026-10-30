@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_telemedicine" model="ir.module.category">
+        <field name="name">Telemedicine Invoice</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <record id="group_tm_viewer" model="res.groups">
+        <field name="name">Viewer</field>
+        <field name="category_id" ref="module_category_telemedicine"/>
+    </record>
+
+    <record id="group_tm_moderator" model="res.groups">
+        <field name="name">Moderator</field>
+        <field name="category_id" ref="module_category_telemedicine"/>
+        <field name="implied_ids" eval="[(4, ref('group_tm_viewer'))]"/>
+    </record>
+
+    <record id="group_tm_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="category_id" ref="module_category_telemedicine"/>
+        <field name="implied_ids" eval="[(4, ref('group_tm_moderator'))]"/>
+    </record>
+</odoo>

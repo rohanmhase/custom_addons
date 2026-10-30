@@ -1,0 +1,21 @@
+{
+    'name': 'Telemedicine Invoice',
+    'version': '17.0.1.0.0',
+    'category': 'Accounting',
+    'summary': 'Standalone migration of historical telemedicine invoices (no account.move).',
+    'depends': ['base', 'web', 'account'],
+    'data': [
+        'security/security_groups.xml',
+        'security/ir.model.access.csv',
+        'views/telemedicine_customer_views.xml',
+        'views/telemedicine_invoice_views.xml',
+        'views/telemedicine_config_views.xml',
+        'wizard/import_csv_wizard_views.xml',
+        'views/menu.xml',
+        'report/report_actions.xml',
+        'report/telemedicine_invoice_report.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}
