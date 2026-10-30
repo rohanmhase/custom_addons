@@ -1,5 +1,5 @@
 from odoo import models, fields, api
-
+from odoo.exceptions import UserError
 
 class TelemedicineInvoice(models.Model):
     _name = 'telemedicine.invoice'
@@ -150,6 +150,18 @@ class TelemedicineInvoice(models.Model):
 
     def action_print_invoice(self):
         self.ensure_one()
-        return self.env.ref(
-            'telemedicine_invoice.action_report_tm_invoice'
-        ).report_action(self)
+        report = self.env.ref(
+            'telemedicine_invoice.action_report_tm_invoice',
+            raise_if_not_found=False,
+        )
+        if not report:
+            report = self.env['ir.actions.report'].search(
+                [('report_name', '=', 'telemedicine_invoice.report_tm_invoice')],
+                limit=1,
+            )
+        if not report:
+            raise UserError(
+                'The Telemedicine invoice report is not loaded. '
+                'Upgrade the module: Apps > Telemedicine Invoice > Upgrade.'
+            )
+        return report.report_action(self)
