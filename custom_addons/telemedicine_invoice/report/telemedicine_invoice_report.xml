@@ -5,27 +5,16 @@
             <t t-set="o" t-value="o.with_context(lang=lang)"/>
             <t t-set="config" t-value="env['telemedicine.import.config']._get_config()"/>
             <t t-set="line_data" t-value="o._get_report_line()"/>
-            <t t-set="half_tax" t-value="o.amount_tax / 2.0"/>
             <t t-set="hsn_code" t-value="config.get_hsn_code()"/>
 
-            <!-- Hide company logo only on this report -->
-            <style>
-                .header img,
-                img.o_company_logo_big,
-                img.o_company_logo_small,
-                .o_company_logo_container,
-                .o_logo {
-                display: none !important;
-                width: 0 !important;
-                height: 0 !important;
-                overflow: hidden !important;
-                }
-            </style>
+            <!-- SGST / CGST split (rounded so the two halves add up exactly) -->
+            <t t-set="half_tax" t-value="round(o.amount_tax / 2.0, 2)"/>
+            <t t-set="other_tax" t-value="round(o.amount_tax - half_tax, 2)"/>
 
-            <!-- Customer block (top-right address slot) -->
+            <!-- Address Slot -->
             <t t-set="address">
                 <div style="line-height: 1.25;">
-                    <div t-field="o.customer_id.name" t-options='{"widget": "text"}'/>
+                    <div><t t-out="o.customer_id.name"/></div>
                     <div t-if="o.customer_id.gstin">
                         GSTIN:
                         <span t-field="o.customer_id.gstin"/>
@@ -37,13 +26,16 @@
                 </div>
             </t>
 
-            <div class="page" style="padding-top: 24px;">
+            <!-- padding-top on .page cannot collapse => deterministic gap
+                 between the address block and "Tax Invoice INV-..."
+                 Tune: 32px (tight) / 48px (matches legacy) / 56px (airy) -->
+            <div class="page" style="padding-top: 48px;">
                 <h2 class="mt-0 mb-3">
                     <span t-out="o.get_document_title()"/>
                     <span t-field="o.name"/>
                 </h2>
 
-                <div id="informations" class="row mb-2">
+                <div id="informations" class="row mt-3 mb-1">
                     <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date" name="invoice_date">
                         <strong>Invoice Date:</strong>
                         <br/>
@@ -66,50 +58,50 @@
                     </div>
                 </div>
 
-                <!-- Line table -->
-                <table class="table table-sm o_main_table table-borderless mt-3" name="invoice_line_table">
+                <table class="table table-sm o_main_table table-borderless mt-4" name="invoice_line_table">
                     <thead>
                         <tr>
-                            <th class="text-start">
+                            <th name="th_description" class="text-start">
                                 <span>Description</span>
                             </th>
-                            <th class="text-start" t-if="hsn_code">
+                            <th name="th_hsn" class="text-start" t-if="hsn_code">
                                 <span>HSN/SAC</span>
                             </th>
-                            <th class="text-end">
+                            <th name="th_quantity" class="text-end">
                                 <span>Quantity</span>
                             </th>
-                            <th class="text-end">
+                            <th name="th_priceunit" class="text-end">
                                 <span>Unit Price</span>
                             </th>
-                            <th class="text-end">
+                            <th name="th_taxes" class="text-end">
                                 <span>Taxes</span>
                             </th>
-                            <th class="text-end">
+                            <th name="th_subtotal" class="text-end">
                                 <span>Amount</span>
                             </th>
                         </tr>
                     </thead>
                     <tbody class="invoice_tbody">
                         <tr>
-                            <td>
+                            <td name="td_name">
                                 <span t-out="line_data['name']"/>
                             </td>
-                            <td t-if="hsn_code">
+                            <td name="td_hsn" t-if="hsn_code">
                                 <span t-out="hsn_code"/>
                             </td>
-                            <td class="text-end">
+                            <td name="td_quantity" class="text-end">
                                 <span>1.00</span>
                             </td>
-                            <td class="text-end">
+                            <td name="td_priceunit" class="text-end">
                                 <span class="text-nowrap"
                                       t-out="line_data['price_unit']"
                                       t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                             </td>
-                            <td class="text-end">
-                                <span t-out="f'{o.tax_percent:g}% GST' if o.tax_percent &gt; 0 else ''"/>
+                            <td name="td_taxes" class="text-end">
+                                <span t-if="o.tax_percent" t-out="f'{o.tax_percent:g}% GST'"/>
+                                <span t-else="">Exempt</span>
                             </td>
-                            <td class="text-end o_price_total">
+                            <td name="td_subtotal" class="text-end o_price_total">
                                 <span class="text-nowrap"
                                       t-out="line_data['price_subtotal']"
                                       t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -118,8 +110,8 @@
                     </tbody>
                 </table>
 
-                <!-- Totals (right) -->
-                <div class="clearfix mb-3">
+                <div class="clearfix mb-4">
+                    <!-- RIGHT SIDE: Totals (SGST/CGST bifurcated) + Amount in Words -->
                     <div id="right-elements" class="col-5 ms-5 d-inline-block float-end">
                         <div id="total" class="clearfix row">
                             <div class="ms-auto">
@@ -133,6 +125,8 @@
                                                   t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
                                     </tr>
+
+                                    <!-- SGST / CGST bifurcation (intra-state) -->
                                     <tr t-if="o.amount_tax &gt; 0">
                                         <td>
                                             SGST on
@@ -151,10 +145,20 @@
                                                   t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
                                         <td class="text-end o_price_total">
-                                            <span class="text-nowrap" t-out="half_tax"
+                                            <span class="text-nowrap" t-out="other_tax"
                                                   t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
                                     </tr>
+
+                                    <!-- Zero-rated / exempt invoices: no bogus 0.00 tax rows -->
+                                    <tr t-if="not o.amount_tax">
+                                        <td>Exempt</td>
+                                        <td class="text-end o_price_total">
+                                            <span class="text-nowrap" t-out="0.0"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
                                     <tr t-if="o.rounding_adj != 0">
                                         <td>Rounding</td>
                                         <td class="text-end">
@@ -185,10 +189,27 @@
                             </p>
                         </div>
                     </div>
+
+                    <!-- LEFT SIDE: Payment Communication and Notes -->
+                    <div id="payment_term" class="clearfix">
+                        <div class="mb-3" t-if="o.name">
+                            <p name="payment_communication">
+                                Payment Communication:
+                                <strong t-field="o.name"/>
+                            </p>
+                        </div>
+
+                        <div class="text-muted mb-3" name="comment"
+                             t-if="o.narration and config.show_narration_on_pdf"
+                             style="page-break-inside: avoid;">
+                            <span t-field="o.narration"/>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- HSN Summary -->
-                <div t-if="hsn_code" class="mt-4 mb-3" style="page-break-inside: avoid; clear: both;">
+                <!-- HSN Summary (restored) + SGST/CGST per HSN -->
+                <div t-if="hsn_code" class="mt-4 mb-3"
+                     style="page-break-inside: avoid; clear: both;">
                     <h3 class="text-center mb-2">HSN Summary</h3>
                     <table class="table table-sm table-borderless">
                         <thead>
@@ -203,13 +224,9 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>
-                                    <span t-out="hsn_code"/>
-                                </td>
+                                <td><span t-out="hsn_code"/></td>
                                 <td class="text-end">1.0 (Sessions)</td>
-                                <td class="text-end">
-                                    <span t-out="f'{o.tax_percent:g}'"/>
-                                </td>
+                                <td class="text-end"><span t-out="f'{o.tax_percent:g}'"/></td>
                                 <td class="text-end">
                                     <span t-out="o.amount_untaxed"
                                           t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -219,27 +236,12 @@
                                           t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                 </td>
                                 <td class="text-end">
-                                    <span t-out="half_tax"
+                                    <span t-out="other_tax"
                                           t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Payment Communication — AFTER HSN Summary -->
-                <div class="mb-3" t-if="o.name" style="clear: both;">
-                    <p name="payment_communication" class="mb-1">
-                        Payment Communication:
-                        <strong t-field="o.name"/>
-                    </p>
-                </div>
-
-                <!-- Narration / Notes -->
-                <div class="text-muted mb-3" name="comment"
-                     t-if="o.narration and config.show_narration_on_pdf"
-                     style="page-break-inside: avoid;">
-                    <span t-field="o.narration"/>
                 </div>
             </div>
         </t>
