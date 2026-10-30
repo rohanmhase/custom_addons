@@ -10,4 +10,58 @@
         <field name="binding_model_id" ref="model_telemedicine_invoice"/>
         <field name="binding_type">report</field>
     </record>
+
+    <!--
+        Own header/footer layout for this report only. No <img> exists here, so
+        no logo can ever be printed — no xpath, no CSS, no inherited view, and
+        nothing global is touched (other reports keep their logo).
+
+        The "header" and "footer" class names are mandatory: they are what
+        ir.actions.report._prepare_html() extracts to build the repeating
+        wkhtmltopdf header/footer. The "article" div must keep its
+        data-oe-model / data-oe-id / data-oe-lang attributes or PDF-per-record
+        splitting breaks.
+    -->
+    <template id="tm_layout_no_logo">
+        <t t-set="company" t-value="o.company_id.sudo() if o and o.company_id else env.company"/>
+
+        <div t-attf-class="header o_company_#{company.id}_layout">
+            <div class="row">
+                <div class="col-12" name="company_address">
+                    <ul class="list-unstyled" name="company_address_list">
+                        <li>
+                            <span t-field="company.partner_id"
+                                  t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row zero_min_height">
+                <div class="col-12">
+                    <div style="border-bottom: 1px solid black;"/>
+                </div>
+            </div>
+        </div>
+
+        <div t-attf-class="article o_report_layout_standard o_company_#{company.id}_layout"
+             t-att-data-oe-model="o and o._name"
+             t-att-data-oe-id="o and o.id"
+             t-att-data-oe-lang="o and o.env.context.get('lang')">
+            <div class="pt-5">
+                <t t-call="web.address_layout"/>
+            </div>
+            <t t-out="0"/>
+        </div>
+
+        <div t-attf-class="footer o_standard_footer o_company_#{company.id}_layout">
+            <div class="text-center" style="border-top: 1px solid black;">
+                <ul class="list-inline mb4">
+                    <div t-field="company.report_footer"/>
+                </ul>
+                <div t-if="report_type == 'pdf'" class="text-muted">
+                    Page: <span class="page"/> / <span class="topage"/>
+                </div>
+            </div>
+        </div>
+    </template>
 </odoo>
