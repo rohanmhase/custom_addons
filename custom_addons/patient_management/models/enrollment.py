@@ -437,6 +437,7 @@ class EnrollmentLine(models.Model):
     MEDICINE_PACKAGE_PRODUCT_NAMES = {
         '90 Days Medicine Package',
         '180 Days Medicine Package',
+        '270 Days Medicine Package',
         '365 Days Medicine Package',
     }
 
