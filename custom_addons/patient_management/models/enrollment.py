@@ -350,14 +350,35 @@ class Enrollment(models.Model):
                     # If the tax is already price-included, this helper simply
                     # returns the MRP unchanged.
                     discounted_amount = float(line.total_amount or 0.0)
-                    pos_unit_price = line._get_pos_unit_price_from_gross(mrp)
+                    mrp = line._get_fixed_medicine_package_mrp()
+
                     discount_pct = 0.0
+                    pos_unit_price = line._get_pos_unit_price_from_gross(mrp)
 
                     if mrp > 0 and discounted_amount < mrp:
+
+                        # Invoice stores discount at 2 decimals.
+                        # Calculate exactly the same discount that will reach account.move.line.
                         discount_pct = round(
                             ((mrp - discounted_amount) / mrp) * 100.0,
-                            5,
+                            2,
                         )
+
+                        discount_factor = 1.0 - (discount_pct / 100.0)
+
+                        if discount_factor > 0:
+                            # Because discount is rounded to 2 decimals on the invoice,
+                            # compensate the unit price so the final GST-inclusive
+                            # invoice total still equals the Enrollment Total Amount.
+                            adjusted_gross_before_discount = (
+                                    discounted_amount / discount_factor
+                            )
+
+                            pos_unit_price = (
+                                line._get_pos_unit_price_from_gross(
+                                    adjusted_gross_before_discount
+                                )
+                            )
 
                     billing_lines.append({
                         "product_id": line.service_product_id.id,
