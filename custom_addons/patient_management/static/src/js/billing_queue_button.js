@@ -183,6 +183,12 @@ export class BillingQueueButton extends Component {
                 order.set_package_status(false);
             }
 
+            // Medicine package pricing is company-independent here.
+            // enrollment.py already returns the correct tax-exclusive POS unit
+            // price using the fixed 5% GST business rule.  Do not search for or
+            // override account.tax by company; POS will use the medicine product's
+            // normal Customer Taxes exactly like any other POS product.
+
             for (const line of rec.lines) {
 
                 const product =
@@ -194,17 +200,14 @@ export class BillingQueueButton extends Component {
                     continue;
                 }
 
-                order.add_product(product, {
-                    quantity:
-                        Number(line.qty || 1),
-
-                    price:
-                        Number(
-                            line.unit_price || 0
-                        ),
-
+                const unitPrice = Number(line.unit_price || 0);
+                const options = {
+                    quantity: Number(line.qty || 1),
+                    price: unitPrice,
                     from_enrollment: true,
-                });
+                };
+
+                order.add_product(product, options);
 
                 const addedLine =
                     order.get_selected_orderline();
@@ -212,10 +215,6 @@ export class BillingQueueButton extends Component {
                 if (addedLine) {
                     addedLine.from_enrollment = true;
 
-                    // Medicine package lines arrive with MRP as unit price and
-                    // a calculated enrollment discount.  Store that discount on
-                    // the POS order line so it propagates to account.move.line
-                    // and appears as Discount % on the invoice.
                     const discountPct = Number(line.discount || 0);
                     if (typeof addedLine.set_discount === "function") {
                         addedLine.set_discount(discountPct);
