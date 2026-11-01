@@ -34,9 +34,6 @@ class ImportCSVWizard(models.TransientModel):
         'purchase order': 'purchase_order',
         'po': 'purchase_order',
         'po number': 'purchase_order',
-        'customer id': 'customer_id',
-        'customer_id': 'customer_id',
-        'cust id': 'customer_id',
         'invoice date': 'invoice_date',
         'date': 'invoice_date',
         'inv date': 'invoice_date',
@@ -89,7 +86,7 @@ class ImportCSVWizard(models.TransientModel):
             if key in self.HEADER_MAP:
                 col_map[raw_col] = self.HEADER_MAP[key]
 
-        required = ['invoice_number', 'customer_id', 'invoice_date',
+        required = ['invoice_number', 'invoice_date',
                      'customer_name', 'total']
         mapped_vals = set(col_map.values())
         missing = [r for r in required if r not in mapped_vals]
@@ -120,12 +117,6 @@ class ImportCSVWizard(models.TransientModel):
                     continue
 
                 ext_id = mapped.get('customer_id', '')
-                if not ext_id:
-                    errors.append(
-                        f'Row {row_num}: Missing Customer ID for '
-                        f'invoice {inv_number}'
-                    )
-                    continue
 
                 cust_name = mapped.get('customer_name', '')
                 if not cust_name:
@@ -164,7 +155,7 @@ class ImportCSVWizard(models.TransientModel):
                 po = mapped.get('purchase_order', '')
 
                 customer = cust_obj.search([
-                    ('external_customer_id', '=', ext_id),
+                    ('name', '=ilike', cust_name),
                     ('company_id', '=', company.id),
                 ], limit=1)
 
@@ -172,11 +163,12 @@ class ImportCSVWizard(models.TransientModel):
                     state_id = self._resolve_state(pos)
                     customer = cust_obj.create({
                         'name': cust_name,
-                        'external_customer_id': ext_id,
                         'place_of_supply': pos,
                         'state_id': state_id,
                         'company_id': company.id,
                     })
+                elif pos and not customer.place_of_supply:
+                    customer.place_of_supply = pos
 
                 existing = inv_obj.search([
                     ('name', '=', inv_number),
