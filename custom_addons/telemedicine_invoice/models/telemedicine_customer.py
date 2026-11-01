@@ -7,10 +7,6 @@ class TelemedicineCustomer(models.Model):
     _rec_name = 'name'
 
     name = fields.Char(string='Name', required=True)
-    external_customer_id = fields.Char(
-        string='External Customer ID',
-        required=True,
-    )
     place_of_supply = fields.Char(string='Place of Supply')
     state_id = fields.Many2one('res.country.state', string='State')
     country_id = fields.Many2one(
@@ -36,9 +32,9 @@ class TelemedicineCustomer(models.Model):
     )
 
     _sql_constraints = [
-        ('unique_ext_id_company',
-         'unique(external_customer_id, company_id)',
-         'A customer with this External ID already exists for this company.'),
+        ('unique_name_company',
+         'unique(name, company_id)',
+         'A customer with this name already exists for this company.'),
     ]
 
     @api.depends('invoice_ids')

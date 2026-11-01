@@ -16,7 +16,6 @@
                     <group>
                         <group>
                             <field name="name"/>
-                            <field name="external_customer_id"/>
                             <field name="gstin"/>
                         </group>
                         <group>
@@ -38,7 +37,6 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
-                <field name="external_customer_id"/>
                 <field name="place_of_supply"/>
                 <field name="gstin"/>
             </tree>
