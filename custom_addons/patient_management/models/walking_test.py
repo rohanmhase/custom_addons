@@ -190,3 +190,9 @@ class WalkingTest(models.Model):
                 allowed_extensions = ('.mp4', '.mov', '.avi', '.webm', '.mkv')
                 if not lower_name.endswith(allowed_extensions):
                     raise ValidationError(f"Invalid file format! Only video files {allowed_extensions} are allowed.")
+
+    @api.constrains('distance')
+    def _check_distance(self):
+        for rec in self:
+            if rec.distance < 0 or rec.distance > 10:
+                raise ValidationError("Distance must be between 0 and 10.")
