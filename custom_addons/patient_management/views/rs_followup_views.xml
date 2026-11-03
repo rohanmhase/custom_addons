@@ -165,6 +165,9 @@
                             </field>
                         </page>
                     </notebook>
+                    <group>
+                        <field name="comment"/>
+                    </group>
                     <div class="mb-4 mt-2">
                         <h3 class="mb-2">
                             <label for="vas_score" string="Pain Scale (VAS)"/>

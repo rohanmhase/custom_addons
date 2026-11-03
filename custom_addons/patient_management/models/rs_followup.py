@@ -44,6 +44,7 @@ class PatientAssessment(models.Model):
     date_btp = fields.Date(string="Expected Date")
     xray_pres = fields.Boolean(string="X-Ray Prescribed")
     date_xray = fields.Date(string="Expected Date")
+    comment = fields.Text(string="Comment")
 
     # 1. Define the default method
     def _default_assessment_lines(self):
@@ -162,6 +163,7 @@ class PatientAssessment(models.Model):
                 'investigation_status',
                 'case_under_discussion',
                 'type_of_therapy',
+                'vas_score',
             ]
         else:
             fields_to_copy = [
@@ -169,6 +171,7 @@ class PatientAssessment(models.Model):
                 'k_c_o',
                 'investigation_status',
                 'type_of_therapy',
+                'vas_score',
             ]
 
         for field in fields_to_copy:

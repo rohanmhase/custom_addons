@@ -1032,6 +1032,14 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            <div class="info-text">
+                                                <strong>Comment:</strong>
+                                                <t t-esc="assess['comment']"/>
+                                            </div>
+                                            <div class="info-text">
+                                                <strong>VAS Score:</strong>
+                                                <t t-esc="assess['vas_score']"/>
+                                            </div>
                                         </div>
                                     </t>
                                 </t>
