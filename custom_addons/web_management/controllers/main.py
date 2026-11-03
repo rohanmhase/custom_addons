@@ -145,6 +145,8 @@ class PatientController(http.Controller):
                 "type_of_therapy": assess.type_of_therapy,
                 "symptoms": symptoms,
                 "gradation": gradation,
+                "vas_score": assess.vas_score,
+                "comment": assess.comment,
             })
 
         # Group prescriptions by date
