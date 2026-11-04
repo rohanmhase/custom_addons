@@ -195,6 +195,7 @@
                     <button name="action_open_pitching" type="object" string="Pitching"/>
                     <button name="action_open_reference" type="object" string="Referral"/>
                     <button name="action_open_walking_test" type="object" string="Walking Test"/>
+                    <button name="action_open_pse" type="object" string="PSE" groups="clinic_management.group_pse_user"/>
                 </header>
                 <sheet>
                     <group>

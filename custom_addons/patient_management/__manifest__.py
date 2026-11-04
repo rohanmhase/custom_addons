@@ -17,6 +17,7 @@
         'security/patient_security.xml',
         'security/ir.model.access.csv',
         'views/patient_views.xml',
+        'views/pse_views.xml',
         'views/blood_report_views.xml',
         'views/case_taking_views.xml',
         'views/daily_followup_views.xml',

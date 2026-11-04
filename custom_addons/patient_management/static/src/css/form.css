@@ -22,3 +22,32 @@
     content: "Choose File";
     color: inherit;
 }
+/* Comment text */
+.pse_comment_wrap,
+.pse_comment_wrap .o_list_text,
+.pse_comment_wrap span {
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Reduce actual Comments column width */
+td:has(.pse_comment_wrap) {
+    width: 170px !important;
+    max-width: 170px !important;
+    min-width: 170px !important;
+    padding-right: 4px !important;
+}
+
+th[data-name="comments"] {
+    width: 170px !important;
+    max-width: 170px !important;
+    min-width: 170px !important;
+}
+
+/* Inner field should use the full cell width */
+.pse_comment_wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+}

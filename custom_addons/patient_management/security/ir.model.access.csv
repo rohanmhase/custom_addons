@@ -69,3 +69,9 @@ access_patient_reference_user,access.patient.reference.user,model_patient_refere
 access_patient_walking_test_administrator,access.patient.walking_test.administrator,model_patient_walking_test,clinic_management.group_clinic_administrator,1,1,1,1
 access_patient_walking_test_user,access.patient.walking_test.user,model_patient_walking_test,clinic_management.group_clinic_user,1,1,1,1
 
+access_patient_pse_user,access.patient.pse.user,model_patient_pse,clinic_management.group_pse_user,1,1,1,0
+access_patient_pse_interaction_user,access.patient.pse.interaction.user,model_patient_pse_interaction,clinic_management.group_pse_user,1,1,1,0
+access_patient_pse_feedback_user,access.patient.pse.feedback.user,model_patient_pse_feedback,clinic_management.group_pse_user,1,1,1,0
+access_patient_pse_admin,access.patient.pse.admin,model_patient_pse,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_pse_interaction_admin,access.patient.pse.interaction.admin,model_patient_pse_interaction,clinic_management.group_clinic_administrator,1,1,1,1
+access_patient_pse_feedback_admin,access.patient.pse.feedback.admin,model_patient_pse_feedback,clinic_management.group_clinic_administrator,1,1,1,1

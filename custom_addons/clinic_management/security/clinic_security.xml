@@ -77,4 +77,9 @@
         </field>
     </record>
 
+    <record id="group_pse_user" model="res.groups">
+        <field name="name">PSE User</field>
+        <field name="category_id" ref="clinic_management.module_category_clinic"/>
+    </record>
+
 </odoo>
