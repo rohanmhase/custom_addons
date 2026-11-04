@@ -452,10 +452,10 @@ class EnrollmentLine(models.Model):
     # product does not need a separate manual tax assignment in every company.
     MEDICINE_GST_RATE = 5.0
     MEDICINE_PACKAGE_PRODUCT_NAMES = {
-        '90 Days Medicine Package',
-        '180 Days Medicine Package',
-        '270 Days Medicine Package',
-        '365 Days Medicine Package',
+        '90 Days Oral Medicine Package',
+        '180 Days Oral Medicine Package',
+        '270 Days Oral Medicine Package',
+        '365 Days Oral Medicine Package',
     }
 
     def _is_fixed_medicine_package(self):
