@@ -15,7 +15,6 @@
         'data/gradation_organ_data.xml',
         'data/cron.xml',
         'security/patient_security.xml',
-        'security/pse_security.xml',
         'security/ir.model.access.csv',
         'views/patient_views.xml',
         'views/pse_views.xml',

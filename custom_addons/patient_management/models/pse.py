@@ -138,26 +138,16 @@ class PatientPSEInteraction(models.Model):
         required=True,
     )
     relief_percent = fields.Selection(
-        [
-            ('0_10', '0 to 10'),
-            ('11_20', '11 to 20'),
-            ('21_30', '21 to 30'),
-            ('31_40', '31 to 40'),
-            ('41_50', '41 to 50'),
-            ('51_60', '51 to 60'),
-            ('61_70', '61 to 70'),
-            ('71_80', '71 to 80'),
-            ('81_90', '81 to 90'),
-            ('91_100', '91 to 100'),
-        ],
-        string='Relief %')
+        [(str(i), str(i)) for i in range(0, 101, 10)],
+        string='Relief %'
+    )
     experience_rating = fields.Selection(
         [
-            ('1', '1'),
-            ('2', '2'),
-            ('3', '3'),
-            ('4', '4'),
-            ('5', '5'),
+            ('1', '1 - Very Bad'),
+            ('2', '2 - Bad'),
+            ('3', '3 - Okay'),
+            ('4', '4 - Good'),
+            ('5', '5 - Very Good'),
         ], string='Experience Rating')
     mood = fields.Selection(
         [
@@ -200,6 +190,13 @@ class PatientPSEInteraction(models.Model):
             if rec.interaction_with != 'companion' and rec.relation_to_patient:
                 raise ValidationError(_('Relation to Patient can only be set for a companion interaction.'))
 
+    def write(self, vals):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            # Check if the record has a log_date and is older than 2 days
+            if rec.log_date and (today - rec.log_date).days > 2:
+                raise ValidationError(_("You cannot edit an interaction record that is more than 2 days old."))
+        return super().write(vals)
 
     def action_open_pse(self):
         self.ensure_one()
@@ -293,6 +290,14 @@ class PatientPSEFeedback(models.Model):
         readonly=True,
     )
 
+    def write(self, vals):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            # Check if the record has a log_date and is older than 2 days
+            if rec.log_date and (today - rec.log_date).days > 2:
+                raise ValidationError(_("You cannot edit an feedback record that is more than 2 days old."))
+        return super().write(vals)
+
     def action_open_pse(self):
         self.ensure_one()
         return {
@@ -310,9 +315,6 @@ class ClinicPatient(models.Model):
 
     def action_open_pse(self):
         self.ensure_one()
-
-        if not self.env.user.has_group('patient_management.group_pse_user'):
-            raise AccessError(_('Only PSE users can open the PSE screen.'))
 
         pse = self.env['patient.pse'].search([
             ('patient_id', '=', self.id),

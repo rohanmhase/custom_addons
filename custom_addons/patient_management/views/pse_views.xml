@@ -1,22 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- Add PSE button to the existing Patient form. -->
-    <record id="view_patient_form_pse_inherit" model="ir.ui.view">
-        <field name="name">clinic.patient.form.pse.inherit</field>
-        <field name="model">clinic.patient</field>
-        <field name="inherit_id" ref="patient_management.view_patient_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//form/header" position="inside">
-                <button name="action_open_pse"
-                        type="object"
-                        string="PSE"
-                        class="btn-primary"
-                        groups="patient_management.group_pse_user"/>
-            </xpath>
-        </field>
-    </record>
-
     <!-- PSE landing page: two actions + both patient-specific history tables. -->
     <record id="view_patient_pse_form" model="ir.ui.view">
         <field name="name">patient.pse.form</field>
@@ -45,8 +28,8 @@
                     </group>
 
                     <separator string="Interaction History"/>
-                    <field name="interaction_ids" nolabel="1" readonly="1">
-                        <tree create="false" edit="false" delete="false" default_order="log_date desc,id desc">
+                    <field name="interaction_ids" nolabel="1">
+                        <tree create="false" delete="false" default_order="log_date desc,id desc">
                             <field name="log_date"/>
                             <field name="interaction_with" string="Type"/>
                             <field name="patient_id" string="Patient Name"/>
@@ -55,19 +38,21 @@
                             <field name="mood"/>
                             <field name="patient_potential"/>
                             <field name="referral"/>
-                            <field name="comments"/>
+                            <field name="comments"
+                                   string="Comments"
+                                   class="pse_comment_wrap"/>
                         </tree>
                     </field>
 
                     <separator string="Feedback"/>
-                    <field name="feedback_ids" nolabel="1" readonly="1">
-                        <tree create="false" edit="false" delete="false" default_order="log_date desc,id desc">
+                    <field name="feedback_ids" nolabel="1">
+                        <tree create="false" delete="false" default_order="log_date desc,id desc">
                             <field name="log_date"/>
                             <field name="log_type"/>
                             <field name="patient_id" string="Patient Name"/>
                             <field name="feedback_type"/>
                             <field name="feedback_category" string="Category"/>
-                            <field name="feedback_verbatim"/>
+                            <field name="feedback_verbatim" class="pse_comment_wrap"/>
                         </tree>
                     </field>
                 </sheet>
@@ -125,6 +110,8 @@
                             <field name="mood"/>
                             <field name="patient_potential" required="1"/>
                             <field name="logged_by"/>
+                            <field name="write_uid" string="Last Updated By" readonly="1"/>
+                            <field name="write_date" string="Last Updated On" readonly="1"/>
                         </group>
                     </group>
                     <group>
