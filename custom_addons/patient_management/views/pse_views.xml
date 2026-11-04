@@ -163,6 +163,8 @@
                         </group>
                         <group>
                             <field name="logged_by"/>
+                            <field name="write_uid" string="Last Updated By" readonly="1"/>
+                            <field name="write_date" string="Last Updated On" readonly="1"/>
                         </group>
                     </group>
                     <group>
