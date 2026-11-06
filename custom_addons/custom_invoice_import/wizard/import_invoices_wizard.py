@@ -554,10 +554,11 @@ class ImportInvoicesWizard(models.TransientModel):
                         if consult_std else 0.0
                     )
 
-                med_base_price = (
-                    med_target_incl / (1.0 + tax_pct / 100.0)
-                    if (1.0 + tax_pct / 100.0) else med_target_incl
-                )
+                eff_pct = (sum((t.amount if t.amount_type == 'percent' else sum(
+                    c.amount for c in t.children_tax_ids if c.amount_type == 'percent')) for t in
+                               Tax.browse(tax_ids)) if tax_ids else 0.0)
+                med_base_price = round(med_target_incl / (1.0 + eff_pct / 100.0), 2) if eff_pct else round(
+                    med_target_incl, 2)
 
                 # Line 1: Doctor Consultation (0% tax)
                 lines_cmd.append(Command.create({
@@ -601,6 +602,8 @@ class ImportInvoicesWizard(models.TransientModel):
                 prepaid_refs.append(order_no)
 
         moves = self.env['account.move'].create(move_vals_list)
+        rounding = self.env['account.cash.rounding'].search([('name', '=', 'Whole Rupee')], limit=1)
+        if rounding: moves.write({'invoice_cash_rounding_id': rounding.id})
         moves.action_post()
 
         TeleLine = self.env['teleconsult.invoice.line']
