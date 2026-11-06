@@ -1148,110 +1148,108 @@ class OperationalFundDisbursement(models.Model):
                 'supporting_urls': supporting_proofs,
             })
 
-        # 5. Build XLSX in memory
-        output = io.BytesIO()
-        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-        worksheet = workbook.add_worksheet('Audit Manifest')
+            # 5. Build XLSX in memory
+            output = io.BytesIO()
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            worksheet = workbook.add_worksheet('Audit Manifest')
 
-        # Format Profiles
-        header_format = workbook.add_format({
-            'bold': True, 'bg_color': '#1F4E78', 'font_color': '#FFFFFF',
-            'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 11
-        })
-        text_format = workbook.add_format({'valign': 'vcenter', 'border': 1, 'font_size': 10})
-        text_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 10})
-        account_format = workbook.add_format({'num_format': '@', 'valign': 'vcenter', 'border': 1, 'font_size': 10})
-        amount_format = workbook.add_format(
-            {'num_format': ' #,##0.00', 'valign': 'vcenter', 'border': 1, 'font_size': 10})
+            # Format Profiles
+            header_format = workbook.add_format({
+                'bold': True, 'bg_color': '#1F4E78', 'font_color': '#FFFFFF',
+                'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 11
+            })
+            text_format = workbook.add_format({'valign': 'vcenter', 'border': 1, 'font_size': 10})
+            text_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 10})
+            account_format = workbook.add_format({'num_format': '@', 'valign': 'vcenter', 'border': 1, 'font_size': 10})
+            amount_format = workbook.add_format({
+                'num_format': '₹ #,##0.00', 'valign': 'vcenter', 'border': 1, 'font_size': 10
+            })
+            link_format = workbook.add_format({
+                'font_color': '#0563C1', 'underline': 1, 'valign': 'vcenter', 'border': 1, 'font_size': 10
+            })
+            na_format = workbook.add_format({
+                'font_color': '#888888', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 10,
+                'bg_color': '#F9F9F9'
+            })
 
-        # Clean hyperlink styling
-        link_format = workbook.add_format({
-            'font_color': '#0563C1', 'underline': 1, 'valign': 'vcenter', 'border': 1, 'font_size': 10
-        })
-        na_format = workbook.add_format({
-            'font_color': '#888888', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'font_size': 10,
-            'bg_color': '#F9F9F9'
-        })
+            # Base Column Headers
+            headers = [
+                'Date',
+                'Clinic Branch',
+                'Main Category',
+                'Travel Route',
+                'Signed Voucher Asset',
+                'Voucher Number',
+                'Amount',
+                'Payee Name',
+                'VED Number',
+                'Account Number',
+                'IFSC Code',
+                'Status',
+                'Debit Narr'
+            ]
 
-        # Generate Dynamic Column Headers
-        headers = [
-            'Voucher Number', 'Date', 'Clinic Branch', 'Main Category', 'Travel Route', 'Amount', 'Status',
-            'Payee Name', 'VED Number', 'Bank Name', 'Account Number', 'IFSC Code',
-            'Signed Voucher Asset', 'Vendor Receipt / Bill', 'Payment Proof'
-        ]
+            # Extends horizontally based on the highest amount of additional proofs found
+            for i in range(1, max_additional_proofs + 1):
+                headers.append(f"Additional Proof {i}")
 
-        # Extends horizontally based on the highest amount of additional proofs found
-        for i in range(1, max_additional_proofs + 1):
-            headers.append(f"Additional Proof {i}")
+            worksheet.freeze_panes(1, 0)
+            worksheet.set_row(0, 26)
+            for col_idx, header in enumerate(headers):
+                worksheet.write(0, col_idx, header, header_format)
 
-        headers.append('Debit Narr')
+            def write_clean_hyperlink(row, col, url, label):
+                """Hides the messy URL behind a neat clickable label"""
+                if url:
+                    worksheet.write_url(row, col, url, link_format, string=label)
+                else:
+                    worksheet.write_string(row, col, 'N/A', na_format)
 
-        worksheet.freeze_panes(1, 0)
-        worksheet.set_row(0, 26)
-        for col_idx, header in enumerate(headers):
-            worksheet.write(0, col_idx, header, header_format)
-
-        # 6. Populate Data Rows
             # 6. Populate Data Rows
             for row_idx, item in enumerate(voucher_rows, start=1):
                 rec = item['rec']
                 payee_name = rec.payee_display or 'N/A'
-                bank_name = rec.bank_name or False
                 acc_num = rec.bank_account_number or False
                 ifsc = rec.bank_ifsc_code or False
 
-                if not bank_name and rec.vendor_ref_id:
-                    bank_name = rec.vendor_ref_id.bank_account_name or False
+                # Fallback to linked vendor or therapist banking info
+                if rec.vendor_ref_id:
                     acc_num = acc_num or rec.vendor_ref_id.bank_account_number or False
                     ifsc = ifsc or rec.vendor_ref_id.bank_ifsc_code or False
-                elif not bank_name and rec.therapist_ref_id:
-                    bank_name = getattr(rec.therapist_ref_id, 'bank_name', False) or getattr(rec.therapist_ref_id,
-                                                                                             'bank_account_name', False)
+                elif rec.therapist_ref_id:
                     acc_num = acc_num or getattr(rec.therapist_ref_id, 'bank_account_number', False)
                     ifsc = ifsc or getattr(rec.therapist_ref_id, 'bank_ifsc_code', False)
 
-                # Extract Selection Field Labels
-                exp_cat_label = dict(self._fields['expense_category'].selection).get(rec.expense_category,
-                                                                                     'N/A') if rec.expense_category else 'N/A'
-                travel_type_label = dict(self._fields['travel_type'].selection).get(rec.travel_type,
-                                                                                    'N/A') if rec.travel_type else 'N/A'
+                exp_cat_label = dict(self._fields['expense_category'].selection).get(
+                    rec.expense_category, 'N/A'
+                ) if rec.expense_category else 'N/A'
+
+                travel_type_label = dict(self._fields['travel_type'].selection).get(
+                    rec.travel_type, 'N/A'
+                ) if rec.travel_type else 'N/A'
+
                 ved_number = rec.therapist_ved_number or 'N/A'
 
-                worksheet.set_row(row_idx, 22)  # Enforce clean, uniform row height
-                worksheet.write_string(row_idx, 0, str(rec.name or ''), text_format)
-                worksheet.write_string(row_idx, 1, str(rec.date or ''), text_center)
-                worksheet.write_string(row_idx, 2, str(rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'),
+                worksheet.set_row(row_idx, 22)
+
+                worksheet.write_string(row_idx, 0, str(rec.date or ''), text_center)
+                worksheet.write_string(row_idx, 1, str(rec.clinic_id.name if rec.clinic_id else 'Unknown Branch'),
                                        text_format)
-
-                # Write New Columns
-                worksheet.write_string(row_idx, 3, str(exp_cat_label), text_format)
-                worksheet.write_string(row_idx, 4, str(travel_type_label), text_format)
-
-                worksheet.write_number(row_idx, 5, rec.amount, amount_format)
-                worksheet.write_string(row_idx, 6, str(rec.state or 'waiting').upper(), text_center)
+                worksheet.write_string(row_idx, 2, str(exp_cat_label), text_format)
+                worksheet.write_string(row_idx, 3, str(travel_type_label), text_format)
+                write_clean_hyperlink(row_idx, 4, item['voucher_url'], 'View Voucher')
+                worksheet.write_string(row_idx, 5, str(rec.name or ''), text_format)
+                worksheet.write_number(row_idx, 6, rec.amount, amount_format)
                 worksheet.write_string(row_idx, 7, str(payee_name), text_format)
-
-                # Write VED Number
                 worksheet.write_string(row_idx, 8, str(ved_number), text_center)
+                worksheet.write_string(row_idx, 9, str(acc_num).strip() if acc_num else 'N/A', account_format)
+                worksheet.write_string(row_idx, 10, str(ifsc).strip() if ifsc else 'N/A', text_center)
+                worksheet.write_string(row_idx, 11, str(rec.state or 'waiting').upper(), text_center)
+                # Col 12: Debit Narr
+                worksheet.write_string(row_idx, 12, str(rec.debit_narr or ''), text_format)
 
-                worksheet.write_string(row_idx, 9, str(bank_name).strip() if bank_name else 'N/A', text_format)
-                worksheet.write_string(row_idx, 10, str(acc_num).strip() if acc_num else 'N/A', account_format)
-                worksheet.write_string(row_idx, 11, str(ifsc).strip() if ifsc else 'N/A', text_center)
-
-                def write_clean_hyperlink(row, col, url, label):
-                    """Hides the messy URL behind a neat clickable label"""
-                    if url:
-                        worksheet.write_url(row, col, url, link_format, string=label)
-                    else:
-                        worksheet.write_string(row, col, 'N/A', na_format)
-
-                # Assign Primary Documentation Columns (Indices shifted by +3)
-                write_clean_hyperlink(row_idx, 12, item['voucher_url'], 'View Voucher')
-                write_clean_hyperlink(row_idx, 13, item['receipt_url'], 'View Receipt')
-                write_clean_hyperlink(row_idx, 14, item['payment_url'], 'View Payment')
-
-                # Dynamically push additional proofs horizontally across generated columns
-                col_idx = 15
+                # Additional proofs dynamically appended from Col 13 onward
+                col_idx = 13
                 for i in range(max_additional_proofs):
                     if i < len(item['supporting_urls']):
                         write_clean_hyperlink(row_idx, col_idx, item['supporting_urls'][i], f'View Proof {i + 1}')
@@ -1259,27 +1257,24 @@ class OperationalFundDisbursement(models.Model):
                         worksheet.write_string(row_idx, col_idx, 'N/A', na_format)
                     col_idx += 1
 
-                # Debit Narr cleanly caps off the row
-                worksheet.write_string(row_idx, col_idx, str(rec.debit_narr or ''), text_format)
+            # 7. Styling Width Adjustments
+            worksheet.set_column(0, 0, 13)  # Date
+            worksheet.set_column(1, 1, 44)  # Clinic Branch
+            worksheet.set_column(2, 2, 22)  # Main Category
+            worksheet.set_column(3, 3, 20)  # Travel Route
+            worksheet.set_column(4, 4, 23)  # Signed Voucher Asset
+            worksheet.set_column(5, 5, 27)  # Voucher Number
+            worksheet.set_column(6, 6, 14)  # Amount
+            worksheet.set_column(7, 7, 30)  # Payee Name
+            worksheet.set_column(8, 8, 17)  # VED Number
+            worksheet.set_column(9, 9, 22)  # Account Number
+            worksheet.set_column(10, 10, 15)  # IFSC Code
+            worksheet.set_column(11, 11, 13)  # Status
+            worksheet.set_column(12, 12, 25)  # Debit Narr
 
-        # 7. Styling Width Adjustments
-                # 7. Styling Width Adjustments
-                worksheet.set_column(0, 0, 26)
-                worksheet.set_column(1, 1, 13)
-                worksheet.set_column(2, 2, 34)
-                worksheet.set_column(3, 4, 22)  # Main Category & Travel Route
-                worksheet.set_column(5, 5, 14)  # Amount
-                worksheet.set_column(6, 6, 14)  # Status
-                worksheet.set_column(7, 7, 20)  # Payee Name
-                worksheet.set_column(8, 8, 15)  # VED Number
-                worksheet.set_column(9, 9, 18)  # Bank Name
-                worksheet.set_column(10, 10, 22)  # Account Number
-                worksheet.set_column(11, 11, 15)  # IFSC Code
-                worksheet.set_column(12, 14, 22)  # Primary Document URLs
-
-                # Apply strict column widths to the mathematically generated extra columns
-                if max_additional_proofs > 0:
-                    worksheet.set_column(15, 14 + max_additional_proofs, 20)
+            # Apply standard width to dynamically generated Additional Proof columns
+            if max_additional_proofs > 0:
+                worksheet.set_column(13, 12 + max_additional_proofs, 20)
 
                 # Format Debit Narr column at the very end
                 worksheet.set_column(15 + max_additional_proofs, 15 + max_additional_proofs, 25)
