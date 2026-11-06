@@ -22,7 +22,7 @@ class PatientAssessment(models.Model):
         [
             ("rs", "RS"),
             ("gm", "GM"),
-            ("rm", "RM"),
+            # ("rm", "RM"),
             ("cep", "Clinical Excellence Panel"),
             ("rc", "Recovery Consultant"),
             ("src", "Sr. Recovery Consultant"),
