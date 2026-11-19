@@ -521,7 +521,8 @@ class ImportInvoicesWizard(models.TransientModel):
                     line_tax_pct = sum(t.amount for t in line_taxes if t.amount_type == 'percent')
                     tax_pct = line_tax_pct
 
-                sub_incl = sub_base * (1.0 + line_tax_pct / 100.0)
+                # CSV item prices are already tax-inclusive
+                sub_incl = sub_base
                 total_untaxed += sub_base
                 total_incl += sub_incl
 
@@ -568,7 +569,6 @@ class ImportInvoicesWizard(models.TransientModel):
                     'discount': round(consult_disc, 2),
                     'tax_ids': [],
                 }))
-                # Line 2: Medicine (remaining, with tax)
                 # Line 2: Medicine (remaining, with tax)
                 if not config.medicine_product_id:
                     raise UserError(_("Set Medicine Product in Online Imports Configuration first."))
