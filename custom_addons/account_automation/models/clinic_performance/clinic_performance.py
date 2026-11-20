@@ -150,9 +150,8 @@ class ClinicPerformanceWizard(models.TransientModel):
         help='Select one or more clinics. Leave blank to include all clinics.',
     )
     employee_cost_file = fields.Binary(
-        string='Employee Cost CSV (optional)',
-        help='CSV with columns: Clinic Name, Employee cost. '
-             'Used to fill the Employee Cost column. Leave blank to skip.',
+        string='Clinic Expenses CSV (optional)',
+        help='CSV columns: Clinic Name, Therapist Salary, Rent, Clinic Salary, Marketing.',
     )
     employee_cost_filename = fields.Char(string='Filename')
 
@@ -564,6 +563,7 @@ class ClinicPerformanceReport(models.Model):
         """
         self.env.cr.execute(skipped_query, params)
         skipped_ids = [r['tmpl_id'] for r in self.env.cr.dictfetchall()]
+
         if skipped_ids:
             names = self.env['product.template'].browse(skipped_ids).mapped('name')
             self.skipped_product_names = ', '.join(sorted(n for n in names if n))
@@ -572,13 +572,12 @@ class ClinicPerformanceReport(models.Model):
             self.skipped_product_names = ''
             self.skipped_product_count = 0
 
-        # ── Parse optional Employee Cost CSV (Clinic Name, Employee cost) ──
-        # Done purely in Python (no DB hit). Fuzzy match: case-insensitive,
-        # trimmed. Returns names from the CSV that matched no clinic.
-        emp_cost_by_clinic = {}   # normalized clinic name -> float
+        # ── Parse Clinic Expenses CSV ──
+        expenses_by_clinic = {}
         unmatched = []
+
         if employee_cost_file:
-            emp_cost_by_clinic, unmatched = self._parse_employee_cost_csv(
+            expenses_by_clinic, unmatched = self._parse_employee_cost_csv(
                 employee_cost_file, rows,
             )
 
@@ -587,76 +586,111 @@ class ClinicPerformanceReport(models.Model):
 
         lines = []
         for row in rows:
-            emp = emp_cost_by_clinic.get(_norm(row['clinic_name']), 0.0)
+            expense = expenses_by_clinic.get(_norm(row['clinic_name']), {})
+
+            therapist_salary = expense.get('therapist_salary', 0.0)
+            clinic_salary = expense.get('clinic_salary', 0.0)
+
             lines.append((0, 0, {
-                'clinic_db_id':     row['clinic_id'],
-                'clinic_name':      row['clinic_name'],
-                'total_sales':      row['total_sales'],
-                'therapy_count':    row['therapy_count'],
-                'home_count':       row['home_count'],
-                'clinic_count':     row['clinic_count'],
-                'self_count':       row['self_count'],
-                'therapist_count':  row['therapist_count'],
-                'medicine_cost':    row['medicine_cost'],
-                'rs_doctor_count':  row['rs_doctor_count'],
-                'total_rent':       row['total_rent'],
-                'employee_cost':    emp,
+                'clinic_db_id': row['clinic_id'],
+                'clinic_name': row['clinic_name'],
+                'total_sales': row['total_sales'],
+                'therapy_count': row['therapy_count'],
+                'home_count': row['home_count'],
+                'clinic_count': row['clinic_count'],
+                'self_count': row['self_count'],
+                'therapist_count': row['therapist_count'],
+                'medicine_cost': row['medicine_cost'],
+                'rs_doctor_count': row['rs_doctor_count'],
+
+                'therapist_salary': therapist_salary,
+                'clinic_salary': clinic_salary,
+                'employee_cost': therapist_salary + clinic_salary,
+                'total_rent': expense.get('rent', 0.0),
+                'marketing': expense.get('marketing', 0.0),
             }))
+
         self.line_ids = lines
         return unmatched
 
     def _parse_employee_cost_csv(self, file_b64, rows):
-        """Parse the uploaded base64 CSV. Returns (mapping, unmatched_names).
-        mapping: normalized clinic name -> employee cost (float).
-        unmatched_names: CSV clinic names that matched no report clinic."""
+        """Parse clinic expenses CSV and match rows by clinic name."""
         import base64
         import csv
         import io
 
-        # Set of valid clinic names from this report's rows (normalized)
-        valid = {(r['clinic_name'] or '').strip().lower(): r['clinic_name']
-                 for r in rows}
+        valid = {
+            (r['clinic_name'] or '').strip().lower()
+            for r in rows
+        }
 
         try:
             raw = base64.b64decode(file_b64)
             text = raw.decode('utf-8-sig', errors='replace')
         except Exception:
-            raise UserError(_('Could not read the Employee Cost CSV file.'))
+            raise UserError(_('Could not read the Clinic Expenses CSV.'))
 
         reader = csv.DictReader(io.StringIO(text))
-        if not reader.fieldnames:
-            raise UserError(_('The Employee Cost CSV appears to be empty.'))
 
-        # Find the two columns flexibly (case-insensitive header match)
-        name_col = cost_col = None
-        for fn in reader.fieldnames:
-            key = (fn or '').strip().lower()
-            if key in ('clinic name', 'clinic', 'clinic_name'):
-                name_col = fn
-            elif key in ('employee cost', 'employee_cost', 'employeecost', 'cost'):
-                cost_col = fn
-        if not name_col or not cost_col:
+        if not reader.fieldnames:
+            raise UserError(_('The Clinic Expenses CSV is empty.'))
+
+        columns = {
+            (fn or '').strip().lower(): fn
+            for fn in reader.fieldnames
+        }
+
+        required = [
+            'clinic name',
+            'therapist salary',
+            'rent',
+            'clinic salary',
+            'marketing',
+        ]
+
+        missing = [col for col in required if col not in columns]
+
+        if missing:
             raise UserError(_(
-                'The Employee Cost CSV must have columns "Clinic Name" and '
-                '"Employee cost". Found: %s'
-            ) % ', '.join(reader.fieldnames))
+                'Missing CSV columns: %s'
+            ) % ', '.join(missing))
 
         mapping = {}
         unmatched = []
-        for line in reader:
-            csv_name = (line.get(name_col) or '').strip()
+
+        for line_no, line in enumerate(reader, start=2):
+            csv_name = (line.get(columns['clinic name']) or '').strip()
+
             if not csv_name:
                 continue
+
             norm = csv_name.lower()
-            raw_cost = (line.get(cost_col) or '').strip().replace(',', '')
-            try:
-                cost = float(raw_cost) if raw_cost else 0.0
-            except ValueError:
-                cost = 0.0
-            if norm in valid:
-                mapping[norm] = mapping.get(norm, 0.0) + cost
-            else:
+
+            values = {}
+            for col in required[1:]:
+                raw_value = (line.get(columns[col]) or '').strip().replace(',', '')
+                try:
+                    values[col] = float(raw_value) if raw_value else 0.0
+                except ValueError:
+                    raise UserError(_(
+                        'Invalid number in CSV row %s, column "%s".'
+                    ) % (line_no, col))
+
+            if norm not in valid:
                 unmatched.append(csv_name)
+                continue
+
+            expense = mapping.setdefault(norm, {
+                'therapist_salary': 0.0,
+                'clinic_salary': 0.0,
+                'rent': 0.0,
+                'marketing': 0.0,
+            })
+
+            expense['therapist_salary'] += values['therapist salary']
+            expense['clinic_salary'] += values['clinic salary']
+            expense['rent'] += values['rent']
+            expense['marketing'] += values['marketing']
 
         return mapping, unmatched
 
@@ -693,11 +727,14 @@ class ClinicPerformanceReportLine(models.Model):
     # ── RS Doctors ──
     rs_doctor_count = fields.Integer(string='RS Numbers')
 
-    # ── Rent (from rent agreements) ──
-    total_rent = fields.Float(string='Total Rent', digits=(16, 2))
-
-    # ── Employee cost (from optional CSV upload) ──
+    # ── Employee Cost breakdown ──
+    therapist_salary = fields.Float(string='Therapist Salary', digits=(16, 2))
+    clinic_salary = fields.Float(string='Clinic Salary', digits=(16, 2))
     employee_cost = fields.Float(string='Employee Cost', digits=(16, 2))
+
+    # ── Other expenses from CSV ──
+    total_rent = fields.Float(string='Rent', digits=(16, 2))
+    marketing = fields.Float(string='Marketing', digits=(16, 2))
 
     # ── Profit / Loss = Sales − (Medicine + Rent + Employee) ──
     profit_loss = fields.Float(
@@ -707,11 +744,15 @@ class ClinicPerformanceReportLine(models.Model):
         store=True,
     )
 
-    @api.depends('total_sales', 'medicine_cost', 'total_rent', 'employee_cost')
+    @api.depends(
+        'total_sales', 'medicine_cost', 'total_rent',
+        'employee_cost', 'marketing'
+    )
     def _compute_profit_loss(self):
         for rec in self:
             rec.profit_loss = (rec.total_sales or 0.0) - (
-                (rec.medicine_cost or 0.0)
-                + (rec.total_rent or 0.0)
-                + (rec.employee_cost or 0.0)
+                    (rec.medicine_cost or 0.0)
+                    + (rec.total_rent or 0.0)
+                    + (rec.employee_cost or 0.0)
+                    + (rec.marketing or 0.0)
             )
