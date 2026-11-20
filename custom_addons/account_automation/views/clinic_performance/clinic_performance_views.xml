@@ -25,7 +25,9 @@
             <form string="Medicine Unit Cost">
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="product_id" placeholder="Select Product…"/></h1>
+                        <h1>
+                            <field name="product_id" placeholder="Select Product…"/>
+                        </h1>
                     </div>
                     <group>
                         <group string="Cost">
@@ -89,9 +91,11 @@
                 <sheet>
                     <div class="oe_title" style="width: 100%;">
                         <label for="clinic_id" string="Clinic"/>
-                        <h1><field name="clinic_id" placeholder="Select a clinic…"
+                        <h1>
+                            <field name="clinic_id" placeholder="Select a clinic…"
                                    options="{'no_open': True, 'no_create': True}"
-                                   style="width: 100%;"/></h1>
+                                   style="width: 100%;"/>
+                        </h1>
                     </div>
                     <group>
                         <group string="Rent Details">
@@ -100,7 +104,7 @@
                         </group>
                         <group string="Validity">
                             <field name="effective_date" string="Effective From"/>
-                            <field name="expiry_date"    string="Expiry Date"/>
+                            <field name="expiry_date" string="Expiry Date"/>
                         </group>
                     </group>
                     <separator string="Address"/>
@@ -157,12 +161,13 @@
                 <sheet>
                     <div class="oe_title mb-3">
                         <h2 style="color: #1f2937;">Clinic Performance Report</h2>
-                        <p class="text-muted small">Select the reporting period and optionally filter by clinic name.</p>
+                        <p class="text-muted small">Select the reporting period and optionally filter by clinic name.
+                        </p>
                     </div>
                     <group>
                         <group string="Period">
                             <field name="start_date" string="From Date"/>
-                            <field name="end_date"   string="To Date"/>
+                            <field name="end_date" string="To Date"/>
                         </group>
                         <group string="Filter (optional)">
                             <field name="clinic_ids"
@@ -172,15 +177,16 @@
                                    options="{'no_create': True}"/>
                         </group>
                     </group>
-                    <group string="Employee Cost (optional)">
+                    <group string="Clinic Expenses (optional)">
                         <field name="employee_cost_filename" invisible="1"/>
                         <field name="employee_cost_file"
                                filename="employee_cost_filename"
                                widget="binary"
                                string="Upload CSV"/>
                         <div class="text-muted small" colspan="2">
-                            CSV columns required: <strong>Clinic Name</strong>, <strong>Employee cost</strong>.
-                            Rows are matched to clinics by name (case-insensitive). Leave blank to skip.
+                            CSV columns required:
+                            <strong>Clinic Name, Therapist Salary, Rent, Clinic Salary, Marketing</strong>.
+                            Rows are matched to clinics by name (case-insensitive).
                         </div>
                     </group>
                 </sheet>
@@ -216,16 +222,25 @@
         <field name="arch" type="xml">
             <tree string="Clinic Performance" create="false" delete="false"
                   decoration-muted="therapy_count == 0">
-                <field name="clinic_name"     string="Clinic"/>
-                <field name="total_sales"     string="Sales"          sum="Total"/>
-                <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
-                <field name="home_count"      string="↳ Home"         sum="Total" optional="show"/>
-                <field name="clinic_count"    string="↳ Clinic"       sum="Total" optional="show"/>
-                <field name="self_count"      string="↳ Self"         sum="Total" optional="show"/>
-                <field name="therapist_count" string="Therapist #"    sum="Total"/>
-                <field name="medicine_cost"   string="Medicine Cost"  sum="Total"/>
-                <field name="rs_doctor_count" string="RS Numbers"     sum="Total"/>
-                <field name="total_rent"      string="Rent"           sum="Total"/>
+                <field name="clinic_name" string="Clinic"/>
+                <field name="total_sales" string="Sales" sum="Total"/>
+                <field name="therapy_count" string="Therapy (Count)" sum="Total"/>
+                <field name="home_count" string="↳ Home" sum="Total" optional="show"/>
+                <field name="clinic_count" string="↳ Clinic" sum="Total" optional="show"/>
+                <field name="self_count" string="↳ Self" sum="Total" optional="show"/>
+                <field name="therapist_count" string="Therapist #" sum="Total"/>
+                <field name="medicine_cost" string="Medicine Cost" sum="Total"/>
+                <field name="rs_doctor_count" string="RS Numbers" sum="Total"/>
+                <field name="therapist_salary" string="↳ Therapist Salary" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="clinic_salary" string="↳ Clinic Salary" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="employee_cost" string="Employee Cost" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="total_rent" string="Rent" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="marketing" string="Marketing" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
             </tree>
         </field>
     </record>
@@ -249,19 +264,25 @@
                             <span>
                                 <i class="fa fa-calendar-o mr-1"/>
                                 Period:
-                                <strong><field name="start_date" readonly="1" nolabel="1"/></strong>
+                                <strong>
+                                    <field name="start_date" readonly="1" nolabel="1"/>
+                                </strong>
                                 to
-                                <strong><field name="end_date"   readonly="1" nolabel="1"/></strong>
+                                <strong>
+                                    <field name="end_date" readonly="1" nolabel="1"/>
+                                </strong>
                             </span>
                             <span invisible="not clinic_name_filter">
                                 <i class="fa fa-filter mr-1"/>
-                                Filter: <field name="clinic_name_filter" readonly="1" nolabel="1"/>
+                                Filter:
+                                <field name="clinic_name_filter" readonly="1" nolabel="1"/>
                             </span>
                             <span>
                                 <i class="fa fa-clock-o mr-1"/>
                                 Generated:
                                 <field name="run_on" readonly="1" nolabel="1"/>
-                                by <field name="run_by_id" readonly="1" nolabel="1"/>
+                                by
+                                <field name="run_by_id" readonly="1" nolabel="1"/>
                             </span>
                         </div>
                         <button name="action_open_lines"
@@ -282,22 +303,28 @@
                               decoration-success="profit_loss &gt; 0"
                               decoration-danger="profit_loss &lt; 0">
                             <field name="profit_loss" column_invisible="1"/>
-                            <field name="clinic_name"     string="Clinic"/>
-                            <field name="total_sales"     string="Sales"           sum="Total"
+                            <field name="clinic_name" string="Clinic"/>
+                            <field name="total_sales" string="Sales" sum="Total"
                                    widget="monetary" options="{'currency_field': False}"/>
-                            <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
-                            <field name="home_count"      string="↳ Home"          sum="Total"/>
-                            <field name="clinic_count"    string="↳ Clinic"        sum="Total"/>
-                            <field name="self_count"      string="↳ Self"          sum="Total"/>
-                            <field name="therapist_count" string="Therapist #"     sum="Total"/>
-                            <field name="medicine_cost"   string="Medicine Cost"   sum="Total"
+                            <field name="therapy_count" string="Therapy (Count)" sum="Total"/>
+                            <field name="home_count" string="↳ Home" sum="Total"/>
+                            <field name="clinic_count" string="↳ Clinic" sum="Total"/>
+                            <field name="self_count" string="↳ Self" sum="Total"/>
+                            <field name="therapist_count" string="Therapist #" sum="Total"/>
+                            <field name="medicine_cost" string="Medicine Cost" sum="Total"
                                    widget="monetary" options="{'currency_field': False}"/>
-                            <field name="rs_doctor_count" string="RS Numbers"      sum="Total"/>
-                            <field name="total_rent"      string="Rent"            sum="Total"
+                            <field name="rs_doctor_count" string="RS Numbers" sum="Total"/>
+                            <field name="therapist_salary" string="↳ Therapist Salary" sum="Total"
                                    widget="monetary" options="{'currency_field': False}"/>
-                            <field name="employee_cost"   string="Employee Cost"   sum="Total"
+                            <field name="clinic_salary" string="↳ Clinic Salary" sum="Total"
                                    widget="monetary" options="{'currency_field': False}"/>
-                            <field name="profit_loss"     string="Profit / Loss"   sum="Total"
+                            <field name="employee_cost" string="Employee Cost" sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="total_rent" string="Rent" sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="marketing" string="Marketing" sum="Total"
+                                   widget="monetary" options="{'currency_field': False}"/>
+                            <field name="profit_loss" string="Profit / Loss" sum="Total"
                                    widget="monetary" options="{'currency_field': False}"
                                    decoration-success="profit_loss &gt; 0"
                                    decoration-danger="profit_loss &lt; 0"
@@ -332,17 +359,25 @@
             <tree string="Clinic Performance" create="false" delete="false"
                   decoration-success="profit_loss &gt; 0"
                   decoration-danger="profit_loss &lt; 0">
-                <field name="clinic_name"     string="Clinic"/>
-                <field name="total_sales"     string="Sales"          sum="Total"/>
-                <field name="therapy_count"   string="Therapy (Count)" sum="Total"/>
-                <field name="home_count"      string="↳ Home"         sum="Total" optional="hide"/>
-                <field name="clinic_count"    string="↳ Clinic"       sum="Total" optional="hide"/>
-                <field name="self_count"      string="↳ Self"         sum="Total" optional="hide"/>
-                <field name="therapist_count" string="Therapist #"    sum="Total"/>
-                <field name="medicine_cost"   string="Medicine Cost"  sum="Total"/>
-                <field name="rs_doctor_count" string="RS Numbers"     sum="Total"/>
-                <field name="total_rent"      string="Rent"           sum="Total"/>
-                <field name="employee_cost"   string="Employee Cost"  sum="Total"/>
+                <field name="clinic_name" string="Clinic"/>
+                <field name="total_sales" string="Sales" sum="Total"/>
+                <field name="therapy_count" string="Therapy (Count)" sum="Total"/>
+                <field name="home_count" string="↳ Home" sum="Total" optional="hide"/>
+                <field name="clinic_count" string="↳ Clinic" sum="Total" optional="hide"/>
+                <field name="self_count" string="↳ Self" sum="Total" optional="hide"/>
+                <field name="therapist_count" string="Therapist #" sum="Total"/>
+                <field name="medicine_cost" string="Medicine Cost" sum="Total"/>
+                <field name="rs_doctor_count" string="RS Numbers" sum="Total"/>
+                <field name="therapist_salary" string="↳ Therapist Salary" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="clinic_salary" string="↳ Clinic Salary" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="employee_cost" string="Employee Cost" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="total_rent" string="Rent" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
+                <field name="marketing" string="Marketing" sum="Total"
+                       widget="monetary" options="{'currency_field': False}"/>
                 <field name="profit_loss" string="Profit / Loss" sum="Total"/>
             </tree>
         </field>
@@ -399,17 +434,17 @@
          ═══════════════════════════════════════════════════════════════════ -->
 
     <!-- History under Operations (unchanged) -->
-<menuitem id="menu_clinic_performance_report_history"
-          name="Clinic Performance History"
-          parent="menu_account_automation_operations"
-          action="action_clinic_performance_report_history"
-          sequence="30"/>
+    <menuitem id="menu_clinic_performance_report_history"
+              name="Clinic Performance History"
+              parent="menu_account_automation_operations"
+              action="action_clinic_performance_report_history"
+              sequence="30"/>
 
-<!-- ══════ SECTION: Clinic Performance ══════ -->
-<menuitem id="menu_section_clinic_performance"
-          name="Clinic Performance"
-          parent="menu_account_automation_config"
-          sequence="20"/>
+    <!-- ══════ SECTION: Clinic Performance ══════ -->
+    <menuitem id="menu_section_clinic_performance"
+              name="Clinic Performance"
+              parent="menu_account_automation_config"
+              sequence="20"/>
 
     <menuitem id="menu_clinic_performance_medicine_cost"
               name="Medicine Costs"
