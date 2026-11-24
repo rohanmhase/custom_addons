@@ -17,12 +17,13 @@
         The field is 100% optional and never blocks any operation.
     """,
     'author': 'Custom',
-    'depends': ['base', 'contacts'],
+    'depends': ['base', 'contacts', 'account'],
     'data': [
         'security/ir.model.access.csv',
         'data/res_partner_nature_data.xml',
         'views/res_partner_nature_views.xml',
         'views/res_partner_views.xml',
+        'views/account_move_views.xml',
     ],
     'installable': True,
     'application': False,

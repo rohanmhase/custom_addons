@@ -8,9 +8,17 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='category_id']" position="after">
+                <!-- Editable by anyone who can edit a Contact -->
                 <field name="nature_id"
+                       string="Primary Nature"
                        options="{'no_create': True, 'no_create_edit': True}"
-                       placeholder="e.g. Clinic Sales"/>
+                       placeholder="Select Primary Nature..."/>
+
+                <!-- Automatically calculated from Invoices (Read-Only) -->
+                <field name="nature_ids" widget="many2many_tags"
+                       readonly="1"
+                       string="All Nature Tags"
+                       placeholder="Auto-summarized from invoices..."/>
             </xpath>
         </field>
     </record>
@@ -22,7 +30,8 @@
         <field name="inherit_id" ref="base.view_partner_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='phone']" position="after">
-                <field name="nature_id" optional="show"/>
+                <field name="nature_id" string="Primary Nature" optional="show"/>
+                <field name="nature_ids" widget="many2many_tags" string="All Natures" optional="hide"/>
             </xpath>
         </field>
     </record>

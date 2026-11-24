@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_res_partner_nature_user,res.partner.nature.user,model_res_partner_nature,base.group_user,1,0,0,0
-access_res_partner_nature_settings,res.partner.nature.settings,model_res_partner_nature,base.group_system,1,1,1,1
+access_res_partner_nature_admin,res.partner.nature.admin,model_res_partner_nature,base.group_erp_manager,1,1,1,1
+access_account_move_nature_user,account.move.nature.user,model_account_move_nature,base.group_user,1,0,0,0
+access_account_move_nature_admin,account.move.nature.admin,model_account_move_nature,base.group_erp_manager,1,1,1,1
