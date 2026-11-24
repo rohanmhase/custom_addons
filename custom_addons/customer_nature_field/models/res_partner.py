@@ -12,6 +12,26 @@ class ResPartner(models.Model):
         ondelete='set null',
         index=True,
     )
+    nature_ids = fields.Many2many(
+        'res.partner.nature',
+        string='Customer Natures',
+        compute='_compute_nature_ids',
+        store=False,
+        help='Auto-aggregated list of all unique nature tags from customer invoices',
+    )
+
+    def _compute_nature_ids(self):
+        Link = self.env['account.move.nature'].sudo()
+        for partner in self:
+            # 1. Get natures from all invoices
+            links = Link.search([('partner_id', '=', partner.id)])
+            natures = links.mapped('nature_id')
+
+            # 2. Add the manual nature set on the Contact profile
+            if partner.nature_id:
+                natures |= partner.nature_id
+
+            partner.nature_ids = natures
 
     @api.model_create_multi
     def create(self, vals_list):

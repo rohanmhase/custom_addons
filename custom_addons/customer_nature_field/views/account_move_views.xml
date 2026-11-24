@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_nature" model="ir.ui.view">
+        <field name="name">account.move.form.nature</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_reference']" position="after">
+                <!-- Editable only for users with Administration (Access Rights / Settings) -->
+                <field name="nature_id"
+                       options="{'no_create': True, 'no_create_edit': True}"
+                       groups="base.group_erp_manager"/>
+                <!-- Readonly for all other users -->
+                <field name="nature_id"
+                       options="{'no_create': True, 'no_create_edit': True}"
+                       readonly="1"
+                       groups="!base.group_erp_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
