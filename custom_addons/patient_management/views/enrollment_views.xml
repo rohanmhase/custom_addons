@@ -8,6 +8,7 @@
                 <field name="enrollment_date"/>
                 <field name="enrollment_type"/>
                 <field name="enrolled_for"/>
+                <field name="total_amount" optional="hide"/>
                 <field name="total_sessions" string="Total Sessions"/>
                 <field name="remaining_sessions"/>
                 <field name="used_sessions" string="Used Sessions"/>
