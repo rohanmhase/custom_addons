@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================== ROUTING RULE GRID ======================== -->
+    <record id="view_svcticket_handoff_tree" model="ir.ui.view">
+        <field name="name">svcticket.handoff.tree</field>
+        <field name="model">svcticket.handoff</field>
+        <field name="arch" type="xml">
+            <tree create="1">
+                <field name="sequence" widget="handle"/>
+                <field name="name" string="Button the user sees"/>
+                <field name="summary" string="Rule (who -> who, clock)"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_handoff_form" model="ir.ui.view">
+        <field name="name">svcticket.handoff.form</field>
+        <field name="model">svcticket.handoff</field>
+        <field name="arch" type="xml">
+            <form string="Routing Rule">
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <field name="is_default" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Button the user sees"/>
+                        <h1><field name="name" placeholder="Request Documents from Reporter"/></h1>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <field name="summary" readonly="1" nolabel="1" class="fw-bold"/>
+                        <div>Read it as: <b>who sees the button</b> -> <b>who gets the ticket</b>.</div>
+                    </div>
+                    <group>
+                        <group string="1. Button appears when the ticket is held by">
+                            <field name="from_owner_type"/>
+                            <field name="from_team_type" string="Current team type"
+                                   invisible="from_owner_type not in ('team', 'team_type')"/>
+                            <field name="from_team_id" string="Current team"
+                                   invisible="from_owner_type not in ('team', 'team_type')"/>
+                            <field name="from_user_id" string="Specific user"
+                                   invisible="from_owner_type != 'user'"/>
+                        </group>
+                        <group string="2. After clicking it, the ticket moves to">
+                            <field name="to_owner_type"/>
+                            <field name="to_team_type" string="Next team type"
+                                   invisible="to_owner_type != 'team_type'"/>
+                            <field name="to_team_id" string="Next team"
+                                   invisible="to_owner_type != 'team'"/>
+                            <field name="to_user_id" string="Specific user"
+                                   invisible="to_owner_type != 'user'"/>
+                            <field name="to_approver_ids" widget="many2many_tags"
+                                   invisible="to_owner_type != 'approver'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="3. Clock">
+                            <field name="clock_policy"/>
+                            <field name="time_limit"/>
+                            <field name="time_unit"/>
+                        </group>
+                        <group string="4. Extra (leave empty)">
+                            <field name="sets_state" string="Also set status to"/>
+                            <field name="ask_note"/>
+                            <field name="note_label" invisible="not ask_note"/>
+                            <field name="lane"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <separator string="Per-priority limits (override the time limit above)"/>
+                    <field name="limit_ids">
+                        <tree editable="bottom">
+                            <field name="priority_id"/>
+                            <field name="time_limit"/>
+                            <field name="time_unit"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_handoff" model="ir.actions.act_window">
+        <field name="name">Handoff Routing</field>
+        <field name="res_model">svcticket.handoff</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No routing rules yet.</p>
+            <p>One row = one hop. When the ticket is with X and someone clicks Y,
+               give it to Z and run or pause the clock.</p>
+        </field>
+    </record>
+
+    <!-- ========================= RUN RULE WIZARD ========================= -->
+    <record id="view_svcticket_handoff_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.handoff.wizard.form</field>
+        <field name="model">svcticket.handoff.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Next Step">
+                <field name="ask_note" invisible="1"/>
+                <field name="handoff_id" invisible="1"/>
+                <group>
+                    <field name="ticket_id" readonly="1"/>
+                    <field name="name" readonly="1"/>
+                </group>
+                <group invisible="handoff_id.to_owner_type != 'approver'">
+                    <field name="approver_ids" widget="many2many_tags"
+                           options="{'no_create': True}"/>
+                </group>
+                <group>
+                    <field name="note" placeholder="Anything to record?"
+                           required="ask_note"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== INVOICE REJECT WIZARD ===================== -->
+    <record id="view_svcticket_invoice_reject_form" model="ir.ui.view">
+        <field name="name">svcticket.invoice.reject.form</field>
+        <field name="model">svcticket.invoice.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Tax Invoice">
+                <p>Rejecting sends the ticket back to the facility team to fix the invoice.</p>
+                <field name="ticket_id" readonly="1"/>
+                <field name="reason" placeholder="What is wrong with the invoice?" required="1"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Reject Invoice"
+                            class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_svcticket_hold_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.hold.wizard.form</field>
+        <field name="model">svcticket.hold.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request Hold">
+                <field name="ticket_id" invisible="1"/>
+                <field name="pre_hold_state" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+
+                <div class="alert alert-info" role="alert">
+                    Your team lead must approve this first. The SLA clock keeps running until then.
+                </div>
+
+                <group>
+                    <group string="What do you need?">
+                        <field name="request_type" widget="radio" class="o_svcticket_request_type"/>
+                        <field name="reason_id" options="{'no_create': True, 'no_open': True}"
+                               required="request_type == 'other'"/>
+                    </group>
+                    <group string="Approvers to get involved"
+                           invisible="request_type != 'po'">
+                        <field name="approver_ids" widget="many2many_tags"
+                               options="{'no_create': True}"
+                               required="request_type == 'po'"/>
+                        <field name="po_number" placeholder="PO / reference (optional)"/>
+                        <field name="estimated_cost"/>
+                    </group>
+                </group>
+
+                <div class="alert alert-light border" role="alert" invisible="request_type != 'po'">
+                    <b>What happens next:</b> your lead vets it, then the ticket moves to the
+                    <b>PO team</b>. They fill in the quote, vendor and account details and raise the
+                    PO for approval.
+                </div>
+
+                <separator string="Justification"/>
+                <field name="note" nolabel="1"
+                       placeholder="Why is this needed? What is the expected timeline?"/>
+
+                <footer>
+                    <button name="action_confirm" type="object" string="Submit" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_po_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.po.wizard.form</field>
+        <field name="model">svcticket.po.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send PO for Approval">
+                <div class="alert alert-info" role="alert">
+                    The PDF is attached to the approval mail. The PO itself lives in the
+                    Purchase module - this only records what the approver needs to see.
+                </div>
+                <field name="ticket_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <group>
+                    <group>
+                        <field name="vendor_name" placeholder="Vendor name"/>
+                        <field name="amount"/>
+                        <field name="po_reference" placeholder="PO number / reference"/>
+                    </group>
+                    <group>
+                        <field name="approver_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <separator string="PO Document"/>
+                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                <separator string="Justification"/>
+                <field name="note" nolabel="1" placeholder="Why is this purchase needed?"/>
+                <footer>
+                    <button name="action_send" type="object" string="Send for Approval"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_hold_reject_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.hold.reject.wizard.form</field>
+        <field name="model">svcticket.hold.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Hold">
+                <div class="alert alert-warning" role="alert">
+                    Rejecting returns the ticket to the technician's queue immediately.
+                </div>
+                <field name="ticket_id" invisible="1"/>
+                <separator string="Reason"/>
+                <field name="rejection_note" nolabel="1" placeholder="What should the technician do instead?"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm Rejection" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_payment_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.payment.wizard.form</field>
+        <field name="model">svcticket.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Record Payment">
+                <group>
+                    <group>
+                        <field name="ticket_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="amount_due" readonly="1"/>
+                        <field name="amount"
+                               help="Cannot be more than the balance left on the approved PO."/>
+                        <field name="deduction_amount"/>
+                        <field name="po_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="tender_type"/>
+                        <field name="reference"/>
+                        <field name="paid_at"/>
+                        <field name="note"/>
+                    </group>
+                </group>
+                <separator string="Proof of Payment"/>
+                <field name="proof_ids" widget="many2many_binary" nolabel="1"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Record" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_added_for_payment_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.added.for.payment.wizard.form</field>
+        <field name="model">svcticket.added.for.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Added for Payment">
+                <div class="alert alert-info" role="alert">
+                    This is NOT a payment record. Attach a proof that the payout
+                    has been initiated (e.g. screenshot of the email / payment
+                    intimation). No amount or reference is recorded here.
+                </div>
+                <group>
+                    <group>
+                        <field name="ticket_id" invisible="1"/>
+                        <field name="proof_ids" widget="many2many_binary"
+                               nolabel="1"/>
+                        <field name="note"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Mark as Added for Payment"
+                            class="btn-info"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_balance_waive_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.balance.waive.wizard.form</field>
+        <field name="model">svcticket.balance.waive.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Waive Remaining Balance">
+                <div class="alert alert-warning" role="alert">
+                    This writes off the balance so the ticket can be closed and
+                    audited. The approved PO still shows what was originally raised.
+                </div>
+                <group>
+                    <group>
+                        <field name="ticket_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="waive_amount"/>
+                    </group>
+                    <group>
+                        <field name="reason" nolabel="1"
+                               placeholder="Why is the remaining balance written off?"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Waive Balance"
+                            class="btn-warning"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_invoice_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.invoice.wizard.form</field>
+        <field name="model">svcticket.invoice.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Submit Tax Invoice">
+                <div class="alert alert-info" role="alert">
+                    This sends the ticket back to the payment team for the balance amount.
+                </div>
+                <group>
+                    <group>
+                        <field name="ticket_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="invoice_number"/>
+                        <field name="amount" readonly="1"/>
+                        <field name="note"/>
+                    </group>
+                </group>
+                <separator string="Invoice File"/>
+                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Submit" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_svcticket_reject_wizard_form" model="ir.ui.view">
+        <field name="name">svcticket.reject.wizard.form</field>
+        <field name="model">svcticket.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Ticket">
+                <field name="ticket_id" invisible="1"/>
+                <div class="alert alert-warning" role="alert">
+                    The reporter gets this reason by e-mail. The ticket stops here.
+                </div>
+                <field name="reason" nolabel="0"
+                       placeholder="Why is this ticket being rejected?"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Reject" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

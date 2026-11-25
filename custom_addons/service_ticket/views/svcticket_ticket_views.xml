@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================== FORM ============================== -->
+    <record id="view_svcticket_ticket_form" model="ir.ui.view">
+        <field name="name">svcticket.ticket.form</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="arch" type="xml">
+            <form string="Service Ticket" class="o_svcticket_form">
+                <header>
+                    <button name="action_approve_ticket" type="object" string="Approve Ticket"
+                            class="oe_highlight" invisible="state != 'pending_approval'"/>
+                    <button name="action_reject_ticket" type="object" string="Reject Ticket"
+                            class="btn-danger" invisible="state != 'pending_approval'"/>
+                    <button name="action_accept" type="object" string="Accept" class="oe_highlight"
+                            invisible="state != 'new' or not can_act"/>
+                    <button name="action_start_work" type="object" string="Start Work" class="oe_highlight"
+                            invisible="state not in ('new', 'acknowledged') or not can_act"/>
+                    <button name="action_request_hold" type="object" string="Request Hold" class="btn-warning"
+                            invisible="state not in ('acknowledged', 'in_progress') or not can_act"/>
+                    <button name="action_approve_hold" type="object" string="Approve Hold" class="btn-success"
+                            invisible="state != 'hold_requested' or not can_vet_hold"/>
+                    <button name="action_reject_hold" type="object" string="Reject Hold" class="btn-danger"
+                            invisible="state != 'hold_requested' or not can_vet_hold"/>
+                    <button name="action_resume_work" type="object" string="Resume Work" class="btn-info"
+                            invisible="state != 'on_hold'"/>
+                    <button name="action_resolve" type="object" string="Mark Resolved" class="oe_highlight"
+                            invisible="state not in ('acknowledged', 'in_progress', 'payment_pending') or not can_act"/>
+                    <button name="action_close" type="object" string="Close"
+                            invisible="state != 'resolved'"/>
+                    <button name="action_reopen" type="object" string="Reopen"
+                            invisible="state not in ('rejected', 'resolved', 'closed', 'cancelled')"/>
+                    <!-- only the holder (or a manager) may cancel, not any reader -->
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('resolved', 'closed', 'cancelled') or not can_act"/>
+                    <button name="action_mark_duplicate" type="object"
+                            string="Mark as Duplicate" class="btn-warning"
+                            invisible="not can_mark_duplicate or is_duplicate or state in ('cancelled', 'closed', 'resolved', 'rejected')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending_approval,new,in_progress,po_pending,payment_pending,resolved,closed"/>
+                </header>
+
+                <sheet>
+                    <field name="sla_breached" invisible="1"/>
+                    <widget name="web_ribbon" title="SLA Breached" bg_color="text-bg-danger"
+                            invisible="not sla_breached or state not in ('new','acknowledged','in_progress','hold_requested','po_pending','payment_pending')"/>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Issue">
+                            <!-- the Issue section is a record of what was reported:
+                                 it is read-only from the moment the ticket is raised -->
+                            <field name="location_id" options="{'no_create': True}" readonly="1"/>
+                            <field name="can_set_category" invisible="1"/>
+                            <field name="category_id" options="{'no_create': True}" readonly="1"
+                                   help="Fixed when the ticket was raised. Ask a Service Ticket manager if the wrong category was picked."/>
+                            <field name="show_subcategory" invisible="1"/>
+                            <field name="show_other_text" invisible="1"/>
+                            <field name="subcategory_id" options="{'no_create': True}"
+                                   invisible="not show_subcategory" readonly="1"/>
+                            <field name="other_issue_text" placeholder="Describe the issue"
+                                   invisible="not show_other_text" required="show_other_text"
+                                   readonly="1"/>
+                            <field name="priority_id" options="{'no_create': True}" readonly="1"
+                                   help="Fixed when the ticket was raised."/>
+                        </group>
+                        <group string="Ownership">
+                            <field name="team_id" options="{'no_create': True}" readonly="1"
+                                   groups="!service_ticket.group_manager"/>
+                            <field name="current_owner_type" invisible="1"/>
+                            <field name="can_act" invisible="1"/>
+                            <field name="can_vet_hold" invisible="1"/>
+                            <field name="can_mark_duplicate" invisible="1"/>
+                            <field name="is_duplicate" invisible="1"/>
+                            <field name="current_team_id" readonly="1"/>
+                            <field name="current_user_id" readonly="1"/>
+                            <field name="current_approver_ids" widget="many2many_tags"
+                                   readonly="1" invisible="current_owner_type != 'approver'"/>
+                            <field name="waiting_on" readonly="1" class="fw-bold"/>
+                            <field name="assignee_ids" widget="many2many_tags_avatar"
+                                   options="{'no_create': True}"/>
+                            <field name="reporter_id" readonly="1"/>
+                            <field name="reporter_phone" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group class="o_svcticket_status_group">
+                        <group string="SLA">
+                            <field name="active_lane" readonly="1"/>
+                            <field name="lane_state" readonly="1"/>
+                            <field name="sla_stage_id" readonly="1"/>
+                            <field name="sla_deadline" readonly="1"/>
+                            <field name="escalation_level" readonly="1"/>
+                        </group>
+                        <group string="Money">
+                            <field name="amount_total"/>
+                            <field name="amount_paid"/>
+                            <field name="amount_due"/>
+                            <field name="invoice_number" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Next Step" name="next_step">
+                        <field name="handoff_option_ids" nolabel="1"
+                               context="{'svcticket_ticket_id': id}"
+                               colspan="2" readonly="1">
+                            <tree create="0" delete="0">
+                                <field name="name"/>
+                                <field name="clock_policy"/>
+                                <button name="action_run" type="object"
+                                        string="Do It" class="btn-link" icon="fa-arrow-right"/>
+                            </tree>
+                        </field>
+                    </group>
+
+                    <notebook>
+                        <page string="Details" name="details">
+                            <separator string="Description"/>
+                            <field name="description" nolabel="1" placeholder="What happened?"/>
+                            <separator string="Attachments"/>
+                            <field name="intake_photo_ids" widget="many2many_binary" nolabel="1"/>
+                            <field name="cloud_photo_ids" nolabel="1" readonly="1"
+                                   invisible="not cloud_photo_ids">
+                                <tree>
+                                    <field name="kind"/>
+                                    <field name="filename"/>
+                                    <field name="url" widget="url"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Hold" name="hold"
+                              invisible="not hold_reason_id and state not in ('hold_requested', 'on_hold')">
+                            <group>
+                                <group>
+                                    <field name="hold_reason_id" readonly="1"/>
+                                    <field name="hold_po_number" readonly="1"/>
+                                    <field name="hold_cost" readonly="1"/>
+                                    <field name="hold_approver_ids" widget="many2many_tags" readonly="1"/>
+                                    <field name="hold_needs_po" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="hold_started_at" readonly="1"/>
+                                    <field name="hold_hours" readonly="1"/>
+                                </group>
+                            </group>
+                            <field name="hold_note" readonly="1" nolabel="1"/>
+                            <field name="hold_reject_note" nolabel="1" invisible="not hold_reject_note"/>
+                        </page>
+
+                        <page string="Invoice" name="invoice">
+                            <div class="mb-2">
+                                <button name="action_submit_invoice" type="object"
+                                        string="Submit Tax Invoice" class="btn-primary"
+                                        invisible="state not in ('acknowledged', 'in_progress') or amount_total == 0 or not can_act or invoice_attachment_ids"/>
+                                <span class="text-muted ms-2"
+                                      invisible="state not in ('acknowledged', 'in_progress') or amount_total != 0">
+                                    An approved PO is needed before an invoice can be submitted.
+                                </span>
+                                <span class="text-muted ms-2"
+                                      invisible="not invoice_attachment_ids">
+                                    Invoice submitted — accounts can accept or reject it.
+                                </span>
+                            </div>
+                            <div class="mb-2">
+                                <!-- the accounts team decides here, on the invoice itself;
+                                     nobody else on the ticket ever sees these two -->
+                                <field name="can_vet_invoice" invisible="1"/>
+                                <button name="action_accept_invoice" type="object"
+                                        string="Accept Invoice" class="btn-success"
+                                        invisible="not can_vet_invoice or not invoice_attachment_ids or invoice_accepted"/>
+                                <button name="action_reject_invoice" type="object"
+                                        string="Reject Invoice" class="btn-danger"
+                                        invisible="not can_vet_invoice or not invoice_attachment_ids or invoice_accepted"/>
+                            </div>
+                            <group>
+                                <group>
+                                    <field name="invoice_number" readonly="1"/>
+                                    <!-- files come in through Submit Tax Invoice only, so a
+                                         ticket can never carry an invoice without a number -->
+                                    <field name="invoice_attachment_ids" widget="many2many_binary"
+                                           readonly="1"/>
+                                    <field name="amount_due"/>
+                                </group>
+                                <group>
+                                    <field name="invoice_accepted" readonly="1"/>
+                                    <field name="invoice_accepted_at" readonly="1"/>
+                                    <field name="invoice_accepted_by" readonly="1"/>
+                                    <field name="invoice_reject_count" readonly="1"/>
+                                    <field name="invoice_reject_reason" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="PO" name="po">
+                            <div class="mb-2">
+                                <button name="action_send_po" type="object"
+                                        string="Send PO for Approval" class="btn-primary"
+                                        invisible="state not in ('po_pending',)"/>
+                            </div>
+                            <field name="po_ids" nolabel="1" readonly="1">
+                                <tree decoration-muted="state == 'rejected'"
+                                      decoration-success="state == 'approved'">
+                                    <field name="name"/>
+                                    <field name="vendor_name"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="approver_ids" widget="many2many_tags"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'pending'"
+                                           decoration-success="state == 'approved'"
+                                           decoration-danger="state == 'rejected'"/>
+                                    <field name="requested_by" optional="hide"/>
+                                    <field name="decided_by" optional="hide"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Payments" name="payments">
+                            <div class="mb-2">
+                                <button name="action_added_for_payment" type="object"
+                                        string="Added for Payment" class="btn-info"
+                                        invisible="state != 'payment_pending' or not can_act or payment_added_at or amount_due &lt;= 0"/>
+                                <button name="action_record_payment" type="object"
+                                        string="Record Payment" class="btn-primary"
+                                        invisible="state != 'payment_pending' or not can_act or amount_due &lt;= 0"/>
+                                <button name="action_waive_balance" type="object"
+                                        string="Waive Balance" class="btn-warning"
+                                        invisible="amount_due &lt;= 0 or not can_act"/>
+                                <span class="text-muted ms-2" invisible="not payment_added_at">
+                                    Added for payment — record the UTR, the amount and the proof here.
+                                </span>
+                            </div>
+                            <group>
+                                <group>
+                                    <field name="amount_total" readonly="1"/>
+                                    <field name="amount_paid" readonly="1"/>
+                                    <field name="amount_due" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="payment_added_at" readonly="1"
+                                           invisible="not payment_added_at"/>
+                                    <field name="payment_added_by" readonly="1"
+                                           invisible="not payment_added_at"/>
+                                </group>
+                            </group>
+                            <field name="payment_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="paid_at"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="deduction_amount" sum="Total"/>
+                                    <field name="tender_type"/>
+                                    <field name="reference"/>
+                                    <field name="po_id"/>
+                                    <field name="user_id"/>
+                                    <field name="state" widget="badge"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Resolution" name="resolution">
+                            <field name="resolution_notes" nolabel="1"
+                                   placeholder="What was done to fix it?"/>
+                            <separator string="Resolution Photos"/>
+                            <field name="resolution_photo_ids" widget="many2many_binary" nolabel="1"/>
+                        </page>
+
+                        <page string="Timeline" name="timeline">
+                            <field name="event_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="at"/>
+                                    <field name="event_type"/>
+                                    <field name="user_id"/>
+                                    <field name="from_lane" optional="hide"/>
+                                    <field name="to_lane" optional="show"/>
+                                    <field name="note"/>
+                                </tree>
+                            </field>
+                            <separator string="SLA Clocks"/>
+                            <field name="sla_line_ids" nolabel="1" readonly="1">
+                                <tree decoration-danger="state == 'running' and deadline and deadline &lt; current_date"
+                                      decoration-warning="state == 'paused'"
+                                      decoration-muted="state == 'done'">
+                                    <field name="lane"/>
+                                    <field name="is_vetting" optional="show"/>
+                                    <field name="stage_name"/>
+                                    <field name="started_at"/>
+                                    <field name="deadline"/>
+                                    <field name="paused_at" optional="hide"/>
+                                    <field name="breach_count"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'running'"
+                                           decoration-warning="state == 'paused'"
+                                           decoration-danger="state == 'breached'"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Communication" name="communication">
+                            <field name="draft_message" nolabel="1"
+                                   placeholder="Write a message or internal note..."/>
+                            <div class="d-flex flex-wrap gap-2 mt-2 mb-3">
+                                <button name="action_send_update" type="object" string="Send Update"
+                                        class="btn-primary"/>
+                                <button name="action_save_internal_note" type="object"
+                                        string="Save Internal Note" class="btn-secondary"/>
+                            </div>
+                            <field name="conversation_log_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="create_date" string="Date"/>
+                                    <field name="author_id"/>
+                                    <field name="message"/>
+                                    <field name="is_internal" widget="boolean_toggle"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================== KANBAN ============================== -->
+    <record id="view_svcticket_ticket_kanban" model="ir.ui.view">
+        <field name="name">svcticket.ticket.kanban</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="arch" type="xml">
+            <kanban class="o_svcticket_kanban" default_group_by="state" sample="1"
+                    on_create="service_ticket.action_svcticket_ticket_intake">
+                <field name="name"/>
+                <field name="state"/>
+                <field name="color"/>
+                <field name="location_id"/>
+                <field name="category_id"/>
+                <field name="priority_id"/>
+                <field name="active_lane"/>
+                <field name="sla_deadline"/>
+                <field name="sla_breached"/>
+                <field name="assignee_ids"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click o_svcticket_card oe_kanban_color_#{kanban_getcolor(record.color.raw_value)}">
+                            <div class="o_svcticket_card__head">
+                                <strong><field name="name"/></strong>
+                                <span t-if="record.sla_breached.raw_value" class="badge text-bg-danger">SLA</span>
+                            </div>
+                            <div class="o_svcticket_card__location">
+                                <i class="fa fa-map-marker" title="Location"/> <field name="location_id"/>
+                            </div>
+                            <div class="o_svcticket_card__meta">
+                                <span><field name="category_id"/></span>
+                                <span><field name="priority_id"/></span>
+                            </div>
+                            <div class="o_svcticket_card__foot">
+                                <span class="o_svcticket_card__lane"><field name="active_lane"/></span>
+                                <span t-if="record.sla_deadline.raw_value" class="o_svcticket_card__clock">
+                                    <i class="fa fa-clock-o" title="Deadline"/> <field name="sla_deadline"/>
+                                </span>
+                                <field name="assignee_ids" widget="many2many_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ============================== TREE ============================== -->
+    <record id="view_svcticket_ticket_tree" model="ir.ui.view">
+        <field name="name">svcticket.ticket.tree</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="sla_breached and state in ('new','acknowledged','in_progress','hold_requested','po_pending','payment_pending')"
+                  decoration-muted="state in ('closed', 'cancelled')"
+                  decoration-info="state in ('po_pending', 'payment_pending')">
+                <field name="name"/>
+                <field name="location_id"/>
+                <field name="category_id" optional="show"/>
+                <field name="priority_id" optional="show"/>
+                <field name="active_lane" optional="show"/>
+                <field name="sla_deadline" optional="show"/>
+                <field name="sla_breached" column_invisible="1"/>
+                <field name="assignee_ids" widget="many2many_tags_avatar" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('new', 'acknowledged')"
+                       decoration-warning="state in ('hold_requested', 'on_hold', 'po_pending', 'payment_pending')"
+                       decoration-success="state in ('in_progress', 'resolved', 'closed')"
+                       decoration-danger="state == 'rejected'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ============================== SEARCH ============================== -->
+    <record id="view_svcticket_ticket_search" model="ir.ui.view">
+        <field name="name">svcticket.ticket.search</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="reporter_id"/>
+                <field name="location_id"/>
+                <field name="category_id"/>
+                <filter string="Open" name="open"
+                        domain="[('state','in',['new','acknowledged','in_progress','hold_requested','on_hold','po_pending','payment_pending'])]"/>
+                <filter string="Rejected" name="rejected_only" domain="[('state','=','rejected')]"/>
+                <filter string="Mine" name="mine" domain="[('assignee_ids','in',[uid])]"/>
+                <filter string="Reported by me" name="reported" domain="[('reporter_id','=',uid)]"/>
+                <filter string="SLA breached" name="breached" domain="[('sla_breached','=',True)]"/>
+                <separator/>
+                <filter string="My team" name="my_team"
+                        domain="[('current_team_id.member_ids', '=', uid)]"/>
+                <filter string="Waiting on me" name="on_me"
+                        domain="['|', ('current_user_id', '=', uid),
+                                    ('current_approver_ids.user_id', '=', uid)]"/>
+                <filter string="My team's leads" name="my_team_lead"
+                        domain="[('current_team_id.lead_ids', '=', uid)]"/>
+                <filter string="With PO team" name="f_po_team"
+                        domain="[('current_team_id.team_type', '=', 'po_team')]"/>
+                <filter string="With Accounts team" name="f_account_team"
+                        domain="[('current_team_id.team_type', '=', 'account_team')]"/>
+                <filter string="Waiting on the reporter" name="f_reporter"
+                        domain="[('current_owner_type', '=', 'reporter')]"/>
+                <filter string="Waiting on an approver" name="f_approver"
+                        domain="[('current_owner_type', '=', 'approver')]"/>
+                <separator/>
+                <filter string="With PO team" name="f_po" domain="[('state','=','po_pending')]"/>
+                <filter string="With Payment team" name="f_pay" domain="[('state','=','payment_pending')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="g_state" context="{'group_by': 'state'}"/>
+                    <filter string="Lane" name="g_lane" context="{'group_by': 'active_lane'}"/>
+                    <filter string="Location" name="g_loc" context="{'group_by': 'location_id'}"/>
+                    <filter string="Team" name="g_team" context="{'group_by': 'team_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================== ACTIONS ============================== -->
+    <record id="action_svcticket_ticket" model="ir.actions.act_window">
+        <field name="name">All Tickets</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tickets yet.</p>
+            <p>Report an issue and your facility team will pick it up.</p>
+        </field>
+    </record>
+
+    <record id="action_svcticket_ticket_my" model="ir.actions.act_window">
+        <field name="name">My Tickets</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="domain">['|', '|', '|', '|', '|', '|',
+            ('reporter_id', '=', uid),
+            ('assignee_ids', 'in', [uid]),
+            ('location_id.contact_person_ids', 'in', [uid]),
+            ('current_team_id.member_ids', 'in', [uid]),
+            ('current_team_id.lead_ids', 'in', [uid]),
+            ('current_user_id', '=', uid),
+            ('current_approver_ids.user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing assigned to you.</p>
+        </field>
+    </record>
+
+</odoo>

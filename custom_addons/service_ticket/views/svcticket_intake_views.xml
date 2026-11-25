@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Simple, phone-first intake form -->
+    <record id="view_svcticket_ticket_intake_form" model="ir.ui.view">
+        <field name="name">svcticket.ticket.intake.form</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Report an Issue" class="o_svcticket_form o_svcticket_intake">
+                <header>
+                    <button name="action_submit_intake" type="object" string="Submit"
+                            class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1 class="text-primary">Report an Issue</h1>
+                    </div>
+                    <group>
+                        <group string="Where">
+                            <field name="location_id" options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Select location..."/>
+                            <field name="category_id" options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Select category..."/>
+                            <field name="show_subcategory" invisible="1"/>
+                            <field name="show_other_text" invisible="1"/>
+                            <field name="subcategory_id" options="{'no_create': True, 'no_open': True}"
+                                   invisible="not show_subcategory"/>
+                            <field name="other_issue_text" placeholder="Describe the issue"
+                                   invisible="not show_other_text" required="show_other_text"/>
+                        </group>
+                        <group string="You">
+                            <field name="reporter_id" readonly="1"/>
+                            <field name="reporter_phone" readonly="1"/>
+                            <field name="priority_id" options="{'no_create': True}" invisible="1"/>
+                        </group>
+                    </group>
+                    <separator string="What happened?"/>
+                    <field name="description" nolabel="1"
+                           placeholder="Where exactly? How urgent is it?"/>
+                    <separator string="Photos"/>
+                    <div class="alert alert-info" role="alert">
+                        Some categories require a photo before the ticket can be raised.
+                    </div>
+                    <field name="intake_photo_ids" widget="many2many_binary" nolabel="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_ticket_intake" model="ir.actions.act_window">
+        <field name="name">Report an Issue</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_svcticket_ticket_intake_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

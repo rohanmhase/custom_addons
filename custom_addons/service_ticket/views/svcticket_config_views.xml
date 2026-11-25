@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ LOCATIONS ============================ -->
+    <record id="view_svcticket_location_tree" model="ir.ui.view">
+        <field name="name">svcticket.location.tree</field>
+        <field name="model">svcticket.location</field>
+        <field name="arch" type="xml">
+            <tree>
+                <header>
+                    <button name="action_sync_now" type="object" string="Sync Locations"
+                            class="btn-primary"/>
+                </header>
+                <field name="name"/>
+                <field name="location_type"/>
+                <field name="contact_person_ids" widget="many2many_tags" optional="show"/>
+                <field name="source_model" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_location_form" model="ir.ui.view">
+        <field name="name">svcticket.location.form</field>
+        <field name="model">svcticket.location</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_sync_now" type="object" string="Sync Locations"/>
+                </header>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="location_type"/>
+                            <field name="contact_person_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="source_model" readonly="1" invisible="not source_model"/>
+                            <field name="address"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_location" model="ir.actions.act_window">
+        <field name="name">Locations</field>
+        <field name="res_model">svcticket.location</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ============================ CATEGORIES ============================ -->
+    <record id="view_svcticket_category_tree" model="ir.ui.view">
+        <field name="name">svcticket.category.tree</field>
+        <field name="model">svcticket.category</field>
+        <field name="arch" type="xml">
+            <tree default_order="sequence,name">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="parent_id" optional="hide"/>
+                <field name="require_intake_photo" widget="boolean_toggle"/>
+                <field name="min_intake_photos" optional="hide"/>
+                <field name="require_resolution_photo" widget="boolean_toggle"/>
+                <field name="min_resolution_photos" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_category_form" model="ir.ui.view">
+        <field name="name">svcticket.category.form</field>
+        <field name="model">svcticket.category</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Repair &amp; Maintenance"/></h1>
+                    </div>
+                    <group>
+                        <group string="General">
+                            <field name="code"/>
+                            <field name="parent_id" placeholder="Blank = major category"
+                                   options="{'no_create': True}"/>
+                            <field name="default_priority_id" options="{'no_create': True}"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Genuine Check">
+                            <field name="requires_approval"/>
+                            <field name="approver_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   required="requires_approval"/>
+                        </group>
+                        <group string="Photos">
+                            <field name="require_intake_photo"/>
+                            <field name="min_intake_photos" invisible="not require_intake_photo"
+                                   required="require_intake_photo"/>
+                            <field name="require_resolution_photo"/>
+                            <field name="min_resolution_photos"
+                                   invisible="not require_resolution_photo"
+                                   required="require_resolution_photo"/>
+                        </group>
+                    </group>
+                    <notebook invisible="parent_id">
+                        <page string="Sub-categories" name="subs">
+                            <field name="child_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="default_priority_id" options="{'no_create': True}"/>
+                                    <field name="require_intake_photo"/>
+                                    <field name="min_intake_photos"/>
+                                    <field name="require_resolution_photo"/>
+                                    <field name="min_resolution_photos"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_category" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">svcticket.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_group_parent': 1}</field>
+    </record>
+
+    <record id="view_svcticket_category_search" model="ir.ui.view">
+        <field name="name">svcticket.category.search</field>
+        <field name="model">svcticket.category</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter string="Major only" name="major" domain="[('parent_id','=',False)]"/>
+                <group expand="1" string="Group By">
+                    <filter string="Parent" name="group_parent" context="{'group_by':'parent_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================== PRIORITIES + STAGES ======================== -->
+    <record id="view_svcticket_priority_tree" model="ir.ui.view">
+        <field name="name">svcticket.priority.tree</field>
+        <field name="model">svcticket.priority</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="timer_type"/>
+                <field name="color" widget="color_picker"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_priority_form" model="ir.ui.view">
+        <field name="name">svcticket.priority.form</field>
+        <field name="model">svcticket.priority</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group><field name="timer_type" widget="radio"/></group>
+                    </group>
+                    <notebook>
+                        <page string="SLA Stages" name="stages">
+                            <field name="stage_ids">
+                                <tree editable="bottom">
+                                    <field name="level"/>
+                                    <field name="name"/>
+                                    <field name="time_limit"/>
+                                    <field name="time_unit"/>
+                                    <field name="on_breach"/>
+                                    <field name="escalate_to"/>
+                                    <field name="approver_ids" widget="many2many_tags"
+                                           options="{'no_create': True}"
+                                           invisible="escalate_to != 'approvers'"/>
+                                    <field name="notify_channel_ids" widget="many2many_tags"
+                                           options="{'no_create': True}"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_priority" model="ir.actions.act_window">
+        <field name="name">Priorities &amp; SLA</field>
+        <field name="res_model">svcticket.priority</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ============================== TEAMS ============================== -->
+    <record id="view_svcticket_team_tree" model="ir.ui.view">
+        <field name="name">svcticket.team.tree</field>
+        <field name="model">svcticket.team</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category_ids" widget="many2many_tags"/>
+                <field name="location_ids" widget="many2many_tags"/>
+                <field name="assignment_mode"/>
+                <field name="member_ids" widget="many2many_tags" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_team_form" model="ir.ui.view">
+        <field name="name">svcticket.team.form</field>
+        <field name="model">svcticket.team</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Scope">
+                            <field name="team_type"/>
+                            <field name="category_ids" widget="many2many_tags"/>
+                            <field name="subcategory_ids" widget="many2many_tags"/>
+                            <field name="location_ids" widget="many2many_tags"
+                                   placeholder="Blank = all locations"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="People">
+                            <field name="lead_ids" widget="many2many_tags"/>
+                            <field name="member_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Assignment">
+                            <field name="assignment_mode" widget="radio"/>
+                            <field name="broadcast_timeout" invisible="assignment_mode == 'manual'"/>
+                        </group>
+                        <group string="Working Hours (SLA)">
+                            <label for="work_start_hour"/>
+                            <div class="o_row">
+                                <field name="work_start_hour" widget="float_time"/>
+                                <span>to</span>
+                                <field name="work_end_hour" widget="float_time"/>
+                            </div>
+                            <label for="work_mon"/>
+                            <div class="o_row o_svcticket_days">
+                                <field name="work_mon"/><span>Mon</span>
+                                <field name="work_tue"/><span>Tue</span>
+                                <field name="work_wed"/><span>Wed</span>
+                                <field name="work_thu"/><span>Thu</span>
+                                <field name="work_fri"/><span>Fri</span>
+                                <field name="work_sat"/><span>Sat</span>
+                                <field name="work_sun"/><span>Sun</span>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_team" model="ir.actions.act_window">
+        <field name="name">Teams</field>
+        <field name="res_model">svcticket.team</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ====================== APPROVERS / HOLD / CHANNELS ====================== -->
+    <record id="view_svcticket_approver_tree" model="ir.ui.view">
+        <field name="name">svcticket.approver.tree</field>
+        <field name="model">svcticket.approver</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="user_id"/>
+                <field name="job_title"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_svcticket_approver" model="ir.actions.act_window">
+        <field name="name">Approvers</field>
+        <field name="res_model">svcticket.approver</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_svcticket_hold_reason_tree" model="ir.ui.view">
+        <field name="name">svcticket.hold.reason.tree</field>
+        <field name="model">svcticket.hold.reason</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="needs_financials"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_svcticket_hold_reason" model="ir.actions.act_window">
+        <field name="name">Hold Reasons</field>
+        <field name="res_model">svcticket.hold.reason</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_svcticket_channel_tree" model="ir.ui.view">
+        <field name="name">svcticket.channel.tree</field>
+        <field name="model">svcticket.channel</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="provider"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_svcticket_channel" model="ir.actions.act_window">
+        <field name="name">Notification Channels</field>
+        <field name="res_model">svcticket.channel</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ======================= MY APPROVALS (POs) ======================= -->
+    <record id="view_svcticket_po_tree" model="ir.ui.view">
+        <field name="name">svcticket.po.tree</field>
+        <field name="model">svcticket.po</field>
+        <field name="arch" type="xml">
+            <tree create="0"
+                  decoration-danger="state == 'rejected'"
+                  decoration-success="state == 'approved'">
+                <field name="name"/>
+                <field name="ticket_id"/>
+                <field name="vendor_name"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="requested_by"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'pending'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_svcticket_po_form" model="ir.ui.view">
+        <field name="name">svcticket.po.form</field>
+        <field name="model">svcticket.po</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_send_for_approval" type="object" string="Send for Approval"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_approve_on_call" type="object"
+                            string="Approved on a Call"
+                            confirm="Record that the director approved this PO on a call?"
+                            invisible="state != 'pending'"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="ticket_id"/>
+                            <field name="vendor_name"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="approver_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="requested_by"/>
+                            <field name="state"/>
+                            <field name="decided_by" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Quote &amp; Account Details"/>
+                    <field name="account_details" nolabel="1"/>
+                    <separator string="Attachments"/>
+                    <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                    <group string="Rejection" invisible="not remarks">
+                        <field name="remarks" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_queue_my_team" model="ir.actions.act_window">
+        <field name="name">My Team Queue</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="domain">[('current_team_id', '!=', False)]</field>
+        <field name="context">{'search_default_my_team': 1, 'search_default_open': 1}</field>
+    </record>
+
+    <record id="action_svcticket_queue_on_me" model="ir.actions.act_window">
+        <field name="name">Waiting on Me</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="domain">[('current_user_id', '=', uid)]</field>
+    </record>
+
+    <record id="action_svcticket_ticket_queue" model="ir.actions.act_window">
+        <field name="name">Ticket Queue</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="domain">[('state', 'in', ('po_pending', 'payment_pending')),
+                             ('active_lane', 'in', ('po', 'approver'))]</field>
+        <field name="context">{'search_default_group_location': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tickets waiting here.</p>
+        </field>
+    </record>
+
+    <record id="action_svcticket_ticket_queue_payment" model="ir.actions.act_window">
+        <field name="name">Payment Queue</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <field name="domain">[('state', '=', 'payment_pending')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No payments waiting.</p>
+        </field>
+    </record>
+
+    <record id="view_svcticket_ticket_queue_tree" model="ir.ui.view">
+        <field name="name">svcticket.ticket.queue.tree</field>
+        <field name="model">svcticket.ticket</field>
+        <field name="arch" type="xml">
+            <tree create="0"
+                  decoration-danger="sla_breached">
+                <field name="name"/>
+                <field name="current_team_id"/>
+                <field name="waiting_on"/>
+                <field name="location_id"/>
+                <field name="category_id"/>
+                <field name="amount_total" optional="show"/>
+                <field name="amount_due" optional="show"/>
+                <field name="sla_deadline"/>
+                <field name="sla_breached" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_svcticket_po_my" model="ir.actions.act_window">
+        <field name="name">Waiting on Me</field>
+        <field name="res_model">svcticket.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_svcticket_ticket_search"/>
+        <!-- anything on MY desk: a person holds it, a team of mine holds it, or
+             I am the approver who has to decide -->
+        <!-- '|' x3 joins the four "on my desk" conditions; the state filter that
+             follows is ANDed automatically. Do NOT add a fourth '|' here: that
+             would OR the state filter in as well and every open ticket would show
+             up for everyone. -->
+        <field name="domain">['|', '|', '|',
+                             ('current_user_id', '=', uid),
+                             ('current_approver_ids.user_id', '=', uid),
+                             ('current_team_id.member_ids', 'in', [uid]),
+                             ('current_team_id.lead_ids', 'in', [uid]),
+                             ('state', 'not in', ('closed', 'cancelled', 'rejected'))]</field>
+    </record>
+
+    <record id="view_svcticket_po_search" model="ir.ui.view">
+        <field name="name">svcticket.po.search</field>
+        <field name="model">svcticket.po</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="ticket_id"/>
+                <filter string="Pending" name="pending" domain="[('state','=','pending')]"/>
+                <filter string="Approved" name="approved" domain="[('state','=','approved')]"/>
+                <filter string="Rejected" name="rejected" domain="[('state','=','rejected')]"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>

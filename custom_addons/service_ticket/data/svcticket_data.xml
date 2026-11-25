@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================ CHANNELS ============================ -->
+        <record id="channel_email" model="svcticket.channel">
+            <field name="name">Email</field><field name="code">email</field>
+            <field name="provider">Odoo Mail</field><field name="sequence">10</field>
+        </record>
+        <record id="channel_inapp" model="svcticket.channel">
+            <field name="name">In-App</field><field name="code">inapp</field>
+            <field name="provider">Odoo Discuss</field><field name="sequence">20</field>
+        </record>
+        <record id="channel_whatsapp" model="svcticket.channel">
+            <field name="name">WhatsApp</field><field name="code">whatsapp</field>
+            <field name="provider">Meta Business API</field><field name="sequence">30</field>
+            <field name="is_active" eval="False"/>
+        </record>
+        <record id="channel_sms" model="svcticket.channel">
+            <field name="name">SMS</field><field name="code">sms</field>
+            <field name="provider">Twilio / Gupshup</field><field name="sequence">40</field>
+            <field name="is_active" eval="False"/>
+        </record>
+
+        <!-- ============================ PRIORITIES ============================ -->
+        <record id="prio_p1" model="svcticket.priority">
+            <field name="name">P1 - Critical</field><field name="code">P1</field>
+            <field name="color">1</field><field name="sequence">10</field>
+            <field name="timer_type">24_7</field>
+        </record>
+        <record id="prio_p2" model="svcticket.priority">
+            <field name="name">P2 - High</field><field name="code">P2</field>
+            <field name="color">2</field><field name="sequence">20</field>
+        </record>
+        <record id="prio_p3" model="svcticket.priority">
+            <field name="name">P3 - Medium</field><field name="code">P3</field>
+            <field name="color">3</field><field name="sequence">30</field>
+        </record>
+        <record id="prio_p4" model="svcticket.priority">
+            <field name="name">P4 - Low</field><field name="code">P4</field>
+            <field name="color">4</field><field name="sequence">40</field>
+        </record>
+        <record id="prio_unk" model="svcticket.priority">
+            <field name="name">Unknown</field><field name="code">UNK</field>
+            <field name="color">8</field><field name="sequence">99</field>
+        </record>
+
+        <!-- ============ SLA ESCALATION LEVELS (no teams here) ============ -->
+        <!-- Seeded in Python so an existing row is updated, never duplicated. -->
+        <function model="svcticket.priority" name="_seed_stages"/>
+
+        <!-- ============================ CATEGORIES ============================ -->
+        <record id="cat_repair" model="svcticket.category">
+            <field name="name">Repair &amp; Maintenance</field><field name="code">RPM</field>
+            <field name="sequence">10</field>
+            <field name="require_intake_photo" eval="True"/>
+            <field name="requires_approval" eval="True"/>
+        </record>
+        <record id="cat_equipment" model="svcticket.category">
+            <field name="name">Equipment &amp; Supplies</field><field name="code">EQP</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="cat_service" model="svcticket.category">
+            <field name="name">Service Requests</field><field name="code">SVC</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="cat_clinical" model="svcticket.category">
+            <field name="name">Clinical Delay</field><field name="code">CLN</field>
+            <field name="sequence">40</field>
+        </record>
+        <record id="cat_billing" model="svcticket.category">
+            <field name="name">Billing &amp; Refund</field><field name="code">BIL</field>
+            <field name="sequence">50</field>
+        </record>
+        <record id="cat_other" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+
+        <record id="sub_plumbing" model="svcticket.category">
+            <field name="name">Plumbing</field><field name="code">PLB</field>
+            <field name="parent_id" ref="cat_repair"/><field name="sequence">10</field>
+        </record>
+        <record id="sub_hvac" model="svcticket.category">
+            <field name="name">AC / HVAC</field><field name="code">HVC</field>
+            <field name="parent_id" ref="cat_repair"/><field name="sequence">20</field>
+        </record>
+        <record id="sub_electrical" model="svcticket.category">
+            <field name="name">Electrical</field><field name="code">ELC</field>
+            <field name="parent_id" ref="cat_repair"/><field name="sequence">30</field>
+        </record>
+        <record id="sub_housekeeping" model="svcticket.category">
+            <field name="name">Housekeeping</field><field name="code">HKP</field>
+            <field name="parent_id" ref="cat_repair"/><field name="sequence">40</field>
+        </record>
+        <record id="sub_medical" model="svcticket.category">
+            <field name="name">Medical Equipment</field><field name="code">MED</field>
+            <field name="parent_id" ref="cat_equipment"/><field name="sequence">10</field>
+        </record>
+        <record id="sub_it" model="svcticket.category">
+            <field name="name">IT Hardware</field><field name="code">ITH</field>
+            <field name="parent_id" ref="cat_equipment"/><field name="sequence">20</field>
+        </record>
+        <record id="sub_odoo" model="svcticket.category">
+            <field name="name">Odoo Access</field><field name="code">ODO</field>
+            <field name="parent_id" ref="cat_service"/><field name="sequence">10</field>
+        </record>
+        <record id="sub_staffing" model="svcticket.category">
+            <field name="name">Staffing</field><field name="code">STF</field>
+            <field name="parent_id" ref="cat_service"/><field name="sequence">20</field>
+        </record>
+        <record id="sub_doctor" model="svcticket.category">
+            <field name="name">Doctor Unavailable</field><field name="code">DOC</field>
+            <field name="parent_id" ref="cat_clinical"/><field name="sequence">10</field>
+        </record>
+        <record id="sub_wait" model="svcticket.category">
+            <field name="name">Long Wait Time</field><field name="code">WAT</field>
+            <field name="parent_id" ref="cat_clinical"/><field name="sequence">20</field>
+        </record>
+        <record id="sub_charge" model="svcticket.category">
+            <field name="name">Wrong Charge</field><field name="code">WRG</field>
+            <field name="parent_id" ref="cat_billing"/><field name="sequence">10</field>
+        </record>
+        <record id="sub_refund" model="svcticket.category">
+            <field name="name">Delayed Refund</field><field name="code">REF</field>
+            <field name="parent_id" ref="cat_billing"/><field name="sequence">20</field>
+        </record>
+        <record id="sub_other_repair" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="parent_id" ref="cat_repair"/><field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+        <record id="sub_other_equipment" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="parent_id" ref="cat_equipment"/><field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+        <record id="sub_other_service" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="parent_id" ref="cat_service"/><field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+        <record id="sub_other_clinical" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="parent_id" ref="cat_clinical"/><field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+        <record id="sub_other_billing" model="svcticket.category">
+            <field name="name">Other</field><field name="code">OTHER</field>
+            <field name="parent_id" ref="cat_billing"/><field name="sequence">99</field>
+            <field name="default_priority_id" ref="prio_unk"/>
+        </record>
+
+        <!-- ========================== HOLD REASONS ========================== -->
+        <record id="hold_po" model="svcticket.hold.reason">
+            <field name="name">PO / Budget Approval</field><field name="sequence">10</field>
+            <field name="needs_financials" eval="True"/>
+        </record>
+        <record id="hold_vendor" model="svcticket.hold.reason">
+            <field name="name">Vendor / Part Delay</field><field name="sequence">20</field>
+        </record>
+        <record id="hold_site" model="svcticket.hold.reason">
+            <field name="name">Site Access / Facility</field><field name="sequence">30</field>
+        </record>
+        <record id="hold_other" model="svcticket.hold.reason">
+            <field name="name">Other Dependency</field><field name="sequence">40</field>
+        </record>
+
+        <!-- clears duplicate SLA levels left by old versions (see _auto_init) -->
+        <function model="svcticket.sla.stage" name="_dedupe"/>
+        <!-- documents saved by older builds follow their ticket's permissions -->
+        <function model="svcticket.ticket" name="_repair_attachment_links"/>
+
+    </data>
+</odoo>

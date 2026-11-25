@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="cron_sla" model="ir.cron">
+            <field name="name">Service Ticket: SLA clocks</field>
+            <field name="model_id" ref="model_svcticket_sla_line"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_process()</field>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">100</field>
+        </record>
+        <record id="cron_broadcast_timeout" model="ir.cron">
+            <field name="name">Service Ticket: broadcast timeout</field>
+            <field name="model_id" ref="model_svcticket_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_broadcast_timeout()</field>
+            <field name="interval_number">30</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_auto_close" model="ir.cron">
+            <field name="name">Service Ticket: auto-close resolved</field>
+            <field name="model_id" ref="model_svcticket_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_auto_close()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">110</field>
+        </record>
+        <record id="cron_payment_reminder" model="ir.cron">
+            <field name="name">Service Ticket: payment reminders</field>
+            <field name="model_id" ref="model_svcticket_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_payment_reminder()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">120</field>
+        </record>
+        <record id="cron_location_sync" model="ir.cron">
+            <field name="name">Service Ticket: sync locations</field>
+            <field name="model_id" ref="model_svcticket_location"/>
+            <field name="state">code</field>
+            <field name="code">model.sync_all()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">130</field>
+        </record>
+    </data>
+</odoo>

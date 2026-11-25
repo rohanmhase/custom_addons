@@ -1,0 +1,97 @@
+/* Service Ticket - responsive styling.
+   One file, mobile first. Nothing here is required for the module to work. */
+
+.o_svcticket_kanban {
+
+    .o_svcticket_card {
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e6e8ec;
+        border-left: 4px solid #556ee6;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+        transition: box-shadow .15s ease, transform .15s ease;
+
+        &:hover { box-shadow: 0 4px 14px rgba(16, 24, 40, .1); transform: translateY(-1px); }
+
+        &__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        &__location {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #374151;
+        }
+
+        &__foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #eceef2;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        &__clock { white-space: nowrap; }
+    }
+}
+
+/* Form + intake: keep everything readable on a phone, no horizontal scroll. */
+.o_svcticket_form {
+    .oe_title h1 { font-size: 1.35rem; }
+
+    .o_svcticket_days {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_svcticket_kanban .o_svcticket_card {
+        padding: 10px 12px;
+
+        &__meta { font-size: 11px; }
+        &__foot { flex-wrap: wrap; }
+    }
+
+    .o_svcticket_form {
+        .o_group .o_group_col_6,
+        .o_group .o_group_col_4 { width: 100%; }
+
+        .oe_title h1 { font-size: 1.15rem; }
+
+        /* Buttons stack instead of overflowing the header */
+        .o_form_statusbar .o_statusbar_buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+
+            > .btn { flex: 1 1 46%; }
+        }
+
+        .o_field_many2many_binary .o_attachment { width: 46%; }
+    }
+}
