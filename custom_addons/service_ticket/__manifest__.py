@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+{
+    "name": "Service Ticket",
+    "version": "17.0.2.0.0",
+    "category": "Services/Service Desk",
+    "summary": "Facility tickets with per-lane SLA, PO approval by email and payment tracking",
+    "author": "Custom Development",
+    "license": "LGPL-3",
+    "depends": ["base", "mail", "web"],
+    "data": [
+        "security/groups.xml",
+        "security/record_rules.xml",
+        "security/ir.model.access.csv",
+        "views/svcticket_ticket_views.xml",
+        "views/svcticket_intake_views.xml",
+        "views/svcticket_wizard_views.xml",
+        "views/svcticket_config_views.xml",
+        "views/svcticket_handoff_views.xml",
+        "views/svcticket_settings_views.xml",
+        "views/menu.xml",
+        "data/svcticket_sequence.xml",
+        "data/svcticket_data.xml",
+        "data/svcticket_handoff_data.xml",
+        "data/svcticket_cron.xml",
+    ],
+    "assets": {
+        "web.assets_backend": ["service_ticket/static/src/scss/svcticket.scss"],
+    },
+    "post_init_hook": "post_init_hook",
+    "installable": True,
+    "application": True,
+}

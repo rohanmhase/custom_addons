@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_root" name="Service Ticket" sequence="45"
+              web_icon="service_ticket,static/description/icon.png"/>
+
+    <menuitem id="menu_report" name="Report an Issue" parent="menu_root"
+              action="action_svcticket_ticket_intake" sequence="5"/>
+
+    <menuitem id="menu_desk" name="Tickets" parent="menu_root" sequence="10"/>
+    <menuitem id="menu_my" name="My Tickets" parent="menu_desk"
+              action="action_svcticket_ticket_my" sequence="10"/>
+    <menuitem id="menu_all" name="All Tickets" parent="menu_desk"
+              action="action_svcticket_ticket" sequence="20"/>
+
+    <menuitem id="menu_queue_my_team" name="My Team Queue" parent="menu_root"
+              action="action_svcticket_queue_my_team" sequence="23"/>
+
+
+    <!-- everyone has tickets waiting on them, approvers included - the domain
+         decides what actually shows, not the menu rights -->
+    <menuitem id="menu_approvals" name="Waiting on Me" parent="menu_root"
+              action="action_svcticket_po_my" sequence="20"/>
+
+    <menuitem id="menu_config" name="Configuration" parent="menu_root" sequence="90"
+              groups="service_ticket.group_manager,base.group_system"/>
+    <menuitem id="menu_config_location" name="Locations" parent="menu_config"
+              action="action_svcticket_location" sequence="10"/>
+    <menuitem id="menu_config_category" name="Categories" parent="menu_config"
+              action="action_svcticket_category" sequence="20"/>
+    <menuitem id="menu_config_priority" name="Priorities &amp; SLA" parent="menu_config"
+              action="action_svcticket_priority" sequence="30"/>
+    <menuitem id="menu_config_team" name="Teams" parent="menu_config"
+              action="action_svcticket_team" sequence="40"/>
+    <menuitem id="menu_config_approver" name="Approvers" parent="menu_config"
+              action="action_svcticket_approver" sequence="50"/>
+    <menuitem id="menu_handoff_routing" name="Handoff Routing" parent="menu_config"
+              action="action_svcticket_handoff" sequence="35"/>
+    <menuitem id="menu_config_hold" name="Hold Reasons" parent="menu_config"
+              action="action_svcticket_hold_reason" sequence="60"/>
+    <menuitem id="menu_config_channel" name="Notification Channels" parent="menu_config"
+              action="action_svcticket_channel" sequence="70"/>
+    <menuitem id="menu_config_admin" name="Administration" parent="menu_config"
+              action="action_svcticket_settings" sequence="80"
+              groups="base.group_system"/>
+
+</odoo>

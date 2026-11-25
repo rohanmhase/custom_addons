@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- NOT noupdate: upgrades refresh these rows so fixes reach your database. -->
+    <data noupdate="0">
+
+        <!-- ================================================================
+             Each row answers one question:
+               WHO sees the button  ->  WHO gets the ticket  ->  clock run/pause
+             Add rows for HR, presales, software. No code needed.
+             ================================================================ -->
+
+        <!-- Facility team asks its own lead for a hold / PO -->
+        <record id="handoff_hold_to_lead" model="svcticket.handoff">
+            <field name="name">Request Hold / Raise PO</field>
+            <field name="code">hold_to_lead</field>
+            <field name="sequence">10</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">facility</field>
+            <field name="to_owner_type">lead</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="time_limit">4</field>
+            <field name="time_unit">hours</field>
+            <field name="run_action">action_request_hold</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Lead says yes, PO case -->
+        <record id="handoff_lead_approve_po" model="svcticket.handoff">
+            <field name="name">Lead Approved - Send to PO Team</field>
+            <field name="code">lead_approve_po</field>
+            <field name="sequence">20</field>
+            <field name="from_owner_type">lead</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">po_team</field>
+            <field name="lane">po</field>
+            <field name="clock_policy">run</field>
+            <field name="sets_state">po_pending</field>
+            <field name="is_default" eval="True"/>
+                    <field name="show_in_next_step" eval="False"/>
+        </record>
+
+        <!-- Lead says yes, plain hold -->
+        <record id="handoff_lead_approve_hold" model="svcticket.handoff">
+            <field name="name">Lead Approved - Hold</field>
+            <field name="code">lead_approve_hold</field>
+            <field name="sequence">21</field>
+            <field name="from_owner_type">lead</field>
+            <field name="to_owner_type">previous_owner</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">pause</field>
+            <field name="sets_state">on_hold</field>
+            <field name="is_default" eval="True"/>
+                    <field name="show_in_next_step" eval="False"/>
+        </record>
+
+        <!-- Lead says no -->
+        <record id="handoff_lead_reject" model="svcticket.handoff">
+            <field name="name">Hold Rejected - Back to Work</field>
+            <field name="code">lead_reject</field>
+            <field name="sequence">22</field>
+            <field name="from_owner_type">lead</field>
+            <field name="to_owner_type">previous_owner</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="sets_state">in_progress</field>
+            <field name="is_default" eval="True"/>
+                    <field name="show_in_next_step" eval="False"/>
+        </record>
+
+        <!-- Director decision. The PO tab button does this; kept for manual use. -->
+        <record id="handoff_send_to_approver" model="svcticket.handoff">
+            <field name="name">Send for Director Approval</field>
+            <field name="code">send_to_approver</field>
+            <field name="sequence">30</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">po_team</field>
+            <field name="to_owner_type">approver</field>
+            <field name="lane">approver</field>
+            <field name="clock_policy">pause</field>
+            <!-- OFF on purpose: sending a PO to the director means filling the PO
+                 form (vendor, amount, approvers, file). The button in the PO tab
+                 owns that step. Kept only so re-enabling it in Configuration does
+                 not move the ticket without a PO - it opens the same form. -->
+            <field name="run_action">action_send_po</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="active" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Director approves -->
+        <record id="handoff_director_approve" model="svcticket.handoff">
+            <field name="name">Director Approved - Send to Accounts</field>
+            <field name="code">director_approve</field>
+            <field name="approves_po" eval="True"/>
+            <field name="sequence">40</field>
+            <field name="from_owner_type">approver</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">account_team</field>
+            <field name="lane">payment</field>
+            <field name="clock_policy">run</field>
+            <field name="sets_state">payment_pending</field>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- PO team records a yes the director gave on a call -->
+        <record id="handoff_director_approve_manual" model="svcticket.handoff">
+            <field name="name">Director Approved (on call) - Send to Accounts</field>
+            <field name="code">director_approve_manual</field>
+            <field name="sequence">41</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">po_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">account_team</field>
+            <field name="lane">payment</field>
+            <field name="clock_policy">run</field>
+            <field name="sets_state">payment_pending</field>
+            <field name="approves_po" eval="True"/>
+            <field name="ask_note" eval="True"/>
+            <field name="note_label">How did the director approve?</field>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Accounts: money not in yet -->
+        <record id="handoff_added_for_payment" model="svcticket.handoff">
+            <field name="name">Added for Payment</field>
+            <field name="code">added_for_payment</field>
+            <field name="sequence">50</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">account_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">account_team</field>
+            <field name="lane">payment</field>
+            <field name="clock_policy">pause</field>
+            <field name="run_action">action_added_for_payment</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Accounts: paid, hand back to facility -->
+        <record id="handoff_payment_done" model="svcticket.handoff">
+            <field name="name">Record Payment</field>
+            <field name="code">payment_done</field>
+            <field name="sequence">60</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">account_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">facility</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="sets_state">in_progress</field>
+            <field name="run_action">action_record_payment</field>
+            <!-- the button lives in the Payments tab, not in Next Step -->
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Facility hands the invoice to accounts -->
+        <record id="handoff_submit_invoice" model="svcticket.handoff">
+            <field name="name">Submit Invoice for Acceptance</field>
+            <field name="code">submit_invoice</field>
+            <field name="sequence">70</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">facility</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">account_team</field>
+            <field name="lane">payment</field>
+            <field name="clock_policy">run</field>
+            <field name="time_limit">2</field>
+            <field name="time_unit">days</field>
+            <field name="run_action">action_submit_invoice</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <record id="handoff_invoice_accepted" model="svcticket.handoff">
+            <field name="name">Invoice Accepted - Stays with Accounts</field>
+            <field name="code">invoice_accepted</field>
+            <field name="sequence">80</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">account_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">account_team</field>
+            <field name="lane">payment</field>
+            <field name="clock_policy">run</field>
+            <field name="run_action">action_accept_invoice</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <record id="handoff_invoice_rejected" model="svcticket.handoff">
+            <field name="name">Invoice Rejected - Rework</field>
+            <field name="code">invoice_rejected</field>
+            <field name="sequence">81</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">account_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">facility</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="run_action">action_reject_invoice</field>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="show_in_next_step" eval="False"/>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- PO team refuses the request -->
+        <record id="handoff_po_send_back" model="svcticket.handoff">
+            <field name="name">Send Back to Facility</field>
+            <field name="code">po_send_back</field>
+            <field name="sequence">35</field>
+            <field name="from_owner_type">team_type</field>
+            <field name="from_team_type">po_team</field>
+            <field name="to_owner_type">team_type</field>
+            <field name="to_team_type">facility</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="ask_note" eval="True"/>
+            <field name="note_label">What is wrong with the request?</field>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Any working team can ask the reporter for documents -->
+        <record id="handoff_request_docs" model="svcticket.handoff">
+            <field name="name">Request Documents from Reporter</field>
+            <field name="code">request_docs</field>
+            <field name="sequence">90</field>
+            <field name="from_owner_type">any</field>
+            <field name="to_owner_type">reporter</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="time_limit">2</field>
+            <field name="time_unit">days</field>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <record id="handoff_docs_submitted" model="svcticket.handoff">
+            <field name="name">Documents Submitted</field>
+            <field name="code">docs_submitted</field>
+            <field name="sequence">91</field>
+            <field name="from_owner_type">reporter</field>
+            <field name="to_owner_type">previous_owner</field>
+            <field name="lane">facility</field>
+            <field name="clock_policy">run</field>
+            <field name="is_default" eval="True"/>
+        </record>
+
+        <!-- Lead vetting: tighter for urgent work, per priority -->
+        <record id="handoff_limit_p1" model="svcticket.handoff.limit">
+            <field name="handoff_id" ref="handoff_hold_to_lead"/>
+            <field name="priority_id" ref="prio_p1"/>
+            <field name="time_limit">1</field>
+            <field name="time_unit">hours</field>
+        </record>
+        <record id="handoff_limit_p2" model="svcticket.handoff.limit">
+            <field name="handoff_id" ref="handoff_hold_to_lead"/>
+            <field name="priority_id" ref="prio_p2"/>
+            <field name="time_limit">2</field>
+            <field name="time_unit">hours</field>
+        </record>
+        <record id="handoff_limit_p3" model="svcticket.handoff.limit">
+            <field name="handoff_id" ref="handoff_hold_to_lead"/>
+            <field name="priority_id" ref="prio_p3"/>
+            <field name="time_limit">4</field>
+            <field name="time_unit">hours</field>
+        </record>
+        <record id="handoff_limit_p4" model="svcticket.handoff.limit">
+            <field name="handoff_id" ref="handoff_hold_to_lead"/>
+            <field name="priority_id" ref="prio_p4"/>
+            <field name="time_limit">1</field>
+            <field name="time_unit">days</field>
+        </record>
+
+    </data>
+</odoo>

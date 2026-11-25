@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_svcticket_settings_form" model="ir.ui.view">
+        <field name="name">svcticket.settings.form</field>
+        <field name="model">svcticket.settings</field>
+        <field name="arch" type="xml">
+            <form string="Administration">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Administration</h1>
+                    </div>
+
+                    <group string="Photo &amp; Document Storage">
+                        <group>
+                            <field name="s3_enabled"/>
+                            <field name="s3_bucket" placeholder="my-clinic-tickets"
+                                   readonly="not s3_enabled"/>
+                            <field name="s3_region" placeholder="ap-south-1"
+                                   readonly="not s3_enabled"/>
+                        </group>
+                        <group>
+                            <field name="s3_key" password="True" readonly="not s3_enabled"/>
+                            <field name="s3_secret" password="True" readonly="not s3_enabled"/>
+                            <field name="s3_prefix" readonly="not s3_enabled"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-light border" role="alert" invisible="not s3_enabled">
+                        Files are stored as <code>prefix/TICKET/TICKET_kind_n.ext</code><br/>
+                        e.g. <code>service-tickets/TKT-2026-00001/TKT-2026-00001_intake_1.jpg</code>
+                        <br/><br/>
+                        Requires <code>boto3</code> on the Odoo server:
+                        <code>pip install boto3</code>
+                    </div>
+
+                    <group string="Ticket Rules">
+                        <group>
+                            <field name="require_resolution_photo"/>
+                        </group>
+                        <group>
+                            <field name="auto_close_days"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_save" type="object" string="Save" class="btn-primary"/>
+                    <button name="action_test_s3" type="object" string="Test S3 connection"
+                            class="btn-secondary" invisible="not s3_enabled"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_svcticket_settings" model="ir.actions.server">
+        <field name="name">Administration</field>
+        <field name="model_id" ref="model_svcticket_settings"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open()</field>
+    </record>
+
+</odoo>

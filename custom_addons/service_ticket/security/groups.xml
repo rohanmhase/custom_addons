@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_category_svcticket" model="ir.module.category">
+            <field name="name">Service Ticket</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Raise tickets, attach photos, use the ticket chatter box. -->
+        <record id="group_user" model="res.groups">
+            <field name="name">User</field>
+            <field name="category_id" ref="module_category_svcticket"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Works tickets: facility / PO / payment / approver. Team membership is
+             configured in Configuration > Teams, not as groups. -->
+        <record id="group_moderator" model="res.groups">
+            <field name="name">Moderator</field>
+            <field name="category_id" ref="module_category_svcticket"/>
+            <field name="implied_ids" eval="[(4, ref('group_user'))]"/>
+        </record>
+
+        <!-- Full access + configuration. -->
+        <record id="group_manager" model="res.groups">
+            <field name="name">Administrator</field>
+            <field name="category_id" ref="module_category_svcticket"/>
+            <field name="implied_ids" eval="[(4, ref('group_moderator'))]"/>
+        </record>
+
+    </data>
+</odoo>
