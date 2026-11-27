@@ -33,11 +33,11 @@ class SvcTicketSettings(models.TransientModel):
     def _defaults(self):
         get = self.env["ir.config_parameter"].sudo().get_param
         return {
-            "s3_enabled": get("svcticket.s3_enabled", "0") in ("1", "True", "true"),
-            "s3_bucket": get("svcticket.s3_bucket", False),
-            "s3_region": get("svcticket.s3_region", "ap-south-1"),
-            "s3_key": get("svcticket.s3_key", False),
-            "s3_secret": get("svcticket.s3_secret", False),
+            "s3_enabled": get("svcticket.s3_enabled", "1") in ("1", "True", "true"),
+            "s3_bucket": get("aws_s3_bucket_name", False),
+            "s3_region": get("aws_s3_region_name", "ap-south-1"),
+            "s3_key": get("aws_access_key_id", False),
+            "s3_secret": get("aws_secret_access_key", False),
             "s3_prefix": get("svcticket.s3_prefix", "service-tickets"),
             "require_resolution_photo":
                 get("svcticket.require_resolution_photo", "1") in ("1", "True", "true"),
@@ -68,10 +68,10 @@ class SvcTicketSettings(models.TransientModel):
                               "key is missing."))
         params = self.env["ir.config_parameter"].sudo()
         params.set_param("svcticket.s3_enabled", "1" if self.s3_enabled else "0")
-        params.set_param("svcticket.s3_bucket", self.s3_bucket or "")
-        params.set_param("svcticket.s3_region", self.s3_region or "ap-south-1")
-        params.set_param("svcticket.s3_key", self.s3_key or "")
-        params.set_param("svcticket.s3_secret", self.s3_secret or "")
+        params.set_param("aws_s3_bucket_name", self.s3_bucket or "")
+        params.set_param("aws_s3_region_name", self.s3_region or "ap-south-1")
+        params.set_param("aws_access_key_id", self.s3_key or "")
+        params.set_param("aws_secret_access_key", self.s3_secret or "")
         params.set_param("svcticket.s3_prefix", self.s3_prefix or "service-tickets")
         params.set_param("svcticket.require_resolution_photo",
                          "1" if self.require_resolution_photo else "0")

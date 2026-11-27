@@ -53,3 +53,4 @@ access_cloud_photo_moderator,cloud.photo.moderator,model_svcticket_cloud_photo,g
 access_svcticket_reject_wizard,svcticket.reject.wizard,model_svcticket_reject_wizard,group_user,1,1,1,1
 access_svcticket_reject_wizard_mod,svcticket.reject.wizard,model_svcticket_reject_wizard,group_moderator,1,1,1,1
 access_svcticket_reject_wizard_mgr,svcticket.reject.wizard,model_svcticket_reject_wizard,group_manager,1,1,1,1
+access_team_escalation_manager,team.escalation.manager,model_svcticket_team_escalation,group_manager,1,1,1,1

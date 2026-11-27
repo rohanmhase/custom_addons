@@ -312,8 +312,25 @@ class SvcTicketTeam(models.Model):
     work_sun = fields.Boolean("Sun", default=False)
 
     active = fields.Boolean(default=True)
+    escalation_rule_ids = fields.One2many("svcticket.team.escalation", "team_id",
+                                          "Escalation Levels",
+                                          help="Per-team escalation persons per level.")
 
-    _sql_constraints = [("name_uniq", "unique(name)", "Team name must be unique.")]
+class SvcTicketTeamEscalation(models.Model):
+    _name = "svcticket.team.escalation"
+    _description = "Team Escalation Level"
+    _order = "team_id, level"
+
+    team_id = fields.Many2one("svcticket.team", required=True, ondelete="cascade")
+    level = fields.Integer("Escalation Level", required=True, default=1,
+        help="Level 0 = team member, 1 = team lead, 2+ = escalation persons.")
+    user_ids = fields.Many2many("res.users", "svcticket_team_escalation_user_rel",
+                                "escalation_id", "user_id", "Notify These People",
+        help="People to mail when the ticket reaches this escalation level.")
+    active = fields.Boolean(default=True)
+
+    _sql_constraints = [("level_uniq", "unique(team_id, level)",
+                         "Level must be unique per team.")]
 
 
 class SvcTicketApprover(models.Model):

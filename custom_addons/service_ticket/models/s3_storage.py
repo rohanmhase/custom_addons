@@ -40,16 +40,16 @@ def _safe(text):
 
 def get_config(env):
     """Return the S3 config dict, or None when archiving is off/incomplete."""
-    if _param(env, "svcticket.s3_enabled", "0") not in ("1", "True", "true"):
+    if _param(env, "svcticket.s3_enabled", "1") not in ("1", "True", "true"):
         return None
-    key = _param(env, "svcticket.s3_key")
-    secret = _param(env, "svcticket.s3_secret")
-    bucket = _param(env, "svcticket.s3_bucket")
+    key = _param(env, "aws_access_key_id")
+    secret = _param(env, "aws_secret_access_key")
+    bucket = _param(env, "aws_s3_bucket_name")
     if not (key and secret and bucket):
         return None
     return {
         "key": key, "secret": secret, "bucket": bucket,
-        "region": _param(env, "svcticket.s3_region", "ap-south-1"),
+        "region": _param(env, "aws_s3_region_name", "ap-south-1"),
         "prefix": (_param(env, "svcticket.s3_prefix", "service-tickets") or "").strip("/"),
     }
 

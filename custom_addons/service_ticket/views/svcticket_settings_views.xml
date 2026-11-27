@@ -15,14 +15,14 @@
                         <group>
                             <field name="s3_enabled"/>
                             <field name="s3_bucket" placeholder="my-clinic-tickets"
-                                   readonly="not s3_enabled"/>
+                                   readonly="1"/>
                             <field name="s3_region" placeholder="ap-south-1"
-                                   readonly="not s3_enabled"/>
+                                   readonly="1"/>
                         </group>
                         <group>
-                            <field name="s3_key" password="True" readonly="not s3_enabled"/>
-                            <field name="s3_secret" password="True" readonly="not s3_enabled"/>
-                            <field name="s3_prefix" readonly="not s3_enabled"/>
+                            <field name="s3_key" password="True" readonly="1"/>
+                            <field name="s3_secret" password="True" readonly="1"/>
+                            <field name="s3_prefix" readonly="1"/>
                         </group>
                     </group>
 

@@ -253,7 +253,7 @@ class SvcTicketSlaLine(models.Model):
         ticket._log_event("sla_breach", from_lane=self.lane,
                           note="%s clock, breach #%s" % (LANE_LABELS[self.lane], self.breach_count))
 
-        if policy != "notify_only":
+        if policy != "notify_only" and ticket.escalation_level < stage.level:
             ticket._escalate(stage)
         if policy == "escalate_next":
             nxt = ticket._next_stage(stage)
@@ -412,13 +412,27 @@ class SvcTicketSlaTicket(models.Model):
 
     # ---------------------------------------------------------- escalation
     def _escalate(self, stage=None):
-        """Notify whoever this SLA level says, and bump the level counter."""
+        """Notify whoever this SLA level says, and bump the level counter.
+
+        Per-team escalation rules (Configuration > Teams > Escalation Levels)
+        override the SLA stage config when a rule exists for the current level.
+        """
         self.ensure_one()
         stage = stage or self.sla_stage_id
         if not stage:
             return
         self.escalation_level += 1
-        targets = stage._target_users(self) - self.env.user
+        ticket = self
+        team = getattr(ticket, "current_team_id", None) or \
+               getattr(ticket, "team_id", None) or \
+               (ticket.ticket_id and ticket.ticket_id.current_team_id)
+        team = team.sudo() if team else self.env["svcticket.team"]
+        rule = team.escalation_rule_ids.filtered(
+            lambda r: r.active and r.level == self.escalation_level)[:1] if team else False
+        if rule:
+            targets = rule.user_ids
+        else:
+            targets = stage._target_users(ticket) - self.env.user
         if not targets:
             self.message_post(body=_("Level %s breached. No escalation target configured.")
                               % stage.level)
