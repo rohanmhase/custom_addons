@@ -37,6 +37,98 @@ def _valid_doctor_rows(rows):
     return valid
 
 
+
+# The four *.user models are durable records, not replaceable weekly snapshots.
+# Import ONLY doctors present in the current Metabase response. A missing doctor
+# is never modified, deactivated or deleted. The topper models below deliberately
+# retain their separate rotating-snapshot behavior.
+def _upsert_leaderboard_users(model, rows, *, name_column, columns):
+    model = model.sudo()
+
+    # If Metabase unexpectedly returns an ID more than once, retain the last
+    # response row, as before, and log the issue rather than creating duplicates.
+    incoming = {}
+    for row in rows:
+        doctor_id = row['doctor_id']
+        if doctor_id in incoming:
+            _logger.warning("%s: duplicate Metabase doctor_id %s; last row used",
+                            model._name, doctor_id)
+        incoming[doctor_id] = row
+
+    # Keep existing duplicate Odoo records too. All records matching an incoming
+    # doctor_id are updated, and none are deleted or merged by the importer.
+    by_doctor = {}
+    for record in model.search([]):
+        by_doctor.setdefault(record.doctor_id, []).append(record)
+
+    new_rows = []
+    updated = 0
+    with model.env.cr.savepoint():
+        for doctor_id, row in incoming.items():
+            name = row.get(name_column)
+            name = str(name).strip() if name is not None else ''
+            current_values = {}
+
+            for labels, current_field, _previous_field in columns:
+                labels = (labels,) if isinstance(labels, str) else labels
+                for label in labels:
+                    if label not in row:
+                        continue
+                    raw = row[label]
+                    # Missing / null fields must not reset existing values.
+                    if raw is not None:
+                        try:
+                            value = float(raw)
+                            if not isfinite(value):
+                                raise ValueError("non-finite number")
+                            field_type = model._fields[current_field].type
+                            if field_type == 'integer':
+                                if not value.is_integer():
+                                    raise ValueError("non-integral value for integer field")
+                                value = int(value)
+                            current_values[current_field] = value
+                        except (TypeError, ValueError):
+                            _logger.warning("%s: skip invalid %s for doctor_id %s: %r",
+                                            model._name, label, doctor_id, raw)
+                    break
+
+            matching = by_doctor.get(doctor_id)
+            if matching:
+                for record in matching:
+                    changes = {}
+                    if name and record.doctor_name != name:
+                        changes['doctor_name'] = name
+                    for _labels, current_field, previous_field in columns:
+                        if current_field not in current_values:
+                            continue
+                        new_value = current_values[current_field]
+                        old_value = getattr(record, current_field)
+                        if old_value != new_value:
+                            # Shift the old value only when this metric changes;
+                            # repeat runs with identical data are idempotent.
+                            changes[previous_field] = old_value
+                            changes[current_field] = new_value
+                    if changes:
+                        record.write(changes)
+                        updated += 1
+            else:
+                vals = {'doctor_id': doctor_id, 'doctor_name': name or 'Unknown'}
+                for _labels, current_field, previous_field in columns:
+                    if current_field in current_values:
+                        vals[current_field] = current_values[current_field]
+                        vals[previous_field] = current_values[current_field]
+                new_rows.append(vals)
+
+        if new_rows:
+            model.create(new_rows)
+
+    untouched = sum(len(records) for doctor_id, records in by_doctor.items()
+                    if doctor_id not in incoming)
+    _logger.info("%s Metabase sync: incoming=%d, updated=%d, created=%d, "
+                 "unmatched records left untouched=%d", model._name,
+                 len(incoming), updated, len(new_rows), untouched)
+
+
 # =========================================================================
 # TABLE 1: Top 3 Performers (VAS, Therapies, Recovery)
 # =========================================================================
@@ -217,7 +309,6 @@ class ClinicLeaderboardMetricsUser(models.Model):
 
     @api.model
     def _cron_update_metrics_users(self):
-
         if date.today().day not in (1, 16):
             return
 
@@ -225,58 +316,16 @@ class ClinicLeaderboardMetricsUser(models.Model):
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
             if not rows:
-                _logger.warning("Metrics users: empty response, keeping last snapshot")
+                _logger.warning("Metrics users: empty response; existing records unchanged")
                 return
-
-            # Ignore duplicate external doctor IDs (last occurrence wins).
-            rows = list({row['doctor_id']: row for row in rows}.values())
-            # The cron can update the readonly-for-users snapshot. Fetching
-            # existing rows once also avoids a DB lookup for each Metabase row.
-            existing = {rec.doctor_id: rec for rec in self.sudo().search([])}
-            new_rows = []
-            with self.env.cr.savepoint():
-                for row in rows:
-                    doctor_id = row['doctor_id']
-
-                    recovery = row.get('Total Recovery %') or 0.0
-                    vas = row.get('VAS %') or 0.0
-                    therapies = row.get('Total Therapies') or 0
-                    name = row.get('RS Name') or 'Unknown'
-
-                    if doctor_id in existing:
-                        rec = existing.pop(doctor_id)
-                        values = {
-                            'doctor_name': name,
-                            'prev_recovery_percent': rec.recovery_percent,
-                            'recovery_percent': recovery,
-                            'prev_total_vas': rec.vas_percent,
-                            'vas_percent': vas,
-                            'prev_total_therapies': rec.total_therapies,
-                            'total_therapies': therapies,
-                        }
-                        # Do not write rows which are already up to date.
-                        changes = {
-                            key: value for key, value in values.items()
-                            if getattr(rec, key) != value
-                        }
-                        if changes:
-                            rec.write(changes)
-                    else:
-                        new_rows.append({
-                            'doctor_id': doctor_id,
-                            'doctor_name': name,
-                            'recovery_percent': recovery,
-                            'prev_recovery_percent': recovery,
-                            'vas_percent': vas,
-                            'prev_total_vas': vas,
-                            'total_therapies': therapies,
-                            'prev_total_therapies': therapies,
-                        })
-
-                if new_rows:
-                    self.sudo().create(new_rows)
-                if existing:
-                    self.sudo().browse([rec.id for rec in existing.values()]).unlink()
+            _upsert_leaderboard_users(
+                self, rows, name_column='RS Name',
+                columns=(
+                    ('Total Recovery %', 'recovery_percent', 'prev_recovery_percent'),
+                    ('VAS %', 'vas_percent', 'prev_total_vas'),
+                    ('Total Therapies', 'total_therapies', 'prev_total_therapies'),
+                ),
+            )
         except Exception:
             _logger.exception("Metrics Users sync failed")
 
@@ -329,7 +378,6 @@ class ClinicLeaderboardExtensionUser(models.Model):
 
     @api.model
     def _cron_update_extension_users(self):
-
         if date.today().day not in (1, 16):
             return
 
@@ -337,43 +385,12 @@ class ClinicLeaderboardExtensionUser(models.Model):
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
             if not rows:
-                _logger.warning("Extension users: empty response, keeping last snapshot")
+                _logger.warning("Extension users: empty response; existing records unchanged")
                 return
-
-            rows = list({row['doctor_id']: row for row in rows}.values())
-            existing = {rec.doctor_id: rec for rec in self.sudo().search([])}
-            new_rows = []
-            with self.env.cr.savepoint():
-                for row in rows:
-                    doctor_id = row['doctor_id']
-
-                    percentage = row.get('20-40%') or 0.0
-                    name = row.get('RS Name') or 'Unknown'
-                    if doctor_id in existing:
-                        rec = existing.pop(doctor_id)
-                        values = {
-                            'doctor_name': name,
-                            'prev_extension_percent': rec.extension_percent,
-                            'extension_percent': percentage,
-                        }
-                        changes = {
-                            key: value for key, value in values.items()
-                            if getattr(rec, key) != value
-                        }
-                        if changes:
-                            rec.write(changes)
-                    else:
-                        new_rows.append({
-                            'doctor_id': doctor_id,
-                            'doctor_name': name,
-                            'extension_percent': percentage,
-                            'prev_extension_percent': percentage,
-                        })
-
-                if new_rows:
-                    self.sudo().create(new_rows)
-                if existing:
-                    self.sudo().browse([rec.id for rec in existing.values()]).unlink()
+            _upsert_leaderboard_users(
+                self, rows, name_column='RS Name',
+                columns=(('20-40%', 'extension_percent', 'prev_extension_percent'),),
+            )
         except Exception:
             _logger.exception("Extension Users sync failed")
 
@@ -439,62 +456,17 @@ class ClinicLeaderboardCSUser(models.Model):
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
             if not rows:
-                _logger.warning("CS users: empty response, keeping last snapshot")
+                _logger.warning("CS users: empty response; existing records unchanged")
                 return
-
-            # Ignore duplicate external doctor IDs (last occurrence wins).
-            rows = list({row['doctor_id']: row for row in rows}.values())
-
-            existing = {rec.doctor_id: rec for rec in self.sudo().search([])}
-            new_rows = []
-            with self.env.cr.savepoint():
-                for row in rows:
-                    doctor_id = row['doctor_id']
-
-                    ppc_amount = row.get('PPC Amount') or 0.0
-                    conversion_percent = row.get('Conversion %') or 0.0
-                    only_consultation = row.get('Only Consultation') or 0
-                    same_day_conversion = row.get('Same Day Conversion') or 0
-                    name = row.get('CS Name') or 'Unknown'
-
-                    if doctor_id in existing:
-                        rec = existing.pop(doctor_id)
-                        values = {
-                            'doctor_name': name,
-                            'prev_ppc_amount': rec.ppc_amount,
-                            'ppc_amount': ppc_amount,
-                            'prev_conversion_percent': rec.conversion_percent,
-                            'conversion_percent': conversion_percent,
-                            'prev_only_consultation': rec.only_consultation,
-                            'only_consultation': only_consultation,
-                            'prev_same_day_conversion': rec.same_day_conversion,
-                            'same_day_conversion': same_day_conversion,
-                        }
-                        # Do not write rows which are already up to date.
-                        changes = {
-                            key: value for key, value in values.items()
-                            if getattr(rec, key) != value
-                        }
-                        if changes:
-                            rec.write(changes)
-                    else:
-                        new_rows.append({
-                            'doctor_id': doctor_id,
-                            'doctor_name': name,
-                            'prev_ppc_amount': ppc_amount,
-                            'ppc_amount': ppc_amount,
-                            'prev_conversion_percent': conversion_percent,
-                            'conversion_percent': conversion_percent,
-                            'prev_only_consultation': only_consultation,
-                            'only_consultation': only_consultation,
-                            'prev_same_day_conversion': same_day_conversion,
-                            'same_day_conversion': same_day_conversion,
-                        })
-
-                if new_rows:
-                    self.sudo().create(new_rows)
-                if existing:
-                    self.sudo().browse([rec.id for rec in existing.values()]).unlink()
+            _upsert_leaderboard_users(
+                self, rows, name_column='CS Name',
+                columns=(
+                    ('PPC Amount', 'ppc_amount', 'prev_ppc_amount'),
+                    ('Conversion %', 'conversion_percent', 'prev_conversion_percent'),
+                    ('Only Consultation', 'only_consultation', 'prev_only_consultation'),
+                    ('Same Day Conversion', 'same_day_conversion', 'prev_same_day_conversion'),
+                ),
+            )
         except Exception:
             _logger.exception("CS Users sync failed")
 
@@ -551,7 +523,7 @@ class ClinicLeaderboardBMUser(models.Model):
     pc_p_joined = fields.Integer(string="PC+P1 Joined")
     prev_ppc_amount = fields.Float(string="Prev PPC Amount")
     prev_conversion_percent = fields.Float(string="Prev Conversion Percent")
-    prev_npc = fields.Integer(string="Prev NPC")
+    prev_npc = fields.Float(string="Prev NPC")
     prev_referral_visits = fields.Integer(string="Prev Referral Visits")
     prev_pc_p_joined = fields.Integer(string="Prev PC+P1 Joined")
 
@@ -561,66 +533,17 @@ class ClinicLeaderboardBMUser(models.Model):
         try:
             rows = _valid_doctor_rows(_fetch_metabase_rows(url))
             if not rows:
-                _logger.warning("BM users: empty response, keeping last snapshot")
+                _logger.warning("BM users: empty response; existing records unchanged")
                 return
-
-            # Ignore duplicate external doctor IDs (last occurrence wins).
-            rows = list({row['doctor_id']: row for row in rows}.values())
-
-            existing = {rec.doctor_id: rec for rec in self.sudo().search([])}
-            new_rows = []
-            with self.env.cr.savepoint():
-                for row in rows:
-                    doctor_id = row['doctor_id']
-
-                    ppc_amount = row.get('PPC Amount') or 0.0
-                    conversion_percent = row.get('Conversion %') or 0.0
-                    npc = row.get('NPC') or 0.0
-                    referral_visits = row.get('Referral Visits') or 0
-                    pc_p_joined = row.get('PC+P1 Joined') or 0
-                    name = row.get('BM Name') or 'Unknown'
-
-                    if doctor_id in existing:
-                        rec = existing.pop(doctor_id)
-                        values = {
-                            'doctor_name': name,
-                            'prev_ppc_amount': rec.ppc_amount,
-                            'ppc_amount': ppc_amount,
-                            'prev_conversion_percent': rec.conversion_percent,
-                            'conversion_percent': conversion_percent,
-                            'prev_npc': rec.npc,
-                            'npc': npc,
-                            'prev_referral_visits': rec.referral_visits,
-                            'referral_visits': referral_visits,
-                            'prev_pc_p_joined': rec.pc_p_joined,
-                            'pc_p_joined': pc_p_joined,
-                        }
-                        # Do not write rows which are already up to date.
-                        changes = {
-                            key: value for key, value in values.items()
-                            if getattr(rec, key) != value
-                        }
-                        if changes:
-                            rec.write(changes)
-                    else:
-                        new_rows.append({
-                            'doctor_id': doctor_id,
-                            'doctor_name': name,
-                            'prev_ppc_amount': ppc_amount,
-                            'ppc_amount': ppc_amount,
-                            'prev_conversion_percent': conversion_percent,
-                            'conversion_percent': conversion_percent,
-                            'prev_npc': npc,
-                            'npc': npc,
-                            'prev_referral_visits': referral_visits,
-                            'referral_visits': referral_visits,
-                            'prev_pc_p_joined': pc_p_joined,
-                            'pc_p_joined': pc_p_joined,
-                        })
-
-                if new_rows:
-                    self.sudo().create(new_rows)
-                if existing:
-                    self.sudo().browse([rec.id for rec in existing.values()]).unlink()
+            _upsert_leaderboard_users(
+                self, rows, name_column='BM Name',
+                columns=(
+                    ('PPC Amount', 'ppc_amount', 'prev_ppc_amount'),
+                    ('Conversion %', 'conversion_percent', 'prev_conversion_percent'),
+                    ('NPC', 'npc', 'prev_npc'),
+                    ('Referral Visits', 'referral_visits', 'prev_referral_visits'),
+                    (('PC + P1 Joined', 'PC+P1 Joined'), 'pc_p_joined', 'prev_pc_p_joined'),
+                ),
+            )
         except Exception:
             _logger.exception("BM Users sync failed")
