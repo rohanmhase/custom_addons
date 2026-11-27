@@ -30,7 +30,12 @@
                 <sheet>
                     <field name="active" invisible="1"/>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
                             <field name="location_type"/>
@@ -81,7 +86,9 @@
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
                     <div class="oe_title">
                         <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Repair &amp; Maintenance"/></h1>
+                        <h1>
+                            <field name="name" placeholder="e.g. Repair &amp; Maintenance"/>
+                        </h1>
                     </div>
                     <group>
                         <group string="General">
@@ -172,14 +179,21 @@
                 <sheet>
                     <field name="active" invisible="1"/>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
                             <field name="code"/>
                             <field name="color" widget="color_picker"/>
                             <field name="sequence"/>
                         </group>
-                        <group><field name="timer_type" widget="radio"/></group>
+                        <group>
+                            <field name="timer_type" widget="radio"/>
+                        </group>
                     </group>
                     <notebook>
                         <page string="SLA Stages" name="stages">
@@ -235,7 +249,12 @@
                 <sheet>
                     <field name="active" invisible="1"/>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
                     <group>
                         <group string="Scope">
                             <field name="team_type"/>
@@ -264,14 +283,30 @@
                             </div>
                             <label for="work_mon"/>
                             <div class="o_row o_svcticket_days">
-                                <field name="work_mon"/><span>Mon</span>
-                                <field name="work_tue"/><span>Tue</span>
-                                <field name="work_wed"/><span>Wed</span>
-                                <field name="work_thu"/><span>Thu</span>
-                                <field name="work_fri"/><span>Fri</span>
-                                <field name="work_sat"/><span>Sat</span>
-                                <field name="work_sun"/><span>Sun</span>
+                                <field name="work_mon"/>
+                                <span>Mon</span>
+                                <field name="work_tue"/>
+                                <span>Tue</span>
+                                <field name="work_wed"/>
+                                <span>Wed</span>
+                                <field name="work_thu"/>
+                                <span>Thu</span>
+                                <field name="work_fri"/>
+                                <span>Fri</span>
+                                <field name="work_sat"/>
+                                <span>Sat</span>
+                                <field name="work_sun"/>
+                                <span>Sun</span>
                             </div>
+                        </group>
+                        <group string="Escalation Levels" colspan="2">
+                            <field name="escalation_rule_ids" nolabel="1" colspan="2">
+                                <tree editable="bottom">
+                                    <field name="level"/>
+                                    <field name="user_ids" widget="many2many_tags"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </tree>
+                            </field>
                         </group>
                     </group>
                 </sheet>
@@ -380,7 +415,12 @@
                             invisible="state != 'pending'"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
                             <field name="ticket_id"/>
@@ -431,7 +471,8 @@
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_svcticket_ticket_search"/>
         <field name="domain">[('state', 'in', ('po_pending', 'payment_pending')),
-                             ('active_lane', 'in', ('po', 'approver'))]</field>
+            ('active_lane', 'in', ('po', 'approver'))]
+        </field>
         <field name="context">{'search_default_group_location': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No tickets waiting here.</p>
@@ -480,11 +521,12 @@
              would OR the state filter in as well and every open ticket would show
              up for everyone. -->
         <field name="domain">['|', '|', '|',
-                             ('current_user_id', '=', uid),
-                             ('current_approver_ids.user_id', '=', uid),
-                             ('current_team_id.member_ids', 'in', [uid]),
-                             ('current_team_id.lead_ids', 'in', [uid]),
-                             ('state', 'not in', ('closed', 'cancelled', 'rejected'))]</field>
+            ('current_user_id', '=', uid),
+            ('current_approver_ids.user_id', '=', uid),
+            ('current_team_id.member_ids', 'in', [uid]),
+            ('current_team_id.lead_ids', 'in', [uid]),
+            ('state', 'not in', ('closed', 'cancelled', 'rejected'))]
+        </field>
     </record>
 
     <record id="view_svcticket_po_search" model="ir.ui.view">

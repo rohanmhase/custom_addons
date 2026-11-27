@@ -38,6 +38,20 @@ class SvcTicketMail(models.Model):
         team = team.sudo()
         return (team.member_ids | team.lead_ids).mapped("partner_id")
 
+    def _facility_members_only(self):
+        """Facility team members without leads - used for ticket-raised mail."""
+        self.ensure_one()
+        team = self.env["svcticket.team"].sudo().search(
+            [("team_type", "=", "facility"), ("active", "=", True)], limit=1)
+        return team.sudo().member_ids.mapped("partner_id") if team else self.env["res.partner"]
+
+    def _po_members_only(self):
+        """PO team members without leads - PO leads get no mail except escalation."""
+        self.ensure_one()
+        team = self.env["svcticket.team"].sudo().search(
+            [("team_type", "=", "po_team"), ("active", "=", True)], limit=1)
+        return team.sudo().member_ids.mapped("partner_id") if team else self.env["res.partner"]
+
     def _recipients(self, *tokens):
         """Turn the words above into a partner recordset (never raises)."""
         self.ensure_one()
@@ -126,7 +140,7 @@ class SvcTicketMail(models.Model):
         if not team:
             return False
         return self._notify_mail(
-            self._recipients("team"),
+            self._facility_members_only(),
             _("New ticket %s - %s") % (self.name, self.category_id.name),
             _("A new ticket was raised and it is yours to handle."),
             [(_("Ticket"), self.name),
@@ -188,7 +202,7 @@ class SvcTicketMail(models.Model):
         self.ensure_one()
         if needs_po:
             return self._notify_mail(
-                self._recipients("po", "team", "reporter"),
+                self._po_members_only() | self._facility_members_only(),
                 _("%s approved - now with the PO team") % self.name,
                 _("The hold was approved. The ticket moved to the PO team, who can "
                   "now raise the purchase order."),
@@ -197,7 +211,7 @@ class SvcTicketMail(models.Model):
                  (_("With"), self.waiting_on),
                  (_("PO team must act by"), self.sla_deadline)])
         return self._notify_mail(
-            self._recipients("team", "reporter"),
+            self._facility_members_only(),
             _("%s is on hold") % self.name,
             _("The hold was approved. The ticket is parked and its clock is paused."),
             [(_("Ticket"), self.name),
@@ -209,8 +223,7 @@ class SvcTicketMail(models.Model):
         self.ensure_one()
         team = self.current_team_id or self.team_id
         return self._notify_mail(
-            (self.current_user_id.partner_id | team.sudo().member_ids.mapped("partner_id")
-             | self.reporter_id.partner_id),
+            self.hold_requested_by.partner_id or self.reporter_id.partner_id,
             _("%s hold rejected - carry on") % self.name,
             _("The hold request was rejected. Your clock was never stopped, so the "
               "original deadline still applies."),
@@ -229,7 +242,7 @@ class SvcTicketMail(models.Model):
     # 13 / 14 / 15 / 16. PO decided
     def _mail_po_decided(self, po, decided_by, approved, remarks=None, on_call=False):
         self.ensure_one()
-        audience = self._recipients("po", "team", "lead", "reporter", "accounts")
+        audience = self._po_members_only() | self.hold_requested_by.partner_id | self._recipients("accounts")
         if approved:
             intro = _("PO <b>%s</b> was approved. The ticket moved to the accounts "
                       "team for payment.") % po.name
@@ -271,7 +284,7 @@ class SvcTicketMail(models.Model):
     def _mail_added_for_payment(self):
         self.ensure_one()
         return self._notify_mail(
-            self._recipients("po", "team", "reporter"),
+            self._po_members_only() | self._facility_members_only() | self.hold_requested_by.partner_id,
             _("Payment started for %s") % self.name,
             _("The accounts team picked the ticket up for payment."),
             [(_("Ticket"), self.name),
@@ -282,7 +295,7 @@ class SvcTicketMail(models.Model):
     def _mail_payment_recorded(self, amount, reference, tender):
         self.ensure_one()
         return self._notify_mail(
-            self._recipients("team", "lead", "reporter", "po"),
+            self._po_members_only() | self._facility_members_only(),
             _("Payment recorded on %s") % self.name,
             _("A payment has been recorded."),
             [(_("Ticket"), self.name),
@@ -320,7 +333,7 @@ class SvcTicketMail(models.Model):
     def _mail_invoice_accepted(self, invoice_number):
         self.ensure_one()
         return self._notify_mail(
-            self._team_people(self.team_id),
+            self._facility_members_only(),
             _("Tax invoice accepted - %s") % self.name,
             _("The invoice was accepted. You can close the ticket once the balance "
               "is settled."),

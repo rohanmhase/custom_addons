@@ -592,6 +592,52 @@ class SvcTicket(models.Model):
             if uploaded:
                 ticket.message_post(body=_("%s photo(s) archived to cloud storage.") % uploaded)
 
+    @api.model
+    def cron_daily_digest(self):
+        """Daily digest: one mail per person holding open tickets."""
+        open_tickets = self.sudo().search([("state", "in", list(OPEN_STATES))])
+        by_user = {}
+        for ticket in open_tickets:
+            holders = self.env["res.users"]
+            if ticket.current_owner_type == "user" and ticket.current_user_id:
+                holders = ticket.current_user_id
+            elif ticket.current_owner_type == "team" and ticket.current_team_id:
+                holders = ticket.current_team_id.member_ids | ticket.current_team_id.lead_ids
+            elif ticket.current_owner_type == "lead" and ticket.current_user_id:
+                holders = ticket.current_user_id
+            for user in holders:
+                if not user.partner_id or not user.partner_id.email:
+                    continue
+                by_user.setdefault(user, self.env["svcticket.ticket"])
+                by_user[user] |= ticket
+        for user, tickets in by_user.items():
+            rows = []
+            state_counts = {}
+            for t in tickets.sorted(key=lambda t: t.name):
+                label = dict(t._fields["state"].selection).get(t.state, t.state)
+                state_counts[t.state] = state_counts.get(t.state, 0) + 1
+                rows.append((t.name, label))
+            summary = ", ".join("%s: %d" % (k, v) for k, v in sorted(state_counts.items()))
+            intro = _("You hold %d open ticket%s (%s).") % (
+                len(tickets), "s" if len(tickets) > 1 else "", summary)
+            body = (
+                    "<div style='font-family:Arial,sans-serif;font-size:14px;color:#222'>"
+                    "<h3 style='margin:0 0 6px'>Daily digest - %s</h3>"
+                    "<p style='margin:0 0 8px'>%s</p>"
+                    % (fields.Date.context_today(self), intro))
+            if rows:
+                cells = "".join(
+                    "<tr><td style='padding:6px 10px;border:1px solid #e3e3e3'>%s</td>"
+                    "<td style='padding:6px 10px;border:1px solid #e3e3e3'><b>%s</b></td></tr>"
+                    % (name, state) for name, state in rows)
+                body += "<table style='border-collapse:collapse;margin:8px 0'>%s</table>" % cells
+            body += "</div>"
+            tickets[0].sudo()._send_mail(
+                tickets[0], user.partner_id,
+                _("Daily digest: your open tickets (%s)") % fields.Date.context_today(self),
+                body)
+        return True
+
 
 class SvcTicketConversationLog(models.Model):
     """Ticket Communications tab - every posted update and internal note."""

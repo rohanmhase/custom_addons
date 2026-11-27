@@ -52,5 +52,15 @@
             <field name="numbercall">-1</field>
             <field name="priority">130</field>
         </record>
+        <record id="cron_daily_digest" model="ir.cron">
+            <field name="name">Service Ticket: daily digest</field>
+            <field name="model_id" ref="model_svcticket_ticket"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_daily_digest()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">140</field>
+        </record>
     </data>
 </odoo>
