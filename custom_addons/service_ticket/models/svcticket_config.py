@@ -114,9 +114,56 @@ class SvcTicketCategory(models.Model):
         if not self._check_recursion():
             raise models.ValidationError(_("Categories cannot be recursive."))
 
+    def get_sla_timing(self, priority, level):
+        """Return (time_limit, time_unit, on_breach) override for this
+        category + priority + level, or None if no override exists."""
+        self.ensure_one()
+        line = self.env["svcticket.category.sla"].search([
+            ("category_id", "=", self.id),
+            ("priority_id", "=", priority.id),
+            ("level", "=", level),
+        ], limit=1)
+        if line:
+            return line.time_limit, line.time_unit, line.on_breach
+        return None
+
     def name_get(self):
         return [(c.id, "%s / %s" % (c.parent_id.name, c.name) if c.parent_id else c.name)
                 for c in self]
+
+    # ------------------------------------------------- SLA timing overrides
+    sla_override_ids = fields.One2many(
+        "svcticket.category.sla", "category_id", "SLA Timing Overrides",
+        help="Set custom SLA timing for specific priorities in this category. "
+             "Leave empty to use the priority's default timing.")
+
+
+class SvcTicketCategorySla(models.Model):
+    _name = "svcticket.category.sla"
+    _description = "Category SLA Timing Override"
+    _order = "category_id, priority_id, level"
+
+    category_id = fields.Many2one(
+        "svcticket.category", required=True, ondelete="cascade")
+    priority_id = fields.Many2one(
+        "svcticket.priority", required=True, ondelete="cascade")
+    level = fields.Integer("Level", required=True, default=1)
+    time_limit = fields.Float("Time Limit", required=True, default=1.0)
+    time_unit = fields.Selection([
+        ("minutes", "Minutes"), ("hours", "Hours"), ("days", "Days"),
+    ], default="hours", required=True)
+    on_breach = fields.Selection([
+        ("escalate_next", "Escalate to next level"),
+        ("escalate_keep", "Escalate and keep ticking"),
+        ("notify_only", "Notify only"),
+    ], default="escalate_next", required=True)
+
+    _sql_constraints = [("level_uniq", "unique(category_id, priority_id, level)",
+                         "Level must be unique per category and priority.")]
+
+    def _seconds(self):
+        return float(self.time_limit or 0) * {
+            "minutes": 60.0, "hours": 3600.0, "days": 86400.0}.get(self.time_unit, 3600.0)
 
 
 class SvcTicketPriority(models.Model):
@@ -312,9 +359,12 @@ class SvcTicketTeam(models.Model):
     work_sun = fields.Boolean("Sun", default=False)
 
     active = fields.Boolean(default=True)
-    escalation_rule_ids = fields.One2many("svcticket.team.escalation", "team_id",
-                                          "Escalation Levels",
-                                          help="Per-team escalation persons per level.")
+    escalation_rule_ids = fields.One2many(
+        "svcticket.team.escalation", "team_id", "Escalation Levels",
+        help="Per-team escalation persons per level.")
+
+    _sql_constraints = [("name_uniq", "unique(name)", "Team name must be unique.")]
+
 
 class SvcTicketTeamEscalation(models.Model):
     _name = "svcticket.team.escalation"
@@ -323,10 +373,10 @@ class SvcTicketTeamEscalation(models.Model):
 
     team_id = fields.Many2one("svcticket.team", required=True, ondelete="cascade")
     level = fields.Integer("Escalation Level", required=True, default=1,
-        help="Level 0 = team member, 1 = team lead, 2+ = escalation persons.")
+                           help="Level 0 = team member, 1 = team lead, 2+ = escalation persons.")
     user_ids = fields.Many2many("res.users", "svcticket_team_escalation_user_rel",
                                 "escalation_id", "user_id", "Notify These People",
-        help="People to mail when the ticket reaches this escalation level.")
+                                help="People to mail when the ticket reaches this escalation level.")
     active = fields.Boolean(default=True)
 
     _sql_constraints = [("level_uniq", "unique(team_id, level)",
