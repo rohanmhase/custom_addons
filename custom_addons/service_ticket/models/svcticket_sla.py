@@ -135,13 +135,25 @@ class SvcTicketSlaLine(models.Model):
         window = (WorkWindow.always_on() if timer_type == "24_7"
                   else team_window(ticket.current_team_id or ticket.team_id))
         last_seq = max(ticket.sla_line_ids.mapped("sequence") or [0])
+
+        # Category override timing: check category/subcategory first
+        effective_seconds = seconds
+        if effective_seconds is None and stage and ticket.priority_id:
+            cat = ticket.subcategory_id or ticket.category_id
+            if cat:
+                timing = cat.get_sla_timing(ticket.priority_id, stage.level)
+                if timing:
+                    effective_seconds = float(timing[0]) * {
+                        "minutes": 60.0, "hours": 3600.0, "days": 86400.0}.get(timing[1], 3600.0)
+        if effective_seconds is None:
+            effective_seconds = self._seconds(stage) if stage else 0.0
+
         line = self.create({
             "ticket_id": ticket.id, "lane": lane,
             "stage_id": stage.id if stage else False,
             "sequence": last_seq + 10, "timer_type": timer_type,
             "deadline": add_working_seconds(
-                fields.Datetime.now(),
-                seconds if seconds is not None else self._seconds(stage), window),
+                fields.Datetime.now(), effective_seconds, window),
         })
         if start_paused:
             line.action_pause("created paused")
@@ -258,8 +270,17 @@ class SvcTicketSlaLine(models.Model):
         if policy == "escalate_next":
             nxt = ticket._next_stage(stage)
             if nxt:
+                # Category override timing for the next stage level
+                override_seconds = None
+                cat = ticket.subcategory_id or ticket.category_id
+                if cat and ticket.priority_id:
+                    timing = cat.get_sla_timing(ticket.priority_id, nxt.level)
+                    if timing:
+                        override_seconds = float(timing[0]) * {
+                            "minutes": 60.0, "hours": 3600.0, "days": 86400.0}.get(timing[1], 3600.0)
+                stage_seconds = override_seconds if override_seconds is not None else self._seconds(nxt)
                 self.write({"stage_id": nxt.id,
-                            "deadline": add_working_seconds(now, self._seconds(nxt), self._window())})
+                            "deadline": add_working_seconds(now, stage_seconds, self._window())})
             else:
                 self.write({"deadline": add_working_seconds(now, 3600, self._window())})
         # notify_only and escalate_keep both LEAVE THE DEADLINE WHERE IT IS.
@@ -412,27 +433,13 @@ class SvcTicketSlaTicket(models.Model):
 
     # ---------------------------------------------------------- escalation
     def _escalate(self, stage=None):
-        """Notify whoever this SLA level says, and bump the level counter.
-
-        Per-team escalation rules (Configuration > Teams > Escalation Levels)
-        override the SLA stage config when a rule exists for the current level.
-        """
+        """Notify whoever this SLA level says, and bump the level counter."""
         self.ensure_one()
         stage = stage or self.sla_stage_id
         if not stage:
             return
         self.escalation_level += 1
-        ticket = self
-        team = getattr(ticket, "current_team_id", None) or \
-               getattr(ticket, "team_id", None) or \
-               (ticket.ticket_id and ticket.ticket_id.current_team_id)
-        team = team.sudo() if team else self.env["svcticket.team"]
-        rule = team.escalation_rule_ids.filtered(
-            lambda r: r.active and r.level == self.escalation_level)[:1] if team else False
-        if rule:
-            targets = rule.user_ids
-        else:
-            targets = stage._target_users(ticket) - self.env.user
+        targets = stage._target_users(self) - self.env.user
         if not targets:
             self.message_post(body=_("Level %s breached. No escalation target configured.")
                               % stage.level)

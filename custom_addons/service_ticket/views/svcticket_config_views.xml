@@ -130,6 +130,27 @@
                             </field>
                         </page>
                     </notebook>
+                    <notebook>
+                        <page string="SLA Timing Overrides" name="sla_overrides">
+                            <group string="Custom SLA per Priority Level">
+                                <field name="sla_override_ids" nolabel="1" colspan="2">
+                                    <tree editable="bottom" string="SLA Overrides">
+                                        <field name="level" width="50"/>
+                                        <field name="priority_id" width="50"/>
+                                        <field name="time_limit" width="50"/>
+                                        <field name="time_unit" width="50"/>
+                                        <field name="on_breach" width="100"/>
+                                    </tree>
+                                </field>
+                            </group>
+                            <div class="oe_inline oe_semantic_help">
+                                <div class="oe_semantic_content">
+                                    <span>Set custom SLA timing for specific priorities in this category.</span>
+                                    <span>Leave empty to use the priority's default timing.</span>
+                                </div>
+                            </div>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -298,15 +319,6 @@
                                 <field name="work_sun"/>
                                 <span>Sun</span>
                             </div>
-                        </group>
-                        <group string="Escalation Levels" colspan="2">
-                            <field name="escalation_rule_ids" nolabel="1" colspan="2">
-                                <tree editable="bottom">
-                                    <field name="level"/>
-                                    <field name="user_ids" widget="many2many_tags"/>
-                                    <field name="active" widget="boolean_toggle"/>
-                                </tree>
-                            </field>
                         </group>
                     </group>
                 </sheet>

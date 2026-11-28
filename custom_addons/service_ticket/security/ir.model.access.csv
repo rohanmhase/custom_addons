@@ -54,3 +54,5 @@ access_svcticket_reject_wizard,svcticket.reject.wizard,model_svcticket_reject_wi
 access_svcticket_reject_wizard_mod,svcticket.reject.wizard,model_svcticket_reject_wizard,group_moderator,1,1,1,1
 access_svcticket_reject_wizard_mgr,svcticket.reject.wizard,model_svcticket_reject_wizard,group_manager,1,1,1,1
 access_team_escalation_manager,team.escalation.manager,model_svcticket_team_escalation,group_manager,1,1,1,1
+access_category_sla_user,category.sla.user,model_svcticket_category_sla,group_user,1,0,0,0
+access_category_sla_manager,category.sla.manager,model_svcticket_category_sla,group_manager,1,1,1,1
